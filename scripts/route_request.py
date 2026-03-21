@@ -1258,11 +1258,14 @@ def build_process_plan(
                 "commands": [
                     "python scripts/run_release_gate.py --output-dir evals/release-gate --pretty",
                     "python scripts/run_release_gate.py --output-dir evals/release-gate --previous-output evals/benchmark-results/benchmark-results.json --pretty",
+                    "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --release-label release-ready --pretty",
                 ],
                 "decisions": ["ship", "hold"],
                 "artifacts": [
                     "evals/release-gate/release-gate-results.json",
                     "evals/release-gate/release-gate-report.md",
+                    "evals/release-gate/next-iteration-brief.json",
+                    "evals/release-gate/release-closure.json",
                     "evals/release-gate/benchmark-results.json",
                     "evals/release-gate/benchmark-report.md",
                 ],

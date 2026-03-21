@@ -649,7 +649,8 @@
       "expect": {
         "commands_contains": [
           "python scripts/run_release_gate.py --output-dir evals/release-gate --pretty",
-          "python scripts/run_release_gate.py --output-dir evals/release-gate --previous-output evals/benchmark-results/benchmark-results.json --pretty"
+          "python scripts/run_release_gate.py --output-dir evals/release-gate --previous-output evals/benchmark-results/benchmark-results.json --pretty",
+          "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --release-label release-ready --pretty"
         ]
       }
     }

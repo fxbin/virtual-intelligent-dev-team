@@ -285,6 +285,10 @@ class RoutingTests(unittest.TestCase):
             "python scripts/run_release_gate.py --output-dir evals/release-gate --previous-output evals/benchmark-results/benchmark-results.json --pretty",
             commands,
         )
+        self.assertIn(
+            "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --release-label release-ready --pretty",
+            commands,
+        )
 
     def test_rebase_conflict_adds_sentinel_assistant(self) -> None:
         result = route_request.route_request(
@@ -3226,6 +3230,121 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
             self.assertEqual("offline loop drill failed", result["reason"])
             self.assertTrue(Path(result["json_report"]).exists())
             self.assertTrue(Path(result["markdown_report"]).exists())
+            self.assertEqual("reopened", result["follow_up"]["loop_state"])
+            self.assertEqual("bounded-iteration", result["follow_up"]["next_action"])
+            self.assertTrue(Path(result["follow_up"]["brief_json"]).exists())
+            self.assertTrue(Path(result["follow_up"]["brief_markdown"]).exists())
+
+    def test_release_gate_hold_emits_next_iteration_brief(self) -> None:
+        with make_tempdir() as tmp:
+            output_dir = Path(tmp) / "release-gate-output"
+
+            with mock.patch.object(
+                release_gate.benchmark_runner,
+                "run_benchmark_suite",
+                return_value={
+                    "summary": {
+                        "tests_passed": False,
+                        "validator_passed": True,
+                        "evals_passed": True,
+                        "offline_drill_enabled": True,
+                        "offline_drill_passed": True,
+                        "overall_passed": False,
+                    },
+                    "json_report": str(output_dir / "benchmark-results.json"),
+                    "markdown_report": str(output_dir / "benchmark-report.md"),
+                    "offline_drill_run": {
+                        "markdown_report": str(output_dir / "offline-loop-drill-report.md"),
+                    },
+                },
+            ):
+                result = release_gate.run_release_gate(output_dir=output_dir)
+
+            brief = baseline_registry.load_json(Path(result["follow_up"]["brief_json"]))
+            self.assertEqual("hold", result["decision"])
+            self.assertEqual("reopened", brief["loop_state"])
+            self.assertEqual("Technical Trinity", brief["owner"])
+            self.assertIn("unit tests failed", " ".join(brief["blockers"][0]["label"] for _ in [0]))
+            self.assertTrue(any("run_release_gate.py" in item for item in brief["recommended_commands"]))
+
+    def test_release_gate_ship_can_archive_release_ready_baseline(self) -> None:
+        with make_tempdir() as tmp:
+            output_dir = Path(tmp) / "release-gate-output"
+            workspace = Path(tmp) / "rounds"
+            workspace.mkdir(parents=True, exist_ok=True)
+            benchmark_output = output_dir / "benchmark-results.json"
+            benchmark_report = output_dir / "benchmark-report.md"
+            benchmark_output.parent.mkdir(parents=True, exist_ok=True)
+            benchmark_output.write_text(
+                json.dumps(
+                    {
+                        "summary": {"overall_passed": True},
+                        "eval_run": {"passed": 56, "total": 56},
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            benchmark_report.write_text("# Benchmark Report\n", encoding="utf-8")
+            round_dir = workspace / "round-01"
+            round_dir.mkdir(parents=True, exist_ok=True)
+            (round_dir / "state.json").write_text(
+                json.dumps(
+                    {
+                        "round_id": "round-01",
+                        "decision": "keep",
+                        "objective": "stabilize release gate",
+                        "owner": "Technical Trinity",
+                        "baseline_label": "stable",
+                        "candidate": "tighten release follow-up loop",
+                        "decision_reason": ["keep only after all release gates pass"],
+                        "comparison": {
+                            "baseline": {"overall_passed": True, "evals_passed": 54, "evals_total": 54},
+                            "candidate": {"overall_passed": True, "evals_passed": 56, "evals_total": 56},
+                        },
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            with mock.patch.object(
+                release_gate.benchmark_runner,
+                "run_benchmark_suite",
+                return_value={
+                    "summary": {
+                        "tests_passed": True,
+                        "validator_passed": True,
+                        "evals_passed": True,
+                        "offline_drill_enabled": True,
+                        "offline_drill_passed": True,
+                        "overall_passed": True,
+                    },
+                    "json_report": str(benchmark_output),
+                    "markdown_report": str(benchmark_report),
+                    "offline_drill_run": {
+                        "markdown_report": str(output_dir / "offline-loop-drill-report.md"),
+                    },
+                },
+            ):
+                result = release_gate.run_release_gate(
+                    output_dir=output_dir,
+                    iteration_workspace=workspace,
+                    release_label="v4.20.0",
+                )
+
+            self.assertTrue(result["ok"])
+            self.assertEqual("ship", result["decision"])
+            self.assertEqual("closed", result["follow_up"]["loop_state"])
+            self.assertEqual("v4.20.0", result["follow_up"]["release_label"])
+            self.assertTrue(Path(result["follow_up"]["closure_json"]).exists())
+            self.assertTrue(Path(result["follow_up"]["closure_markdown"]).exists())
+            baseline_result = result["follow_up"]["baseline_registration"]
+            self.assertEqual("v4.20.0", baseline_result["label"])
+            self.assertTrue(Path(baseline_result["stored_report"]).exists())
+            sync_result = result["follow_up"]["distilled_pattern_sync"]
+            self.assertTrue(Path(sync_result["distilled_patterns"]).exists())
+            self.assertEqual(1, sync_result["kept_rounds"])
 
 
 if __name__ == "__main__":
