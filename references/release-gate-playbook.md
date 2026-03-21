@@ -14,6 +14,12 @@ When you want the release gate to close the loop into the iteration workspace au
 python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --release-label release-ready --pretty
 ```
 
+When you want `hold` to bootstrap and immediately execute the next bounded iteration loop:
+
+```bash
+python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --auto-run-next-iteration-on-hold --hold-loop-max-rounds 3 --pretty
+```
+
 ## What The Gate Requires
 
 - unit tests pass
@@ -39,6 +45,8 @@ The release gate is stricter:
 - offline drill markdown report
 - `next-iteration-brief.json` and markdown when the result is `hold`
 - `release-closure.json` and markdown when the result is `ship`
+- `iteration-plan.release-gate.json`, `open-loops.md`, and `iteration-context-chain.md` when `hold` bootstraps an iteration workspace
+- `repo-copy` plus blocker-specific remediation and target artifacts under `artifacts/release-gate-hold/` inside the copied repo when `hold` seeds the next self-mutation chain
 
 ## Decision Rule
 
@@ -48,3 +56,4 @@ The release gate is stricter:
 - `hold`
   - any gate failed
   - the gate should emit a next-iteration brief that states blockers, objective hints, evidence requirements, and the recommended rerun path back into bounded iteration
+  - if an iteration workspace is provided, the gate can bootstrap a runnable iteration plan, a blocker-specific mutation catalog, and a copied candidate repo, then optionally execute it immediately

@@ -1259,6 +1259,7 @@ def build_process_plan(
                     "python scripts/run_release_gate.py --output-dir evals/release-gate --pretty",
                     "python scripts/run_release_gate.py --output-dir evals/release-gate --previous-output evals/benchmark-results/benchmark-results.json --pretty",
                     "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --release-label release-ready --pretty",
+                    "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --auto-run-next-iteration-on-hold --hold-loop-max-rounds 3 --pretty",
                 ],
                 "decisions": ["ship", "hold"],
                 "artifacts": [
@@ -1266,6 +1267,7 @@ def build_process_plan(
                     "evals/release-gate/release-gate-report.md",
                     "evals/release-gate/next-iteration-brief.json",
                     "evals/release-gate/release-closure.json",
+                    ".skill-iterations/iteration-plan.release-gate.json",
                     "evals/release-gate/benchmark-results.json",
                     "evals/release-gate/benchmark-report.md",
                 ],

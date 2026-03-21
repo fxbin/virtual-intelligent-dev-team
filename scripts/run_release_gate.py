@@ -9,12 +9,14 @@ import json
 from datetime import datetime
 from pathlib import Path
 import re
+import shutil
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 BENCHMARK_SCRIPT = SCRIPT_DIR / "run_benchmarks.py"
 BASELINE_SCRIPT = SCRIPT_DIR / "register_benchmark_baseline.py"
+ITERATION_LOOP_SCRIPT = SCRIPT_DIR / "run_iteration_loop.py"
 SYNC_PATTERNS_SCRIPT = SCRIPT_DIR / "sync_distilled_patterns.py"
 DEFAULT_OUTPUT_DIR = SKILL_DIR / "evals" / "release-gate"
 DEFAULT_ITERATION_WORKSPACE = SKILL_DIR / ".skill-iterations"
@@ -32,6 +34,7 @@ def load_module(name: str, path: Path):
 
 benchmark_runner = load_module("virtual_team_release_gate_benchmark", BENCHMARK_SCRIPT)
 baseline_registry = load_module("virtual_team_release_gate_baseline_registry", BASELINE_SCRIPT)
+iteration_loop = load_module("virtual_team_release_gate_iteration_loop", ITERATION_LOOP_SCRIPT)
 pattern_sync = load_module("virtual_team_release_gate_pattern_sync", SYNC_PATTERNS_SCRIPT)
 
 
@@ -39,6 +42,11 @@ def write_json(path: Path, payload: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as file:
         json.dump(payload, file, ensure_ascii=False, indent=2)
+
+
+def write_text(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
 
 
 def blocker_specs(summary: dict[str, object]) -> list[dict[str, object]]:
@@ -87,15 +95,852 @@ def normalize_label(label: str, default: str) -> str:
     return normalized or default
 
 
+def compact_text(value: object, limit: int = 180) -> str:
+    text = " ".join(str(value).split())
+    if limit <= 0 or len(text) <= limit:
+        return text
+    return text[: max(limit - 1, 1)].rstrip() + "…"
+
+
+def unique_compact_values(values: list[object], *, limit: int = 180) -> list[str]:
+    items: list[str] = []
+    seen: set[str] = set()
+    for raw in values:
+        text = compact_text(raw, limit=limit).strip()
+        if text == "" or text in seen:
+            continue
+        seen.add(text)
+        items.append(text)
+    return items
+
+
+def output_excerpt(run_payload: object, max_lines: int = 6) -> list[str]:
+    if not isinstance(run_payload, dict):
+        return []
+    lines: list[str] = []
+    for key in ("stdout", "stderr"):
+        content = str(run_payload.get(key, "")).strip()
+        if content == "":
+            continue
+        for raw in content.splitlines():
+            line = compact_text(raw, limit=220).strip()
+            if line == "":
+                continue
+            lines.append(line)
+            if len(lines) >= max_lines:
+                return lines
+    return lines
+
+
+def build_benchmark_context(benchmark_result: dict[str, object]) -> dict[str, object]:
+    test_run = benchmark_result.get("test_run", {})
+    validator_run = benchmark_result.get("validator_run", {})
+    eval_run = benchmark_result.get("eval_run", {})
+    offline_drill_run = benchmark_result.get("offline_drill_run", {})
+
+    failed_cases: list[dict[str, object]] = []
+    raw_cases = eval_run.get("cases", []) if isinstance(eval_run, dict) else []
+    if isinstance(raw_cases, list):
+        for item in raw_cases:
+            if not isinstance(item, dict) or bool(item.get("passed", False)):
+                continue
+            raw_tags = item.get("tags", [])
+            raw_failures = item.get("failures", [])
+            failed_cases.append(
+                {
+                    "id": item.get("id"),
+                    "prompt": compact_text(item.get("prompt", ""), limit=160),
+                    "tags": unique_compact_values(
+                        raw_tags if isinstance(raw_tags, list) else [],
+                        limit=48,
+                    ),
+                    "failures": unique_compact_values(
+                        raw_failures if isinstance(raw_failures, list) else [],
+                        limit=180,
+                    )[:3],
+                }
+            )
+
+    eval_passed = None
+    if isinstance(eval_run, dict):
+        eval_passed = int(eval_run.get("passed", 0)) == int(eval_run.get("total", 0))
+
+    return {
+        "unit_tests": {
+            "passed": bool(test_run.get("passed")) if isinstance(test_run, dict) else None,
+            "command": "python -m unittest virtual-intelligent-dev-team/tests/test_routing_and_guardrails.py",
+            "output_excerpt": output_excerpt(test_run),
+        },
+        "semantic_regression": {
+            "passed": bool(validator_run.get("passed")) if isinstance(validator_run, dict) else None,
+            "command": "python scripts/validate_virtual_team.py --pretty",
+            "output_excerpt": output_excerpt(validator_run),
+        },
+        "eval_suite": {
+            "passed": eval_passed,
+            "command": "python scripts/run_benchmarks.py --output-dir evals/benchmark-results --pretty",
+            "failed_cases": failed_cases[:5],
+        },
+        "offline_loop_drill": {
+            "enabled": "offline_drill_run" in benchmark_result,
+            "passed": bool(offline_drill_run.get("ok")) if isinstance(offline_drill_run, dict) else None,
+            "command": "python scripts/run_offline_loop_drill.py --workspace .tmp-offline-loop-drill --pretty",
+            "markdown_report": (
+                str(offline_drill_run.get("markdown_report", "")).strip()
+                if isinstance(offline_drill_run, dict)
+                else ""
+            )
+            or None,
+        },
+    }
+
+
+def blocker_profile(blocker_id: str) -> dict[str, object]:
+    profiles: dict[str, dict[str, object]] = {
+        "unit-tests": {
+            "focus": "repair deterministic unit-test regressions in release gate and iteration bootstrap flow",
+            "target_files": [
+                "tests/test_routing_and_guardrails.py",
+                "scripts/run_release_gate.py",
+                "references/release-gate-playbook.md",
+                "SKILL.md",
+            ],
+            "preferred_mutation_ops": ["replace_text", "insert_after", "write_file"],
+            "acceptance_commands": [
+                "python -m unittest virtual-intelligent-dev-team/tests/test_routing_and_guardrails.py",
+                "python scripts/run_release_gate.py --output-dir evals/release-gate --pretty",
+            ],
+        },
+        "semantic-regression": {
+            "focus": "repair routing semantics and validator expectations so the release gate contract becomes valid again",
+            "target_files": [
+                "scripts/route_request.py",
+                "references/routing-rules.json",
+                "references/regression-cases.json",
+                "scripts/validate_virtual_team.py",
+                "tests/test_routing_and_guardrails.py",
+            ],
+            "preferred_mutation_ops": ["json_set", "json_merge", "json_append_unique", "replace_text"],
+            "acceptance_commands": [
+                "python scripts/validate_virtual_team.py --pretty",
+                "python scripts/run_benchmarks.py --output-dir evals/benchmark-results --pretty",
+            ],
+        },
+        "eval-suite": {
+            "focus": "repair failing eval prompts, routing expectations, and regression coverage without creating benchmark drift",
+            "target_files": [
+                "evals/evals.json",
+                "references/regression-cases.json",
+                "references/routing-rules.json",
+                "scripts/route_request.py",
+                "tests/test_routing_and_guardrails.py",
+            ],
+            "preferred_mutation_ops": ["json_append_unique", "json_set", "json_merge", "replace_text"],
+            "acceptance_commands": [
+                "python scripts/run_benchmarks.py --output-dir evals/benchmark-results --pretty",
+                "python scripts/run_release_gate.py --output-dir evals/release-gate --pretty",
+            ],
+        },
+        "offline-loop-drill": {
+            "focus": "repair rollback, pivot, resume, and state-sync behavior in the offline bounded iteration drill",
+            "target_files": [
+                "scripts/run_offline_loop_drill.py",
+                "scripts/run_iteration_loop.py",
+                "scripts/run_iteration_cycle.py",
+                "references/offline-loop-drill-playbook.md",
+                "references/rollback-and-stop-rules.md",
+                "tests/test_routing_and_guardrails.py",
+            ],
+            "preferred_mutation_ops": ["replace_text", "insert_after", "json_set", "write_file"],
+            "acceptance_commands": [
+                "python scripts/run_offline_loop_drill.py --workspace .tmp-offline-loop-drill --pretty",
+                "python scripts/run_release_gate.py --output-dir evals/release-gate --pretty",
+            ],
+        },
+    }
+    return profiles.get(
+        blocker_id,
+        {
+            "focus": "capture blocker-aware release gate remediation context",
+            "target_files": [
+                "scripts/run_release_gate.py",
+                "references/release-gate-playbook.md",
+                "SKILL.md",
+            ],
+            "preferred_mutation_ops": ["write_file"],
+            "acceptance_commands": [
+                "python scripts/run_release_gate.py --output-dir evals/release-gate --pretty",
+            ],
+        },
+    )
+
+
+def blocker_target_files(blockers: list[dict[str, object]]) -> list[str]:
+    targets: list[str] = []
+
+    def add(*paths: str) -> None:
+        for path in paths:
+            if path not in targets:
+                targets.append(path)
+
+    add("scripts/run_release_gate.py", "references/release-gate-playbook.md", "SKILL.md")
+    for item in blockers:
+        if not isinstance(item, dict):
+            continue
+        blocker_id = str(item.get("id", "")).strip()
+        profile = blocker_profile(blocker_id)
+        add(*[str(path) for path in profile.get("target_files", [])])
+    return targets
+
+
+def blocker_focus(blocker: dict[str, object], brief: dict[str, object]) -> str:
+    blocker_id = str(blocker.get("id", "")).strip()
+    profile = blocker_profile(blocker_id)
+    hint = str(blocker.get("objective_hint", "")).strip()
+    label = str(blocker.get("label", "")).strip()
+    reason = str(brief.get("reason", "")).strip()
+    for candidate in [hint, str(profile.get("focus", "")).strip(), label, reason]:
+        if candidate != "":
+            return candidate
+    return "capture blocker-aware release gate remediation context"
+
+
+def blocker_acceptance_commands(blocker: dict[str, object]) -> list[str]:
+    blocker_id = str(blocker.get("id", "")).strip()
+    profile = blocker_profile(blocker_id)
+    raw_commands: list[object] = []
+    evidence_required = str(blocker.get("evidence_required", "")).strip()
+    if evidence_required != "":
+        raw_commands.append(evidence_required)
+    acceptance_commands = profile.get("acceptance_commands", [])
+    if isinstance(acceptance_commands, list):
+        raw_commands.extend(acceptance_commands)
+    return unique_compact_values(raw_commands, limit=200)
+
+
+def blocker_preferred_mutation_ops(blocker: dict[str, object]) -> list[str]:
+    blocker_id = str(blocker.get("id", "")).strip()
+    profile = blocker_profile(blocker_id)
+    raw_ops = profile.get("preferred_mutation_ops", [])
+    return unique_compact_values(raw_ops if isinstance(raw_ops, list) else [], limit=64)
+
+
+def blocker_evidence_snapshot(blocker: dict[str, object], brief: dict[str, object]) -> dict[str, object]:
+    benchmark_context = brief.get("benchmark_context", {})
+    if not isinstance(benchmark_context, dict):
+        benchmark_context = {}
+    blocker_id = str(blocker.get("id", "")).strip()
+
+    if blocker_id == "unit-tests":
+        payload = benchmark_context.get("unit_tests", {})
+        return payload if isinstance(payload, dict) else {}
+    if blocker_id == "semantic-regression":
+        payload = benchmark_context.get("semantic_regression", {})
+        return payload if isinstance(payload, dict) else {}
+    if blocker_id == "eval-suite":
+        payload = benchmark_context.get("eval_suite", {})
+        return payload if isinstance(payload, dict) else {}
+    if blocker_id == "offline-loop-drill":
+        payload = benchmark_context.get("offline_loop_drill", {})
+        return payload if isinstance(payload, dict) else {}
+    return {}
+
+
+def blocker_catalog_keywords(blocker: dict[str, object], brief: dict[str, object]) -> list[str]:
+    profile = blocker_profile(str(blocker.get("id", "")).strip())
+    evidence = blocker_evidence_snapshot(blocker, brief)
+    raw_keywords: list[object] = [
+        blocker.get("id", ""),
+        blocker.get("label", ""),
+        blocker.get("objective_hint", ""),
+        blocker.get("evidence_required", ""),
+        profile.get("focus", ""),
+        "release gate",
+        "hold",
+        "ship",
+        "发布",
+        "发版",
+    ]
+    if isinstance(evidence, dict):
+        output_excerpt_payload = evidence.get("output_excerpt", [])
+        if isinstance(output_excerpt_payload, list):
+            raw_keywords.extend(output_excerpt_payload[:3])
+        failed_cases = evidence.get("failed_cases", [])
+        if isinstance(failed_cases, list):
+            for item in failed_cases[:4]:
+                if not isinstance(item, dict):
+                    continue
+                raw_keywords.extend(
+                    [
+                        item.get("id", ""),
+                        item.get("prompt", ""),
+                    ]
+                )
+                tags = item.get("tags", [])
+                failures = item.get("failures", [])
+                if isinstance(tags, list):
+                    raw_keywords.extend(tags[:4])
+                if isinstance(failures, list):
+                    raw_keywords.extend(failures[:2])
+    return unique_compact_values(raw_keywords, limit=120)
+
+
+def render_hold_benchmark_signals(brief: dict[str, object]) -> list[str]:
+    benchmark_context = brief.get("benchmark_context", {})
+    if not isinstance(benchmark_context, dict) or len(benchmark_context) == 0:
+        return []
+
+    lines = [
+        "## Benchmark Signals",
+        "",
+    ]
+
+    unit_tests = benchmark_context.get("unit_tests", {})
+    if isinstance(unit_tests, dict):
+        lines.append(f"- Unit tests passed: `{unit_tests.get('passed')}`")
+        excerpts = unit_tests.get("output_excerpt", [])
+        if isinstance(excerpts, list):
+            lines.extend([f"  - {item}" for item in excerpts[:3]])
+
+    semantic_regression = benchmark_context.get("semantic_regression", {})
+    if isinstance(semantic_regression, dict):
+        lines.append(f"- Semantic regression passed: `{semantic_regression.get('passed')}`")
+        excerpts = semantic_regression.get("output_excerpt", [])
+        if isinstance(excerpts, list):
+            lines.extend([f"  - {item}" for item in excerpts[:3]])
+
+    eval_suite = benchmark_context.get("eval_suite", {})
+    if isinstance(eval_suite, dict):
+        lines.append(f"- Eval suite passed: `{eval_suite.get('passed')}`")
+        failed_cases = eval_suite.get("failed_cases", [])
+        if isinstance(failed_cases, list):
+            for item in failed_cases[:3]:
+                if not isinstance(item, dict):
+                    continue
+                lines.append(f"  - eval#{item.get('id')}: {item.get('prompt')}")
+
+    offline_loop_drill = benchmark_context.get("offline_loop_drill", {})
+    if isinstance(offline_loop_drill, dict) and offline_loop_drill.get("enabled") is not None:
+        lines.append(f"- Offline loop drill passed: `{offline_loop_drill.get('passed')}`")
+        report = str(offline_loop_drill.get("markdown_report", "")).strip()
+        if report != "":
+            lines.append(f"  - report: `{report}`")
+
+    lines.append("")
+    return lines
+
+
+def render_hold_diagnosis_content(brief: dict[str, object]) -> str:
+    blockers = brief.get("blockers", [])
+    if not isinstance(blockers, list):
+        blockers = []
+    lines = [
+        "# Release Gate Hold Diagnosis",
+        "",
+        f"- Objective: {brief.get('objective', '')}",
+        f"- Reason: {brief.get('reason', '')}",
+        f"- Owner: {brief.get('owner', '')}",
+        "",
+        "## Blockers",
+        "",
+    ]
+    if blockers:
+        for item in blockers:
+            if not isinstance(item, dict):
+                continue
+            lines.append(f"- {item.get('label', 'unclassified blocker')}")
+            hint = str(item.get("objective_hint", "")).strip()
+            evidence = str(item.get("evidence_required", "")).strip()
+            if hint:
+                lines.append(f"  - Objective hint: {hint}")
+            if evidence:
+                lines.append(f"  - Evidence required: `{evidence}`")
+    else:
+        lines.append(f"- {brief.get('reason', 'release gate hold')}")
+    lines.extend(render_hold_benchmark_signals(brief))
+    lines.extend(
+        [
+            "",
+            "## Current Focus",
+            "",
+            "- {focus}",
+            "",
+            "## Generation Context",
+            "",
+            "- Round: {round_id}",
+            "- Hypothesis key: {hypothesis_key}",
+            "- Generation reason: {generation_reason}",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def render_hold_targets_content(brief: dict[str, object]) -> str:
+    blockers = brief.get("blockers", [])
+    if not isinstance(blockers, list):
+        blockers = []
+    preferred_ops = unique_compact_values(
+        [
+            op
+            for item in blockers
+            if isinstance(item, dict)
+            for op in blocker_preferred_mutation_ops(item)
+        ],
+        limit=64,
+    )
+    payload = {
+        "source_gate": "release-gate",
+        "objective": brief.get("objective", ""),
+        "reason": brief.get("reason", ""),
+        "recommended_focus": "{focus}",
+        "round_id": "{round_id}",
+        "hypothesis_key": "{hypothesis_key}",
+        "generation_reason": "{generation_reason}",
+        "blocker_ids": [
+            str(item.get("id", "")).strip()
+            for item in blockers
+            if isinstance(item, dict) and str(item.get("id", "")).strip() != ""
+        ],
+        "primary_blocker": (
+            str(blockers[0].get("id", "")).strip()
+            if blockers and isinstance(blockers[0], dict)
+            else None
+        ),
+        "target_files": blocker_target_files(blockers),
+        "preferred_mutation_ops": preferred_ops,
+        "required_evidence": unique_compact_values(
+            brief.get("required_evidence", []) if isinstance(brief.get("required_evidence"), list) else [],
+            limit=200,
+        ),
+    }
+    return json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
+
+
+def render_blocker_remediation_content(brief: dict[str, object], blocker: dict[str, object]) -> str:
+    label = str(blocker.get("label", "unclassified blocker")).strip() or "unclassified blocker"
+    blocker_id = str(blocker.get("id", "")).strip() or "release-gate-hold"
+    focus = blocker_focus(blocker, brief)
+    target_files = blocker_target_files([blocker])
+    acceptance_commands = blocker_acceptance_commands(blocker)
+    preferred_ops = blocker_preferred_mutation_ops(blocker)
+    evidence = blocker_evidence_snapshot(blocker, brief)
+
+    lines = [
+        f"# Release Gate Hold Remediation — {label}",
+        "",
+        f"- Blocker ID: `{blocker_id}`",
+        f"- Objective: {brief.get('objective', '')}",
+        f"- Focus: {focus}",
+        "",
+        "## Target Files",
+        "",
+    ]
+    lines.extend([f"- `{path}`" for path in target_files] or ["- None captured."])
+    lines.extend(["", "## Preferred Mutation Ops", ""])
+    lines.extend([f"- `{item}`" for item in preferred_ops] or ["- `write_file`"])
+    lines.extend(["", "## Acceptance Commands", ""])
+    lines.extend([f"- `{item}`" for item in acceptance_commands] or ["- None recorded."])
+    lines.extend(["", "## Evidence Snapshot", ""])
+
+    output_excerpt_payload = evidence.get("output_excerpt", []) if isinstance(evidence, dict) else []
+    if isinstance(output_excerpt_payload, list) and output_excerpt_payload:
+        lines.extend([f"- {item}" for item in output_excerpt_payload[:5]])
+
+    failed_cases = evidence.get("failed_cases", []) if isinstance(evidence, dict) else []
+    if isinstance(failed_cases, list) and failed_cases:
+        for item in failed_cases[:4]:
+            if not isinstance(item, dict):
+                continue
+            lines.append(f"- eval#{item.get('id')}: {item.get('prompt')}")
+            tags = item.get("tags", [])
+            failures = item.get("failures", [])
+            if isinstance(tags, list) and tags:
+                lines.append(f"  - tags: {', '.join(str(tag) for tag in tags)}")
+            if isinstance(failures, list):
+                lines.extend([f"  - failure: {detail}" for detail in failures[:2]])
+
+    if (
+        not isinstance(output_excerpt_payload, list) or len(output_excerpt_payload) == 0
+    ) and (not isinstance(failed_cases, list) or len(failed_cases) == 0):
+        report = evidence.get("markdown_report") if isinstance(evidence, dict) else None
+        if report:
+            lines.append(f"- markdown report: `{report}`")
+        else:
+            lines.append("- No benchmark evidence excerpt captured.")
+
+    lines.extend(
+        [
+            "",
+            "## Generation Context",
+            "",
+            "- Round: {round_id}",
+            "- Hypothesis key: {hypothesis_key}",
+            "- Generation reason: {generation_reason}",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def render_blocker_targets_content(brief: dict[str, object], blocker: dict[str, object]) -> str:
+    blocker_id = str(blocker.get("id", "")).strip() or "release-gate-hold"
+    payload = {
+        "source_gate": "release-gate",
+        "objective": brief.get("objective", ""),
+        "reason": brief.get("reason", ""),
+        "blocker_id": blocker_id,
+        "blocker_label": str(blocker.get("label", "")).strip(),
+        "recommended_focus": blocker_focus(blocker, brief),
+        "round_id": "{round_id}",
+        "hypothesis_key": "{hypothesis_key}",
+        "generation_reason": "{generation_reason}",
+        "target_files": blocker_target_files([blocker]),
+        "preferred_mutation_ops": blocker_preferred_mutation_ops(blocker),
+        "acceptance_commands": blocker_acceptance_commands(blocker),
+        "evidence_snapshot": blocker_evidence_snapshot(blocker, brief),
+    }
+    return json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
+
+
+def build_blocker_mutation_plan(
+    brief: dict[str, object],
+    blocker: dict[str, object],
+    *,
+    include_global: bool,
+) -> dict[str, object]:
+    blocker_slug = normalize_label(
+        str(blocker.get("id", "")).strip() or str(blocker.get("label", "")).strip(),
+        "release-gate-hold",
+    )
+    operations: list[dict[str, object]] = []
+    if include_global:
+        operations.extend(
+            [
+                {
+                    "op": "write_file",
+                    "path": "artifacts/release-gate-hold/{round_id}-diagnosis.md",
+                    "content": render_hold_diagnosis_content(brief),
+                },
+                {
+                    "op": "write_file",
+                    "path": "artifacts/release-gate-hold/{round_id}-targets.json",
+                    "content": render_hold_targets_content(brief),
+                },
+            ]
+        )
+    operations.extend(
+        [
+            {
+                "op": "write_file",
+                "path": f"artifacts/release-gate-hold/{{round_id}}-{blocker_slug}-remediation.md",
+                "content": render_blocker_remediation_content(brief, blocker),
+            },
+            {
+                "op": "write_file",
+                "path": f"artifacts/release-gate-hold/{{round_id}}-{blocker_slug}-targets.json",
+                "content": render_blocker_targets_content(brief, blocker),
+            },
+        ]
+    )
+    return {
+        "mode": "patch",
+        "operations": operations,
+    }
+
+
+def build_hold_seed_candidate(brief: dict[str, object]) -> dict[str, object]:
+    blockers = brief.get("blockers", [])
+    if not isinstance(blockers, list):
+        blockers = []
+    primary_blocker = blockers[0] if blockers and isinstance(blockers[0], dict) else None
+    first_label = str(primary_blocker.get("label", "")).strip() if primary_blocker else ""
+    first_id = str(primary_blocker.get("id", "")).strip() if primary_blocker else ""
+    focus = blocker_focus(primary_blocker, brief) if primary_blocker else "capture blocker-aware release gate remediation context"
+    candidate_text = (
+        f"bootstrap a blocker-specific remediation candidate for {first_label}"
+        if first_label
+        else "capture a blocker-aware remediation scaffold for the current release gate hold"
+    )
+    return {
+        "round_id": "round-01",
+        "owner": str(brief.get("owner", "Technical Trinity")).strip() or "Technical Trinity",
+        "candidate": candidate_text,
+        "hypothesis_key": normalize_label(first_id or first_label or "release-gate-hold", "release-gate-hold"),
+        "mutation_focus": focus,
+        "mutation_plan_source": f"release-gate:{first_id or 'hold'}",
+        "mutation_plan": (
+            build_blocker_mutation_plan(brief, primary_blocker, include_global=True)
+            if primary_blocker is not None
+            else {
+                "mode": "patch",
+                "operations": [
+                    {
+                        "op": "write_file",
+                        "path": "artifacts/release-gate-hold/{round_id}-diagnosis.md",
+                        "content": render_hold_diagnosis_content(brief),
+                    },
+                    {
+                        "op": "write_file",
+                        "path": "artifacts/release-gate-hold/{round_id}-targets.json",
+                        "content": render_hold_targets_content(brief),
+                    },
+                ],
+            }
+        ),
+        "promote_label": "accepted-round-01",
+    }
+
+
+def build_hold_mutation_catalog(brief: dict[str, object]) -> list[dict[str, object]]:
+    blockers = brief.get("blockers", [])
+    if not isinstance(blockers, list):
+        blockers = []
+    catalog: list[dict[str, object]] = []
+    for index, item in enumerate(blockers):
+        if not isinstance(item, dict):
+            continue
+        blocker_id = str(item.get("id", "")).strip()
+        if blocker_id == "":
+            continue
+        catalog.append(
+            {
+                "id": f"release-gate-{blocker_id}-remediation",
+                "priority": max(40 - index * 5, 15),
+                "when_any_keywords": blocker_catalog_keywords(item, brief),
+                "mutation_plan": build_blocker_mutation_plan(brief, item, include_global=True),
+            }
+        )
+
+    blocker_keywords = unique_compact_values(
+        [
+            str(item.get("label", "")).lower()
+            for item in blockers
+            if isinstance(item, dict) and str(item.get("label", "")).strip() != ""
+        ]
+        + [
+            str(item.get("id", "")).lower()
+            for item in blockers
+            if isinstance(item, dict) and str(item.get("id", "")).strip() != ""
+        ]
+        + ["release gate", "ship", "hold", "发布", "发版"],
+        limit=120,
+    )
+    catalog.append(
+        {
+            "id": "release-gate-hold-diagnosis-refresh",
+            "priority": 10,
+            "when_any_keywords": blocker_keywords,
+            "mutation_plan": {
+                "mode": "patch",
+                "operations": [
+                    {
+                        "op": "write_file",
+                        "path": "artifacts/release-gate-hold/{round_id}-diagnosis.md",
+                        "content": render_hold_diagnosis_content(brief),
+                    },
+                    {
+                        "op": "write_file",
+                        "path": "artifacts/release-gate-hold/{round_id}-targets.json",
+                        "content": render_hold_targets_content(brief),
+                    },
+                ],
+            },
+        }
+    )
+    return catalog
+
+
+def copy_skill_snapshot(candidate_repo: Path) -> Path:
+    if candidate_repo.exists():
+        shutil.rmtree(candidate_repo)
+    ignore = shutil.ignore_patterns(
+        "__pycache__",
+        "*.pyc",
+        ".tmp-*",
+        "evals/benchmark-results",
+        "evals/release-gate",
+        ".skill-iterations",
+    )
+    shutil.copytree(SKILL_DIR, candidate_repo, ignore=ignore)
+    return candidate_repo
+
+
+def render_hold_open_loops(brief: dict[str, object]) -> str:
+    blockers = brief.get("blockers", [])
+    if not isinstance(blockers, list):
+        blockers = []
+    objective_hints = brief.get("objective_hints", [])
+    if not isinstance(objective_hints, list):
+        objective_hints = []
+    lines = [
+        "# Open Loops",
+        "",
+        "## Active",
+        "",
+    ]
+    if blockers:
+        for item in blockers:
+            if not isinstance(item, dict):
+                continue
+            lines.append(f"- [release-gate] {item.get('label', 'unclassified blocker')}")
+            hint = str(item.get("objective_hint", "")).strip()
+            if hint:
+                lines.append(f"  - hint: {hint}")
+    else:
+        lines.append(f"- [release-gate] {brief.get('reason', 'release gate hold')}")
+    if objective_hints:
+        lines.extend(["", "## Objective Hints", ""])
+        lines.extend([f"- {str(item)}" for item in objective_hints if str(item).strip() != ""])
+    lines.extend(["", "## Recently Resolved", "", "- None yet.", ""])
+    return "\n".join(lines)
+
+
+def render_hold_context_chain(brief: dict[str, object], brief_json_path: Path) -> str:
+    blockers = brief.get("blockers", [])
+    if not isinstance(blockers, list):
+        blockers = []
+    objective_hints = brief.get("objective_hints", [])
+    if not isinstance(objective_hints, list):
+        objective_hints = []
+    lines = [
+        "# Iteration Context Chain",
+        "",
+        "Use this compact history to choose the next round candidate.",
+        "",
+        "## Release Gate Hold",
+        "",
+        f"- Objective: {brief.get('objective', '')}",
+        f"- Reason: {brief.get('reason', '')}",
+        f"- Brief JSON: `{brief_json_path}`",
+        "",
+        "### Blockers",
+        "",
+    ]
+    if blockers:
+        for item in blockers:
+            if isinstance(item, dict):
+                lines.append(f"- {item.get('label', 'unclassified blocker')}")
+    else:
+        lines.append(f"- {brief.get('reason', 'release gate hold')}")
+    if objective_hints:
+        lines.extend(["", "### Objective Hints", ""])
+        lines.extend([f"- {str(item)}" for item in objective_hints if str(item).strip() != ""])
+    lines.append("")
+    return "\n".join(lines)
+
+
+def build_hold_iteration_plan(
+    *,
+    workspace: Path,
+    brief: dict[str, object],
+    baseline_label: str,
+    max_rounds: int,
+) -> dict[str, object]:
+    return {
+        "owner": str(brief.get("owner", "Technical Trinity")).strip() or "Technical Trinity",
+        "objective": str(brief.get("objective", "recover release readiness")).strip()
+        or "recover release readiness",
+        "baseline_label": baseline_label,
+        "autonomous_candidate_generation": True,
+        "candidate_repo_template": "./repo-copy",
+        "candidate_patch_template": "./patches/{round_id}.patch",
+        "candidate_brief_template": "./candidate-briefs/{round_id}.json",
+        "candidate_output_dir_template": "./runs/{round_id}",
+        "auto_apply_rollback": True,
+        "loop_policy": {
+            "max_rounds": max(max_rounds, 1),
+            "max_same_hypothesis_retries": 2,
+            "max_consecutive_non_keep_rounds": 2,
+            "auto_pivot_on_stagnation": True,
+            "advance_baseline_on_keep": True,
+            "halt_on_decisions": ["stop"],
+            "sync_patterns_at_end": True,
+        },
+        "benchmark_command_template": "python scripts/run_benchmarks.py --output-dir {output_dir} --pretty",
+        "mutation_catalog": build_hold_mutation_catalog(brief),
+        "candidates": [build_hold_seed_candidate(brief)],
+        "generated_from_release_gate": {
+            "source": "release-gate",
+            "workspace": str(workspace),
+            "reason": str(brief.get("reason", "")),
+        },
+    }
+
+
+def bootstrap_hold_iteration_workspace(
+    *,
+    output_dir: Path,
+    iteration_workspace: Path,
+    brief: dict[str, object],
+    benchmark_json: Path,
+    auto_run_next_iteration_on_hold: bool,
+    hold_loop_max_rounds: int,
+) -> dict[str, object]:
+    iteration_workspace.mkdir(parents=True, exist_ok=True)
+    baseline_label = str(brief.get("baseline_label_suggestion", "stable")).strip() or "stable"
+    candidate_repo = copy_skill_snapshot(iteration_workspace / "repo-copy")
+    baseline_result = baseline_registry.register_baseline(
+        workspace=iteration_workspace,
+        label=baseline_label,
+        report_path=benchmark_json,
+        notes="release gate hold: bootstrap baseline for the next bounded iteration",
+    )
+    plan_path = iteration_workspace / "iteration-plan.release-gate.json"
+    plan_payload = build_hold_iteration_plan(
+        workspace=iteration_workspace,
+        brief=brief,
+        baseline_label=baseline_label,
+        max_rounds=hold_loop_max_rounds,
+    )
+    write_json(plan_path, plan_payload)
+    brief_json_path = output_dir / "next-iteration-brief.json"
+    open_loops_path = iteration_workspace / "open-loops.md"
+    context_chain_path = iteration_workspace / "iteration-context-chain.md"
+    write_text(open_loops_path, render_hold_open_loops(brief))
+    write_text(context_chain_path, render_hold_context_chain(brief, brief_json_path=brief_json_path))
+    sync_result = pattern_sync.sync_patterns(iteration_workspace)
+
+    result: dict[str, object] = {
+        "workspace": str(iteration_workspace),
+        "candidate_repo": str(candidate_repo),
+        "plan_json": str(plan_path),
+        "open_loops": str(open_loops_path),
+        "iteration_context_chain": str(context_chain_path),
+        "baseline_registration": baseline_result,
+        "distilled_pattern_sync": sync_result,
+        "recommended_command": f"python scripts/run_iteration_loop.py --workspace {iteration_workspace} --plan {plan_path} --pretty",
+    }
+    if auto_run_next_iteration_on_hold:
+        try:
+            auto_result = iteration_loop.run_loop(
+                workspace=iteration_workspace,
+                plan_path=plan_path,
+            )
+            result["auto_iteration"] = {
+                "status": "completed",
+                "result": auto_result,
+            }
+        except Exception as exc:
+            result["auto_iteration"] = {
+                "status": "failed",
+                "error": str(exc),
+            }
+    return result
+
+
 def build_hold_follow_up(
     *,
     output_dir: Path,
+    benchmark_result: dict[str, object],
     summary: dict[str, object],
     reason: str,
     benchmark_json: str,
     benchmark_markdown: str,
     offline_drill_report: str | None,
     iteration_workspace: Path | None,
+    auto_run_next_iteration_on_hold: bool,
+    hold_loop_max_rounds: int,
 ) -> dict[str, object]:
     blockers = blocker_specs(summary)
     workspace = iteration_workspace or DEFAULT_ITERATION_WORKSPACE
@@ -116,6 +961,7 @@ def build_hold_follow_up(
         "objective": objective,
         "objective_hints": objective_hints or ["按失败门禁逐项修复后再重新验收"],
         "blockers": blockers,
+        "benchmark_context": build_benchmark_context(benchmark_result),
         "baseline_report": benchmark_json,
         "baseline_markdown": benchmark_markdown,
         "offline_drill_report": offline_drill_report,
@@ -176,7 +1022,7 @@ def build_hold_follow_up(
         ]
     )
     markdown_path.write_text("\n".join(markdown_lines), encoding="utf-8")
-    return {
+    result = {
         "loop_state": "reopened",
         "next_action": "bounded-iteration",
         "blockers": blocker_labels,
@@ -184,6 +1030,16 @@ def build_hold_follow_up(
         "brief_markdown": str(markdown_path),
         "iteration_workspace": str(workspace),
     }
+    if iteration_workspace is not None:
+        result["bootstrap"] = bootstrap_hold_iteration_workspace(
+            output_dir=output_dir,
+            iteration_workspace=iteration_workspace,
+            brief=brief,
+            benchmark_json=Path(benchmark_json).resolve(),
+            auto_run_next_iteration_on_hold=auto_run_next_iteration_on_hold,
+            hold_loop_max_rounds=hold_loop_max_rounds,
+        )
+    return result
 
 
 def build_ship_follow_up(
@@ -313,6 +1169,10 @@ def render_markdown(result: dict[str, object]) -> str:
         if "brief_json" in follow_up:
             lines.append(f"- Next iteration brief JSON: `{follow_up['brief_json']}`")
             lines.append(f"- Next iteration brief Markdown: `{follow_up['brief_markdown']}`")
+        bootstrap = follow_up.get("bootstrap")
+        if isinstance(bootstrap, dict):
+            lines.append(f"- Hold bootstrap plan: `{bootstrap.get('plan_json')}`")
+            lines.append(f"- Hold bootstrap workspace: `{bootstrap.get('workspace')}`")
         if "closure_json" in follow_up:
             lines.append(f"- Release closure JSON: `{follow_up['closure_json']}`")
             lines.append(f"- Release closure Markdown: `{follow_up['closure_markdown']}`")
@@ -327,6 +1187,8 @@ def run_release_gate(
     offline_drill_workspace: Path | None = None,
     iteration_workspace: Path | None = None,
     release_label: str = "",
+    auto_run_next_iteration_on_hold: bool = False,
+    hold_loop_max_rounds: int = 3,
 ) -> dict[str, object]:
     output_dir.mkdir(parents=True, exist_ok=True)
     benchmark_result = benchmark_runner.run_benchmark_suite(
@@ -360,12 +1222,15 @@ def run_release_gate(
         if ok
         else build_hold_follow_up(
             output_dir=output_dir,
+            benchmark_result=benchmark_result,
             summary=summary,
             reason=reason,
             benchmark_json=benchmark_result["json_report"],
             benchmark_markdown=benchmark_result["markdown_report"],
             offline_drill_report=benchmark_result.get("offline_drill_run", {}).get("markdown_report"),
             iteration_workspace=iteration_workspace.resolve() if iteration_workspace else None,
+            auto_run_next_iteration_on_hold=auto_run_next_iteration_on_hold,
+            hold_loop_max_rounds=hold_loop_max_rounds,
         )
     )
 
@@ -400,6 +1265,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--offline-drill-workspace", help="Workspace root for offline drill artifacts")
     parser.add_argument("--iteration-workspace", help="Iteration workspace for follow-up closure artifacts")
     parser.add_argument("--release-label", default="", help="Release-ready baseline label when ship")
+    parser.add_argument(
+        "--auto-run-next-iteration-on-hold",
+        action="store_true",
+        help="When hold and iteration workspace is provided, bootstrap and execute the next bounded iteration loop",
+    )
+    parser.add_argument(
+        "--hold-loop-max-rounds",
+        type=int,
+        default=3,
+        help="Max rounds for hold bootstrap iteration plan",
+    )
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON summary to stdout")
     return parser.parse_args()
 
@@ -412,6 +1288,8 @@ def main() -> None:
         offline_drill_workspace=Path(args.offline_drill_workspace).resolve() if args.offline_drill_workspace else None,
         iteration_workspace=Path(args.iteration_workspace).resolve() if args.iteration_workspace else None,
         release_label=args.release_label,
+        auto_run_next_iteration_on_hold=args.auto_run_next_iteration_on_hold,
+        hold_loop_max_rounds=args.hold_loop_max_rounds,
     )
     stdout_payload = {
         "ok": result["ok"],

@@ -289,6 +289,10 @@ class RoutingTests(unittest.TestCase):
             "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --release-label release-ready --pretty",
             commands,
         )
+        self.assertIn(
+            "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --auto-run-next-iteration-on-hold --hold-loop-max-rounds 3 --pretty",
+            commands,
+        )
 
     def test_rebase_conflict_adds_sentinel_assistant(self) -> None:
         result = route_request.route_request(
@@ -3265,7 +3269,223 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
             self.assertEqual("reopened", brief["loop_state"])
             self.assertEqual("Technical Trinity", brief["owner"])
             self.assertIn("unit tests failed", " ".join(brief["blockers"][0]["label"] for _ in [0]))
+            self.assertIn("benchmark_context", brief)
+            self.assertFalse(brief["benchmark_context"]["unit_tests"]["passed"])
             self.assertTrue(any("run_release_gate.py" in item for item in brief["recommended_commands"]))
+
+    def test_release_gate_hold_bootstraps_iteration_workspace_when_provided(self) -> None:
+        with make_tempdir() as tmp:
+            output_dir = Path(tmp) / "release-gate-output"
+            workspace = Path(tmp) / "rounds"
+
+            benchmark_output = output_dir / "benchmark-results.json"
+            benchmark_report = output_dir / "benchmark-report.md"
+            benchmark_output.parent.mkdir(parents=True, exist_ok=True)
+            benchmark_output.write_text(
+                json.dumps(
+                    {
+                        "summary": {"overall_passed": False},
+                        "eval_run": {"passed": 55, "total": 56},
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            benchmark_report.write_text("# Benchmark Report\n", encoding="utf-8")
+
+            with mock.patch.object(
+                release_gate.benchmark_runner,
+                "run_benchmark_suite",
+                return_value={
+                    "summary": {
+                        "tests_passed": False,
+                        "validator_passed": True,
+                        "evals_passed": False,
+                        "offline_drill_enabled": True,
+                        "offline_drill_passed": True,
+                        "overall_passed": False,
+                    },
+                    "json_report": str(benchmark_output),
+                    "markdown_report": str(benchmark_report),
+                    "offline_drill_run": {
+                        "markdown_report": str(output_dir / "offline-loop-drill-report.md"),
+                    },
+                },
+            ):
+                result = release_gate.run_release_gate(
+                    output_dir=output_dir,
+                    iteration_workspace=workspace,
+                )
+
+            bootstrap = result["follow_up"]["bootstrap"]
+            self.assertTrue(Path(bootstrap["candidate_repo"]).exists())
+            self.assertTrue((Path(bootstrap["candidate_repo"]) / "scripts" / "run_release_gate.py").exists())
+            self.assertTrue(Path(bootstrap["plan_json"]).exists())
+            self.assertTrue(Path(bootstrap["open_loops"]).exists())
+            self.assertTrue(Path(bootstrap["iteration_context_chain"]).exists())
+            self.assertIn("run_iteration_loop.py", bootstrap["recommended_command"])
+            baseline_result = bootstrap["baseline_registration"]
+            self.assertEqual("stable", baseline_result["label"])
+            self.assertTrue(Path(baseline_result["stored_report"]).exists())
+            plan_payload = baseline_registry.load_json(Path(bootstrap["plan_json"]))
+            self.assertEqual("./repo-copy", plan_payload["candidate_repo_template"])
+            self.assertEqual("./patches/{round_id}.patch", plan_payload["candidate_patch_template"])
+            self.assertEqual("./candidate-briefs/{round_id}.json", plan_payload["candidate_brief_template"])
+            self.assertTrue(plan_payload["autonomous_candidate_generation"])
+            self.assertTrue(plan_payload["auto_apply_rollback"])
+            self.assertTrue(len(plan_payload["mutation_catalog"]) >= 1)
+            catalog_ids = {item["id"] for item in plan_payload["mutation_catalog"]}
+            self.assertIn("release-gate-unit-tests-remediation", catalog_ids)
+            self.assertIn("release-gate-eval-suite-remediation", catalog_ids)
+            self.assertEqual("round-01", plan_payload["candidates"][0]["round_id"])
+            self.assertIn("mutation_plan", plan_payload["candidates"][0])
+            candidate_paths = {
+                item["path"]
+                for item in plan_payload["candidates"][0]["mutation_plan"]["operations"]
+                if isinstance(item, dict) and "path" in item
+            }
+            self.assertIn(
+                "artifacts/release-gate-hold/{round_id}-unit-tests-remediation.md",
+                candidate_paths,
+            )
+
+            eval_rule = next(
+                item
+                for item in plan_payload["mutation_catalog"]
+                if item["id"] == "release-gate-eval-suite-remediation"
+            )
+            eval_targets_content = next(
+                op["content"]
+                for op in eval_rule["mutation_plan"]["operations"]
+                if op["path"] == "artifacts/release-gate-hold/{round_id}-eval-suite-targets.json"
+            )
+            eval_targets = json.loads(eval_targets_content)
+            self.assertIn("evals/evals.json", eval_targets["target_files"])
+            self.assertIn("json_append_unique", eval_targets["preferred_mutation_ops"])
+
+    def test_release_gate_hold_mutation_catalog_is_blocker_specific(self) -> None:
+        brief = {
+            "objective": "恢复 release gate 就绪状态",
+            "reason": "semantic regression validator failed",
+            "owner": "Technical Trinity",
+            "blockers": [
+                {
+                    "id": "semantic-regression",
+                    "label": "semantic regression validator failed",
+                    "objective_hint": "修复语义回归后，再验证路由与流程闭环",
+                    "evidence_required": "python scripts/validate_virtual_team.py --pretty",
+                },
+                {
+                    "id": "offline-loop-drill",
+                    "label": "offline loop drill failed",
+                    "objective_hint": "修复 rollback / pivot / resume 闭环问题，再重新验收",
+                    "evidence_required": "python scripts/run_offline_loop_drill.py --workspace .tmp-offline-loop-drill --pretty",
+                },
+            ],
+            "benchmark_context": {
+                "semantic_regression": {
+                    "passed": False,
+                    "output_excerpt": [
+                        "validator mismatch on routing-rules version",
+                    ],
+                },
+                "offline_loop_drill": {
+                    "enabled": True,
+                    "passed": False,
+                    "markdown_report": "/tmp/offline-loop-drill-report.md",
+                },
+            },
+            "required_evidence": [
+                "python scripts/validate_virtual_team.py --pretty",
+                "python scripts/run_offline_loop_drill.py --workspace .tmp-offline-loop-drill --pretty",
+            ],
+        }
+
+        catalog = release_gate.build_hold_mutation_catalog(brief)
+        catalog_ids = {item["id"] for item in catalog}
+        self.assertIn("release-gate-semantic-regression-remediation", catalog_ids)
+        self.assertIn("release-gate-offline-loop-drill-remediation", catalog_ids)
+
+        semantic_rule = next(
+            item for item in catalog if item["id"] == "release-gate-semantic-regression-remediation"
+        )
+        self.assertIn(
+            "validator mismatch on routing-rules version",
+            " ".join(semantic_rule["when_any_keywords"]),
+        )
+        semantic_targets_content = next(
+            op["content"]
+            for op in semantic_rule["mutation_plan"]["operations"]
+            if op["path"] == "artifacts/release-gate-hold/{round_id}-semantic-regression-targets.json"
+        )
+        semantic_targets = json.loads(semantic_targets_content)
+        self.assertIn("scripts/route_request.py", semantic_targets["target_files"])
+        self.assertIn("json_set", semantic_targets["preferred_mutation_ops"])
+
+        offline_rule = next(
+            item for item in catalog if item["id"] == "release-gate-offline-loop-drill-remediation"
+        )
+        offline_targets_content = next(
+            op["content"]
+            for op in offline_rule["mutation_plan"]["operations"]
+            if op["path"] == "artifacts/release-gate-hold/{round_id}-offline-loop-drill-targets.json"
+        )
+        offline_targets = json.loads(offline_targets_content)
+        self.assertIn("scripts/run_iteration_loop.py", offline_targets["target_files"])
+        self.assertIn("write_file", offline_targets["preferred_mutation_ops"])
+
+    def test_release_gate_hold_can_auto_run_next_iteration_loop(self) -> None:
+        with make_tempdir() as tmp:
+            output_dir = Path(tmp) / "release-gate-output"
+            workspace = Path(tmp) / "rounds"
+            benchmark_output = output_dir / "benchmark-results.json"
+            benchmark_report = output_dir / "benchmark-report.md"
+            benchmark_output.parent.mkdir(parents=True, exist_ok=True)
+            benchmark_output.write_text(
+                json.dumps(
+                    {
+                        "summary": {"overall_passed": False},
+                        "eval_run": {"passed": 55, "total": 56},
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            benchmark_report.write_text("# Benchmark Report\n", encoding="utf-8")
+
+            with mock.patch.object(
+                release_gate.benchmark_runner,
+                "run_benchmark_suite",
+                return_value={
+                    "summary": {
+                        "tests_passed": False,
+                        "validator_passed": True,
+                        "evals_passed": True,
+                        "offline_drill_enabled": True,
+                        "offline_drill_passed": True,
+                        "overall_passed": False,
+                    },
+                    "json_report": str(benchmark_output),
+                    "markdown_report": str(benchmark_report),
+                    "offline_drill_run": {
+                        "markdown_report": str(output_dir / "offline-loop-drill-report.md"),
+                    },
+                },
+            ), mock.patch.object(
+                release_gate.iteration_loop,
+                "run_loop",
+                return_value={"status": "completed", "round_count": 1},
+            ) as run_loop_mock:
+                result = release_gate.run_release_gate(
+                    output_dir=output_dir,
+                    iteration_workspace=workspace,
+                    auto_run_next_iteration_on_hold=True,
+                )
+
+            bootstrap = result["follow_up"]["bootstrap"]
+            self.assertEqual("completed", bootstrap["auto_iteration"]["status"])
+            self.assertEqual(1, bootstrap["auto_iteration"]["result"]["round_count"])
+            run_loop_mock.assert_called_once()
 
     def test_release_gate_ship_can_archive_release_ready_baseline(self) -> None:
         with make_tempdir() as tmp:
