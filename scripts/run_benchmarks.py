@@ -18,6 +18,7 @@ REPO_ROOT = SKILL_DIR.parent
 TEST_SCRIPT = SKILL_DIR / "tests" / "test_routing_and_guardrails.py"
 VALIDATOR_SCRIPT = SKILL_DIR / "scripts" / "validate_virtual_team.py"
 ROUTE_SCRIPT = SKILL_DIR / "scripts" / "route_request.py"
+OFFLINE_DRILL_SCRIPT = SKILL_DIR / "scripts" / "run_offline_loop_drill.py"
 CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 EVALS_PATH = SKILL_DIR / "evals" / "evals.json"
 DEFAULT_OUTPUT_DIR = SKILL_DIR / "evals" / "benchmark-results"
@@ -33,6 +34,7 @@ def load_module(name: str, path: Path):
 
 
 route_request = load_module("virtual_team_route_request_benchmark", ROUTE_SCRIPT)
+offline_loop_drill = load_module("virtual_team_offline_loop_drill_benchmark", OFFLINE_DRILL_SCRIPT)
 
 
 def load_json(path: Path) -> dict[str, object]:
@@ -69,6 +71,38 @@ def classify_prompt(text: str) -> list[str]:
         tags.append("strategy-domain")
     if any(route_request.keyword_matches(lowered, token) for token in ["backend", "api contract", "auth", "implementation", "technical plan", "tech plan"]):
         tags.append("cross-domain")
+    if any(
+        route_request.keyword_matches(lowered, token)
+        for token in [
+            "iterate",
+            "iteration",
+            "benchmark",
+            "optimize",
+            "regression",
+            "another round",
+            "迭代",
+            "优化",
+            "基准",
+            "回归",
+            "再来一轮",
+        ]
+    ):
+        tags.append("iteration")
+    if any(
+        route_request.keyword_matches(lowered, token)
+        for token in [
+            "release gate",
+            "formal gate",
+            "ready to ship",
+            "ready to release",
+            "release candidate",
+            "发版前",
+            "提交前验收",
+            "正式验收",
+            "能不能发版",
+        ]
+    ):
+        tags.append("release-gate")
     if any("\u4e00" <= ch <= "\u9fff" for ch in text):
         tags.append("chinese")
     if any(ch.isascii() and ch.isalpha() for ch in text) and any("\u4e00" <= ch <= "\u9fff" for ch in text):
@@ -226,7 +260,12 @@ def evaluate_evals(config: dict[str, object]) -> dict[str, object]:
     }
 
 
-def build_summary(test_run: dict[str, object], validator_run: dict[str, object], eval_run: dict[str, object]) -> dict[str, object]:
+def build_summary(
+    test_run: dict[str, object],
+    validator_run: dict[str, object],
+    eval_run: dict[str, object],
+    offline_drill_run: dict[str, object] | None = None,
+) -> dict[str, object]:
     lead_counter = Counter()
     assistant_counter = Counter()
     failures: list[dict[str, object]] = []
@@ -244,11 +283,22 @@ def build_summary(test_run: dict[str, object], validator_run: dict[str, object],
                 }
             )
 
+    tests_passed = bool(test_run["passed"])
+    validator_passed = bool(validator_run["passed"])
+    evals_passed = int(eval_run["passed"]) == int(eval_run["total"])
+    offline_drill_enabled = offline_drill_run is not None
+    offline_drill_passed = bool(offline_drill_run.get("ok")) if offline_drill_enabled else None
+    overall_passed = tests_passed and validator_passed and evals_passed
+    if offline_drill_enabled:
+        overall_passed = overall_passed and bool(offline_drill_passed)
+
     return {
-        "tests_passed": bool(test_run["passed"]),
-        "validator_passed": bool(validator_run["passed"]),
-        "evals_passed": int(eval_run["passed"]) == int(eval_run["total"]),
-        "overall_passed": bool(test_run["passed"]) and bool(validator_run["passed"]) and int(eval_run["passed"]) == int(eval_run["total"]),
+        "tests_passed": tests_passed,
+        "validator_passed": validator_passed,
+        "evals_passed": evals_passed,
+        "offline_drill_enabled": offline_drill_enabled,
+        "offline_drill_passed": offline_drill_passed,
+        "overall_passed": overall_passed,
         "lead_distribution": dict(lead_counter.most_common()),
         "assistant_distribution": dict(assistant_counter.most_common()),
         "eval_failures": failures,
@@ -270,6 +320,8 @@ def render_markdown(result: dict[str, object]) -> str:
     lines.append(f"- Unit tests: `{'PASS' if summary['tests_passed'] else 'FAIL'}`")
     lines.append(f"- Semantic regression: `{'PASS' if summary['validator_passed'] else 'FAIL'}`")
     lines.append(f"- Eval prompts: `{evals['passed']}/{evals['total']}`")
+    if summary.get("offline_drill_enabled"):
+        lines.append(f"- Offline loop drill: `{'PASS' if summary.get('offline_drill_passed') else 'FAIL'}`")
     lines.append("")
     lines.append("## Breakdown")
     lines.append("")
@@ -318,6 +370,10 @@ def render_markdown(result: dict[str, object]) -> str:
     lines.append("")
     lines.append(f"- Tests: `{' '.join(tests['command'])}` -> return code `{tests['returncode']}`")
     lines.append(f"- Validator: `{' '.join(validator['command'])}` -> return code `{validator['returncode']}`")
+    offline_drill_run = result.get("offline_drill_run")
+    if isinstance(offline_drill_run, dict):
+        lines.append(f"- Offline drill workspace: `{offline_drill_run.get('workspace')}`")
+        lines.append(f"- Offline drill report: `{offline_drill_run.get('markdown_report')}`")
     lines.append("")
     lines.append("## Eval Failures")
     lines.append("")
@@ -418,23 +474,28 @@ def build_diff(current: dict[str, object], previous: dict[str, object]) -> dict[
     }
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run benchmark suite for virtual-intelligent-dev-team")
-    parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR), help="Directory for benchmark artifacts")
-    parser.add_argument("--previous-output", help="Previous benchmark JSON report for diff comparison")
-    parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON summary to stdout")
-    return parser.parse_args()
-
-
-def main() -> None:
-    args = parse_args()
-    output_dir = Path(args.output_dir).resolve()
+def run_benchmark_suite(
+    *,
+    output_dir: Path,
+    previous_output: Path | None = None,
+    include_offline_drill: bool = False,
+    offline_drill_workspace: Path | None = None,
+) -> dict[str, object]:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     config = load_config()
     test_run = run_command([sys.executable, str(TEST_SCRIPT)], cwd=SKILL_DIR)
     validator_run = run_command([sys.executable, str(VALIDATOR_SCRIPT), "--pretty"], cwd=SKILL_DIR)
     eval_run = evaluate_evals(config)
+    offline_drill_run: dict[str, object] | None = None
+    if include_offline_drill:
+        drill_workspace = (
+            offline_drill_workspace.resolve()
+            if offline_drill_workspace is not None
+            else (output_dir / "offline-loop-drill").resolve()
+        )
+        offline_drill_run = offline_loop_drill.run_drill(workspace=drill_workspace)
+
     result = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "skill_name": "virtual-intelligent-dev-team",
@@ -442,9 +503,16 @@ def main() -> None:
         "validator_run": validator_run,
         "eval_run": eval_run,
     }
-    result["summary"] = build_summary(test_run, validator_run, eval_run)
-    if args.previous_output:
-        previous = load_previous_result(Path(args.previous_output).resolve())
+    if offline_drill_run is not None:
+        result["offline_drill_run"] = offline_drill_run
+    result["summary"] = build_summary(
+        test_run,
+        validator_run,
+        eval_run,
+        offline_drill_run=offline_drill_run,
+    )
+    if previous_output is not None:
+        previous = load_previous_result(previous_output.resolve())
         if previous is not None:
             result["diff"] = build_diff(result, previous)
 
@@ -454,16 +522,42 @@ def main() -> None:
         json.dump(result, file, ensure_ascii=False, indent=2)
     with md_path.open("w", encoding="utf-8") as file:
         file.write(render_markdown(result))
+    result["json_report"] = str(json_path)
+    result["markdown_report"] = str(md_path)
+    return result
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run benchmark suite for virtual-intelligent-dev-team")
+    parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR), help="Directory for benchmark artifacts")
+    parser.add_argument("--previous-output", help="Previous benchmark JSON report for diff comparison")
+    parser.add_argument("--include-offline-drill", action="store_true", help="Run the real offline loop drill as part of the benchmark gate")
+    parser.add_argument("--offline-drill-workspace", help="Workspace root for offline drill artifacts")
+    parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON summary to stdout")
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    result = run_benchmark_suite(
+        output_dir=Path(args.output_dir).resolve(),
+        previous_output=Path(args.previous_output).resolve() if args.previous_output else None,
+        include_offline_drill=bool(args.include_offline_drill),
+        offline_drill_workspace=Path(args.offline_drill_workspace).resolve() if args.offline_drill_workspace else None,
+    )
 
     stdout_payload = {
         "ok": result["summary"]["overall_passed"],
-        "json_report": str(json_path),
-        "markdown_report": str(md_path),
-        "evals_passed": eval_run["passed"],
-        "evals_total": eval_run["total"],
-        "tests_passed": test_run["passed"],
-        "validator_passed": validator_run["passed"],
+        "json_report": result["json_report"],
+        "markdown_report": result["markdown_report"],
+        "evals_passed": result["eval_run"]["passed"],
+        "evals_total": result["eval_run"]["total"],
+        "tests_passed": result["test_run"]["passed"],
+        "validator_passed": result["validator_run"]["passed"],
     }
+    if result["summary"].get("offline_drill_enabled"):
+        stdout_payload["offline_drill_passed"] = result["summary"].get("offline_drill_passed")
+        stdout_payload["offline_drill_report"] = result.get("offline_drill_run", {}).get("markdown_report")
     if "diff" in result:
         stdout_payload["new_failures"] = len(result["diff"].get("new_failures", []))
         stdout_payload["resolved_failures"] = len(result["diff"].get("resolved_failures", []))

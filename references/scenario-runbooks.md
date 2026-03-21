@@ -104,7 +104,24 @@ Use these runbooks when the user request implies a recurring multi-role pattern.
   4. Validate before proposing a patch.
   5. If a fix is required, define the safest next change and rollback path.
 - Success markers:
-  - evidence-first debugging
-  - root cause separated from symptom
-  - no speculative patching
-  - minimal validating next step
+- evidence-first debugging
+- root cause separated from symptom
+- no speculative patching
+- minimal validating next step
+
+## 8. Evidence-Driven Iteration
+
+- Lead: semantic owner for the task
+- Common assistants: `Sentinel Architect (NB)` for high-risk rounds, `Code Audit Council` for verification-heavy loops, `Git Workflow Guardian` when delivery sequencing is part of the ask
+- Use when: the user explicitly asks to iterate, benchmark, compare candidates, or keep improving until the result stabilizes.
+- Flow:
+  1. Lock the objective, baseline, and round cap before making changes.
+  2. Test one candidate change at a time.
+  3. Run validator, benchmark, or other objective checks.
+  4. Decide `keep`, `retry`, `rollback`, or `stop`.
+  5. Distill only stable patterns into reusable guidance.
+- Success markers:
+  - objective and baseline are explicit
+  - every round has evidence
+  - no silent regression
+  - loop stops intentionally instead of drifting

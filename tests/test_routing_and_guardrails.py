@@ -4,6 +4,7 @@ import json
 import subprocess
 import sys
 import unittest
+from unittest import mock
 from pathlib import Path
 from uuid import uuid4
 
@@ -13,6 +14,15 @@ REPO_ROOT = SKILL_DIR.parent
 TMP_ROOT = REPO_ROOT / ".tmp-validation"
 ROUTE_SCRIPT = SKILL_DIR / "scripts" / "route_request.py"
 GUARDRAIL_SCRIPT = SKILL_DIR / "scripts" / "git_workflow_guardrail.py"
+INIT_ITERATION_SCRIPT = SKILL_DIR / "scripts" / "init_iteration_round.py"
+COMPARE_BENCHMARKS_SCRIPT = SKILL_DIR / "scripts" / "compare_benchmark_results.py"
+REGISTER_BASELINE_SCRIPT = SKILL_DIR / "scripts" / "register_benchmark_baseline.py"
+RUN_ITERATION_CYCLE_SCRIPT = SKILL_DIR / "scripts" / "run_iteration_cycle.py"
+PROMOTE_BASELINE_SCRIPT = SKILL_DIR / "scripts" / "promote_iteration_baseline.py"
+SYNC_PATTERNS_SCRIPT = SKILL_DIR / "scripts" / "sync_distilled_patterns.py"
+RUN_ITERATION_LOOP_SCRIPT = SKILL_DIR / "scripts" / "run_iteration_loop.py"
+RUN_BENCHMARKS_SCRIPT = SKILL_DIR / "scripts" / "run_benchmarks.py"
+RUN_RELEASE_GATE_SCRIPT = SKILL_DIR / "scripts" / "run_release_gate.py"
 VALIDATOR_SCRIPT = SKILL_DIR / "scripts" / "validate_virtual_team.py"
 CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 
@@ -28,6 +38,15 @@ def load_module(name: str, path: Path):
 
 route_request = load_module("virtual_intelligent_dev_team_route_request", ROUTE_SCRIPT)
 guardrail = load_module("virtual_intelligent_dev_team_guardrail", GUARDRAIL_SCRIPT)
+iteration_init = load_module("virtual_intelligent_dev_team_iteration_init", INIT_ITERATION_SCRIPT)
+benchmark_compare = load_module("virtual_intelligent_dev_team_benchmark_compare", COMPARE_BENCHMARKS_SCRIPT)
+baseline_registry = load_module("virtual_intelligent_dev_team_baseline_registry", REGISTER_BASELINE_SCRIPT)
+iteration_cycle = load_module("virtual_intelligent_dev_team_iteration_cycle", RUN_ITERATION_CYCLE_SCRIPT)
+baseline_promotion = load_module("virtual_intelligent_dev_team_baseline_promotion", PROMOTE_BASELINE_SCRIPT)
+pattern_sync = load_module("virtual_intelligent_dev_team_pattern_sync", SYNC_PATTERNS_SCRIPT)
+iteration_loop = load_module("virtual_intelligent_dev_team_iteration_loop", RUN_ITERATION_LOOP_SCRIPT)
+benchmark_runner = load_module("virtual_intelligent_dev_team_run_benchmarks", RUN_BENCHMARKS_SCRIPT)
+release_gate = load_module("virtual_intelligent_dev_team_run_release_gate", RUN_RELEASE_GATE_SCRIPT)
 
 
 def load_config() -> dict[str, object]:
@@ -111,6 +130,7 @@ class RoutingTests(unittest.TestCase):
 
     def test_worktree_plan_uses_repo_base_branch(self) -> None:
         plan = route_request.build_process_plan(
+            needs_iteration=False,
             needs_worktree=True,
             needs_git_workflow=False,
             repo_strategy={"strategy": "trunk-master", "base_branch": "master"},
@@ -123,6 +143,7 @@ class RoutingTests(unittest.TestCase):
 
     def test_git_workflow_plan_checks_before_sync_and_push(self) -> None:
         plan = route_request.build_process_plan(
+            needs_iteration=False,
             needs_worktree=False,
             needs_git_workflow=True,
             repo_strategy={"strategy": "trunk-master", "base_branch": "master"},
@@ -136,6 +157,133 @@ class RoutingTests(unittest.TestCase):
         self.assertLess(
             commands.index("python scripts/git_workflow_guardrail.py --repo . --stage G4 --pretty"),
             commands.index("git push -u origin feat/<ticket>-<summary>"),
+        )
+
+    def test_bounded_iteration_process_only_routes_to_technical_trinity(self) -> None:
+        result = route_request.route_request(
+            "Run another iteration, benchmark it against the baseline, and stop if the result regresses.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertEqual("Technical Trinity", result["lead_agent"])
+        self.assertTrue(result["needs_iteration"])
+        self.assertIn("bounded-iteration", result["process_skills"])
+        self.assertTrue(result["iteration_profile"]["enabled"])
+        self.assertGreaterEqual(result["iteration_profile"]["round_cap_offline"], 120)
+
+    def test_frontend_iteration_keeps_semantic_lead(self) -> None:
+        result = route_request.route_request(
+            "Iterate on the React dashboard UX, benchmark the variants, and keep improving until stable.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertEqual("World-Class Product Architect", result["lead_agent"])
+        self.assertTrue(result["needs_iteration"])
+        self.assertEqual(["bounded-iteration"], result["process_skills"])
+
+    def test_strategy_iteration_keeps_semantic_lead(self) -> None:
+        result = route_request.route_request(
+            "Iterate on the pricing strategy options, benchmark them, and stop if the new round regresses.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertEqual("Executive Trinity", result["lead_agent"])
+        self.assertTrue(result["needs_iteration"])
+
+    def test_release_readiness_routes_to_formal_release_gate_without_git_workflow(self) -> None:
+        result = route_request.route_request(
+            "Is this version ready to ship? Do not answer from benchmark alone. Run the formal release gate.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertEqual("Technical Trinity", result["lead_agent"])
+        self.assertTrue(result["needs_release_gate"])
+        self.assertFalse(result["needs_git_workflow"])
+        self.assertIn("release-gate", result["process_skills"])
+
+    def test_chinese_release_readiness_suppresses_ambiguous_git_submit_signal(self) -> None:
+        result = route_request.route_request(
+            "这版现在能不能提交/发版？不要只看 benchmark，通过正式 release gate 做提交前验收。",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertEqual("Technical Trinity", result["lead_agent"])
+        self.assertTrue(result["needs_release_gate"])
+        self.assertFalse(result["needs_git_workflow"])
+        self.assertIn("release-gate", result["process_skills"])
+
+    def test_bounded_iteration_plan_includes_validation_and_benchmark_commands(self) -> None:
+        plan = route_request.build_process_plan(
+            needs_iteration=True,
+            needs_worktree=False,
+            needs_git_workflow=False,
+            repo_strategy={"strategy": "trunk-main", "base_branch": "main"},
+        )
+        commands = plan[0]["commands"]
+
+        self.assertIn(
+            "mkdir -p .skill-iterations",
+            commands,
+        )
+        self.assertIn(
+            "cp assets/iteration-plan-template.json .skill-iterations/iteration-plan.json",
+            commands,
+        )
+        self.assertIn(
+            "python scripts/register_benchmark_baseline.py --workspace .skill-iterations --label stable --report <baseline-report> --pretty",
+            commands,
+        )
+        self.assertIn(
+            "python scripts/run_iteration_cycle.py --workspace .skill-iterations --round-id round-01 --objective \"<goal>\" --baseline-label stable --owner \"<lead-owner>\" --candidate \"<candidate-change>\" --candidate-worktree ../wt-round-01 --candidate-output-dir .tmp-iteration-round-01 --pretty",
+            commands,
+        )
+        self.assertIn(
+            "python scripts/compare_benchmark_results.py --baseline .skill-iterations/baselines/stable/benchmark-results.json --candidate .tmp-iteration-round-01/benchmark-results.json --pretty",
+            commands,
+        )
+        self.assertIn(
+            "python scripts/promote_iteration_baseline.py --workspace .skill-iterations --round-id round-01 --label accepted-round-01 --pretty",
+            commands,
+        )
+        self.assertIn(
+            "python scripts/sync_distilled_patterns.py --workspace .skill-iterations --pretty",
+            commands,
+        )
+        self.assertIn(
+            "python scripts/materialize_candidate_patch.py --brief .skill-iterations/candidate-briefs/round-01.json --candidate-root ../wt-round-01 --patch-output .skill-iterations/patches/round-01.patch --pretty",
+            commands,
+        )
+        self.assertIn(
+            "python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.json --pretty",
+            commands,
+        )
+        self.assertIn(
+            "python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.json --resume --pretty",
+            commands,
+        )
+
+    def test_release_gate_plan_includes_formal_ship_hold_gate(self) -> None:
+        plan = route_request.build_process_plan(
+            needs_iteration=False,
+            needs_worktree=False,
+            needs_release_gate=True,
+            needs_git_workflow=False,
+            repo_strategy={"strategy": "trunk-main", "base_branch": "main"},
+        )
+        commands = plan[0]["commands"]
+
+        self.assertIn(
+            "python scripts/run_release_gate.py --output-dir evals/release-gate --pretty",
+            commands,
+        )
+        self.assertIn(
+            "python scripts/run_release_gate.py --output-dir evals/release-gate --previous-output evals/benchmark-results/benchmark-results.json --pretty",
+            commands,
         )
 
     def test_rebase_conflict_adds_sentinel_assistant(self) -> None:
@@ -562,6 +710,2410 @@ class GuardrailTests(unittest.TestCase):
             self.assertTrue(result["details"]["requires_sync"])
 
 
+class IterationHelperTests(unittest.TestCase):
+    def test_init_iteration_round_creates_expected_assets(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            payload = iteration_init.initialize_round(
+                workspace=workspace,
+                round_id="round-01",
+                objective="improve benchmark stability",
+                baseline="v4.2.0",
+                owner="Technical Trinity",
+                candidate="rebalance routing weights",
+            )
+
+            ledger_path = Path(payload["ledger"])
+            reflection_path = Path(payload["reflection"])
+            round_memory_path = Path(payload["round_memory"])
+            self_feedback_path = Path(payload["self_feedback"])
+            distilled_path = Path(payload["distilled_patterns"])
+
+            self.assertTrue(ledger_path.exists())
+            self.assertTrue(reflection_path.exists())
+            self.assertTrue(round_memory_path.exists())
+            self.assertTrue(self_feedback_path.exists())
+            self.assertTrue(distilled_path.exists())
+            self.assertIn("improve benchmark stability", ledger_path.read_text(encoding="utf-8"))
+            self.assertIn("rebalance routing weights", reflection_path.read_text(encoding="utf-8"))
+            self.assertIn("round-01", round_memory_path.read_text(encoding="utf-8"))
+
+    def test_compare_benchmark_results_returns_keep_for_resolved_failures(self) -> None:
+        baseline = {
+            "summary": {"overall_passed": False},
+            "eval_run": {
+                "passed": 53,
+                "total": 54,
+                "cases": [
+                    {"id": 1, "prompt": "a", "passed": False, "failures": ["x"]},
+                    {"id": 2, "prompt": "b", "passed": True, "failures": []},
+                ],
+                "category_breakdown": [{"category": "iteration", "passed": 0, "total": 1}],
+            },
+        }
+        candidate = {
+            "summary": {"overall_passed": True},
+            "eval_run": {
+                "passed": 54,
+                "total": 54,
+                "cases": [
+                    {"id": 1, "prompt": "a", "passed": True, "failures": []},
+                    {"id": 2, "prompt": "b", "passed": True, "failures": []},
+                ],
+                "category_breakdown": [{"category": "iteration", "passed": 1, "total": 1}],
+            },
+        }
+
+        result = benchmark_compare.compare_results(baseline=baseline, candidate=candidate)
+        self.assertEqual("keep", result["decision"])
+
+    def test_compare_benchmark_results_returns_rollback_for_new_failures(self) -> None:
+        baseline = {
+            "summary": {"overall_passed": True},
+            "eval_run": {
+                "passed": 54,
+                "total": 54,
+                "cases": [{"id": 1, "prompt": "a", "passed": True, "failures": []}],
+                "category_breakdown": [{"category": "iteration", "passed": 1, "total": 1}],
+            },
+        }
+        candidate = {
+            "summary": {"overall_passed": False},
+            "eval_run": {
+                "passed": 53,
+                "total": 54,
+                "cases": [
+                    {"id": 1, "prompt": "a", "passed": True, "failures": []},
+                    {"id": 2, "prompt": "b", "passed": False, "failures": ["new failure"]},
+                ],
+                "category_breakdown": [{"category": "iteration", "passed": 0, "total": 1}],
+            },
+        }
+
+        result = benchmark_compare.compare_results(baseline=baseline, candidate=candidate)
+        self.assertEqual("rollback", result["decision"])
+
+    def test_register_baseline_creates_registry_and_stored_report(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            source_report = workspace / "source.json"
+            source_report.parent.mkdir(parents=True, exist_ok=True)
+            source_report.write_text(
+                json.dumps(
+                    {
+                        "summary": {"overall_passed": True},
+                        "eval_run": {"passed": 54, "total": 54},
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            result = baseline_registry.register_baseline(
+                workspace=workspace,
+                label="stable",
+                report_path=source_report,
+                notes="accepted baseline",
+            )
+
+            self.assertTrue(Path(result["registry"]).exists())
+            self.assertTrue(Path(result["stored_report"]).exists())
+
+    def test_run_iteration_cycle_writes_state_and_open_loops(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            baseline_report = workspace / "baseline.json"
+            candidate_report = workspace / "candidate.json"
+            baseline_report.parent.mkdir(parents=True, exist_ok=True)
+            baseline_report.write_text(
+                json.dumps(
+                    {
+                        "summary": {"overall_passed": True},
+                        "eval_run": {
+                            "passed": 54,
+                            "total": 54,
+                            "cases": [{"id": 1, "prompt": "a", "passed": True, "failures": []}],
+                            "category_breakdown": [{"category": "iteration", "passed": 1, "total": 1}],
+                        },
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            candidate_report.write_text(
+                json.dumps(
+                    {
+                        "summary": {"overall_passed": False},
+                        "eval_run": {
+                            "passed": 53,
+                            "total": 54,
+                            "cases": [
+                                {"id": 1, "prompt": "a", "passed": True, "failures": []},
+                                {"id": 2, "prompt": "b", "passed": False, "failures": ["new failure"]},
+                            ],
+                            "category_breakdown": [{"category": "iteration", "passed": 0, "total": 1}],
+                        },
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            baseline_registry.register_baseline(
+                workspace=workspace,
+                label="stable",
+                report_path=baseline_report,
+            )
+
+            result = iteration_cycle.run_cycle(
+                workspace=workspace,
+                round_id="round-01",
+                objective="protect benchmark stability",
+                baseline_label="stable",
+                owner="Technical Trinity",
+                candidate="test new routing delta",
+                candidate_report=candidate_report,
+            )
+
+            self.assertEqual("rollback", result["decision"])
+            self.assertTrue(Path(result["state"]).exists())
+            self.assertTrue(Path(result["open_loops"]).exists())
+            self.assertTrue(Path(result["round_memory"]).exists())
+            self.assertTrue(Path(result["self_feedback"]).exists())
+            self.assertTrue(Path(result["memory_chain"]).exists())
+            self.assertIn("rollback", Path(result["ledger"]).read_text(encoding="utf-8"))
+            memory_chain = Path(result["memory_chain"]).read_text(encoding="utf-8")
+            self.assertIn("round-01", memory_chain)
+            self.assertIn("## Current Open Loops", memory_chain)
+            self.assertIn("## Distilled Patterns", memory_chain)
+
+    def test_run_iteration_cycle_promotes_and_syncs_on_keep(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            baseline_report = workspace / "baseline.json"
+            candidate_report = workspace / "candidate.json"
+            baseline_report.parent.mkdir(parents=True, exist_ok=True)
+            baseline_payload = {
+                "summary": {"overall_passed": False},
+                "eval_run": {
+                    "passed": 53,
+                    "total": 54,
+                    "cases": [
+                        {"id": 1, "prompt": "a", "passed": False, "failures": ["old failure"]},
+                        {"id": 2, "prompt": "b", "passed": True, "failures": []},
+                    ],
+                    "category_breakdown": [{"category": "iteration", "passed": 0, "total": 1}],
+                },
+            }
+            candidate_payload = {
+                "summary": {"overall_passed": True},
+                "eval_run": {
+                    "passed": 54,
+                    "total": 54,
+                    "cases": [
+                        {"id": 1, "prompt": "a", "passed": True, "failures": []},
+                        {"id": 2, "prompt": "b", "passed": True, "failures": []},
+                    ],
+                    "category_breakdown": [{"category": "iteration", "passed": 1, "total": 1}],
+                },
+            }
+            baseline_report.write_text(json.dumps(baseline_payload, ensure_ascii=False), encoding="utf-8")
+            candidate_report.write_text(json.dumps(candidate_payload, ensure_ascii=False), encoding="utf-8")
+            baseline_registry.register_baseline(
+                workspace=workspace,
+                label="stable",
+                report_path=baseline_report,
+            )
+
+            result = iteration_cycle.run_cycle(
+                workspace=workspace,
+                round_id="round-01",
+                objective="keep stable benchmark quality",
+                baseline_label="stable",
+                owner="Technical Trinity",
+                candidate="retain accepted routing weights",
+                candidate_report=candidate_report,
+                promote_label="accepted-round-01",
+                sync_patterns_enabled=True,
+            )
+
+            self.assertTrue(result["promotion_eligible"])
+            self.assertEqual("keep", result["decision"])
+            self.assertIsNotNone(result["promotion"])
+            self.assertIsNotNone(result["pattern_sync"])
+            self.assertTrue(Path(result["promotion"]["stored_report"]).exists())
+            self.assertTrue(Path(result["pattern_sync"]["distilled_patterns"]).exists())
+
+    def test_run_iteration_cycle_tracks_open_loop_lifecycle_across_rounds(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            baseline_report = workspace / "baseline.json"
+            rollback_report = workspace / "rollback.json"
+            keep_report = workspace / "keep.json"
+            baseline_report.parent.mkdir(parents=True, exist_ok=True)
+            baseline_payload = {
+                "summary": {"overall_passed": True},
+                "eval_run": {
+                    "passed": 54,
+                    "total": 54,
+                    "cases": [{"id": 1, "prompt": "a", "passed": True, "failures": []}],
+                    "category_breakdown": [{"category": "iteration", "passed": 1, "total": 1}],
+                },
+            }
+            rollback_payload = {
+                "summary": {"overall_passed": False},
+                "eval_run": {
+                    "passed": 53,
+                    "total": 54,
+                    "cases": [{"id": 1, "prompt": "a", "passed": False, "failures": ["new failure"]}],
+                    "category_breakdown": [{"category": "iteration", "passed": 0, "total": 1}],
+                },
+            }
+            keep_payload = {
+                "summary": {"overall_passed": True},
+                "eval_run": {
+                    "passed": 54,
+                    "total": 54,
+                    "cases": [{"id": 1, "prompt": "a", "passed": True, "failures": []}],
+                    "category_breakdown": [{"category": "iteration", "passed": 1, "total": 1}],
+                },
+            }
+            baseline_report.write_text(json.dumps(baseline_payload, ensure_ascii=False), encoding="utf-8")
+            rollback_report.write_text(json.dumps(rollback_payload, ensure_ascii=False), encoding="utf-8")
+            keep_report.write_text(json.dumps(keep_payload, ensure_ascii=False), encoding="utf-8")
+            baseline_registry.register_baseline(workspace=workspace, label="stable", report_path=baseline_report)
+
+            iteration_cycle.run_cycle(
+                workspace=workspace,
+                round_id="round-01",
+                objective="track unresolved loops until a keep closes them",
+                baseline_label="stable",
+                owner="Technical Trinity",
+                candidate="introduce regression",
+                candidate_report=rollback_report,
+            )
+            first_open_loops = (workspace / "open-loops.md").read_text(encoding="utf-8")
+            self.assertIn("## Active", first_open_loops)
+            self.assertIn("[round-01][rollback] candidate benchmark no longer passes overall checks", first_open_loops)
+            self.assertIn("## Recently Resolved", first_open_loops)
+
+            iteration_cycle.run_cycle(
+                workspace=workspace,
+                round_id="round-02",
+                objective="close the unresolved loop after a keep",
+                baseline_label="stable",
+                owner="Technical Trinity",
+                candidate="restore accepted baseline",
+                candidate_report=keep_report,
+            )
+            second_open_loops = (workspace / "open-loops.md").read_text(encoding="utf-8")
+            self.assertIn("## Active", second_open_loops)
+            self.assertIn("## Recently Resolved", second_open_loops)
+            self.assertIn("- None.", second_open_loops)
+            self.assertIn("resolved-by round-02", second_open_loops)
+
+    def test_run_iteration_cycle_runs_candidate_worktree_benchmarks(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            candidate_repo = Path(tmp) / "candidate-worktree"
+            baseline_report = workspace / "baseline.json"
+            baseline_report.parent.mkdir(parents=True, exist_ok=True)
+            baseline_payload = {
+                "summary": {"overall_passed": False},
+                "eval_run": {
+                    "passed": 53,
+                    "total": 54,
+                    "cases": [{"id": 1, "prompt": "a", "passed": False, "failures": ["old failure"]}],
+                    "category_breakdown": [{"category": "iteration", "passed": 0, "total": 1}],
+                },
+            }
+            baseline_report.write_text(json.dumps(baseline_payload, ensure_ascii=False), encoding="utf-8")
+            baseline_registry.register_baseline(
+                workspace=workspace,
+                label="stable",
+                report_path=baseline_report,
+            )
+
+            benchmark_script = candidate_repo / "scripts" / "run_benchmarks.py"
+            benchmark_script.parent.mkdir(parents=True, exist_ok=True)
+            benchmark_script.write_text(
+                "import argparse\n"
+                "import json\n"
+                "from pathlib import Path\n"
+                "\n"
+                "parser = argparse.ArgumentParser()\n"
+                "parser.add_argument('--output-dir', required=True)\n"
+                "parser.add_argument('--pretty', action='store_true')\n"
+                "args = parser.parse_args()\n"
+                "output_dir = Path(args.output_dir)\n"
+                "output_dir.mkdir(parents=True, exist_ok=True)\n"
+                "payload = {\n"
+                "    'summary': {'overall_passed': True},\n"
+                "    'eval_run': {\n"
+                "        'passed': 54,\n"
+                "        'total': 54,\n"
+                "        'cases': [{'id': 1, 'prompt': 'a', 'passed': True, 'failures': []}],\n"
+                "        'category_breakdown': [{'category': 'iteration', 'passed': 1, 'total': 1}],\n"
+                "    },\n"
+                "}\n"
+                "(output_dir / 'benchmark-results.json').write_text(json.dumps(payload, ensure_ascii=False), encoding='utf-8')\n"
+                "print(json.dumps({'ok': True}, ensure_ascii=False))\n",
+                encoding="utf-8",
+            )
+
+            result = iteration_cycle.run_cycle(
+                workspace=workspace,
+                round_id="round-01",
+                objective="validate candidate worktree benchmark execution",
+                baseline_label="stable",
+                owner="Technical Trinity",
+                candidate="run benchmark from candidate worktree",
+                candidate_repo=candidate_repo,
+                candidate_output_dir=workspace / "runs" / "round-01",
+            )
+
+            state = baseline_registry.load_json(workspace / "round-01" / "state.json")
+            self.assertEqual("keep", result["decision"])
+            self.assertTrue(Path(result["candidate_report"]).exists())
+            self.assertEqual(str(candidate_repo.resolve()), result["candidate_repo"])
+            self.assertEqual(str(candidate_repo.resolve()), state["candidate_repo"])
+
+    def test_run_iteration_cycle_supports_custom_benchmark_command(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            candidate_repo = Path(tmp) / "candidate-repo"
+            baseline_report = workspace / "baseline.json"
+            baseline_report.parent.mkdir(parents=True, exist_ok=True)
+            baseline_payload = {
+                "summary": {"overall_passed": False},
+                "eval_run": {
+                    "passed": 53,
+                    "total": 54,
+                    "cases": [{"id": 1, "prompt": "a", "passed": False, "failures": ["old failure"]}],
+                    "category_breakdown": [{"category": "iteration", "passed": 0, "total": 1}],
+                },
+            }
+            baseline_report.write_text(json.dumps(baseline_payload, ensure_ascii=False), encoding="utf-8")
+            baseline_registry.register_baseline(
+                workspace=workspace,
+                label="stable",
+                report_path=baseline_report,
+            )
+            candidate_repo.mkdir(parents=True, exist_ok=True)
+
+            benchmark_command = (
+                "python -c \"import json, pathlib; "
+                "out = pathlib.Path(r'{output_dir}'); "
+                "out.mkdir(parents=True, exist_ok=True); "
+                "payload = {'summary': {'overall_passed': True}, 'eval_run': {'passed': 54, 'total': 54, "
+                "'cases': [{'id': 1, 'prompt': 'a', 'passed': True, 'failures': []}], "
+                "'category_breakdown': [{'category': 'iteration', 'passed': 1, 'total': 1}]}}; "
+                "(out / 'benchmark-results.json').write_text(json.dumps(payload, ensure_ascii=False), encoding='utf-8')\""
+            )
+
+            result = iteration_cycle.run_cycle(
+                workspace=workspace,
+                round_id="round-01",
+                objective="validate custom benchmark command",
+                baseline_label="stable",
+                owner="Technical Trinity",
+                candidate="use a repo-specific benchmark entrypoint",
+                candidate_repo=candidate_repo,
+                benchmark_command=benchmark_command,
+            )
+
+            state = baseline_registry.load_json(workspace / "round-01" / "state.json")
+            self.assertEqual("keep", result["decision"])
+            self.assertEqual(benchmark_command, result["benchmark_command"])
+            self.assertEqual(benchmark_command, state["benchmark_command"])
+
+    def test_run_iteration_cycle_applies_and_rolls_back_workspace_with_snapshots(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            candidate_repo = Path(tmp) / "candidate-repo"
+            baseline_report = workspace / "baseline.json"
+            baseline_report.parent.mkdir(parents=True, exist_ok=True)
+            baseline_payload = {
+                "summary": {"overall_passed": True},
+                "eval_run": {
+                    "passed": 54,
+                    "total": 54,
+                    "cases": [{"id": 1, "prompt": "a", "passed": True, "failures": []}],
+                    "category_breakdown": [{"category": "iteration", "passed": 1, "total": 1}],
+                },
+            }
+            baseline_report.write_text(json.dumps(baseline_payload, ensure_ascii=False), encoding="utf-8")
+            baseline_registry.register_baseline(
+                workspace=workspace,
+                label="stable",
+                report_path=baseline_report,
+            )
+
+            candidate_repo.mkdir(parents=True, exist_ok=True)
+            git("init", cwd=candidate_repo)
+            configure_repo(candidate_repo)
+            tracked_file = candidate_repo / "candidate.txt"
+            tracked_file.write_text("base\n", encoding="utf-8")
+            git("add", "candidate.txt", cwd=candidate_repo)
+            git("commit", "-m", "chore: init candidate", cwd=candidate_repo)
+
+            benchmark_command = (
+                "python -c \"import json, pathlib; "
+                "out = pathlib.Path(r'{output_dir}'); "
+                "out.mkdir(parents=True, exist_ok=True); "
+                "payload = {'summary': {'overall_passed': False}, 'eval_run': {'passed': 53, 'total': 54, "
+                "'cases': [{'id': 1, 'prompt': 'a', 'passed': False, 'failures': ['regressed']}], "
+                "'category_breakdown': [{'category': 'iteration', 'passed': 0, 'total': 1}]}}; "
+                "(out / 'benchmark-results.json').write_text(json.dumps(payload, ensure_ascii=False), encoding='utf-8')\""
+            )
+            apply_command = (
+                "python -c \"from pathlib import Path; "
+                "Path('candidate.txt').write_text('base\\nchanged\\n', encoding='utf-8')\""
+            )
+            rollback_command = (
+                "python -c \"from pathlib import Path; "
+                "Path('candidate.txt').write_text('base\\n', encoding='utf-8')\""
+            )
+
+            result = iteration_cycle.run_cycle(
+                workspace=workspace,
+                round_id="round-01",
+                objective="apply and rollback candidate workspace safely",
+                baseline_label="stable",
+                owner="Technical Trinity",
+                candidate="change file and rollback on regression",
+                candidate_repo=candidate_repo,
+                benchmark_command=benchmark_command,
+                apply_command=apply_command,
+                rollback_command=rollback_command,
+                auto_apply_rollback=True,
+            )
+
+            state = baseline_registry.load_json(workspace / "round-01" / "state.json")
+            self.assertEqual("rollback", result["decision"])
+            self.assertEqual("base\n", tracked_file.read_text(encoding="utf-8"))
+            self.assertTrue(result["apply_result"]["passed"])
+            self.assertTrue(result["rollback_result"]["passed"])
+            self.assertIn("before-apply", result["workspace_snapshots"])
+            self.assertIn("after-apply", result["workspace_snapshots"])
+            self.assertIn("after-rollback", result["workspace_snapshots"])
+            self.assertTrue(Path(result["workspace_snapshots"]["after-rollback"]["snapshot"]).exists())
+            self.assertEqual(apply_command, state["apply_command"])
+            self.assertEqual(rollback_command, state["rollback_command"])
+            self.assertTrue(state["auto_apply_rollback"])
+
+    def test_run_iteration_cycle_applies_patch_and_auto_reverse_rollback(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            candidate_repo = Path(tmp) / "candidate-repo"
+            patch_path = workspace / "candidate.patch"
+            baseline_report = workspace / "baseline.json"
+            baseline_report.parent.mkdir(parents=True, exist_ok=True)
+            baseline_payload = {
+                "summary": {"overall_passed": True},
+                "eval_run": {
+                    "passed": 54,
+                    "total": 54,
+                    "cases": [{"id": 1, "prompt": "a", "passed": True, "failures": []}],
+                    "category_breakdown": [{"category": "iteration", "passed": 1, "total": 1}],
+                },
+            }
+            baseline_report.write_text(json.dumps(baseline_payload, ensure_ascii=False), encoding="utf-8")
+            baseline_registry.register_baseline(
+                workspace=workspace,
+                label="stable",
+                report_path=baseline_report,
+            )
+
+            candidate_repo.mkdir(parents=True, exist_ok=True)
+            git("init", cwd=candidate_repo)
+            configure_repo(candidate_repo)
+            tracked_file = candidate_repo / "candidate.txt"
+            tracked_file.write_text("base\n", encoding="utf-8")
+            git("add", "candidate.txt", cwd=candidate_repo)
+            git("commit", "-m", "chore: init candidate", cwd=candidate_repo)
+
+            tracked_file.write_text("base\npatched\n", encoding="utf-8")
+            patch_text = git("diff", "--", "candidate.txt", cwd=candidate_repo).stdout
+            patch_path.write_text(patch_text, encoding="utf-8")
+            tracked_file.write_text("base\n", encoding="utf-8")
+
+            benchmark_command = (
+                "python -c \"import json, pathlib; "
+                "out = pathlib.Path(r'{output_dir}'); "
+                "out.mkdir(parents=True, exist_ok=True); "
+                "payload = {'summary': {'overall_passed': False}, 'eval_run': {'passed': 53, 'total': 54, "
+                "'cases': [{'id': 1, 'prompt': 'a', 'passed': False, 'failures': ['regressed']}], "
+                "'category_breakdown': [{'category': 'iteration', 'passed': 0, 'total': 1}]}}; "
+                "(out / 'benchmark-results.json').write_text(json.dumps(payload, ensure_ascii=False), encoding='utf-8')\""
+            )
+
+            result = iteration_cycle.run_cycle(
+                workspace=workspace,
+                round_id="round-01",
+                objective="apply patch and auto reverse on rollback",
+                baseline_label="stable",
+                owner="Technical Trinity",
+                candidate="apply patch artifact",
+                candidate_repo=candidate_repo,
+                candidate_patch=patch_path,
+                benchmark_command=benchmark_command,
+                auto_apply_rollback=True,
+            )
+
+            state = baseline_registry.load_json(workspace / "round-01" / "state.json")
+            self.assertEqual("rollback", result["decision"])
+            self.assertEqual("base\n", tracked_file.read_text(encoding="utf-8"))
+            self.assertTrue(result["apply_result"]["passed"])
+            self.assertTrue(result["rollback_result"]["passed"])
+            self.assertEqual(str(patch_path.resolve()), result["candidate_patch"])
+            self.assertEqual(str(patch_path.resolve()), state["candidate_patch"])
+            self.assertIn("after-rollback", result["workspace_snapshots"])
+
+    def test_promote_round_requires_keep_decision(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            round_dir = workspace / "round-01"
+            round_dir.mkdir(parents=True, exist_ok=True)
+            (round_dir / "state.json").write_text(
+                json.dumps(
+                    {
+                        "round_id": "round-01",
+                        "decision": "rollback",
+                        "candidate_report": str(round_dir / "candidate.json"),
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(RuntimeError, "not eligible for promotion"):
+                baseline_promotion.promote_round(
+                    workspace=workspace,
+                    round_id="round-01",
+                    label="accepted-round-01",
+                )
+
+    def test_sync_patterns_collects_only_kept_rounds(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            keep_dir = workspace / "round-01"
+            rollback_dir = workspace / "round-02"
+            keep_dir.mkdir(parents=True, exist_ok=True)
+            rollback_dir.mkdir(parents=True, exist_ok=True)
+            (keep_dir / "state.json").write_text(
+                json.dumps(
+                    {
+                        "round_id": "round-01",
+                        "decision": "keep",
+                        "objective": "improve stability",
+                        "owner": "Technical Trinity",
+                        "baseline_label": "stable",
+                        "candidate": "accepted change",
+                        "decision_reason": ["resolved failures without regressions"],
+                        "comparison": {
+                            "baseline": {
+                                "overall_passed": False,
+                                "evals_passed": 53,
+                                "evals_total": 54,
+                            },
+                            "candidate": {
+                                "overall_passed": True,
+                                "evals_passed": 54,
+                                "evals_total": 54,
+                            },
+                        },
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            (rollback_dir / "state.json").write_text(
+                json.dumps(
+                    {
+                        "round_id": "round-02",
+                        "decision": "rollback",
+                        "objective": "another attempt",
+                        "candidate": "rejected change",
+                        "decision_reason": ["introduced regression"],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            result = pattern_sync.sync_patterns(workspace=workspace)
+            content = Path(result["distilled_patterns"]).read_text(encoding="utf-8")
+            self.assertEqual(1, result["kept_rounds"])
+            self.assertIn("round-01", content)
+            self.assertNotIn("round-02", content)
+            self.assertIn("Owner: Technical Trinity", content)
+            self.assertIn("Baseline label: stable", content)
+            self.assertIn("Evidence snapshot", content)
+
+    def test_run_iteration_loop_advances_baseline_after_keep(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            baseline_report = workspace / "baseline.json"
+            candidate_a = workspace / "candidate-a.json"
+            candidate_b = workspace / "candidate-b.json"
+            plan_path = workspace / "iteration-plan.json"
+            baseline_report.parent.mkdir(parents=True, exist_ok=True)
+
+            baseline_payload = {
+                "summary": {"overall_passed": False},
+                "eval_run": {
+                    "passed": 53,
+                    "total": 54,
+                    "cases": [{"id": 1, "prompt": "a", "passed": False, "failures": ["old failure"]}],
+                    "category_breakdown": [{"category": "iteration", "passed": 0, "total": 1}],
+                },
+            }
+            keep_payload = {
+                "summary": {"overall_passed": True},
+                "eval_run": {
+                    "passed": 54,
+                    "total": 54,
+                    "cases": [{"id": 1, "prompt": "a", "passed": True, "failures": []}],
+                    "category_breakdown": [{"category": "iteration", "passed": 1, "total": 1}],
+                },
+            }
+            stop_payload = {
+                "summary": {"overall_passed": True},
+                "eval_run": {
+                    "passed": 54,
+                    "total": 54,
+                    "cases": [{"id": 1, "prompt": "a", "passed": True, "failures": []}],
+                    "category_breakdown": [{"category": "iteration", "passed": 1, "total": 1}],
+                },
+            }
+
+            baseline_report.write_text(json.dumps(baseline_payload, ensure_ascii=False), encoding="utf-8")
+            candidate_a.write_text(json.dumps(keep_payload, ensure_ascii=False), encoding="utf-8")
+            candidate_b.write_text(json.dumps(stop_payload, ensure_ascii=False), encoding="utf-8")
+            baseline_registry.register_baseline(workspace=workspace, label="stable", report_path=baseline_report)
+
+            plan_path.write_text(
+                json.dumps(
+                    {
+                        "objective": "stabilize benchmark quality",
+                        "owner": "World-Class Product Architect",
+                        "baseline_label": "stable",
+                        "loop_policy": {
+                            "max_rounds": 2,
+                            "advance_baseline_on_keep": True,
+                            "halt_on_decisions": ["stop"],
+                            "sync_patterns_at_end": True,
+                        },
+                        "candidates": [
+                            {
+                                "round_id": "round-01",
+                                "candidate": "first candidate",
+                                "candidate_report": str(candidate_a),
+                                "promote_label": "accepted-round-01",
+                            },
+                            {
+                                "round_id": "round-02",
+                                "candidate": "second candidate",
+                                "candidate_report": str(candidate_b),
+                                "promote_label": "accepted-round-02",
+                            },
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            result = iteration_loop.run_loop(workspace=workspace, plan_path=plan_path)
+            self.assertEqual(2, result["round_count"])
+            self.assertEqual("accepted-round-01", result["final_baseline_label"])
+            self.assertTrue(Path(result["summary"]).exists())
+            self.assertEqual("World-Class Product Architect", result["owner"])
+            first_state = baseline_registry.load_json(workspace / "round-01" / "state.json")
+            self.assertEqual("World-Class Product Architect", first_state["owner"])
+
+    def test_run_iteration_loop_stops_after_same_hypothesis_retry_budget(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            workspace.mkdir(parents=True, exist_ok=True)
+            plan_path = workspace / "iteration-plan.json"
+            plan_path.write_text(
+                json.dumps(
+                    {
+                        "objective": "stabilize retry-heavy loop",
+                        "owner": "Technical Trinity",
+                        "baseline_label": "stable",
+                        "loop_policy": {
+                            "max_rounds": 4,
+                            "max_same_hypothesis_retries": 2,
+                            "advance_baseline_on_keep": False,
+                            "halt_on_decisions": ["stop"],
+                            "sync_patterns_at_end": False,
+                        },
+                        "candidates": [
+                            {"round_id": "round-01", "candidate": "attempt 1", "hypothesis_key": "same-focus"},
+                            {"round_id": "round-02", "candidate": "attempt 2", "hypothesis_key": "same-focus"},
+                            {"round_id": "round-03", "candidate": "attempt 3", "hypothesis_key": "same-focus"},
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            calls: list[dict[str, object]] = []
+
+            def fake_run_cycle(**kwargs):
+                calls.append(dict(kwargs))
+                round_dir = workspace / str(kwargs["round_id"])
+                round_dir.mkdir(parents=True, exist_ok=True)
+                (round_dir / "state.json").write_text(
+                    json.dumps(
+                        {
+                            "round_id": kwargs["round_id"],
+                            "candidate": kwargs["candidate"],
+                            "hypothesis_key": kwargs["hypothesis_key"],
+                            "decision": "retry",
+                        },
+                        ensure_ascii=False,
+                    ),
+                    encoding="utf-8",
+                )
+                return {"decision": "retry", "decision_reason": ["still inconclusive"]}
+
+            with mock.patch.object(iteration_loop.iteration_cycle, "run_cycle", side_effect=fake_run_cycle):
+                result = iteration_loop.run_loop(workspace=workspace, plan_path=plan_path)
+
+            self.assertEqual(2, result["round_count"])
+            self.assertEqual("same hypothesis retry budget exhausted: same-focus", result["halt_reason"])
+            self.assertEqual({"same-focus": 2}, result["hypothesis_attempts"])
+            self.assertEqual(2, len(calls))
+
+    def test_run_iteration_loop_stops_after_consecutive_non_keep_budget(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            workspace.mkdir(parents=True, exist_ok=True)
+            plan_path = workspace / "iteration-plan.json"
+            plan_path.write_text(
+                json.dumps(
+                    {
+                        "objective": "stop deep loops after repeated non-progress",
+                        "owner": "Technical Trinity",
+                        "baseline_label": "stable",
+                        "loop_policy": {
+                            "max_rounds": 4,
+                            "max_consecutive_non_keep_rounds": 2,
+                            "advance_baseline_on_keep": False,
+                            "halt_on_decisions": ["stop"],
+                            "sync_patterns_at_end": False,
+                        },
+                        "candidates": [
+                            {"round_id": "round-01", "candidate": "attempt 1", "hypothesis_key": "focus-1"},
+                            {"round_id": "round-02", "candidate": "attempt 2", "hypothesis_key": "focus-2"},
+                            {"round_id": "round-03", "candidate": "attempt 3", "hypothesis_key": "focus-3"},
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            calls: list[dict[str, object]] = []
+            decisions = {
+                "round-01": ("retry", ["needs stronger evidence"]),
+                "round-02": ("rollback", ["regressed the benchmark"]),
+                "round-03": ("stop", ["should not execute"]),
+            }
+
+            def fake_run_cycle(**kwargs):
+                calls.append(dict(kwargs))
+                decision, reasons = decisions[str(kwargs["round_id"])]
+                return {"decision": decision, "decision_reason": reasons}
+
+            with mock.patch.object(iteration_loop.iteration_cycle, "run_cycle", side_effect=fake_run_cycle):
+                result = iteration_loop.run_loop(workspace=workspace, plan_path=plan_path)
+
+            self.assertEqual(2, result["round_count"])
+            self.assertEqual("consecutive non-keep budget exhausted: 2", result["halt_reason"])
+            self.assertEqual(2, result["consecutive_non_keep_rounds"])
+            self.assertEqual(
+                {"keep": 0, "retry": 1, "rollback": 1, "stop": 0},
+                result["decision_counts"],
+            )
+            self.assertEqual(2, len(calls))
+
+    def test_run_iteration_loop_resets_non_keep_streak_after_keep(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            workspace.mkdir(parents=True, exist_ok=True)
+            plan_path = workspace / "iteration-plan.json"
+            plan_path.write_text(
+                json.dumps(
+                    {
+                        "objective": "reset stagnation tracking after a keep",
+                        "owner": "Technical Trinity",
+                        "baseline_label": "stable",
+                        "loop_policy": {
+                            "max_rounds": 4,
+                            "max_consecutive_non_keep_rounds": 2,
+                            "advance_baseline_on_keep": False,
+                            "halt_on_decisions": ["stop"],
+                            "sync_patterns_at_end": False,
+                        },
+                        "candidates": [
+                            {"round_id": "round-01", "candidate": "attempt 1", "hypothesis_key": "focus-1"},
+                            {"round_id": "round-02", "candidate": "attempt 2", "hypothesis_key": "focus-2"},
+                            {"round_id": "round-03", "candidate": "attempt 3", "hypothesis_key": "focus-3"},
+                            {"round_id": "round-04", "candidate": "attempt 4", "hypothesis_key": "focus-4"},
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            calls: list[str] = []
+            decisions = {
+                "round-01": ("retry", ["needs stronger evidence"]),
+                "round-02": ("keep", ["improved without regressions"]),
+                "round-03": ("retry", ["next bottleneck needs another pass"]),
+                "round-04": ("stop", ["loop reached a stable stopping point"]),
+            }
+
+            def fake_run_cycle(**kwargs):
+                round_id = str(kwargs["round_id"])
+                calls.append(round_id)
+                decision, reasons = decisions[round_id]
+                return {"decision": decision, "decision_reason": reasons}
+
+            with mock.patch.object(iteration_loop.iteration_cycle, "run_cycle", side_effect=fake_run_cycle):
+                result = iteration_loop.run_loop(workspace=workspace, plan_path=plan_path)
+
+            self.assertEqual(4, result["round_count"])
+            self.assertEqual("halted on decision: stop", result["halt_reason"])
+            self.assertEqual(0, result["consecutive_non_keep_rounds"])
+            self.assertEqual(
+                {"keep": 1, "retry": 2, "rollback": 0, "stop": 1},
+                result["decision_counts"],
+            )
+            self.assertEqual(["round-01", "round-02", "round-03", "round-04"], calls)
+
+    def test_run_iteration_loop_renders_workspace_command_templates(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            workspace.mkdir(parents=True, exist_ok=True)
+            plan_path = workspace / "iteration-plan.json"
+            plan_path.write_text(
+                json.dumps(
+                    {
+                        "objective": "drive repo mutation commands from the plan",
+                        "owner": "Technical Trinity",
+                        "baseline_label": "stable",
+                        "candidate_worktree_template": "../wt-{round_id}",
+                        "benchmark_command_template": "python scripts/bench.py --round {round_id} --output-dir {output_dir}",
+                        "apply_command_template": "python scripts/apply_change.py --round {round_id}",
+                        "rollback_command_template": "python scripts/rollback_change.py --round {round_id}",
+                        "auto_apply_rollback": True,
+                        "loop_policy": {
+                            "max_rounds": 1,
+                            "advance_baseline_on_keep": False,
+                            "halt_on_decisions": ["stop"],
+                            "sync_patterns_at_end": False,
+                        },
+                        "candidates": [
+                            {
+                                "round_id": "round-01",
+                                "candidate": "candidate with workspace commands",
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            calls: list[dict[str, object]] = []
+
+            def fake_run_cycle(**kwargs):
+                calls.append(dict(kwargs))
+                return {"decision": "stop", "decision_reason": ["done"]}
+
+            with mock.patch.object(iteration_loop.iteration_cycle, "run_cycle", side_effect=fake_run_cycle):
+                result = iteration_loop.run_loop(workspace=workspace, plan_path=plan_path)
+
+            self.assertEqual(1, result["round_count"])
+            self.assertEqual(1, len(calls))
+            self.assertEqual(
+                "python scripts/apply_change.py --round round-01",
+                calls[0]["apply_command"],
+            )
+            self.assertEqual(
+                "python scripts/rollback_change.py --round round-01",
+                calls[0]["rollback_command"],
+            )
+            self.assertEqual(
+                "python scripts/bench.py --round round-01 --output-dir {output_dir}",
+                calls[0]["benchmark_command"],
+            )
+            self.assertTrue(calls[0]["auto_apply_rollback"])
+
+    def test_run_iteration_loop_renders_candidate_patch_templates(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            workspace.mkdir(parents=True, exist_ok=True)
+            plan_path = workspace / "iteration-plan.json"
+            plan_path.write_text(
+                json.dumps(
+                    {
+                        "objective": "drive patch artifacts from the plan",
+                        "owner": "Technical Trinity",
+                        "baseline_label": "stable",
+                        "candidate_worktree_template": "../wt-{round_id}",
+                        "candidate_patch_template": "./patches/{round_id}.patch",
+                        "patch_strip": 1,
+                        "loop_policy": {
+                            "max_rounds": 1,
+                            "advance_baseline_on_keep": False,
+                            "halt_on_decisions": ["stop"],
+                            "sync_patterns_at_end": False,
+                        },
+                        "candidates": [
+                            {
+                                "round_id": "round-01",
+                                "candidate": "candidate with patch artifact",
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            calls: list[dict[str, object]] = []
+
+            def fake_run_cycle(**kwargs):
+                calls.append(dict(kwargs))
+                return {"decision": "stop", "decision_reason": ["done"]}
+
+            with mock.patch.object(iteration_loop.iteration_cycle, "run_cycle", side_effect=fake_run_cycle):
+                result = iteration_loop.run_loop(workspace=workspace, plan_path=plan_path)
+
+            self.assertEqual(1, result["round_count"])
+            self.assertEqual(1, len(calls))
+            self.assertEqual(
+                str((workspace / "patches" / "round-01.patch").resolve()),
+                str(calls[0]["candidate_patch"]),
+            )
+            self.assertEqual(1, calls[0]["patch_strip"])
+
+    def test_run_iteration_loop_writes_candidate_brief_and_runs_materializer(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            workspace.mkdir(parents=True, exist_ok=True)
+            plan_path = workspace / "iteration-plan.json"
+            materialize_command = (
+                "python -c \"import json; from pathlib import Path; "
+                "brief = json.loads(Path(r'{candidate_brief}').read_text(encoding='utf-8')); "
+                "patch_path = Path(r'{candidate_patch}'); "
+                "patch_path.parent.mkdir(parents=True, exist_ok=True); "
+                "patch_path.write_text('PATCH:' + brief['candidate'], encoding='utf-8')\""
+            )
+            plan_path.write_text(
+                json.dumps(
+                    {
+                        "objective": "materialize the candidate into a patch artifact",
+                        "owner": "Technical Trinity",
+                        "baseline_label": "stable",
+                        "candidate_worktree_template": "../wt-{round_id}",
+                        "candidate_patch_template": "./patches/{round_id}.patch",
+                        "candidate_brief_template": "./briefs/{round_id}.json",
+                        "materialize_command_template": materialize_command,
+                        "loop_policy": {
+                            "max_rounds": 1,
+                            "advance_baseline_on_keep": False,
+                            "halt_on_decisions": ["stop"],
+                            "sync_patterns_at_end": False,
+                        },
+                        "candidates": [
+                            {
+                                "round_id": "round-01",
+                                "candidate": "candidate materialized through brief",
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            calls: list[dict[str, object]] = []
+
+            def fake_run_cycle(**kwargs):
+                calls.append(dict(kwargs))
+                return {"decision": "stop", "decision_reason": ["done"]}
+
+            with mock.patch.object(iteration_loop.iteration_cycle, "run_cycle", side_effect=fake_run_cycle):
+                result = iteration_loop.run_loop(workspace=workspace, plan_path=plan_path)
+
+            self.assertEqual(1, result["round_count"])
+            self.assertEqual(1, len(calls))
+            brief_path = workspace / "briefs" / "round-01.json"
+            patch_path = workspace / "patches" / "round-01.patch"
+            self.assertTrue(brief_path.exists())
+            self.assertTrue(patch_path.exists())
+            brief = baseline_registry.load_json(brief_path)
+            self.assertEqual("candidate materialized through brief", brief["candidate"])
+            self.assertEqual("plan", brief["candidate_source"])
+            self.assertEqual(str(patch_path.resolve()), str(calls[0]["candidate_patch"]))
+            self.assertEqual(str(brief_path.resolve()), result["rounds_run"][0]["candidate_brief"])
+            self.assertTrue(result["rounds_run"][0]["materialize_result"]["passed"])
+            self.assertEqual(
+                "PATCH:candidate materialized through brief",
+                patch_path.read_text(encoding="utf-8"),
+            )
+
+    def test_run_iteration_loop_builtin_materializer_creates_patch_from_mutation_plan(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            workspace.mkdir(parents=True, exist_ok=True)
+            candidate_repo = Path(tmp) / "candidate-repo"
+            candidate_repo.mkdir(parents=True, exist_ok=True)
+            target_file = candidate_repo / "settings.py"
+            target_file.write_text("FEATURE_FLAG = False\n", encoding="utf-8")
+            plan_path = workspace / "iteration-plan.json"
+            plan_path.write_text(
+                json.dumps(
+                    {
+                        "objective": "turn a mutation plan into a patch without an external materializer",
+                        "owner": "Technical Trinity",
+                        "baseline_label": "stable",
+                        "candidate_brief_template": "./briefs/{round_id}.json",
+                        "candidate_patch_template": "./patches/{round_id}.patch",
+                        "loop_policy": {
+                            "max_rounds": 1,
+                            "advance_baseline_on_keep": False,
+                            "halt_on_decisions": ["stop"],
+                            "sync_patterns_at_end": False,
+                        },
+                        "candidates": [
+                            {
+                                "round_id": "round-01",
+                                "candidate": "enable the feature flag",
+                                "candidate_repo": str(candidate_repo),
+                                "mutation_plan": {
+                                    "mode": "patch",
+                                    "operations": [
+                                        {
+                                            "op": "replace_text",
+                                            "path": "settings.py",
+                                            "old": "FEATURE_FLAG = False\n",
+                                            "new": "FEATURE_FLAG = True\n",
+                                        }
+                                    ],
+                                },
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            calls: list[dict[str, object]] = []
+
+            def fake_run_cycle(**kwargs):
+                calls.append(dict(kwargs))
+                return {"decision": "stop", "decision_reason": ["done"]}
+
+            with mock.patch.object(iteration_loop.iteration_cycle, "run_cycle", side_effect=fake_run_cycle):
+                result = iteration_loop.run_loop(workspace=workspace, plan_path=plan_path)
+
+            self.assertEqual(1, result["round_count"])
+            self.assertEqual(1, len(calls))
+            brief_path = workspace / "briefs" / "round-01.json"
+            patch_path = workspace / "patches" / "round-01.patch"
+            self.assertTrue(brief_path.exists())
+            self.assertTrue(patch_path.exists())
+            brief = baseline_registry.load_json(brief_path)
+            self.assertEqual("patch", brief["mutation_plan"]["mode"])
+            self.assertEqual(
+                "replace_text",
+                brief["mutation_plan"]["operations"][0]["op"],
+            )
+            self.assertEqual(str(patch_path.resolve()), str(calls[0]["candidate_patch"]))
+            self.assertEqual(
+                "builtin-materialize-candidate-patch",
+                result["rounds_run"][0]["materialize_result"]["engine"],
+            )
+            patch_text = patch_path.read_text(encoding="utf-8")
+            self.assertIn("diff --git a/settings.py b/settings.py", patch_text)
+            self.assertIn("+FEATURE_FLAG = True", patch_text)
+
+    def test_builtin_materializer_supports_json_operations_for_skill_self_optimization(self) -> None:
+        with make_tempdir() as tmp:
+            candidate_repo = Path(tmp) / "candidate-repo"
+            references_dir = candidate_repo / "references"
+            evals_dir = candidate_repo / "evals"
+            references_dir.mkdir(parents=True, exist_ok=True)
+            evals_dir.mkdir(parents=True, exist_ok=True)
+            (references_dir / "routing-rules.json").write_text(
+                json.dumps(
+                    {
+                        "weights": {
+                            "git_workflow": 2,
+                            "frontend": 5,
+                        },
+                        "negative_keywords": {
+                            "git": ["checkout"],
+                        },
+                        "obsolete_rule": True,
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (evals_dir / "evals.json").write_text(
+                json.dumps(
+                    {
+                        "skill_name": "virtual-intelligent-dev-team",
+                        "evals": [
+                            {
+                                "id": 1,
+                                "prompt": "existing case",
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            patch_path = Path(tmp) / "candidate.patch"
+
+            result = iteration_loop.candidate_materializer.materialize_payload(
+                payload={
+                    "mutation_plan": {
+                        "mode": "patch",
+                        "operations": [
+                            {
+                                "op": "json_set",
+                                "path": "references/routing-rules.json",
+                                "pointer": "/weights/git_workflow",
+                                "value": 4,
+                            },
+                            {
+                                "op": "json_merge",
+                                "path": "references/routing-rules.json",
+                                "pointer": "/negative_keywords",
+                                "value": {
+                                    "product": ["checkout"],
+                                },
+                            },
+                            {
+                                "op": "json_delete",
+                                "path": "references/routing-rules.json",
+                                "pointer": "/obsolete_rule",
+                            },
+                            {
+                                "op": "json_append_unique",
+                                "path": "evals/evals.json",
+                                "pointer": "/evals",
+                                "match_keys": ["id"],
+                                "value": {
+                                    "id": 99,
+                                    "prompt": "new regression coverage",
+                                },
+                            },
+                            {
+                                "op": "json_append_unique",
+                                "path": "evals/evals.json",
+                                "pointer": "/evals",
+                                "match_keys": ["id"],
+                                "value": {
+                                    "id": 99,
+                                    "prompt": "new regression coverage",
+                                },
+                            },
+                        ],
+                    }
+                },
+                candidate_root=candidate_repo,
+                patch_output=patch_path,
+            )
+
+            self.assertTrue(result["passed"])
+            self.assertEqual(
+                sorted(["evals/evals.json", "references/routing-rules.json"]),
+                result["changed_files"],
+            )
+            patch_text = patch_path.read_text(encoding="utf-8")
+            self.assertIn("diff --git a/references/routing-rules.json b/references/routing-rules.json", patch_text)
+            self.assertIn("diff --git a/evals/evals.json b/evals/evals.json", patch_text)
+            self.assertIn('"git_workflow": 4', patch_text)
+            self.assertIn('"product": [', patch_text)
+            self.assertIn('-  "obsolete_rule": true', patch_text)
+            self.assertEqual(1, patch_text.count('"id": 99'))
+
+    def test_builtin_materializer_patch_applies_to_git_repo_without_final_newline(self) -> None:
+        with make_tempdir() as tmp:
+            candidate_repo = Path(tmp) / "candidate-repo"
+            candidate_repo.mkdir(parents=True, exist_ok=True)
+            git("init", cwd=candidate_repo)
+            configure_repo(candidate_repo)
+            target_file = candidate_repo / "signals.json"
+            target_file.write_text('{"mode":"baseline"}', encoding="utf-8")
+            git("add", "signals.json", cwd=candidate_repo)
+            git("commit", "-m", "chore: init signals", cwd=candidate_repo)
+
+            patch_path = Path(tmp) / "candidate.patch"
+            result = iteration_loop.candidate_materializer.materialize_payload(
+                payload={
+                    "mutation_plan": {
+                        "mode": "patch",
+                        "operations": [
+                            {
+                                "op": "json_set",
+                                "path": "signals.json",
+                                "pointer": "/mode",
+                                "value": "improve",
+                            }
+                        ],
+                    }
+                },
+                candidate_root=candidate_repo,
+                patch_output=patch_path,
+            )
+
+            self.assertTrue(result["passed"])
+            apply_result = iteration_cycle.apply_patch_file(
+                candidate_root=candidate_repo,
+                patch_path=patch_path,
+                patch_strip=1,
+            )
+            self.assertTrue(apply_result["passed"])
+            self.assertIn('"mode": "improve"', target_file.read_text(encoding="utf-8"))
+            rollback_result = iteration_cycle.apply_patch_file(
+                candidate_root=candidate_repo,
+                patch_path=patch_path,
+                patch_strip=1,
+                reverse=True,
+            )
+            self.assertTrue(rollback_result["passed"])
+            self.assertEqual('{"mode":"baseline"}', target_file.read_text(encoding="utf-8"))
+
+    def test_run_iteration_loop_plan_candidate_can_synthesize_mutation_plan_from_catalog(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            workspace.mkdir(parents=True, exist_ok=True)
+            candidate_repo = Path(tmp) / "candidate-repo"
+            candidate_repo.mkdir(parents=True, exist_ok=True)
+            (candidate_repo / "layout.css").write_text("gap: 8px;\n", encoding="utf-8")
+            plan_path = workspace / "iteration-plan.json"
+            plan_path.write_text(
+                json.dumps(
+                    {
+                        "objective": "improve frontend spacing quality",
+                        "owner": "World-Class Product Architect",
+                        "baseline_label": "stable",
+                        "candidate_brief_template": "./briefs/{round_id}.json",
+                        "mutation_catalog": [
+                            {
+                                "id": "mobile-spacing-fix",
+                                "priority": 10,
+                                "when_any_keywords": ["mobile spacing", "mobile", "spacing"],
+                                "mutation_plan": {
+                                    "mode": "patch",
+                                    "operations": [
+                                        {
+                                            "op": "replace_text",
+                                            "path": "layout.css",
+                                            "old": "gap: 8px;\n",
+                                            "new": "gap: 12px;\n",
+                                        }
+                                    ],
+                                },
+                            }
+                        ],
+                        "loop_policy": {
+                            "max_rounds": 1,
+                            "advance_baseline_on_keep": False,
+                            "halt_on_decisions": ["stop"],
+                            "sync_patterns_at_end": False,
+                        },
+                        "candidates": [
+                            {
+                                "round_id": "round-01",
+                                "candidate": "tighten mobile spacing on small screens",
+                                "candidate_repo": str(candidate_repo),
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            calls: list[dict[str, object]] = []
+
+            def fake_run_cycle(**kwargs):
+                calls.append(dict(kwargs))
+                return {"decision": "stop", "decision_reason": ["done"]}
+
+            with mock.patch.object(iteration_loop.iteration_cycle, "run_cycle", side_effect=fake_run_cycle):
+                result = iteration_loop.run_loop(workspace=workspace, plan_path=plan_path)
+
+            self.assertEqual(1, result["round_count"])
+            self.assertEqual(1, len(calls))
+            brief_path = workspace / "briefs" / "round-01.json"
+            patch_path = workspace / "patches" / "round-01.patch"
+            self.assertTrue(brief_path.exists())
+            self.assertTrue(patch_path.exists())
+            brief = baseline_registry.load_json(brief_path)
+            self.assertEqual("catalog:mobile-spacing-fix", brief["mutation_plan_source"])
+            self.assertEqual(str(patch_path.resolve()), str(calls[0]["candidate_patch"]))
+            self.assertEqual(
+                "builtin-materialize-candidate-patch",
+                result["rounds_run"][0]["materialize_result"]["engine"],
+            )
+            self.assertEqual("catalog:mobile-spacing-fix", result["rounds_run"][0]["mutation_plan_source"])
+
+    def test_run_iteration_loop_can_synthesize_json_mutation_plan_for_skill_self_optimization(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            workspace.mkdir(parents=True, exist_ok=True)
+            candidate_repo = Path(tmp) / "candidate-repo"
+            (candidate_repo / "references").mkdir(parents=True, exist_ok=True)
+            (candidate_repo / "evals").mkdir(parents=True, exist_ok=True)
+            (candidate_repo / "references" / "routing-rules.json").write_text(
+                json.dumps(
+                    {
+                        "weights": {
+                            "git_workflow": 2,
+                            "frontend": 5,
+                        }
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (candidate_repo / "evals" / "evals.json").write_text(
+                json.dumps(
+                    {
+                        "skill_name": "virtual-intelligent-dev-team",
+                        "evals": [],
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            plan_path = workspace / "iteration-plan.json"
+            plan_path.write_text(
+                json.dumps(
+                    {
+                        "objective": "self-optimize routing guardrails without manual patch writing",
+                        "owner": "Technical Trinity",
+                        "baseline_label": "stable",
+                        "candidate_brief_template": "./briefs/{round_id}.json",
+                        "mutation_catalog": [
+                            {
+                                "id": "checkout-false-positive-self-fix",
+                                "priority": 10,
+                                "when_any_keywords": ["checkout false positive", "eval coverage", "routing regression"],
+                                "mutation_plan": {
+                                    "mode": "patch",
+                                    "operations": [
+                                        {
+                                            "op": "json_set",
+                                            "path": "references/routing-rules.json",
+                                            "pointer": "/weights/git_workflow",
+                                            "value": 1,
+                                        },
+                                        {
+                                            "op": "json_append_unique",
+                                            "path": "evals/evals.json",
+                                            "pointer": "/evals",
+                                            "match_keys": ["id"],
+                                            "value": {
+                                                "id": 101,
+                                                "prompt": "Audit this checkout UX for accessibility and mobile responsiveness.",
+                                                "expected_output": "Checkout UX should stay with World-Class Product Architect instead of Git workflow routing.",
+                                            },
+                                        },
+                                    ],
+                                },
+                            }
+                        ],
+                        "loop_policy": {
+                            "max_rounds": 1,
+                            "advance_baseline_on_keep": False,
+                            "halt_on_decisions": ["stop"],
+                            "sync_patterns_at_end": False,
+                        },
+                        "candidates": [
+                            {
+                                "round_id": "round-01",
+                                "candidate": "fix checkout false positive routing regression and add eval coverage",
+                                "candidate_repo": str(candidate_repo),
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            calls: list[dict[str, object]] = []
+
+            def fake_run_cycle(**kwargs):
+                calls.append(dict(kwargs))
+                return {"decision": "stop", "decision_reason": ["done"]}
+
+            with mock.patch.object(iteration_loop.iteration_cycle, "run_cycle", side_effect=fake_run_cycle):
+                result = iteration_loop.run_loop(workspace=workspace, plan_path=plan_path)
+
+            self.assertEqual(1, result["round_count"])
+            self.assertEqual(1, len(calls))
+            brief_path = workspace / "briefs" / "round-01.json"
+            patch_path = workspace / "patches" / "round-01.patch"
+            self.assertTrue(brief_path.exists())
+            self.assertTrue(patch_path.exists())
+            brief = baseline_registry.load_json(brief_path)
+            self.assertEqual("catalog:checkout-false-positive-self-fix", brief["mutation_plan_source"])
+            self.assertEqual(str(patch_path.resolve()), str(calls[0]["candidate_patch"]))
+            self.assertEqual(
+                "builtin-materialize-candidate-patch",
+                result["rounds_run"][0]["materialize_result"]["engine"],
+            )
+            patch_text = patch_path.read_text(encoding="utf-8")
+            self.assertIn("diff --git a/references/routing-rules.json b/references/routing-rules.json", patch_text)
+            self.assertIn("diff --git a/evals/evals.json b/evals/evals.json", patch_text)
+            self.assertIn('"git_workflow": 1', patch_text)
+            self.assertIn('"id": 101', patch_text)
+
+    def test_run_iteration_loop_auto_generates_candidate_from_feedback_chain(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            workspace.mkdir(parents=True, exist_ok=True)
+            plan_path = workspace / "iteration-plan.json"
+            plan_path.write_text(
+                json.dumps(
+                    {
+                        "objective": "improve frontend iteration quality",
+                        "owner": "World-Class Product Architect",
+                        "baseline_label": "stable",
+                        "autonomous_candidate_generation": True,
+                        "candidate_worktree_template": "../wt-{round_id}",
+                        "candidate_output_dir_template": "./runs/{round_id}",
+                        "loop_policy": {
+                            "max_rounds": 2,
+                            "advance_baseline_on_keep": False,
+                            "halt_on_decisions": ["stop"],
+                            "sync_patterns_at_end": False,
+                        },
+                        "candidates": [
+                            {
+                                "round_id": "round-01",
+                                "candidate": "initial frontend hypothesis",
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            calls: list[dict[str, object]] = []
+
+            def fake_run_cycle(**kwargs):
+                round_id = str(kwargs["round_id"])
+                candidate = str(kwargs["candidate"])
+                calls.append(dict(kwargs))
+                round_dir = workspace / round_id
+                round_dir.mkdir(parents=True, exist_ok=True)
+                decision = "retry" if round_id == "round-01" else "stop"
+                reasons = ["missing mobile evidence"] if decision == "retry" else ["candidate is materially unchanged from baseline"]
+                (round_dir / "state.json").write_text(
+                    json.dumps(
+                        {
+                            "round_id": round_id,
+                            "decision": decision,
+                            "candidate": candidate,
+                            "decision_reason": reasons,
+                        },
+                        ensure_ascii=False,
+                    ),
+                    encoding="utf-8",
+                )
+                (round_dir / "round-memory.md").write_text(
+                    "# Round Memory\n\n- Open loops: missing mobile evidence\n- Suggested next move: tighten mobile layout evidence\n",
+                    encoding="utf-8",
+                )
+                (round_dir / "self-feedback.md").write_text(
+                    "# Self Feedback\n\n- Signals that regressed or blocked progress: missing mobile evidence\n- One variable to change next: mobile spacing\n",
+                    encoding="utf-8",
+                )
+                (workspace / "open-loops.md").write_text(
+                    "# Open Loops\n\n- [round-01] missing mobile evidence\n",
+                    encoding="utf-8",
+                )
+                (workspace / "distilled-patterns.md").write_text(
+                    "# Distilled Patterns\n\n- Keep the semantic owner stable.\n",
+                    encoding="utf-8",
+                )
+                (workspace / "iteration-context-chain.md").write_text(
+                    "# Iteration Context Chain\n\n- missing mobile evidence\n",
+                    encoding="utf-8",
+                )
+                return {"decision": decision, "decision_reason": reasons}
+
+            with mock.patch.object(iteration_loop.iteration_cycle, "run_cycle", side_effect=fake_run_cycle):
+                result = iteration_loop.run_loop(workspace=workspace, plan_path=plan_path)
+
+            self.assertEqual(2, result["round_count"])
+            self.assertEqual(1, result["auto_generated_rounds"])
+            self.assertEqual("auto-generated", result["rounds_run"][1]["candidate_source"])
+            self.assertIn("missing mobile evidence", str(calls[1]["candidate"]))
+            self.assertEqual("World-Class Product Architect", calls[1]["owner"])
+            self.assertEqual(str((workspace.parent / "wt-round-02").resolve()), str(calls[1]["candidate_repo"]))
+            self.assertEqual(str((workspace / "runs" / "round-02").resolve()), str(calls[1]["candidate_output_dir"]))
+
+    def test_run_iteration_loop_auto_pivots_after_same_hypothesis_budget(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            workspace.mkdir(parents=True, exist_ok=True)
+            plan_path = workspace / "iteration-plan.json"
+            mobile_focus = "mobile spacing still needs stronger evidence"
+            latency_focus = "form latency still blocks checkout submit"
+            plan_path.write_text(
+                json.dumps(
+                    {
+                        "objective": "improve frontend iteration quality",
+                        "owner": "World-Class Product Architect",
+                        "baseline_label": "stable",
+                        "autonomous_candidate_generation": True,
+                        "loop_policy": {
+                            "max_rounds": 3,
+                            "max_same_hypothesis_retries": 1,
+                            "auto_pivot_on_stagnation": True,
+                            "advance_baseline_on_keep": False,
+                            "halt_on_decisions": ["stop"],
+                            "sync_patterns_at_end": False,
+                        },
+                        "candidates": [
+                            {
+                                "round_id": "round-01",
+                                "candidate": "initial frontend hypothesis",
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            calls: list[dict[str, object]] = []
+
+            def fake_run_cycle(**kwargs):
+                round_id = str(kwargs["round_id"])
+                candidate = str(kwargs["candidate"])
+                calls.append(dict(kwargs))
+                round_dir = workspace / round_id
+                round_dir.mkdir(parents=True, exist_ok=True)
+                decision = {"round-01": "retry", "round-02": "retry"}.get(round_id, "stop")
+                reasons = (
+                    [mobile_focus]
+                    if decision != "stop"
+                    else ["loop reached a stable stopping point"]
+                )
+                (round_dir / "state.json").write_text(
+                    json.dumps(
+                        {
+                            "round_id": round_id,
+                            "decision": decision,
+                            "candidate": candidate,
+                            "decision_reason": reasons,
+                        },
+                        ensure_ascii=False,
+                    ),
+                    encoding="utf-8",
+                )
+                if round_id in {"round-01", "round-02"}:
+                    (round_dir / "round-memory.md").write_text(
+                        f"# Round Memory\n\n- Open loops: {mobile_focus}\n- Suggested next move: {latency_focus}\n",
+                        encoding="utf-8",
+                    )
+                    (round_dir / "self-feedback.md").write_text(
+                        f"# Self Feedback\n\n- Signals that regressed or blocked progress: {mobile_focus}\n- One variable to change next: mobile spacing\n",
+                        encoding="utf-8",
+                    )
+                    (workspace / "open-loops.md").write_text(
+                        f"# Open Loops\n\n- [round-02] {mobile_focus}\n- [round-02] {latency_focus}\n",
+                        encoding="utf-8",
+                    )
+                    (workspace / "distilled-patterns.md").write_text(
+                        "# Distilled Patterns\n\n- Preserve semantic ownership.\n",
+                        encoding="utf-8",
+                    )
+                    (workspace / "iteration-context-chain.md").write_text(
+                        f"# Iteration Context Chain\n\n- {mobile_focus}\n- {latency_focus}\n",
+                        encoding="utf-8",
+                    )
+                return {"decision": decision, "decision_reason": reasons}
+
+            with mock.patch.object(iteration_loop.iteration_cycle, "run_cycle", side_effect=fake_run_cycle):
+                result = iteration_loop.run_loop(workspace=workspace, plan_path=plan_path)
+
+            self.assertEqual(3, result["round_count"])
+            self.assertEqual(2, result["auto_generated_rounds"])
+            self.assertEqual(1, result["pivot_count"])
+            self.assertIn(iteration_loop.hypothesis_key_from_text(mobile_focus), result["blocked_hypothesis_keys"])
+            self.assertEqual("auto-generated", result["rounds_run"][2]["candidate_source"])
+            self.assertIn(latency_focus, str(calls[2]["candidate"]))
+            self.assertIn("same hypothesis retry budget exhausted", str(result["rounds_run"][2]["generation_reason"]))
+
+    def test_run_iteration_loop_auto_pivots_after_consecutive_non_keep_budget(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            workspace.mkdir(parents=True, exist_ok=True)
+            plan_path = workspace / "iteration-plan.json"
+            mobile_focus = "mobile spacing still needs stronger evidence"
+            latency_focus = "form latency still blocks checkout submit"
+            plan_path.write_text(
+                json.dumps(
+                    {
+                        "objective": "improve frontend iteration quality",
+                        "owner": "World-Class Product Architect",
+                        "baseline_label": "stable",
+                        "autonomous_candidate_generation": True,
+                        "loop_policy": {
+                            "max_rounds": 3,
+                            "max_same_hypothesis_retries": 3,
+                            "max_consecutive_non_keep_rounds": 2,
+                            "auto_pivot_on_stagnation": True,
+                            "advance_baseline_on_keep": False,
+                            "halt_on_decisions": ["stop"],
+                            "sync_patterns_at_end": False,
+                        },
+                        "candidates": [
+                            {
+                                "round_id": "round-01",
+                                "candidate": "initial frontend hypothesis",
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            calls: list[dict[str, object]] = []
+
+            def fake_run_cycle(**kwargs):
+                round_id = str(kwargs["round_id"])
+                candidate = str(kwargs["candidate"])
+                calls.append(dict(kwargs))
+                round_dir = workspace / round_id
+                round_dir.mkdir(parents=True, exist_ok=True)
+                decision = {"round-01": "retry", "round-02": "rollback"}.get(round_id, "stop")
+                reasons = (
+                    [mobile_focus]
+                    if decision != "stop"
+                    else ["loop reached a stable stopping point"]
+                )
+                (round_dir / "state.json").write_text(
+                    json.dumps(
+                        {
+                            "round_id": round_id,
+                            "decision": decision,
+                            "candidate": candidate,
+                            "decision_reason": reasons,
+                        },
+                        ensure_ascii=False,
+                    ),
+                    encoding="utf-8",
+                )
+                if round_id in {"round-01", "round-02"}:
+                    (round_dir / "round-memory.md").write_text(
+                        f"# Round Memory\n\n- Open loops: {mobile_focus}\n- Suggested next move: {latency_focus}\n",
+                        encoding="utf-8",
+                    )
+                    (round_dir / "self-feedback.md").write_text(
+                        f"# Self Feedback\n\n- Signals that regressed or blocked progress: {mobile_focus}\n- One variable to change next: mobile spacing\n",
+                        encoding="utf-8",
+                    )
+                    (workspace / "open-loops.md").write_text(
+                        f"# Open Loops\n\n- [round-02] {mobile_focus}\n- [round-02] {latency_focus}\n",
+                        encoding="utf-8",
+                    )
+                    (workspace / "distilled-patterns.md").write_text(
+                        "# Distilled Patterns\n\n- Preserve semantic ownership.\n",
+                        encoding="utf-8",
+                    )
+                    (workspace / "iteration-context-chain.md").write_text(
+                        f"# Iteration Context Chain\n\n- {mobile_focus}\n- {latency_focus}\n",
+                        encoding="utf-8",
+                    )
+                return {"decision": decision, "decision_reason": reasons}
+
+            with mock.patch.object(iteration_loop.iteration_cycle, "run_cycle", side_effect=fake_run_cycle):
+                result = iteration_loop.run_loop(workspace=workspace, plan_path=plan_path)
+
+            self.assertEqual(3, result["round_count"])
+            self.assertEqual(2, result["auto_generated_rounds"])
+            self.assertEqual(1, result["pivot_count"])
+            self.assertEqual("halted on decision: stop", result["halt_reason"])
+            self.assertEqual(0, result["consecutive_non_keep_rounds"])
+            self.assertIn(iteration_loop.hypothesis_key_from_text(mobile_focus), result["blocked_hypothesis_keys"])
+            self.assertEqual("auto-generated", result["rounds_run"][2]["candidate_source"])
+            self.assertIn(latency_focus, str(calls[2]["candidate"]))
+            self.assertIn("consecutive non-keep budget exhausted", str(result["rounds_run"][2]["generation_reason"]))
+
+    def test_run_iteration_loop_auto_synthesizes_mutation_plan_from_catalog(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            workspace.mkdir(parents=True, exist_ok=True)
+            candidate_repo = Path(tmp) / "wt-round-02"
+            candidate_repo.mkdir(parents=True, exist_ok=True)
+            (candidate_repo / "layout.css").write_text("gap: 8px;\n", encoding="utf-8")
+            plan_path = workspace / "iteration-plan.json"
+            plan_path.write_text(
+                json.dumps(
+                    {
+                        "objective": "improve frontend iteration quality",
+                        "owner": "World-Class Product Architect",
+                        "baseline_label": "stable",
+                        "autonomous_candidate_generation": True,
+                        "candidate_worktree_template": "../wt-{round_id}",
+                        "candidate_patch_template": "./patches/{round_id}.patch",
+                        "candidate_brief_template": "./briefs/{round_id}.json",
+                        "mutation_catalog": [
+                            {
+                                "id": "mobile-spacing-fix",
+                                "priority": 10,
+                                "when_any_keywords": ["mobile spacing", "mobile", "spacing"],
+                                "mutation_plan": {
+                                    "mode": "patch",
+                                    "operations": [
+                                        {
+                                            "op": "replace_text",
+                                            "path": "layout.css",
+                                            "old": "gap: 8px;\n",
+                                            "new": "gap: 12px;\n",
+                                        }
+                                    ],
+                                },
+                            }
+                        ],
+                        "loop_policy": {
+                            "max_rounds": 2,
+                            "advance_baseline_on_keep": False,
+                            "halt_on_decisions": ["stop"],
+                            "sync_patterns_at_end": False,
+                        },
+                        "candidates": [
+                            {
+                                "round_id": "round-01",
+                                "candidate": "initial frontend hypothesis",
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            calls: list[dict[str, object]] = []
+
+            def fake_run_cycle(**kwargs):
+                round_id = str(kwargs["round_id"])
+                candidate = str(kwargs["candidate"])
+                calls.append(dict(kwargs))
+                round_dir = workspace / round_id
+                round_dir.mkdir(parents=True, exist_ok=True)
+                decision = "retry" if round_id == "round-01" else "stop"
+                reasons = (
+                    ["mobile spacing still feels cramped on small screens"]
+                    if decision == "retry"
+                    else ["done"]
+                )
+                (round_dir / "state.json").write_text(
+                    json.dumps(
+                        {
+                            "round_id": round_id,
+                            "decision": decision,
+                            "candidate": candidate,
+                            "decision_reason": reasons,
+                        },
+                        ensure_ascii=False,
+                    ),
+                    encoding="utf-8",
+                )
+                if round_id == "round-01":
+                    (round_dir / "round-memory.md").write_text(
+                        "# Round Memory\n\n- Open loops: mobile spacing still feels cramped on small screens\n- Suggested next move: increase mobile spacing\n",
+                        encoding="utf-8",
+                    )
+                    (round_dir / "self-feedback.md").write_text(
+                        "# Self Feedback\n\n- Signals that regressed or blocked progress: mobile spacing still feels cramped on small screens\n- One variable to change next: mobile spacing\n",
+                        encoding="utf-8",
+                    )
+                    (workspace / "open-loops.md").write_text(
+                        "# Open Loops\n\n- [round-01] mobile spacing still feels cramped on small screens\n",
+                        encoding="utf-8",
+                    )
+                    (workspace / "distilled-patterns.md").write_text(
+                        "# Distilled Patterns\n\n- Preserve the semantic owner and optimize mobile spacing next.\n",
+                        encoding="utf-8",
+                    )
+                    (workspace / "iteration-context-chain.md").write_text(
+                        "# Iteration Context Chain\n\n- mobile spacing still feels cramped on small screens\n",
+                        encoding="utf-8",
+                    )
+                return {"decision": decision, "decision_reason": reasons}
+
+            with mock.patch.object(iteration_loop.iteration_cycle, "run_cycle", side_effect=fake_run_cycle):
+                result = iteration_loop.run_loop(workspace=workspace, plan_path=plan_path)
+
+            self.assertEqual(2, result["round_count"])
+            self.assertEqual(2, len(calls))
+            brief_path = workspace / "briefs" / "round-02.json"
+            patch_path = workspace / "patches" / "round-02.patch"
+            self.assertTrue(brief_path.exists())
+            self.assertTrue(patch_path.exists())
+            brief = baseline_registry.load_json(brief_path)
+            self.assertEqual("catalog:mobile-spacing-fix", brief["mutation_plan_source"])
+            self.assertIsNotNone(brief["mutation_focus"])
+            self.assertEqual("patch", brief["mutation_plan"]["mode"])
+            self.assertEqual(
+                "replace_text",
+                brief["mutation_plan"]["operations"][0]["op"],
+            )
+            self.assertEqual(str(patch_path.resolve()), str(calls[1]["candidate_patch"]))
+            self.assertEqual(
+                "builtin-materialize-candidate-patch",
+                result["rounds_run"][1]["materialize_result"]["engine"],
+            )
+            self.assertEqual("catalog:mobile-spacing-fix", result["rounds_run"][1]["mutation_plan_source"])
+            patch_text = patch_path.read_text(encoding="utf-8")
+            self.assertIn("diff --git a/layout.css b/layout.css", patch_text)
+            self.assertIn("+gap: 12px;", patch_text)
+
+    def test_run_iteration_loop_auto_generated_brief_contains_generation_metadata(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            workspace.mkdir(parents=True, exist_ok=True)
+            plan_path = workspace / "iteration-plan.json"
+            plan_path.write_text(
+                json.dumps(
+                    {
+                        "objective": "improve frontend iteration quality",
+                        "owner": "World-Class Product Architect",
+                        "baseline_label": "stable",
+                        "autonomous_candidate_generation": True,
+                        "candidate_brief_template": "./briefs/{round_id}.json",
+                        "loop_policy": {
+                            "max_rounds": 2,
+                            "advance_baseline_on_keep": False,
+                            "halt_on_decisions": ["stop"],
+                            "sync_patterns_at_end": False,
+                        },
+                        "candidates": [
+                            {
+                                "round_id": "round-01",
+                                "candidate": "initial frontend hypothesis",
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            def fake_run_cycle(**kwargs):
+                round_id = str(kwargs["round_id"])
+                round_dir = workspace / round_id
+                round_dir.mkdir(parents=True, exist_ok=True)
+                decision = "retry" if round_id == "round-01" else "stop"
+                reasons = ["missing mobile evidence"] if decision == "retry" else ["done"]
+                (round_dir / "state.json").write_text(
+                    json.dumps(
+                        {
+                            "round_id": round_id,
+                            "decision": decision,
+                            "candidate": kwargs["candidate"],
+                            "decision_reason": reasons,
+                        },
+                        ensure_ascii=False,
+                    ),
+                    encoding="utf-8",
+                )
+                (round_dir / "round-memory.md").write_text(
+                    "# Round Memory\n\n- Open loops: missing mobile evidence\n- Suggested next move: tighten mobile layout evidence\n",
+                    encoding="utf-8",
+                )
+                (round_dir / "self-feedback.md").write_text(
+                    "# Self Feedback\n\n- Signals that regressed or blocked progress: missing mobile evidence\n- One variable to change next: mobile spacing\n",
+                    encoding="utf-8",
+                )
+                (workspace / "open-loops.md").write_text(
+                    "# Open Loops\n\n- [round-01] missing mobile evidence\n",
+                    encoding="utf-8",
+                )
+                (workspace / "distilled-patterns.md").write_text(
+                    "# Distilled Patterns\n\n- Keep the semantic owner stable.\n",
+                    encoding="utf-8",
+                )
+                (workspace / "iteration-context-chain.md").write_text(
+                    "# Iteration Context Chain\n\n- missing mobile evidence\n",
+                    encoding="utf-8",
+                )
+                return {"decision": decision, "decision_reason": reasons}
+
+            with mock.patch.object(iteration_loop.iteration_cycle, "run_cycle", side_effect=fake_run_cycle):
+                result = iteration_loop.run_loop(workspace=workspace, plan_path=plan_path)
+
+            self.assertEqual(2, result["round_count"])
+            brief_path = workspace / "briefs" / "round-02.json"
+            self.assertTrue(brief_path.exists())
+            brief = baseline_registry.load_json(brief_path)
+            self.assertEqual("auto-generated", brief["candidate_source"])
+            self.assertEqual("retry", brief["generation_reason"])
+            self.assertTrue(any("open-loops.md" in item for item in brief["generated_from"]))
+            self.assertEqual("World-Class Product Architect", brief["owner"])
+
+    def test_run_iteration_loop_resume_continues_from_persisted_state(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            workspace.mkdir(parents=True, exist_ok=True)
+            plan_path = workspace / "iteration-plan.json"
+            plan_path.write_text(
+                json.dumps(
+                    {
+                        "objective": "resume a deep offline loop after interruption",
+                        "owner": "Technical Trinity",
+                        "baseline_label": "stable",
+                        "loop_policy": {
+                            "max_rounds": 3,
+                            "advance_baseline_on_keep": False,
+                            "halt_on_decisions": ["stop"],
+                            "sync_patterns_at_end": False,
+                        },
+                        "candidates": [
+                            {"round_id": "round-01", "candidate": "first attempt"},
+                            {"round_id": "round-02", "candidate": "second attempt"},
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            def interrupted_run_cycle(**kwargs):
+                round_id = str(kwargs["round_id"])
+                if round_id == "round-02":
+                    raise RuntimeError("simulated interruption")
+                round_dir = workspace / round_id
+                round_dir.mkdir(parents=True, exist_ok=True)
+                (round_dir / "state.json").write_text(
+                    json.dumps(
+                        {
+                            "round_id": round_id,
+                            "candidate": kwargs["candidate"],
+                            "hypothesis_key": kwargs["hypothesis_key"],
+                            "decision": "retry",
+                        },
+                        ensure_ascii=False,
+                    ),
+                    encoding="utf-8",
+                )
+                return {"decision": "retry", "decision_reason": ["need one more round"]}
+
+            with mock.patch.object(iteration_loop.iteration_cycle, "run_cycle", side_effect=interrupted_run_cycle):
+                with self.assertRaisesRegex(RuntimeError, "simulated interruption"):
+                    iteration_loop.run_loop(workspace=workspace, plan_path=plan_path)
+
+            loop_state = baseline_registry.load_json(workspace / "loops" / "iteration-plan-state.json")
+            self.assertEqual("running", loop_state["status"])
+            self.assertEqual(1, loop_state["round_count"])
+            self.assertEqual(2, loop_state["next_round_number"])
+            self.assertEqual("round-01", loop_state["last_round_id"])
+
+            resume_calls: list[str] = []
+
+            def resumed_run_cycle(**kwargs):
+                round_id = str(kwargs["round_id"])
+                resume_calls.append(round_id)
+                round_dir = workspace / round_id
+                round_dir.mkdir(parents=True, exist_ok=True)
+                (round_dir / "state.json").write_text(
+                    json.dumps(
+                        {
+                            "round_id": round_id,
+                            "candidate": kwargs["candidate"],
+                            "hypothesis_key": kwargs["hypothesis_key"],
+                            "decision": "stop",
+                        },
+                        ensure_ascii=False,
+                    ),
+                    encoding="utf-8",
+                )
+                return {"decision": "stop", "decision_reason": ["loop reached a stable stopping point"]}
+
+            with mock.patch.object(iteration_loop.iteration_cycle, "run_cycle", side_effect=resumed_run_cycle):
+                result = iteration_loop.run_loop(workspace=workspace, plan_path=plan_path, resume=True)
+
+            self.assertEqual("completed", result["status"])
+            self.assertTrue(result["resume_requested"])
+            self.assertTrue(result["resumed_from_existing"])
+            self.assertEqual(2, result["round_count"])
+            self.assertEqual(["round-02"], resume_calls)
+            self.assertEqual("round-02", result["last_round_id"])
+            self.assertTrue(Path(result["summary"]).exists())
+
+    def test_run_iteration_loop_resume_preserves_non_keep_streak_budget(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            workspace.mkdir(parents=True, exist_ok=True)
+            plan_path = workspace / "iteration-plan.json"
+            plan_path.write_text(
+                json.dumps(
+                    {
+                        "objective": "resume stagnation tracking safely",
+                        "owner": "Technical Trinity",
+                        "baseline_label": "stable",
+                        "loop_policy": {
+                            "max_rounds": 3,
+                            "max_consecutive_non_keep_rounds": 2,
+                            "advance_baseline_on_keep": False,
+                            "halt_on_decisions": ["stop"],
+                            "sync_patterns_at_end": False,
+                        },
+                        "candidates": [
+                            {"round_id": "round-01", "candidate": "first attempt"},
+                            {"round_id": "round-02", "candidate": "second attempt"},
+                            {"round_id": "round-03", "candidate": "third attempt"},
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            def interrupted_run_cycle(**kwargs):
+                round_id = str(kwargs["round_id"])
+                if round_id == "round-02":
+                    raise RuntimeError("simulated interruption")
+                round_dir = workspace / round_id
+                round_dir.mkdir(parents=True, exist_ok=True)
+                (round_dir / "state.json").write_text(
+                    json.dumps(
+                        {
+                            "round_id": round_id,
+                            "candidate": kwargs["candidate"],
+                            "hypothesis_key": kwargs["hypothesis_key"],
+                            "decision": "retry",
+                        },
+                        ensure_ascii=False,
+                    ),
+                    encoding="utf-8",
+                )
+                return {"decision": "retry", "decision_reason": ["need another round"]}
+
+            with mock.patch.object(iteration_loop.iteration_cycle, "run_cycle", side_effect=interrupted_run_cycle):
+                with self.assertRaisesRegex(RuntimeError, "simulated interruption"):
+                    iteration_loop.run_loop(workspace=workspace, plan_path=plan_path)
+
+            resume_calls: list[str] = []
+
+            def resumed_run_cycle(**kwargs):
+                round_id = str(kwargs["round_id"])
+                resume_calls.append(round_id)
+                round_dir = workspace / round_id
+                round_dir.mkdir(parents=True, exist_ok=True)
+                (round_dir / "state.json").write_text(
+                    json.dumps(
+                        {
+                            "round_id": round_id,
+                            "candidate": kwargs["candidate"],
+                            "hypothesis_key": kwargs["hypothesis_key"],
+                            "decision": "retry",
+                        },
+                        ensure_ascii=False,
+                    ),
+                    encoding="utf-8",
+                )
+                return {"decision": "retry", "decision_reason": ["still inconclusive"]}
+
+            with mock.patch.object(iteration_loop.iteration_cycle, "run_cycle", side_effect=resumed_run_cycle):
+                result = iteration_loop.run_loop(workspace=workspace, plan_path=plan_path, resume=True)
+
+            self.assertEqual("completed", result["status"])
+            self.assertTrue(result["resume_requested"])
+            self.assertTrue(result["resumed_from_existing"])
+            self.assertEqual(2, result["round_count"])
+            self.assertEqual(["round-02"], resume_calls)
+            self.assertEqual("consecutive non-keep budget exhausted: 2", result["halt_reason"])
+            self.assertEqual(2, result["consecutive_non_keep_rounds"])
+            self.assertEqual({"keep": 0, "retry": 2, "rollback": 0, "stop": 0}, result["decision_counts"])
+
+    def test_run_iteration_loop_resume_preserves_pending_pivot_generation_reason(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            workspace.mkdir(parents=True, exist_ok=True)
+            plan_path = workspace / "iteration-plan.json"
+            mobile_focus = "mobile spacing still needs stronger evidence"
+            latency_focus = "form latency still blocks checkout submit"
+            plan_path.write_text(
+                json.dumps(
+                    {
+                        "objective": "resume pivot intent safely",
+                        "owner": "World-Class Product Architect",
+                        "baseline_label": "stable",
+                        "autonomous_candidate_generation": True,
+                        "loop_policy": {
+                            "max_rounds": 3,
+                            "max_same_hypothesis_retries": 3,
+                            "max_consecutive_non_keep_rounds": 2,
+                            "auto_pivot_on_stagnation": True,
+                            "advance_baseline_on_keep": False,
+                            "halt_on_decisions": ["stop"],
+                            "sync_patterns_at_end": False,
+                        },
+                        "candidates": [
+                            {"round_id": "round-01", "candidate": "initial frontend hypothesis"},
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            def fake_run_cycle(**kwargs):
+                round_id = str(kwargs["round_id"])
+                candidate = str(kwargs["candidate"])
+                round_dir = workspace / round_id
+                round_dir.mkdir(parents=True, exist_ok=True)
+                decision = {"round-01": "retry", "round-02": "rollback"}.get(round_id, "stop")
+                reasons = [mobile_focus] if decision != "stop" else ["loop reached a stable stopping point"]
+                (round_dir / "state.json").write_text(
+                    json.dumps(
+                        {
+                            "round_id": round_id,
+                            "decision": decision,
+                            "candidate": candidate,
+                            "decision_reason": reasons,
+                        },
+                        ensure_ascii=False,
+                    ),
+                    encoding="utf-8",
+                )
+                if round_id in {"round-01", "round-02"}:
+                    (round_dir / "round-memory.md").write_text(
+                        f"# Round Memory\n\n- Open loops: {mobile_focus}\n- Suggested next move: {latency_focus}\n",
+                        encoding="utf-8",
+                    )
+                    (round_dir / "self-feedback.md").write_text(
+                        f"# Self Feedback\n\n- Signals that regressed or blocked progress: {mobile_focus}\n- One variable to change next: mobile spacing\n",
+                        encoding="utf-8",
+                    )
+                    (workspace / "open-loops.md").write_text(
+                        f"# Open Loops\n\n- [round-02] {mobile_focus}\n- [round-02] {latency_focus}\n",
+                        encoding="utf-8",
+                    )
+                    (workspace / "distilled-patterns.md").write_text(
+                        "# Distilled Patterns\n\n- Preserve semantic ownership.\n",
+                        encoding="utf-8",
+                    )
+                    (workspace / "iteration-context-chain.md").write_text(
+                        f"# Iteration Context Chain\n\n- {mobile_focus}\n- {latency_focus}\n",
+                        encoding="utf-8",
+                    )
+                return {"decision": decision, "decision_reason": reasons}
+
+            original_synthesize_candidate = iteration_loop.synthesize_candidate
+            interrupted = {"raised": False}
+
+            def interrupted_synthesize_candidate(*args, **kwargs):
+                if kwargs.get("pivot_reason") is not None and not interrupted["raised"]:
+                    interrupted["raised"] = True
+                    raise RuntimeError("simulated pivot synthesis interruption")
+                return original_synthesize_candidate(*args, **kwargs)
+
+            with mock.patch.object(iteration_loop.iteration_cycle, "run_cycle", side_effect=fake_run_cycle):
+                with mock.patch.object(
+                    iteration_loop,
+                    "synthesize_candidate",
+                    side_effect=interrupted_synthesize_candidate,
+                ):
+                    with self.assertRaisesRegex(RuntimeError, "simulated pivot synthesis interruption"):
+                        iteration_loop.run_loop(workspace=workspace, plan_path=plan_path)
+
+            loop_state = baseline_registry.load_json(workspace / "loops" / "iteration-plan-state.json")
+            self.assertIn(
+                "consecutive non-keep budget exhausted",
+                str(loop_state["pending_generation_reason"]),
+            )
+            self.assertIn(
+                iteration_loop.hypothesis_key_from_text(mobile_focus),
+                loop_state["blocked_hypothesis_keys"],
+            )
+
+            with mock.patch.object(iteration_loop.iteration_cycle, "run_cycle", side_effect=fake_run_cycle):
+                result = iteration_loop.run_loop(workspace=workspace, plan_path=plan_path, resume=True)
+
+            self.assertTrue(result["resume_requested"])
+            self.assertTrue(result["resumed_from_existing"])
+            self.assertEqual(3, result["round_count"])
+            self.assertIsNone(result["pending_generation_reason"])
+            self.assertIn(latency_focus, str(result["rounds_run"][2]["candidate"]))
+            self.assertIn("consecutive non-keep budget exhausted", str(result["rounds_run"][2]["generation_reason"]))
+
+    def test_run_iteration_loop_resume_returns_completed_summary_without_rerun(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            workspace.mkdir(parents=True, exist_ok=True)
+            plan_path = workspace / "iteration-plan.json"
+            plan_path.write_text(
+                json.dumps(
+                    {
+                        "objective": "avoid rerunning a completed loop",
+                        "owner": "Technical Trinity",
+                        "baseline_label": "stable",
+                        "loop_policy": {
+                            "max_rounds": 1,
+                            "advance_baseline_on_keep": False,
+                            "halt_on_decisions": ["stop"],
+                            "sync_patterns_at_end": False,
+                        },
+                        "candidates": [
+                            {"round_id": "round-01", "candidate": "single attempt"},
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            def fake_run_cycle(**kwargs):
+                round_id = str(kwargs["round_id"])
+                round_dir = workspace / round_id
+                round_dir.mkdir(parents=True, exist_ok=True)
+                (round_dir / "state.json").write_text(
+                    json.dumps(
+                        {
+                            "round_id": round_id,
+                            "candidate": kwargs["candidate"],
+                            "hypothesis_key": kwargs["hypothesis_key"],
+                            "decision": "stop",
+                        },
+                        ensure_ascii=False,
+                    ),
+                    encoding="utf-8",
+                )
+                return {"decision": "stop", "decision_reason": ["done"]}
+
+            with mock.patch.object(iteration_loop.iteration_cycle, "run_cycle", side_effect=fake_run_cycle):
+                first_result = iteration_loop.run_loop(workspace=workspace, plan_path=plan_path)
+
+            with mock.patch.object(
+                iteration_loop.iteration_cycle,
+                "run_cycle",
+                side_effect=AssertionError("resume should not rerun a completed loop"),
+            ):
+                resumed_result = iteration_loop.run_loop(workspace=workspace, plan_path=plan_path, resume=True)
+
+            self.assertEqual("completed", first_result["status"])
+            self.assertEqual("completed", resumed_result["status"])
+            self.assertTrue(resumed_result["resume_requested"])
+            self.assertTrue(resumed_result["resumed_from_existing"])
+            self.assertEqual(1, resumed_result["round_count"])
+            self.assertEqual(first_result["summary"], resumed_result["summary"])
+            self.assertTrue(Path(resumed_result["summary"]).exists())
+
+    def test_run_iteration_loop_resume_rejects_changed_plan_content(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            workspace.mkdir(parents=True, exist_ok=True)
+            plan_path = workspace / "iteration-plan.json"
+            plan_path.write_text(
+                json.dumps(
+                    {
+                        "objective": "resume safety for deep loops",
+                        "owner": "Technical Trinity",
+                        "baseline_label": "stable",
+                        "loop_policy": {
+                            "max_rounds": 2,
+                            "advance_baseline_on_keep": False,
+                            "halt_on_decisions": ["stop"],
+                            "sync_patterns_at_end": False,
+                        },
+                        "candidates": [
+                            {"round_id": "round-01", "candidate": "first attempt"},
+                            {"round_id": "round-02", "candidate": "second attempt"},
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            def interrupted_run_cycle(**kwargs):
+                round_id = str(kwargs["round_id"])
+                if round_id == "round-02":
+                    raise RuntimeError("simulated interruption")
+                round_dir = workspace / round_id
+                round_dir.mkdir(parents=True, exist_ok=True)
+                (round_dir / "state.json").write_text(
+                    json.dumps(
+                        {
+                            "round_id": round_id,
+                            "candidate": kwargs["candidate"],
+                            "hypothesis_key": kwargs["hypothesis_key"],
+                            "decision": "retry",
+                        },
+                        ensure_ascii=False,
+                    ),
+                    encoding="utf-8",
+                )
+                return {"decision": "retry", "decision_reason": ["need another round"]}
+
+            with mock.patch.object(iteration_loop.iteration_cycle, "run_cycle", side_effect=interrupted_run_cycle):
+                with self.assertRaisesRegex(RuntimeError, "simulated interruption"):
+                    iteration_loop.run_loop(workspace=workspace, plan_path=plan_path)
+
+            plan_path.write_text(
+                json.dumps(
+                    {
+                        "objective": "resume safety for deep loops",
+                        "owner": "Technical Trinity",
+                        "baseline_label": "stable",
+                        "loop_policy": {
+                            "max_rounds": 2,
+                            "advance_baseline_on_keep": False,
+                            "halt_on_decisions": ["stop"],
+                            "sync_patterns_at_end": False,
+                        },
+                        "candidates": [
+                            {"round_id": "round-01", "candidate": "first attempt"},
+                            {"round_id": "round-02", "candidate": "changed second attempt"},
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(RuntimeError, "current plan content"):
+                iteration_loop.run_loop(workspace=workspace, plan_path=plan_path, resume=True)
+
+
 class ValidatorScriptTests(unittest.TestCase):
     def test_validator_script_passes(self) -> None:
         proc = subprocess.run(
@@ -574,6 +3126,106 @@ class ValidatorScriptTests(unittest.TestCase):
         )
 
         self.assertEqual(0, proc.returncode, msg=proc.stdout + proc.stderr)
+
+
+class BenchmarkAndReleaseGateTests(unittest.TestCase):
+    def test_run_benchmark_suite_can_include_offline_drill(self) -> None:
+        with make_tempdir() as tmp:
+            output_dir = Path(tmp) / "benchmark-output"
+            fake_eval_run = {
+                "passed": 2,
+                "total": 2,
+                "cases": [
+                    {
+                        "id": 1,
+                        "prompt": "a",
+                        "lead_agent": "Technical Trinity",
+                        "assistant_agents": [],
+                        "passed": True,
+                        "failures": [],
+                    },
+                    {
+                        "id": 2,
+                        "prompt": "b",
+                        "lead_agent": "World-Class Product Architect",
+                        "assistant_agents": ["Technical Trinity"],
+                        "passed": True,
+                        "failures": [],
+                    },
+                ],
+                "category_breakdown": [
+                    {"category": "iteration", "passed": 1, "total": 1, "pass_rate": 1.0},
+                    {"category": "frontend", "passed": 1, "total": 1, "pass_rate": 1.0},
+                ],
+            }
+
+            def fake_run_command(command, cwd):
+                return {
+                    "command": command,
+                    "cwd": str(cwd),
+                    "returncode": 0,
+                    "stdout": "{}",
+                    "stderr": "",
+                    "passed": True,
+                }
+
+            with mock.patch.object(benchmark_runner, "run_command", side_effect=fake_run_command), \
+                 mock.patch.object(benchmark_runner, "evaluate_evals", return_value=fake_eval_run), \
+                 mock.patch.object(
+                     benchmark_runner.offline_loop_drill,
+                     "run_drill",
+                     return_value={
+                         "ok": True,
+                         "workspace": str(output_dir / "offline-loop-drill"),
+                         "markdown_report": str(output_dir / "offline-loop-drill" / "offline-loop-drill-report.md"),
+                         "scenarios": [],
+                     },
+                 ):
+                result = benchmark_runner.run_benchmark_suite(
+                    output_dir=output_dir,
+                    include_offline_drill=True,
+                )
+
+            self.assertTrue(result["summary"]["offline_drill_enabled"])
+            self.assertTrue(result["summary"]["offline_drill_passed"])
+            self.assertTrue(result["summary"]["overall_passed"])
+            self.assertIn("offline_drill_run", result)
+            self.assertTrue(Path(result["json_report"]).exists())
+            report = Path(result["markdown_report"]).read_text(encoding="utf-8")
+            self.assertIn("Offline loop drill", report)
+
+    def test_release_gate_holds_when_offline_drill_fails(self) -> None:
+        with make_tempdir() as tmp:
+            output_dir = Path(tmp) / "release-gate-output"
+            benchmark_output = output_dir / "benchmark-results.json"
+            benchmark_report = output_dir / "benchmark-report.md"
+
+            with mock.patch.object(
+                release_gate.benchmark_runner,
+                "run_benchmark_suite",
+                return_value={
+                    "summary": {
+                        "tests_passed": True,
+                        "validator_passed": True,
+                        "evals_passed": True,
+                        "offline_drill_enabled": True,
+                        "offline_drill_passed": False,
+                        "overall_passed": False,
+                    },
+                    "json_report": str(benchmark_output),
+                    "markdown_report": str(benchmark_report),
+                    "offline_drill_run": {
+                        "markdown_report": str(output_dir / "offline-loop-drill-report.md"),
+                    },
+                },
+            ):
+                result = release_gate.run_release_gate(output_dir=output_dir)
+
+            self.assertFalse(result["ok"])
+            self.assertEqual("hold", result["decision"])
+            self.assertEqual("offline loop drill failed", result["reason"])
+            self.assertTrue(Path(result["json_report"]).exists())
+            self.assertTrue(Path(result["markdown_report"]).exists())
 
 
 if __name__ == "__main__":

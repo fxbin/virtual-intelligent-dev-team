@@ -694,6 +694,68 @@
       ],
       "id": 53,
       "files": []
+    },
+    {
+      "id": 54,
+      "categories": [
+        "iteration",
+        "process",
+        "optimization"
+      ],
+      "prompt": "Run another iteration, benchmark it against the baseline, and stop if the result regresses.",
+      "expected_output": "Explicit optimization-loop prompts should enable bounded iteration, keep the lead lightweight, and expose the iteration plan.",
+      "files": [],
+  "expectations": [
+    "lead_agent is Technical Trinity",
+    "needs_iteration is true",
+    "process_skills contains bounded-iteration",
+    "iteration_profile.enabled is true",
+    "process_plan first commands contain mkdir -p .skill-iterations",
+    "process_plan first commands contain cp assets/iteration-plan-template.json .skill-iterations/iteration-plan.json",
+    "process_plan first commands contain python scripts/register_benchmark_baseline.py --workspace .skill-iterations --label stable --report <baseline-report> --pretty",
+    "process_plan first commands contain python scripts/run_iteration_cycle.py --workspace .skill-iterations --round-id round-01 --objective \"<goal>\" --baseline-label stable --owner \"Technical Trinity\" --candidate \"<candidate-change>\" --candidate-worktree ../wt-round-01 --candidate-output-dir .tmp-iteration-round-01 --pretty",
+    "process_plan first commands contain python scripts/compare_benchmark_results.py --baseline .skill-iterations/baselines/stable/benchmark-results.json --candidate .tmp-iteration-round-01/benchmark-results.json --pretty",
+    "process_plan first commands contain python scripts/promote_iteration_baseline.py --workspace .skill-iterations --round-id round-01 --label accepted-round-01 --pretty",
+        "process_plan first commands contain python scripts/sync_distilled_patterns.py --workspace .skill-iterations --pretty",
+        "process_plan first commands contain python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.json --pretty"
+      ]
+    },
+    {
+      "id": 55,
+      "categories": [
+        "release-gate",
+        "process"
+      ],
+      "prompt": "Is this version ready to ship? Do not answer from benchmark alone. Run the formal release gate.",
+      "expected_output": "Release-readiness prompts should enable the formal ship-or-hold gate instead of routing to generic git workflow.",
+      "files": [],
+      "expectations": [
+        "lead_agent is Technical Trinity",
+        "assistant_agents is empty",
+        "needs_release_gate is true",
+        "needs_git_workflow is false",
+        "process_skills contains release-gate",
+        "process_plan first commands contain python scripts/run_release_gate.py --output-dir evals/release-gate --pretty"
+      ]
+    },
+    {
+      "id": 56,
+      "categories": [
+        "release-gate",
+        "process",
+        "chinese"
+      ],
+      "prompt": "这版现在能不能提交/发版？不要只看 benchmark，通过正式 release gate 做提交前验收。",
+      "expected_output": "Chinese release-readiness prompts with ambiguous 提交/发版 wording should still prefer the formal release gate and suppress generic git workflow routing.",
+      "files": [],
+      "expectations": [
+        "lead_agent is Technical Trinity",
+        "assistant_agents is empty",
+        "needs_release_gate is true",
+        "needs_git_workflow is false",
+        "process_skills contains release-gate",
+        "process_plan first commands contain python scripts/run_release_gate.py --output-dir evals/release-gate --pretty"
+      ]
     }
   ]
 }

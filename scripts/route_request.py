@@ -181,16 +181,55 @@ def is_frontend_checkout_context(text: str, git_hits: list[str]) -> bool:
     return any(keyword_matches(lowered, keyword) for keyword in frontend_context_keywords)
 
 
+def is_release_readiness_context_only(
+    git_hits: list[str], release_hits: list[str]
+) -> bool:
+    if len(git_hits) == 0 or len(release_hits) == 0:
+        return False
+    normalized_git_hits = {normalize_process_hit(hit) for hit in git_hits}
+    ambiguous_release_submission_hits = {"submit", "提交", "release", "发版", "发布"}
+    return len(normalized_git_hits) > 0 and normalized_git_hits.issubset(
+        ambiguous_release_submission_hits
+    )
+
+
 def should_suppress_git_workflow(text: str, process_hits: dict[str, list[str]]) -> bool:
     git_hits = process_hits.get("git-workflow", [])
-    return is_git_review_context_only(text, git_hits) or is_frontend_checkout_context(
-        text, git_hits
+    release_hits = process_hits.get("release-gate", [])
+    return (
+        is_git_review_context_only(text, git_hits)
+        or is_frontend_checkout_context(text, git_hits)
+        or is_release_readiness_context_only(git_hits, release_hits)
+    )
+
+
+def should_suppress_bounded_iteration(process_hits: dict[str, list[str]]) -> bool:
+    iteration_hits = process_hits.get("bounded-iteration", [])
+    release_hits = process_hits.get("release-gate", [])
+    if len(iteration_hits) == 0 or len(release_hits) == 0:
+        return False
+    normalized_iteration_hits = {normalize_process_hit(hit) for hit in iteration_hits}
+    weak_benchmark_reference_hits = {"benchmark", "基准"}
+    return len(normalized_iteration_hits) > 0 and normalized_iteration_hits.issubset(
+        weak_benchmark_reference_hits
+    )
+
+
+def should_suppress_git_agent_scoring(
+    git_reason_hits: list[str], needs_release_gate: bool, needs_git_workflow: bool
+) -> bool:
+    if not needs_release_gate or needs_git_workflow or len(git_reason_hits) == 0:
+        return False
+    normalized_hits = {normalize_process_hit(hit) for hit in git_reason_hits}
+    ambiguous_release_decision_hits = {"提交", "release", "发版", "发布"}
+    return len(normalized_hits) > 0 and normalized_hits.issubset(
+        ambiguous_release_decision_hits
     )
 
 
 def detect_process_skills(
     text: str, config: dict[str, object]
-) -> tuple[bool, bool, list[str], dict[str, list[str]]]:
+) -> tuple[bool, bool, bool, bool, list[str], dict[str, list[str]]]:
     lowered = text.lower()
     process_rules = config.get("process_skill_rules", {})
     if not isinstance(process_rules, dict):
@@ -240,13 +279,26 @@ def detect_process_skills(
 
     if should_suppress_git_workflow(text, process_hits):
         process_hits.pop("git-workflow", None)
+    if should_suppress_bounded_iteration(process_hits):
+        process_hits.pop("bounded-iteration", None)
 
+    needs_iteration = "bounded-iteration" in process_hits
     needs_worktree = "using-git-worktrees" in process_hits
+    needs_release_gate = "release-gate" in process_hits
     needs_git_workflow = "git-workflow" in process_hits
     process_skills = [
-        skill for skill in ("using-git-worktrees", "git-workflow") if skill in process_hits
+        skill
+        for skill in ("bounded-iteration", "using-git-worktrees", "release-gate", "git-workflow")
+        if skill in process_hits
     ]
-    return needs_worktree, needs_git_workflow, process_skills, process_hits
+    return (
+        needs_iteration,
+        needs_worktree,
+        needs_release_gate,
+        needs_git_workflow,
+        process_skills,
+        process_hits,
+    )
 
 
 def detect_languages(
@@ -369,6 +421,44 @@ def ensure_list_str(value: object, default: list[str]) -> list[str]:
         if isinstance(item, str):
             result.append(item)
     return result if len(result) > 0 else default
+
+
+def build_iteration_profile(config: dict[str, object], enabled: bool) -> dict[str, object]:
+    governance = config.get("governance", {})
+    if not isinstance(governance, dict):
+        governance = {}
+    iteration_control = governance.get("iteration_control", {})
+    if not isinstance(iteration_control, dict):
+        iteration_control = {}
+
+    required_artifacts = ensure_list_str(
+        iteration_control.get("required_artifacts"),
+        [
+            "assets/iteration-ledger-template.md",
+            "assets/round-reflection-template.md",
+            "assets/round-memory-template.md",
+            "assets/self-feedback-template.md",
+            "assets/distilled-patterns-template.md",
+        ],
+    )
+    allowed_decisions = ensure_list_str(
+        iteration_control.get("allowed_decisions"),
+        ["keep", "retry", "rollback", "stop"],
+    )
+
+    return {
+        "enabled": enabled,
+        "round_cap_online": max(int(iteration_control.get("default_online_round_cap", 3)), 1),
+        "round_cap_offline": max(int(iteration_control.get("default_offline_round_cap", 120)), 1),
+        "max_same_hypothesis_retries": max(
+            int(iteration_control.get("max_same_hypothesis_retries", 2)), 1
+        ),
+        "require_objective_signal": bool(
+            iteration_control.get("require_objective_signal", True)
+        ),
+        "allowed_decisions": allowed_decisions,
+        "required_artifacts": required_artifacts,
+    }
 
 
 def keyword_hits(text: str, keywords: list[str]) -> list[str]:
@@ -1052,12 +1142,89 @@ def build_governance_plan(
 
 
 def build_process_plan(
+    needs_iteration: bool,
     needs_worktree: bool,
-    needs_git_workflow: bool,
-    repo_strategy: dict[str, str],
+    needs_release_gate: bool = False,
+    needs_git_workflow: bool = False,
+    repo_strategy: dict[str, str] | None = None,
+    iteration_profile: dict[str, object] | None = None,
+    lead_agent: str | None = None,
 ) -> list[dict[str, object]]:
     plan: list[dict[str, object]] = []
+    if not isinstance(repo_strategy, dict):
+        repo_strategy = {"strategy": "unknown", "base_branch": "main"}
     base_branch = str(repo_strategy.get("base_branch", "main"))
+    iteration_owner = lead_agent or "<lead-owner>"
+    if not isinstance(iteration_profile, dict):
+        iteration_profile = {
+            "round_cap_online": 3,
+            "round_cap_offline": 120,
+            "max_same_hypothesis_retries": 2,
+            "require_objective_signal": True,
+            "allowed_decisions": ["keep", "retry", "rollback", "stop"],
+            "required_artifacts": [
+                "assets/iteration-ledger-template.md",
+                "assets/round-reflection-template.md",
+                "assets/round-memory-template.md",
+                "assets/self-feedback-template.md",
+                "assets/distilled-patterns-template.md",
+            ],
+        }
+    if needs_iteration:
+        plan.append(
+            {
+                "skill": "bounded-iteration",
+                "reference": "references/iteration-protocol.md",
+                "steps": [
+                    "定义目标函数、基线和本轮唯一候选改动",
+                    "保留语义主责 owner，并准备 iteration workspace 与计划文件",
+                    "先注册可复用 baseline",
+                    "运行一轮有状态的 iteration cycle，或按计划运行多轮 iteration loop",
+                    "由 cycle 自动写入 ledger / reflection / state / open loops",
+                    "读取 round-memory / self-feedback / iteration-context-chain 作为下一轮输入",
+                    "如需把 synthesized candidate 落成真实改动，先写 candidate brief，再交给 materialize command 生成 patch 或工作区变更",
+                    "当候选改动能用结构化文件操作表达时，优先使用内置 materialize_candidate_patch",
+                    "深度离线 loop 中断后，使用持久化 loop state 安全续跑",
+                    "按 keep / retry / rollback / stop 做轮次决策",
+                ],
+                "commands": [
+                    "mkdir -p .skill-iterations",
+                    "cp assets/iteration-plan-template.json .skill-iterations/iteration-plan.json",
+                    "python scripts/register_benchmark_baseline.py --workspace .skill-iterations --label stable --report <baseline-report> --pretty",
+                    f"python scripts/run_iteration_cycle.py --workspace .skill-iterations --round-id round-01 --objective \"<goal>\" --baseline-label stable --owner \"{iteration_owner}\" --candidate \"<candidate-change>\" --candidate-worktree ../wt-round-01 --candidate-output-dir .tmp-iteration-round-01 --pretty",
+                    "python scripts/compare_benchmark_results.py --baseline .skill-iterations/baselines/stable/benchmark-results.json --candidate .tmp-iteration-round-01/benchmark-results.json --pretty",
+                    "python scripts/promote_iteration_baseline.py --workspace .skill-iterations --round-id round-01 --label accepted-round-01 --pretty",
+                    "python scripts/sync_distilled_patterns.py --workspace .skill-iterations --pretty",
+                    "python scripts/materialize_candidate_patch.py --brief .skill-iterations/candidate-briefs/round-01.json --candidate-root ../wt-round-01 --patch-output .skill-iterations/patches/round-01.patch --pretty",
+                    "python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.json --pretty",
+                    "python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.json --resume --pretty",
+                ],
+                "round_caps": {
+                    "online": int(iteration_profile.get("round_cap_online", 3)),
+                    "offline": int(iteration_profile.get("round_cap_offline", 120)),
+                },
+                "max_same_hypothesis_retries": int(
+                    iteration_profile.get("max_same_hypothesis_retries", 2)
+                ),
+                "require_objective_signal": bool(
+                    iteration_profile.get("require_objective_signal", True)
+                ),
+                "allowed_decisions": iteration_profile.get(
+                    "allowed_decisions", ["keep", "retry", "rollback", "stop"]
+                ),
+                "artifacts": iteration_profile.get(
+                    "required_artifacts",
+                        [
+                            "assets/iteration-ledger-template.md",
+                            "assets/round-reflection-template.md",
+                            "assets/round-memory-template.md",
+                            "assets/self-feedback-template.md",
+                            "assets/distilled-patterns-template.md",
+                        ],
+                    ),
+                "plan_template": "assets/iteration-plan-template.json",
+            }
+        )
     if needs_worktree:
         plan.append(
             {
@@ -1074,6 +1241,30 @@ def build_process_plan(
                     f"git worktree add ../wt-<task> -b <branch> {base_branch}",
                     "git worktree remove ../wt-<task>",
                     "git worktree prune",
+                ],
+            }
+        )
+    if needs_release_gate:
+        plan.append(
+            {
+                "skill": "release-gate",
+                "reference": "references/release-gate-playbook.md",
+                "steps": [
+                    "先运行正式 release gate，而不是只看一次 benchmark 摘要",
+                    "让 gate 自动汇总 tests / semantic validator / evals / offline drill",
+                    "读取 ship 或 hold 决策、失败原因、以及产物路径",
+                    "若结论为 hold，则把阻塞项回写到 iteration ledger 或发布清单，再进入下一轮",
+                ],
+                "commands": [
+                    "python scripts/run_release_gate.py --output-dir evals/release-gate --pretty",
+                    "python scripts/run_release_gate.py --output-dir evals/release-gate --previous-output evals/benchmark-results/benchmark-results.json --pretty",
+                ],
+                "decisions": ["ship", "hold"],
+                "artifacts": [
+                    "evals/release-gate/release-gate-results.json",
+                    "evals/release-gate/release-gate-report.md",
+                    "evals/release-gate/benchmark-results.json",
+                    "evals/release-gate/benchmark-report.md",
                 ],
             }
         )
@@ -1198,10 +1389,29 @@ def build_clarifying_question(text: str, need_clarify: bool) -> str | None:
 
 def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict[str, object]:
     scores, reasons = compute_scores(text, config)
-    needs_worktree, needs_git_workflow, process_skills, process_hits = detect_process_skills(text, config)
+    (
+        needs_iteration,
+        needs_worktree,
+        needs_release_gate,
+        needs_git_workflow,
+        process_skills,
+        process_hits,
+    ) = detect_process_skills(text, config)
+    git_reason_hits = reasons.get("Git Workflow Guardian", {}).get("positive", [])
+    if isinstance(git_reason_hits, list) and should_suppress_git_agent_scoring(
+        git_reason_hits=git_reason_hits,
+        needs_release_gate=needs_release_gate,
+        needs_git_workflow=needs_git_workflow,
+    ):
+        scores["Git Workflow Guardian"] = 0
+        reasons["Git Workflow Guardian"] = {
+            "positive": [],
+            "negative": reasons.get("Git Workflow Guardian", {}).get("negative", []),
+        }
     detected_languages, language_hits, language_routing = detect_languages(text, config)
     repo_strategy = detect_repo_strategy(repo_path)
     git_templates = build_git_templates(repo_strategy)
+    iteration_profile = build_iteration_profile(config=config, enabled=needs_iteration)
 
     agent_order = config.get("agent_order", [])
     if not isinstance(agent_order, list) or len(agent_order) == 0:
@@ -1216,7 +1426,13 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
     priority_route = detect_priority_lead(text, config)
     if priority_route is not None:
         priority_agent = str(priority_route.get("agent", "")).strip()
-        if priority_agent != "":
+        if (
+            priority_agent == "Git Workflow Guardian"
+            and needs_release_gate
+            and not needs_git_workflow
+        ):
+            priority_route = None
+        elif priority_agent != "":
             lead_agent = priority_agent
             lead_score = scores.get(lead_agent, 0)
     lead_agent = rebalance_git_lead_for_semantic_owner(
@@ -1320,9 +1536,13 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         except Exception:
             pass
     process_plan = build_process_plan(
+        needs_iteration=needs_iteration,
         needs_worktree=needs_worktree,
+        needs_release_gate=needs_release_gate,
         needs_git_workflow=needs_git_workflow,
         repo_strategy=repo_strategy,
+        iteration_profile=iteration_profile,
+        lead_agent=lead_agent,
     )
 
     mode = pick_mode(
@@ -1365,11 +1585,14 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "assistant_agents": assistants,
         "detected_languages": detected_languages,
         "language_routing": language_routing,
+        "needs_iteration": needs_iteration,
         "needs_worktree": needs_worktree,
+        "needs_release_gate": needs_release_gate,
         "needs_git_workflow": needs_git_workflow,
         "process_skills": process_skills,
         "builtin_process_enabled": True,
         "process_plan": process_plan,
+        "iteration_profile": iteration_profile,
         "governance_plan": governance_plan,
         "git_workflow_profile": {
             "repo_strategy": repo_strategy,

@@ -535,6 +535,47 @@
         "needs_git_workflow": false,
         "priority_agent": null
       }
+    },
+    {
+      "name": "bounded_iteration_process_only",
+      "text": "Run another iteration, benchmark it against the baseline, and stop if the result regresses.",
+      "expect": {
+        "lead_agent": "Technical Trinity",
+        "assistant_agents": [],
+        "needs_git_workflow": false,
+        "process_skills": [
+          "bounded-iteration"
+        ],
+        "priority_agent": null
+      }
+    },
+    {
+      "name": "release_readiness_process_only",
+      "text": "Is this version ready to ship? Do not answer from benchmark alone. Run the formal release gate.",
+      "expect": {
+        "lead_agent": "Technical Trinity",
+        "assistant_agents": [],
+        "needs_release_gate": true,
+        "needs_git_workflow": false,
+        "process_skills": [
+          "release-gate"
+        ],
+        "priority_agent": null
+      }
+    },
+    {
+      "name": "chinese_release_readiness_suppresses_git_submit",
+      "text": "这版现在能不能提交/发版？不要只看 benchmark，通过正式 release gate 做提交前验收。",
+      "expect": {
+        "lead_agent": "Technical Trinity",
+        "assistant_agents": [],
+        "needs_release_gate": true,
+        "needs_git_workflow": false,
+        "process_skills": [
+          "release-gate"
+        ],
+        "priority_agent": null
+      }
     }
   ],
   "process_plan_cases": [
@@ -570,6 +611,45 @@
             "python scripts/git_workflow_guardrail.py --repo . --stage G4 --pretty",
             "git push -u origin feat/<ticket>-<summary>"
           ]
+        ]
+      }
+    },
+    {
+      "name": "bounded_iteration_plan",
+      "needs_iteration": true,
+      "needs_worktree": false,
+      "needs_git_workflow": false,
+      "repo_strategy": {
+        "strategy": "trunk-main",
+        "base_branch": "main"
+      },
+    "expect": {
+      "commands_contains": [
+        "mkdir -p .skill-iterations",
+        "cp assets/iteration-plan-template.json .skill-iterations/iteration-plan.json",
+        "python scripts/register_benchmark_baseline.py --workspace .skill-iterations --label stable --report <baseline-report> --pretty",
+        "python scripts/run_iteration_cycle.py --workspace .skill-iterations --round-id round-01 --objective \"<goal>\" --baseline-label stable --owner \"<lead-owner>\" --candidate \"<candidate-change>\" --candidate-worktree ../wt-round-01 --candidate-output-dir .tmp-iteration-round-01 --pretty",
+        "python scripts/compare_benchmark_results.py --baseline .skill-iterations/baselines/stable/benchmark-results.json --candidate .tmp-iteration-round-01/benchmark-results.json --pretty",
+        "python scripts/promote_iteration_baseline.py --workspace .skill-iterations --round-id round-01 --label accepted-round-01 --pretty",
+        "python scripts/sync_distilled_patterns.py --workspace .skill-iterations --pretty",
+        "python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.json --pretty"
+        ]
+      }
+    },
+    {
+      "name": "release_gate_plan",
+      "needs_iteration": false,
+      "needs_worktree": false,
+      "needs_release_gate": true,
+      "needs_git_workflow": false,
+      "repo_strategy": {
+        "strategy": "trunk-main",
+        "base_branch": "main"
+      },
+      "expect": {
+        "commands_contains": [
+          "python scripts/run_release_gate.py --output-dir evals/release-gate --pretty",
+          "python scripts/run_release_gate.py --output-dir evals/release-gate --previous-output evals/benchmark-results/benchmark-results.json --pretty"
         ]
       }
     }

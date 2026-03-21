@@ -1,6 +1,6 @@
 ---
 name: virtual-intelligent-dev-team
-description: Intelligent expert-team router for complex requests. Dispatch the best lead agent from Java Virtuoso, Sentinel Architect (NB), Technical Trinity, Code Audit Council, Git Workflow Guardian, Omni-Architect, Executive Trinity, and World-Class Product Architect, then attach the right copilot agents when work crosses code, architecture, security, git workflow, domain strategy, business decisions, or frontend UX. Use this whenever the user needs the right specialist, a multi-role response, or a cross-domain decision, even if they do not explicitly ask for a "team".
+description: Intelligent expert-team router and bounded-iteration orchestrator for complex requests. Dispatch the best lead agent from Java Virtuoso, Sentinel Architect (NB), Technical Trinity, Code Audit Council, Git Workflow Guardian, Omni-Architect, Executive Trinity, and World-Class Product Architect, attach the right copilot agents when work crosses code, architecture, security, git workflow, domain strategy, business decisions, or frontend UX, enable evidence-driven iteration when the user asks for optimization loops, repeated retries, benchmark comparison, or candidate evaluation, and trigger the formal release gate when the user asks whether a version is ready to ship or submit.
 ---
 
 # Virtual Intelligent Dev Team
@@ -12,7 +12,9 @@ Handle complex requests with one unified workflow:
 3. Add one or two assistant agents only when they add clear value.
 4. Enable governance or process guardrails only when needed.
 5. Use a compact handoff when lead and assistants need structured coordination.
-6. Produce one unified response instead of disconnected role fragments.
+6. If the user asks for optimization, repeated improvement, benchmark comparison, or another round, enter bounded iteration instead of open-ended self-looping.
+7. If the user asks whether the current version can ship, submit, or pass formal acceptance, run the release gate instead of answering from a benchmark summary alone.
+8. Produce one unified response instead of disconnected role fragments.
 
 ## When to use
 
@@ -27,6 +29,13 @@ Use this skill when:
 - The task needs structured coordination, governance, or workflow guardrails.
 
 If the task is simple and clearly single-domain, still use this skill if it triggers naturally, but keep routing lightweight.
+
+Use bounded iteration only when the request benefits from it:
+
+- explicit optimization loops
+- benchmark or regression comparison
+- repeated retries with evidence required
+- candidate comparison before committing to a direction
 
 ## Team catalog
 
@@ -135,10 +144,45 @@ If the task matches a common multi-role pattern, load the closest runbook from `
 - Frontend UX with backend coupling
 - High-risk production change
 - Repeated-failure or root-cause debugging
+- Evidence-driven iteration
 
 Use runbooks to speed coordination shape, not to force a rigid ceremony.
 
-### Root-cause discipline
+## Bounded iteration
+
+When the user asks to iterate, optimize, benchmark, compare candidates, or keep improving until stable:
+
+- Read `references/self-optimization-architecture.md` for the operating model.
+- Read `references/agency-inspired-loop-patterns.md` for semantic-owner preservation, Dev↔QA loop design, and checkpointed memory.
+- Read `references/iteration-protocol.md` before running the loop.
+- Read `references/iteration-state-machine.md` to keep the round lifecycle deterministic.
+- Read `references/loop-orchestration.md` when the user wants capped multi-round optimization.
+- Read `references/memory-model.md` to keep only useful short-term and distilled memory.
+- Read `references/evidence-ledger-schema.md` to structure each round.
+- Read `references/baseline-registry.md` before registering or reusing a benchmark baseline.
+- Read `references/rollback-and-stop-rules.md` before deciding to keep, retry, rollback, or stop.
+- Read `references/mutation-catalog-patterns.md` when the loop needs to turn repeated feedback into deterministic self-mutations across JSON, Markdown, or YAML control files.
+
+### Iteration guardrails
+
+- Default live user work to `1-3` rounds.
+- Allow deeper loops only for explicit offline evaluation or benchmark-driven optimization.
+- For explicit offline software-project optimization, default support can go beyond `100` rounds when the evidence loop stays objective and rollbackable.
+- Every round must have one objective, one candidate change, and one evidence check.
+- Do not run an unbounded self-improvement loop.
+- If evidence is missing or regresses, prefer `retry`, `rollback`, or `stop`.
+
+### Iteration artifacts
+
+Use these templates when the loop is active:
+
+- `assets/iteration-ledger-template.md`
+- `assets/round-reflection-template.md`
+- `assets/round-memory-template.md`
+- `assets/self-feedback-template.md`
+- `assets/distilled-patterns-template.md`
+
+## Root-cause discipline
 
 When the user signals repeated failed attempts, unresolved production behavior, or explicitly asks for root-cause analysis:
 
@@ -207,6 +251,12 @@ After routing, answer with one unified structure:
    - Whether roundtable governance is enabled
    - Selected governance track
    - DRI, SLO, dual-sign, and post-audit requirements when relevant
+6. `Optimization Loop` when bounded iteration is active
+   - Objective and baseline
+   - Current round and evidence source
+   - Active owner, round memory, and self-feedback chain
+   - Decision: `keep`, `retry`, `rollback`, or `stop`
+   - Next round or closure action
 
 The lead agent owns the response structure. Assistants should only add the delta that matters.
 
@@ -215,10 +265,33 @@ The lead agent owns the response structure. Assistants should only add the delta
 - Read `references/agent-catalog.md` for detailed triggers and anti-patterns.
 - Read `references/coordination-handoff-templates.md` for compact lead/assistant handoffs.
 - Read `references/dispatch-activation-cards.md` for assistant activation patterns.
+- Read `references/agency-inspired-loop-patterns.md` for self-iteration patterns adapted from `agency-agents-main`.
 - Read `references/scenario-runbooks.md` for common multi-role execution shapes.
 - Read `references/root-cause-escalation-playbook.md` for repeated-failure and root-cause debugging.
 - Read `references/routing-score-matrix.md` for routing weights and confidence interpretation.
 - Read `references/routing-rules.json` as the source of truth for scoring and exclusions.
+- Read `references/self-optimization-architecture.md` for bounded self-optimization design.
+- Read `references/iteration-protocol.md` for the round contract.
+- Read `references/iteration-state-machine.md` for the round state machine.
+- Read `references/loop-orchestration.md` for capped multi-round execution.
+- Read `references/memory-model.md` for short-term versus distilled memory.
+- Read `references/evidence-ledger-schema.md` for per-round evidence shape.
+- Read `references/baseline-registry.md` for baseline registration and reuse.
+- Read `references/rollback-and-stop-rules.md` for closure decisions.
+- Read `references/mutation-catalog-patterns.md` for replayable self-optimization mutation patterns.
+- Read `references/offline-loop-drill-playbook.md` when you need a real multi-round offline drill that proves rollback, keep, pivot, and resume behavior end to end.
+- Read `references/release-gate-playbook.md` when you need a release-candidate decision instead of only a fast benchmark pass.
+- Use `assets/iteration-ledger-template.md`, `assets/round-reflection-template.md`, and `assets/distilled-patterns-template.md` when recording bounded iteration.
+- Use `assets/iteration-plan-template.json` when the user wants a multi-round loop.
+- Run `scripts/register_benchmark_baseline.py` to register a reusable local baseline.
+- Run `scripts/init_iteration_round.py` to scaffold one bounded-iteration round.
+- Run `scripts/run_iteration_cycle.py` to advance one round through initialization, benchmarking, evaluation, and closure, including benchmarking a candidate repo or worktree when needed.
+- Run `scripts/run_iteration_loop.py` to execute a capped multi-round optimization plan and auto-synthesize the next candidate from round memory, self-feedback, open loops, and distilled patterns when autonomous mode is enabled.
+- Run `scripts/run_offline_loop_drill.py` when you need a real offline acceptance drill for rollback, keep, pivot, and resume.
+- Run `scripts/run_release_gate.py` when you need a formal ship-or-hold gate that includes the real offline loop drill.
+- Run `scripts/promote_iteration_baseline.py` to promote a kept round into the next reusable baseline.
+- Run `scripts/sync_distilled_patterns.py` to rebuild distilled patterns from accepted rounds.
+- Run `scripts/compare_benchmark_results.py` to decide `keep`, `retry`, `rollback`, or `stop` from benchmark evidence.
 
 Use deterministic routing inspection when needed:
 
@@ -230,6 +303,107 @@ Run semantic regression after changing routing, guardrails, examples, or this sk
 
 ```bash
 python scripts/validate_virtual_team.py --pretty
+```
+
+Bootstrap one iteration round when bounded iteration is active:
+
+```bash
+python scripts/init_iteration_round.py --workspace .skill-iterations --round-id round-01 --objective "<goal>" --baseline "<baseline>" --pretty
+```
+
+Register a reusable baseline before running a stateful iteration cycle:
+
+```bash
+python scripts/register_benchmark_baseline.py --workspace .skill-iterations --label stable --report <baseline-report> --pretty
+```
+
+Run one stateful iteration cycle:
+
+```bash
+python scripts/run_iteration_cycle.py --workspace .skill-iterations --round-id round-01 --objective "<goal>" --baseline-label stable --candidate "<candidate-change>" --candidate-worktree ../wt-round-01 --candidate-output-dir .tmp-iteration-round-01 --promote-label accepted-round-01 --sync-distilled-patterns --pretty
+```
+
+Run one stateful iteration cycle from a deterministic patch artifact:
+
+```bash
+python scripts/run_iteration_cycle.py --workspace .skill-iterations --round-id round-01 --objective "<goal>" --baseline-label stable --candidate "<candidate-change>" --candidate-worktree ../wt-round-01 --candidate-patch .skill-iterations/patches/round-01.patch --patch-strip 1 --benchmark-command "python scripts/run_benchmarks.py --output-dir {output_dir} --pretty" --auto-apply-rollback --pretty
+```
+
+Run a capped multi-round loop from a plan file:
+
+```bash
+python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.json --pretty
+```
+
+Run the benchmark gate with the real offline drill included:
+
+```bash
+python scripts/run_benchmarks.py --output-dir evals/benchmark-results --include-offline-drill --pretty
+```
+
+Resume an interrupted offline loop from persisted state:
+
+```bash
+python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.json --resume --pretty
+```
+
+Run the real offline drill suite for rollback, keep, pivot, and resume:
+
+```bash
+python scripts/run_offline_loop_drill.py --workspace .tmp-offline-loop-drill --pretty
+```
+
+Run the formal release gate:
+
+```bash
+python scripts/run_release_gate.py --output-dir evals/release-gate --pretty
+```
+
+Materialize a structured candidate brief into a patch artifact with the built-in materializer:
+
+```bash
+python scripts/materialize_candidate_patch.py --brief .skill-iterations/candidate-briefs/round-01.json --candidate-root ../wt-round-01 --patch-output .skill-iterations/patches/round-01.patch --pretty
+```
+
+When `autonomous_candidate_generation` is enabled in the plan, the loop keeps generating the next bounded hypothesis from `round-memory.md`, `self-feedback.md`, `open-loops.md`, and `distilled-patterns.md` until it hits `stop` or the round cap.
+Use `hypothesis_key` plus `loop_policy.max_same_hypothesis_retries` to prevent the loop from retrying the same idea indefinitely.
+Use `loop_policy.max_consecutive_non_keep_rounds` when a long offline loop should stop after too many consecutive `retry` / `rollback` decisions without a new `keep`; set it to `0` or omit it to disable that guardrail.
+Use `loop_policy.auto_pivot_on_stagnation` when autonomous rounds should block an exhausted hypothesis and pivot to the next actionable bottleneck instead of hard-stopping on the first stagnation trigger.
+Use `benchmark_command_template` or per-round `benchmark_command` when the candidate repo does not expose `scripts/run_benchmarks.py`.
+Use `apply_command` / `rollback_command` plus candidate worktrees when the loop should actually mutate code, capture workspace snapshots, and restore the previous state on measured regression.
+Use `candidate_patch_template` or per-round `candidate_patch` plus `patch_strip` when each round should apply a reproducible patch artifact instead of an imperative mutation command.
+Use `candidate_brief_template` plus `materialize_command_template` when the loop should transform a synthesized candidate into a concrete patch artifact or workspace mutation before benchmarking.
+Use `mutation_plan` inside the candidate brief when you want the built-in materializer to turn structured text or JSON file operations into a patch without relying on an external command.
+Use top-level `mutation_catalog` when feedback, open loops, and distilled context should deterministically synthesize the next round's `mutation_plan`; the loop records `mutation_plan_source` and `mutation_focus` in the candidate brief and round result.
+For JSON control files, prefer `json_set`, `json_merge`, `json_delete`, `json_append`, and `json_append_unique` so the loop can safely optimize routing rules, regression registries, and eval inventories.
+Treat `apply_command` and `candidate_patch` as mutually exclusive within one round.
+If `auto_apply_rollback` is enabled and no explicit `rollback_command` is provided, a rollback decision will reverse the applied patch automatically.
+`run_iteration_loop.py` now persists `loops/<plan>-state.json` after each completed round and writes `loops/<plan>-summary.json` on completion, so long offline runs can resume safely after interruption.
+Use `--resume` only with the same plan content; the loop will reject drifted plan files instead of resuming into a different objective.
+Loop state and summary now expose `decision_counts` plus `consecutive_non_keep_rounds`, so deep offline runs can inspect stagnation and resume with the same non-progress budget intact.
+When auto-pivot is enabled, loop state also persists `blocked_hypothesis_keys`, `pivot_history`, `pivot_count`, and `pending_generation_reason` so a crash between rounds does not erase the next pivot decision.
+When materialization is enabled, the loop writes one candidate brief JSON per round and can invoke a materializer command before `run_iteration_cycle.py`, which closes the gap between “next candidate idea” and “next executable change”.
+If no external `materialize_command` is provided but the candidate brief contains `mutation_plan.operations`, the built-in materializer can generate the patch artifact automatically.
+If a synthesized or explicit `mutation_plan` exists and the round has a candidate repo but no explicit `candidate_patch`, the loop can default the patch artifact path automatically.
+When the loop controller itself changes, prefer a real offline drill before calling the self-optimization loop “closed enough”.
+When the user asks whether the current version is ready to ship, prefer `run_release_gate.py` over a benchmark-only answer.
+
+Promote a kept round into a new baseline:
+
+```bash
+python scripts/promote_iteration_baseline.py --workspace .skill-iterations --round-id round-01 --label accepted-round-01 --pretty
+```
+
+Rebuild distilled patterns from accepted rounds:
+
+```bash
+python scripts/sync_distilled_patterns.py --workspace .skill-iterations --pretty
+```
+
+Compare candidate and baseline benchmark results:
+
+```bash
+python scripts/compare_benchmark_results.py --baseline <baseline-report> --candidate <candidate-report> --pretty
 ```
 
 ## Lightweight rule

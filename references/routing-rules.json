@@ -1,8 +1,8 @@
 {
   "meta": {
     "author": "fxbin",
-    "version": "v4.1.0",
-    "updated": "2026-03-09"
+    "version": "v4.19.0",
+    "updated": "2026-03-21"
   },
   "thresholds": {
     "max_agent_score": 20,
@@ -81,6 +81,25 @@
         "high": 30
       }
     },
+    "iteration_control": {
+      "default_online_round_cap": 3,
+      "default_offline_round_cap": 120,
+      "max_same_hypothesis_retries": 2,
+      "require_objective_signal": true,
+      "allowed_decisions": [
+        "keep",
+        "retry",
+        "rollback",
+        "stop"
+      ],
+      "required_artifacts": [
+        "assets/iteration-ledger-template.md",
+        "assets/round-reflection-template.md",
+        "assets/round-memory-template.md",
+        "assets/self-feedback-template.md",
+        "assets/distilled-patterns-template.md"
+      ]
+    },
     "audit_control": {
       "archive_levels": [
         "draft",
@@ -95,6 +114,8 @@
     }
   },
   "process_skill_lead_agents": {
+    "bounded-iteration": "Technical Trinity",
+    "release-gate": "Technical Trinity",
     "git-workflow": "Git Workflow Guardian",
     "using-git-worktrees": "Git Workflow Guardian"
   },
@@ -1494,6 +1515,92 @@
     }
   },
   "process_skill_rules": {
+    "bounded-iteration": [
+      {
+        "keyword": "iterate",
+        "score": 1
+      },
+      {
+        "keyword": "iteration",
+        "score": 1
+      },
+      {
+        "keyword": "optimize",
+        "score": 1
+      },
+      {
+        "keyword": "benchmark",
+        "score": 1
+      },
+      {
+        "keyword": "regression",
+        "score": 1
+      },
+      {
+        "keyword": "compare against baseline",
+        "score": 1
+      },
+      {
+        "keyword": "another round",
+        "score": 1
+      },
+      {
+        "keyword": "迭代",
+        "score": 1
+      },
+      {
+        "keyword": "优化",
+        "score": 1
+      },
+      {
+        "keyword": "基准",
+        "score": 1
+      },
+      {
+        "keyword": "benchmark loop",
+        "score": 1
+      },
+      {
+        "keyword": "until stable",
+        "score": 1
+      },
+      {
+        "keyword": "max rounds",
+        "score": 1
+      },
+      {
+        "keyword": "multi-round",
+        "score": 1
+      },
+      {
+        "keyword": "回归",
+        "score": 1
+      },
+      {
+        "keyword": "对比基线",
+        "score": 1
+      },
+      {
+        "keyword": "再来一轮",
+        "score": 1
+      },
+      {
+        "keyword": "迭代到稳定",
+        "score": 1
+      },
+      {
+        "keyword": "多轮优化",
+        "score": 1
+      },
+      {
+        "keyword": "最大轮次",
+        "score": 1
+      },
+      {
+        "keyword": "自我优化",
+        "score": 1
+      }
+    ],
     "using-git-worktrees": [
       {
         "keyword": "worktree",
@@ -1521,6 +1628,68 @@
       },
       {
         "keyword": "hotfix 并行",
+        "score": 1
+      }
+    ],
+    "release-gate": [
+      {
+        "keyword": "release gate",
+        "score": 1
+      },
+      {
+        "keyword": "formal release gate",
+        "score": 1
+      },
+      {
+        "keyword": "ready to ship",
+        "score": 1
+      },
+      {
+        "keyword": "ready to release",
+        "score": 1
+      },
+      {
+        "keyword": "ship or hold",
+        "score": 1
+      },
+      {
+        "keyword": "release candidate",
+        "score": 1
+      },
+      {
+        "keyword": "release-readiness",
+        "score": 1
+      },
+      {
+        "keyword": "release readiness",
+        "score": 1
+      },
+      {
+        "keyword": "提交前验收",
+        "score": 1
+      },
+      {
+        "keyword": "发版前验收",
+        "score": 1
+      },
+      {
+        "keyword": "正式验收",
+        "score": 1
+      },
+      {
+        "keyword": "上线前验收",
+        "score": 1
+      },
+      {
+        "keyword": "能不能发版",
+        "score": 1
+      },
+      {
+        "keyword": "能不能提交",
+        "score": 1
+      },
+      {
+        "keyword": "这版能发吗",
         "score": 1
       }
     ],

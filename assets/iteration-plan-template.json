@@ -1,0 +1,42 @@
+{
+  "owner": "Technical Trinity",
+  "objective": "improve routing and delivery quality without regressions",
+  "baseline_label": "stable",
+  "autonomous_candidate_generation": true,
+  "candidate_worktree_template": "../wt-{round_id}",
+  "candidate_patch_template": "",
+  "candidate_brief_template": "./candidate-briefs/{round_id}.json",
+  "candidate_output_dir_template": "./runs/{round_id}",
+  "loop_policy": {
+    "max_rounds": 120,
+    "max_same_hypothesis_retries": 2,
+    "max_consecutive_non_keep_rounds": 0,
+    "auto_pivot_on_stagnation": false,
+    "advance_baseline_on_keep": true,
+    "halt_on_decisions": ["stop"],
+    "sync_patterns_at_end": true
+  },
+  "benchmark_command_template": "python scripts/run_benchmarks.py --output-dir {output_dir} --pretty",
+  "patch_strip": 1,
+  "apply_command_template": "",
+  "rollback_command_template": "",
+  "materialize_command_template": "",
+  "auto_apply_rollback": false,
+  "mutation_catalog": [],
+  "candidates": [
+    {
+      "round_id": "round-01",
+      "owner": "Technical Trinity",
+      "candidate": "describe the first candidate change or leave the list empty to let the loop synthesize it from memory",
+      "hypothesis_key": "one-stable-change-key",
+      "candidate_patch": "",
+      "candidate_brief": "",
+      "mutation_plan": {},
+      "patch_strip": 1,
+      "apply_command": "",
+      "rollback_command": "",
+      "materialize_command": "",
+      "promote_label": "accepted-round-01"
+    }
+  ]
+}

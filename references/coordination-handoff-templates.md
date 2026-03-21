@@ -131,3 +131,32 @@ Use when `Sentinel Architect (NB)` takes over after repeated failed attempts or 
 - Guardrail:
   - Do not propose a production fix before validation unless the user asks for containment only.
 ```
+
+## 7. Iteration Review Handoff
+
+Use when a lead is running a bounded optimization loop and needs one assistant to review the next round.
+
+```markdown
+## Iteration Review
+- Lead owner: [Lead agent]
+- Review owner: [Assistant agent]
+- Objective:
+  - [What is being optimized]
+- Baseline:
+  - [Current accepted result]
+- Candidate change:
+  - [One change for this round]
+- Evidence required:
+  - [Validator / benchmark / regression / test]
+- Hard constraints:
+  - [What must not regress]
+- Allowed decisions:
+  - keep
+  - retry
+  - rollback
+  - stop
+- Expected return:
+  - Decision
+  - Evidence summary
+  - Main risk
+```
