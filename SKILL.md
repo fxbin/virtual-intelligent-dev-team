@@ -68,6 +68,7 @@ The goal is evidence-driven execution with boundaries, not open-ended autonomous
   - Continue from persisted loop state instead of restarting the whole loop.
 
 For the project-facing explanation, common scenarios, and Chinese terminology notes, read `references/skill-positioning.md`.
+For a workflow-oriented Chinese walkthrough, read `references/workflow-sequences.md`.
 
 ## When to use
 
