@@ -33,6 +33,42 @@ Its current operating model has four practical closure layers:
 
 The goal is evidence-driven execution with boundaries, not open-ended autonomous looping.
 
+## Quick examples
+
+- `评估当前项目里的版本，看看能不能继续优化`
+  - Route into bounded iteration with evidence, baseline comparison, and next-round decisions.
+- `继续下一轮，直到结果稳定`
+  - Keep the same semantic owner, persist round memory, and use `keep / retry / rollback / stop` instead of vague retries.
+- `这个版本现在能发布吗`
+  - Trigger the formal release gate and answer with `ship` or `hold`, not only a benchmark summary.
+- `已经试过很多次了，帮我找根因`
+  - Escalate into root-cause discipline, require evidence, and prefer Sentinel-led investigation when risk is high.
+
+## `ship` and `hold`
+
+- `ship`
+  - Means the release gate found enough evidence to treat the current version as release-ready.
+  - The loop can archive a reusable baseline and sync distilled patterns forward.
+- `hold`
+  - Means at least one release blocker is still open.
+  - The gate should not stop at “not ready”.
+  - It should emit the next iteration brief, register the failing baseline, seed blocker-specific remediation artifacts, and prepare the next bounded loop.
+
+## Key terms
+
+- `baseline`
+  - The comparison anchor for one round or one candidate.
+- `round memory`
+  - Short-term memory for what changed, what failed, and what should carry into the next round.
+- `self-feedback`
+  - Compact reflection that turns evidence into the next hypothesis instead of repeating the same attempt.
+- `pivot`
+  - Switch to a new bottleneck after the current hypothesis is exhausted.
+- `resume`
+  - Continue from persisted loop state instead of restarting the whole loop.
+
+For the project-facing explanation, common scenarios, and Chinese terminology notes, read `references/skill-positioning.md`.
+
 ## When to use
 
 Use this skill when:
