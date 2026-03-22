@@ -16,6 +16,23 @@ Handle complex requests with one unified workflow:
 7. If the user asks whether the current version can ship, submit, or pass formal acceptance, run the release gate instead of answering from a benchmark summary alone.
 8. Produce one unified response instead of disconnected role fragments.
 
+## Positioning
+
+This skill is not only an expert router. It is a bounded work-loop skill for complex tasks.
+
+Its current operating model has four practical closure layers:
+
+1. `Routing closure`
+   - Route work across lead, assistant, governance, and process tracks based on task shape, risk, stack, and workflow signals.
+2. `Iteration closure`
+   - Support baseline registration, round memory, self-feedback, `keep / retry / rollback / stop`, `pivot`, and `resume`.
+3. `Release closure`
+   - Use a formal release gate to decide `ship` or `hold`, and bootstrap the next remediation loop when the outcome is `hold`.
+4. `Drill closure`
+   - Verify the workflow through offline drills that cover rollback, resume, and release-gate bootstrap paths.
+
+The goal is evidence-driven execution with boundaries, not open-ended autonomous looping.
+
 ## When to use
 
 Use this skill when:
