@@ -1,4 +1,4 @@
 interface:
   display_name: "Virtual Intelligent Dev Team"
-  short_description: "Auto-route expert teams with guardrails, owner-preserving iteration, and memory-backed self-optimization."
+  short_description: "Auto-route expert teams with guarded, owner-led iteration."
   default_prompt: "Use $virtual-intelligent-dev-team to auto-route this request, preserve the semantic lead, and run bounded self-optimization with baseline registration, round memory, self-feedback, context-chain updates, rollback decisions, and distilled-pattern sync when optimization loops are needed."
