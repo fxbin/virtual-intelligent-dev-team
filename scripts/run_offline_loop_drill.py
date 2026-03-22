@@ -16,6 +16,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 REGISTER_SCRIPT = SCRIPT_DIR / "register_benchmark_baseline.py"
 LOOP_SCRIPT = SCRIPT_DIR / "run_iteration_loop.py"
+RUN_RELEASE_GATE_SCRIPT = SCRIPT_DIR / "run_release_gate.py"
 
 
 def load_module(name: str, path: Path):
@@ -482,6 +483,202 @@ def scenario_pivot_then_resume(root: Path) -> dict[str, object]:
     }
 
 
+def scenario_release_gate_hold_bootstrap(root: Path) -> dict[str, object]:
+    scenario_dir = root / "release-gate-hold-bootstrap"
+    output_dir = scenario_dir / "release-gate-output"
+    workspace = scenario_dir / "workspace"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    lightweight_benchmark = scenario_dir / "run_lightweight_benchmarks.py"
+
+    benchmark_output = output_dir / "benchmark-results.json"
+    benchmark_report = output_dir / "benchmark-report.md"
+    offline_report = output_dir / "offline-loop-drill-report.md"
+    fixture_payload = {
+        "summary": {
+            "tests_passed": False,
+            "validator_passed": False,
+            "evals_passed": False,
+            "offline_drill_enabled": True,
+            "offline_drill_passed": True,
+            "overall_passed": False,
+        },
+        "test_run": {
+            "passed": False,
+            "stdout": "FAILED (failures=2)\nrelease gate bootstrap regression\n",
+            "stderr": "",
+            "returncode": 1,
+        },
+        "validator_run": {
+            "passed": False,
+            "stdout": "{\"ok\": false, \"failed\": [\"release_gate_plan\", \"routing_rules\"]}\n",
+            "stderr": "",
+            "returncode": 1,
+        },
+        "eval_run": {
+            "passed": 53,
+            "total": 56,
+            "cases": [
+                {
+                    "id": 501,
+                    "prompt": "Formal release gate should bootstrap blocker-specific hold remediation.",
+                    "tags": ["release-gate", "iteration"],
+                    "passed": False,
+                    "failures": ["missing release gate hold bootstrap remediation"],
+                },
+                {
+                    "id": 502,
+                    "prompt": "Hold auto-run should seed repo-copy and mutation catalog.",
+                    "tags": ["release-gate", "mutation-catalog"],
+                    "passed": False,
+                    "failures": ["missing repo-copy bootstrap evidence"],
+                },
+            ],
+            "category_breakdown": [
+                {"category": "release-gate", "passed": 0, "total": 1},
+                {"category": "iteration", "passed": 0, "total": 1},
+            ],
+        },
+    }
+    write_json(benchmark_output, fixture_payload)
+    write_text(benchmark_report, "# Benchmark Report\n\n- Simulated hold baseline for release gate bootstrap drill.\n")
+    write_text(offline_report, "# Offline Loop Drill Report\n\n- Simulated upstream drill already passed.\n")
+    write_text(
+        lightweight_benchmark,
+        """#!/usr/bin/env python3
+import argparse
+import json
+from pathlib import Path
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--output-dir", required=True)
+args = parser.parse_args()
+
+output_dir = Path(args.output_dir)
+output_dir.mkdir(parents=True, exist_ok=True)
+payload = {
+    "summary": {"overall_passed": True},
+    "eval_run": {
+        "passed": 56,
+        "total": 56,
+        "cases": [
+            {"id": 901, "prompt": "release gate hold bootstrap converged", "passed": True, "failures": []}
+        ],
+        "category_breakdown": [
+            {"category": "release-gate", "passed": 1, "total": 1},
+            {"category": "iteration", "passed": 1, "total": 1},
+        ],
+    },
+}
+(output_dir / "benchmark-results.json").write_text(
+    json.dumps(payload, ensure_ascii=False),
+    encoding="utf-8",
+)
+print(json.dumps({"ok": True, "source": "release-gate-hold-bootstrap-drill"}, ensure_ascii=False))
+""",
+    )
+
+    benchmark_fixture = {
+        **fixture_payload,
+        "json_report": str(benchmark_output),
+        "markdown_report": str(benchmark_report),
+        "hold_benchmark_command_template": f"python {lightweight_benchmark} --output-dir {{output_dir}}",
+        "offline_drill_run": {
+            "ok": True,
+            "workspace": str(output_dir / "offline-loop-drill"),
+            "markdown_report": str(offline_report),
+            "scenarios": [],
+        },
+    }
+    fixture_path = output_dir / "benchmark-fixture.json"
+    write_json(fixture_path, benchmark_fixture)
+
+    release_gate_proc = subprocess.run(
+        [
+            sys.executable,
+            str(RUN_RELEASE_GATE_SCRIPT),
+            "--output-dir",
+            str(output_dir),
+            "--iteration-workspace",
+            str(workspace),
+            "--auto-run-next-iteration-on-hold",
+            "--hold-loop-max-rounds",
+            "1",
+            "--benchmark-fixture",
+            str(fixture_path),
+            "--pretty",
+        ],
+        cwd=str(SKILL_DIR),
+        check=False,
+        text=True,
+        capture_output=True,
+        encoding="utf-8",
+    )
+    assert_true(
+        release_gate_proc.returncode == 2,
+        "release gate hold drill should exit with status 2 to indicate hold",
+    )
+    result = load_json(output_dir / "release-gate-results.json")
+
+    assert_true(str(result.get("decision")) == "hold", "release gate drill should stay on hold")
+    bootstrap = result.get("follow_up", {}).get("bootstrap", {})
+    assert_true(isinstance(bootstrap, dict), "hold bootstrap payload missing")
+    assert_true(str(bootstrap.get("auto_iteration", {}).get("status")) == "completed", "hold auto iteration did not complete")
+    auto_result = bootstrap.get("auto_iteration", {}).get("result", {})
+    assert_true(int(auto_result.get("round_count", 0)) == 1, "hold auto iteration should run exactly one round in the drill")
+    assert_true(int(auto_result.get("decision_counts", {}).get("keep", 0)) == 1, "hold auto iteration should converge to keep in the drill")
+
+    candidate_repo = Path(str(bootstrap.get("candidate_repo", "")))
+    plan_path = Path(str(bootstrap.get("plan_json", "")))
+    candidate_brief = workspace / "candidate-briefs" / "round-01.json"
+    remediation = candidate_repo / "artifacts" / "release-gate-hold" / "round-01-unit-tests-remediation.md"
+    targets = candidate_repo / "artifacts" / "release-gate-hold" / "round-01-unit-tests-targets.json"
+    patch_path = workspace / "patches" / "round-01.patch"
+
+    assert_true(candidate_repo.exists(), "repo-copy candidate repo was not created")
+    assert_true(plan_path.exists(), "hold iteration plan was not written")
+    assert_true(candidate_brief.exists(), "hold candidate brief was not written")
+    assert_true(remediation.exists(), "blocker-specific remediation artifact was not materialized")
+    assert_true(targets.exists(), "blocker-specific target artifact was not materialized")
+    assert_true(patch_path.exists(), "hold candidate patch was not materialized")
+
+    plan = load_json(plan_path)
+    catalog_ids = {str(item.get("id", "")) for item in plan.get("mutation_catalog", []) if isinstance(item, dict)}
+    assert_true("release-gate-unit-tests-remediation" in catalog_ids, "unit-test hold mutation rule missing")
+    assert_true("release-gate-semantic-regression-remediation" in catalog_ids, "semantic-regression hold mutation rule missing")
+    assert_true("release-gate-eval-suite-remediation" in catalog_ids, "eval-suite hold mutation rule missing")
+
+    targets_payload = load_json(targets)
+    assert_true(
+        "tests/test_routing_and_guardrails.py" in targets_payload.get("target_files", []),
+        "hold target files did not include unit-test remediation paths",
+    )
+    assert_true(
+        "python -m unittest virtual-intelligent-dev-team/tests/test_routing_and_guardrails.py"
+        in targets_payload.get("acceptance_commands", []),
+        "unit-test acceptance command missing from hold targets",
+    )
+
+    brief_payload = load_json(candidate_brief)
+    assert_true(
+        str(brief_payload.get("mutation_plan_source")) == "release-gate:unit-tests",
+        "hold seed candidate did not preserve its release-gate source",
+    )
+
+    return {
+        "scenario": "release-gate-hold-bootstrap",
+        "status": "passed",
+        "workspace": str(workspace),
+        "plan": str(plan_path),
+        "summary": str(auto_result.get("summary")),
+        "round_count": auto_result.get("round_count"),
+        "decision_counts": auto_result.get("decision_counts"),
+        "brief_round_01": str(candidate_brief),
+        "remediation": str(remediation),
+        "patch": str(patch_path),
+        "release_gate_report": str(result.get("markdown_report")),
+    }
+
+
 def render_markdown_report(root: Path, scenarios: list[dict[str, object]]) -> str:
     lines = [
         "# Offline Loop Drill Report",
@@ -510,6 +707,10 @@ def render_markdown_report(root: Path, scenarios: list[dict[str, object]]) -> st
         if "resume_requested" in item:
             lines.append(f"- Resume requested: `{item['resume_requested']}`")
             lines.append(f"- Resumed from existing: `{item['resumed_from_existing']}`")
+        if "remediation" in item:
+            lines.append(f"- Remediation artifact: `{item['remediation']}`")
+        if "release_gate_report" in item:
+            lines.append(f"- Release gate report: `{item['release_gate_report']}`")
         lines.append("")
     return "\n".join(lines)
 
@@ -522,6 +723,7 @@ def run_drill(workspace: Path) -> dict[str, object]:
     scenarios = [
         scenario_rollback_then_keep(workspace),
         scenario_pivot_then_resume(workspace),
+        scenario_release_gate_hold_bootstrap(workspace),
     ]
     markdown_report = workspace / "offline-loop-drill-report.md"
     write_text(markdown_report, render_markdown_report(workspace, scenarios))

@@ -150,7 +150,10 @@ def render_command_template(template: str, round_id: str, round_number: int) -> 
 
 def render_runtime_template(template: str, values: dict[str, object]) -> str:
     normalized = {key: ("" if value is None else str(value)) for key, value in values.items()}
-    return template.format(**normalized)
+    rendered = template
+    for key, value in normalized.items():
+        rendered = rendered.replace("{" + key + "}", value)
+    return rendered
 
 
 def render_template_object(value: object, values: dict[str, object]) -> object:
@@ -709,8 +712,11 @@ def build_candidate_item(
         "rollback_command": rollback_command,
         "materialize_command": materialize_command,
         "mutation_plan": mutation_plan,
-        "mutation_plan_source": "explicit" if mutation_plan is not None else None,
-        "mutation_focus": None,
+        "mutation_plan_source": (
+            str(item.get("mutation_plan_source", "")).strip()
+            or ("explicit" if mutation_plan is not None else None)
+        ),
+        "mutation_focus": str(item.get("mutation_focus", "")).strip() or None,
         "auto_apply_rollback": bool(item.get("auto_apply_rollback", default_auto_apply_rollback)),
         "candidate_patch": candidate_patch,
         "candidate_brief": candidate_brief,
@@ -1339,6 +1345,54 @@ def run_loop(workspace: Path, plan_path: Path, resume: bool = False) -> dict[str
             last_result=last_result,
             objective=objective,
         )
+        if candidate_item.get("mutation_plan") is not None:
+            rendered_mutation_plan = render_template_object(
+                candidate_item["mutation_plan"],
+                build_mutation_template_values(
+                    workspace=workspace,
+                    plan_path=plan_path,
+                    round_id=round_id,
+                    round_number=round_number,
+                    objective=objective,
+                    baseline_label=active_baseline,
+                    owner=round_owner,
+                    candidate=candidate,
+                    focus=mutation_focus,
+                    hypothesis_key=hypothesis_key,
+                    candidate_repo=candidate_item.get("candidate_repo"),
+                    candidate_patch=candidate_item.get("candidate_patch"),
+                    candidate_output_dir=candidate_item.get("candidate_output_dir"),
+                    candidate_brief=candidate_item.get("candidate_brief"),
+                    last_decision=(
+                        str((last_result or {}).get("decision")).strip()
+                        if isinstance(last_result, dict) and last_result.get("decision") is not None
+                        else None
+                    ),
+                    last_decision_reason=(
+                        "; ".join(
+                            str(reason)
+                            for reason in (
+                                last_result.get("decision_reason", [])
+                                if isinstance(last_result, dict)
+                                and isinstance(last_result.get("decision_reason"), list)
+                                else []
+                            )
+                            if str(reason).strip() != ""
+                        )
+                        or None
+                    ),
+                    generation_reason=(
+                        str(candidate_item.get("generation_reason"))
+                        if candidate_item.get("generation_reason") is not None
+                        else None
+                    ),
+                ),
+            )
+            if not isinstance(rendered_mutation_plan, dict):
+                raise RuntimeError("rendered explicit mutation plan must be a JSON object")
+            candidate_item["mutation_plan"] = rendered_mutation_plan
+            if not candidate_item.get("mutation_plan_source"):
+                candidate_item["mutation_plan_source"] = "explicit"
         if candidate_item.get("mutation_plan") is None and mutation_catalog:
             mutation_plan, rule_id = synthesize_mutation_plan_from_catalog(
                 mutation_catalog,

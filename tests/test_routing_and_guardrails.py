@@ -22,6 +22,7 @@ PROMOTE_BASELINE_SCRIPT = SKILL_DIR / "scripts" / "promote_iteration_baseline.py
 SYNC_PATTERNS_SCRIPT = SKILL_DIR / "scripts" / "sync_distilled_patterns.py"
 RUN_ITERATION_LOOP_SCRIPT = SKILL_DIR / "scripts" / "run_iteration_loop.py"
 RUN_BENCHMARKS_SCRIPT = SKILL_DIR / "scripts" / "run_benchmarks.py"
+RUN_OFFLINE_DRILL_SCRIPT = SKILL_DIR / "scripts" / "run_offline_loop_drill.py"
 RUN_RELEASE_GATE_SCRIPT = SKILL_DIR / "scripts" / "run_release_gate.py"
 VALIDATOR_SCRIPT = SKILL_DIR / "scripts" / "validate_virtual_team.py"
 CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
@@ -46,6 +47,7 @@ baseline_promotion = load_module("virtual_intelligent_dev_team_baseline_promotio
 pattern_sync = load_module("virtual_intelligent_dev_team_pattern_sync", SYNC_PATTERNS_SCRIPT)
 iteration_loop = load_module("virtual_intelligent_dev_team_iteration_loop", RUN_ITERATION_LOOP_SCRIPT)
 benchmark_runner = load_module("virtual_intelligent_dev_team_run_benchmarks", RUN_BENCHMARKS_SCRIPT)
+offline_loop_drill = load_module("virtual_intelligent_dev_team_run_offline_loop_drill", RUN_OFFLINE_DRILL_SCRIPT)
 release_gate = load_module("virtual_intelligent_dev_team_run_release_gate", RUN_RELEASE_GATE_SCRIPT)
 
 
@@ -1965,6 +1967,66 @@ class IterationHelperTests(unittest.TestCase):
             self.assertIn('-  "obsolete_rule": true', patch_text)
             self.assertEqual(1, patch_text.count('"id": 99'))
 
+    def test_run_iteration_loop_renders_explicit_mutation_plan_templates(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            workspace.mkdir(parents=True, exist_ok=True)
+            candidate_repo = Path(tmp) / "candidate-repo"
+            candidate_repo.mkdir(parents=True, exist_ok=True)
+            plan_path = workspace / "iteration-plan.json"
+            plan_path.write_text(
+                json.dumps(
+                    {
+                        "objective": "render explicit mutation plan placeholders safely",
+                        "owner": "Technical Trinity",
+                        "baseline_label": "stable",
+                        "candidate_brief_template": "./briefs/{round_id}.json",
+                        "candidate_patch_template": "./patches/{round_id}.patch",
+                        "loop_policy": {
+                            "max_rounds": 1,
+                            "advance_baseline_on_keep": False,
+                            "halt_on_decisions": ["stop"],
+                            "sync_patterns_at_end": False,
+                        },
+                        "candidates": [
+                            {
+                                "round_id": "round-01",
+                                "candidate": "seed explicit templated remediation",
+                                "candidate_repo": str(candidate_repo),
+                                "mutation_focus": "unit-test bootstrap",
+                                "mutation_plan": {
+                                    "mode": "patch",
+                                    "operations": [
+                                        {
+                                            "op": "write_file",
+                                            "path": "artifacts/{round_id}-note.md",
+                                            "content": "Focus={focus}; round={round_id}; hypothesis={hypothesis_key}",
+                                        }
+                                    ],
+                                },
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            with mock.patch.object(
+                iteration_loop.iteration_cycle,
+                "run_cycle",
+                return_value={"decision": "stop", "decision_reason": ["done"]},
+            ):
+                iteration_loop.run_loop(workspace=workspace, plan_path=plan_path)
+
+            brief = baseline_registry.load_json(workspace / "briefs" / "round-01.json")
+            operation = brief["mutation_plan"]["operations"][0]
+            self.assertEqual("artifacts/round-01-note.md", operation["path"])
+            self.assertIn("Focus=unit-test bootstrap", operation["content"])
+            self.assertIn("round=round-01", operation["content"])
+            self.assertIn("hypothesis=seed-explicit-templated-remediation", operation["content"])
+            self.assertEqual("explicit", brief["mutation_plan_source"])
+
     def test_builtin_materializer_patch_applies_to_git_repo_without_final_newline(self) -> None:
         with make_tempdir() as tmp:
             candidate_repo = Path(tmp) / "candidate-repo"
@@ -2011,6 +2073,22 @@ class IterationHelperTests(unittest.TestCase):
             )
             self.assertTrue(rollback_result["passed"])
             self.assertEqual('{"mode":"baseline"}', target_file.read_text(encoding="utf-8"))
+
+    def test_is_git_repo_rejects_nested_copy_without_own_git_metadata(self) -> None:
+        with make_tempdir() as tmp:
+            outer_repo = Path(tmp) / "outer-repo"
+            nested_copy = outer_repo / "nested-copy"
+            outer_repo.mkdir(parents=True, exist_ok=True)
+            nested_copy.mkdir(parents=True, exist_ok=True)
+            git("init", cwd=outer_repo)
+            configure_repo(outer_repo)
+            (outer_repo / "README.md").write_text("demo\n", encoding="utf-8")
+            git("add", "README.md", cwd=outer_repo)
+            git("commit", "-m", "chore: init outer repo", cwd=outer_repo)
+
+            self.assertTrue(iteration_cycle.is_git_repo(outer_repo))
+            self.assertFalse((nested_copy / ".git").exists())
+            self.assertFalse(iteration_cycle.is_git_repo(nested_copy))
 
     def test_run_iteration_loop_plan_candidate_can_synthesize_mutation_plan_from_catalog(self) -> None:
         with make_tempdir() as tmp:
@@ -3136,6 +3214,30 @@ class ValidatorScriptTests(unittest.TestCase):
         self.assertEqual(0, proc.returncode, msg=proc.stdout + proc.stderr)
 
 
+class OfflineLoopDrillScriptTests(unittest.TestCase):
+    def test_offline_drill_covers_release_gate_hold_bootstrap(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp) / "offline-drill"
+
+            result = offline_loop_drill.run_drill(workspace=root)
+
+            self.assertTrue(result["ok"])
+            scenarios = {
+                item["scenario"]: item
+                for item in result["scenarios"]
+                if isinstance(item, dict) and "scenario" in item
+            }
+            self.assertIn("release-gate-hold-bootstrap", scenarios)
+            hold_scenario = scenarios["release-gate-hold-bootstrap"]
+            self.assertEqual("passed", hold_scenario["status"])
+            self.assertTrue(Path(hold_scenario["plan"]).exists())
+            self.assertTrue(Path(hold_scenario["brief_round_01"]).exists())
+            self.assertTrue(Path(hold_scenario["remediation"]).exists())
+            self.assertTrue(Path(hold_scenario["patch"]).exists())
+            self.assertEqual(1, hold_scenario["round_count"])
+            self.assertEqual(1, hold_scenario["decision_counts"]["keep"])
+
+
 class BenchmarkAndReleaseGateTests(unittest.TestCase):
     def test_run_benchmark_suite_can_include_offline_drill(self) -> None:
         with make_tempdir() as tmp:
@@ -3320,6 +3422,7 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
             bootstrap = result["follow_up"]["bootstrap"]
             self.assertTrue(Path(bootstrap["candidate_repo"]).exists())
             self.assertTrue((Path(bootstrap["candidate_repo"]) / "scripts" / "run_release_gate.py").exists())
+            self.assertFalse((Path(bootstrap["candidate_repo"]) / ".git").exists())
             self.assertTrue(Path(bootstrap["plan_json"]).exists())
             self.assertTrue(Path(bootstrap["open_loops"]).exists())
             self.assertTrue(Path(bootstrap["iteration_context_chain"]).exists())

@@ -36,6 +36,7 @@ The release gate is stricter:
 - it always includes the real offline loop drill
 - it emits a ship-or-hold decision
 - it writes dedicated release gate artifacts
+- the offline loop drill should also keep exercising the `hold -> bootstrap -> auto-run` path so this closure does not regress silently
 
 ## Outputs
 
@@ -46,7 +47,7 @@ The release gate is stricter:
 - `next-iteration-brief.json` and markdown when the result is `hold`
 - `release-closure.json` and markdown when the result is `ship`
 - `iteration-plan.release-gate.json`, `open-loops.md`, and `iteration-context-chain.md` when `hold` bootstraps an iteration workspace
-- `repo-copy` plus blocker-specific remediation and target artifacts under `artifacts/release-gate-hold/` inside the copied repo when `hold` seeds the next self-mutation chain
+- git-detached `repo-copy` plus blocker-specific remediation and target artifacts under `artifacts/release-gate-hold/` inside the copied repo when `hold` seeds the next self-mutation chain
 
 ## Decision Rule
 

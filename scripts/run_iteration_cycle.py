@@ -102,8 +102,15 @@ def normalize_command(command: str, output_dir: Path) -> str:
 
 
 def is_git_repo(path: Path) -> bool:
-    probe = run_process(["git", "rev-parse", "--is-inside-work-tree"], cwd=path)
-    return bool(probe["passed"]) and str(probe["stdout"]).strip() == "true"
+    if (path / ".git").exists():
+        return True
+    probe = run_process(["git", "rev-parse", "--show-toplevel"], cwd=path)
+    if not bool(probe["passed"]):
+        return False
+    try:
+        return Path(str(probe["stdout"]).strip()).resolve() == path.resolve()
+    except (OSError, RuntimeError):
+        return False
 
 
 def run_process(command: list[str], cwd: Path) -> dict[str, object]:

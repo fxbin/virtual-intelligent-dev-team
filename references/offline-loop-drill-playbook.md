@@ -10,6 +10,7 @@ Prove that the bounded self-optimization loop works end to end in real files and
 - `keep`
 - auto `pivot`
 - `resume`
+- release gate `hold -> bootstrap -> auto-run`
 
 ## Default Drill Entrypoint
 
@@ -40,6 +41,16 @@ What it proves:
 - auto pivot can switch to the next bottleneck
 - interrupted offline loops can resume safely from persisted state
 
+### 3. Release Gate Hold Bootstrap
+
+What it proves:
+
+- the formal release gate can enter `hold` deterministically
+- `hold` can register a failing baseline and seed a git-detached `repo-copy`
+- blocker-specific mutation catalog entries are written before the next loop starts
+- blocker-specific remediation and target artifacts are materialized into the copied repo
+- `--auto-run-next-iteration-on-hold` can immediately converge into the next bounded round
+
 ## Success Criteria
 
 Treat the drill as passing only if:
@@ -48,6 +59,7 @@ Treat the drill as passing only if:
 - scenario 2 decisions are `rollback -> keep`
 - scenario 2 records one pivot
 - scenario 2 resumes from persisted state instead of restarting
+- scenario 3 reaches `hold`, bootstraps the copied repo, and auto-runs one `keep` round
 - the markdown drill report is written successfully
 
 ## When To Run
@@ -60,6 +72,7 @@ Run this before calling the loop “closed enough” after changes to:
 - rollback behavior
 - resume logic
 - pivot logic
+- release gate hold bootstrap logic
 
 ## Guardrail
 

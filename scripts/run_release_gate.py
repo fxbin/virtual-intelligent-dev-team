@@ -38,6 +38,14 @@ iteration_loop = load_module("virtual_team_release_gate_iteration_loop", ITERATI
 pattern_sync = load_module("virtual_team_release_gate_pattern_sync", SYNC_PATTERNS_SCRIPT)
 
 
+def load_json(path: Path) -> dict[str, object]:
+    with path.open("r", encoding="utf-8") as file:
+        data = json.load(file)
+    if not isinstance(data, dict):
+        raise RuntimeError(f"{path} must contain a JSON object")
+    return data
+
+
 def write_json(path: Path, payload: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as file:
@@ -47,6 +55,26 @@ def write_json(path: Path, payload: dict[str, object]) -> None:
 def write_text(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
+
+
+def load_benchmark_fixture(path: Path) -> dict[str, object]:
+    payload = load_json(path)
+    required_fields = ("summary", "json_report", "markdown_report")
+    for key in required_fields:
+        if key not in payload:
+            raise RuntimeError(f"benchmark fixture missing required key: {key}")
+    json_report = Path(str(payload["json_report"])).resolve()
+    markdown_report = Path(str(payload["markdown_report"])).resolve()
+    if not json_report.exists():
+        raise RuntimeError(f"benchmark fixture json_report does not exist: {json_report}")
+    if not markdown_report.exists():
+        raise RuntimeError(f"benchmark fixture markdown_report does not exist: {markdown_report}")
+    offline_drill_run = payload.get("offline_drill_run")
+    if isinstance(offline_drill_run, dict):
+        markdown = str(offline_drill_run.get("markdown_report", "")).strip()
+        if markdown != "" and not Path(markdown).resolve().exists():
+            raise RuntimeError(f"benchmark fixture offline drill report does not exist: {markdown}")
+    return payload
 
 
 def blocker_specs(summary: dict[str, object]) -> list[dict[str, object]]:
@@ -755,6 +783,7 @@ def copy_skill_snapshot(candidate_repo: Path) -> Path:
     if candidate_repo.exists():
         shutil.rmtree(candidate_repo)
     ignore = shutil.ignore_patterns(
+        ".git",
         "__pycache__",
         "*.pyc",
         ".tmp-*",
@@ -836,6 +865,7 @@ def build_hold_iteration_plan(
     brief: dict[str, object],
     baseline_label: str,
     max_rounds: int,
+    benchmark_command_template: str | None = None,
 ) -> dict[str, object]:
     return {
         "owner": str(brief.get("owner", "Technical Trinity")).strip() or "Technical Trinity",
@@ -857,7 +887,8 @@ def build_hold_iteration_plan(
             "halt_on_decisions": ["stop"],
             "sync_patterns_at_end": True,
         },
-        "benchmark_command_template": "python scripts/run_benchmarks.py --output-dir {output_dir} --pretty",
+        "benchmark_command_template": benchmark_command_template
+        or "python scripts/run_benchmarks.py --output-dir {output_dir} --pretty",
         "mutation_catalog": build_hold_mutation_catalog(brief),
         "candidates": [build_hold_seed_candidate(brief)],
         "generated_from_release_gate": {
@@ -892,6 +923,9 @@ def bootstrap_hold_iteration_workspace(
         brief=brief,
         baseline_label=baseline_label,
         max_rounds=hold_loop_max_rounds,
+        benchmark_command_template=(
+            str(brief.get("hold_benchmark_command_template", "")).strip() or None
+        ),
     )
     write_json(plan_path, plan_payload)
     brief_json_path = output_dir / "next-iteration-brief.json"
@@ -962,6 +996,9 @@ def build_hold_follow_up(
         "objective_hints": objective_hints or ["按失败门禁逐项修复后再重新验收"],
         "blockers": blockers,
         "benchmark_context": build_benchmark_context(benchmark_result),
+        "hold_benchmark_command_template": (
+            str(benchmark_result.get("hold_benchmark_command_template", "")).strip() or None
+        ),
         "baseline_report": benchmark_json,
         "baseline_markdown": benchmark_markdown,
         "offline_drill_report": offline_drill_report,
@@ -1189,13 +1226,18 @@ def run_release_gate(
     release_label: str = "",
     auto_run_next_iteration_on_hold: bool = False,
     hold_loop_max_rounds: int = 3,
+    benchmark_fixture: Path | None = None,
 ) -> dict[str, object]:
     output_dir.mkdir(parents=True, exist_ok=True)
-    benchmark_result = benchmark_runner.run_benchmark_suite(
-        output_dir=output_dir,
-        previous_output=previous_output,
-        include_offline_drill=True,
-        offline_drill_workspace=offline_drill_workspace,
+    benchmark_result = (
+        load_benchmark_fixture(benchmark_fixture.resolve())
+        if benchmark_fixture is not None
+        else benchmark_runner.run_benchmark_suite(
+            output_dir=output_dir,
+            previous_output=previous_output,
+            include_offline_drill=True,
+            offline_drill_workspace=offline_drill_workspace,
+        )
     )
     summary = benchmark_result["summary"]
     ok = bool(summary.get("overall_passed"))
@@ -1276,6 +1318,10 @@ def parse_args() -> argparse.Namespace:
         default=3,
         help="Max rounds for hold bootstrap iteration plan",
     )
+    parser.add_argument(
+        "--benchmark-fixture",
+        help="Use a precomputed benchmark result JSON instead of running the benchmark suite (for drills/tests)",
+    )
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON summary to stdout")
     return parser.parse_args()
 
@@ -1290,6 +1336,7 @@ def main() -> None:
         release_label=args.release_label,
         auto_run_next_iteration_on_hold=args.auto_run_next_iteration_on_hold,
         hold_loop_max_rounds=args.hold_loop_max_rounds,
+        benchmark_fixture=Path(args.benchmark_fixture).resolve() if args.benchmark_fixture else None,
     )
     stdout_payload = {
         "ok": result["ok"],

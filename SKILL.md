@@ -287,7 +287,7 @@ The lead agent owns the response structure. Assistants should only add the delta
 - Run `scripts/init_iteration_round.py` to scaffold one bounded-iteration round.
 - Run `scripts/run_iteration_cycle.py` to advance one round through initialization, benchmarking, evaluation, and closure, including benchmarking a candidate repo or worktree when needed.
 - Run `scripts/run_iteration_loop.py` to execute a capped multi-round optimization plan and auto-synthesize the next candidate from round memory, self-feedback, open loops, and distilled patterns when autonomous mode is enabled.
-- Run `scripts/run_offline_loop_drill.py` when you need a real offline acceptance drill for rollback, keep, pivot, and resume.
+- Run `scripts/run_offline_loop_drill.py` when you need a real offline acceptance drill for rollback, keep, pivot, resume, and release-gate hold bootstrap.
 - Run `scripts/run_release_gate.py` when you need a formal ship-or-hold gate that includes the real offline loop drill; on `hold` it should emit the next iteration brief, seed a blocker-specific mutation catalog plus `repo-copy` workspace for the next bounded loop, and on `ship` it should close the loop into release archive artifacts.
 - Run `scripts/promote_iteration_baseline.py` to promote a kept round into the next reusable baseline.
 - Run `scripts/sync_distilled_patterns.py` to rebuild distilled patterns from accepted rounds.
@@ -371,7 +371,7 @@ Run the formal release gate and, on `hold`, immediately bootstrap the next bound
 python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --auto-run-next-iteration-on-hold --hold-loop-max-rounds 3 --pretty
 ```
 
-When this `hold` bootstrap path is active, the release gate should create `repo-copy`, a blocker-specific mutation catalog, and remediation artifacts under `artifacts/release-gate-hold/` so the next loop starts from runnable self-mutation scaffolding instead of an empty retry.
+When this `hold` bootstrap path is active, the release gate should create a git-detached `repo-copy`, a blocker-specific mutation catalog, and remediation artifacts under `artifacts/release-gate-hold/` so the next loop starts from runnable self-mutation scaffolding instead of an empty retry.
 
 Materialize a structured candidate brief into a patch artifact with the built-in materializer:
 
