@@ -1,6 +1,7 @@
 import importlib.util
 from contextlib import contextmanager
 import json
+import shutil
 import subprocess
 import sys
 import unittest
@@ -3312,6 +3313,56 @@ class ValidatorScriptTests(unittest.TestCase):
         result = contract_lint.lint_contract(SKILL_DIR)
 
         self.assertTrue(result["ok"], msg="\n".join(result["errors"]))
+
+    def test_contract_lint_fails_on_version_mismatch_fixture(self) -> None:
+        with make_tempdir() as tmp:
+            fixture_dir = Path(tmp) / "virtual-intelligent-dev-team-fixture"
+            shutil.copytree(SKILL_DIR, fixture_dir)
+            (fixture_dir / "VERSION").write_text("v0.0.0\n", encoding="utf-8")
+
+            result = contract_lint.lint_contract(fixture_dir)
+
+            self.assertFalse(result["ok"])
+            self.assertTrue(
+                any("VERSION mismatch" in message for message in result["errors"]),
+                msg="\n".join(result["errors"]),
+            )
+
+    def test_contract_lint_fails_on_process_skill_key_drift_fixture(self) -> None:
+        with make_tempdir() as tmp:
+            fixture_dir = Path(tmp) / "virtual-intelligent-dev-team-fixture"
+            shutil.copytree(SKILL_DIR, fixture_dir)
+            config_path = fixture_dir / "references" / "routing-rules.json"
+            payload = json.loads(config_path.read_text(encoding="utf-8"))
+            payload["process_skill_lead_agents"]["fake-skill"] = "Technical Trinity"
+            config_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+            result = contract_lint.lint_contract(fixture_dir)
+
+            self.assertFalse(result["ok"])
+            self.assertTrue(
+                any("process_skill_lead_agents has no matching process_skill_rules" in message for message in result["errors"]),
+                msg="\n".join(result["errors"]),
+            )
+
+    def test_contract_lint_fails_on_missing_index_script_fixture(self) -> None:
+        with make_tempdir() as tmp:
+            fixture_dir = Path(tmp) / "virtual-intelligent-dev-team-fixture"
+            shutil.copytree(SKILL_DIR, fixture_dir)
+            index_path = fixture_dir / "references" / "tooling-command-index.md"
+            index_path.write_text(
+                index_path.read_text(encoding="utf-8")
+                + "\n```bash\npython scripts/does_not_exist.py --pretty\n```\n",
+                encoding="utf-8",
+            )
+
+            result = contract_lint.lint_contract(fixture_dir)
+
+            self.assertFalse(result["ok"])
+            self.assertTrue(
+                any("contains commands for missing scripts" in message for message in result["errors"]),
+                msg="\n".join(result["errors"]),
+            )
 
     def test_validator_script_passes(self) -> None:
         proc = subprocess.run(

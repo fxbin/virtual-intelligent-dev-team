@@ -15,10 +15,6 @@ SKILL_DIR = SCRIPT_DIR.parent
 ROUTE_SCRIPT = SCRIPT_DIR / "route_request.py"
 CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 VERSION_PATH = SKILL_DIR / "VERSION"
-INDEX_PATHS = [
-    SKILL_DIR / "references" / "tooling-command-index.md",
-    SKILL_DIR / "references" / "runtime-routing-index.md",
-]
 MARKDOWN_PATH_RE = re.compile(r"(?<![\w./-])((?:assets|references|scripts)/[A-Za-z0-9_./-]+\.(?:md|json|py))(?![\w./-])")
 BARE_REFERENCE_RE = re.compile(r"^\s*-\s+`([A-Za-z0-9_.-]+\.(?:md|json))`\s*$")
 SCRIPT_COMMAND_RE = re.compile(r"python\s+(scripts/[A-Za-z0-9_.-]+\.py)\b")
@@ -49,9 +45,9 @@ def _check(condition: bool, errors: list[str], message: str) -> None:
         errors.append(message)
 
 
-def _resolve_markdown_path(raw_path: str, source_path: Path) -> Path:
+def _resolve_markdown_path(raw_path: str, source_path: Path, skill_dir: Path) -> Path:
     if raw_path.startswith(("assets/", "references/", "scripts/")):
-        return (SKILL_DIR / raw_path).resolve()
+        return (skill_dir / raw_path).resolve()
     return (source_path.parent / raw_path).resolve()
 
 
@@ -70,6 +66,10 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
     resolved_skill_dir = skill_dir.resolve() if skill_dir is not None else SKILL_DIR
     config_path = resolved_skill_dir / "references" / "routing-rules.json"
     version_path = resolved_skill_dir / "VERSION"
+    index_paths = [
+        resolved_skill_dir / "references" / "tooling-command-index.md",
+        resolved_skill_dir / "references" / "runtime-routing-index.md",
+    ]
     config = load_json(config_path)
     errors: list[str] = []
     checks: list[dict[str, object]] = []
@@ -167,11 +167,11 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                     )
         checks.append({"name": f"process-plan-{skill_name}", "passed": True})
 
-    for index_path in INDEX_PATHS:
+    for index_path in index_paths:
         refs = _collect_markdown_references(index_path)
         missing_refs = []
         for raw_ref in refs:
-            resolved = _resolve_markdown_path(raw_ref, index_path)
+            resolved = _resolve_markdown_path(raw_ref, index_path, resolved_skill_dir)
             if not resolved.exists():
                 missing_refs.append(raw_ref)
         _check(
