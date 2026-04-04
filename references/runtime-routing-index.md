@@ -105,4 +105,5 @@
 
 - `tooling-command-index.md`
   - 用 `verify_action.py` 先做一次动作合法性校验
+  - 高风险执行前，可分别确认 `git-workflow` 和 `worktree` 是否真的该开
   - 用 `lint_virtual_team_contract.py` 检查索引、命令和 process contract 是否漂移

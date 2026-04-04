@@ -26,6 +26,14 @@ python scripts/validate_virtual_team.py --pretty
 python scripts/verify_action.py --text "<user request>" --check process-skill --process-skill bounded-iteration --pretty
 ```
 
+```bash
+python scripts/verify_action.py --text "<user request>" --check git-workflow --pretty
+```
+
+```bash
+python scripts/verify_action.py --text "<user request>" --check worktree --pretty
+```
+
 - 机械契约 lint
 
 ```bash

@@ -87,7 +87,8 @@
         "assistant_agents is empty"
       ],
       "categories": [
-        "general"
+        "general",
+        "high-risk"
       ]
     },
     {
@@ -145,7 +146,8 @@
         "reason.unknown_only_fallback is true"
       ],
       "categories": [
-        "general"
+        "general",
+        "clarification"
       ]
     },
     {
@@ -246,7 +248,8 @@
       "categories": [
         "backend-stack",
         "git-workflow",
-        "cross-domain"
+        "cross-domain",
+        "worktree"
       ]
     },
     {
@@ -298,7 +301,8 @@
       ],
       "categories": [
         "backend-stack",
-        "git-workflow"
+        "git-workflow",
+        "worktree"
       ]
     },
     {
@@ -350,7 +354,8 @@
       ],
       "categories": [
         "backend-stack",
-        "git-workflow"
+        "git-workflow",
+        "worktree"
       ]
     },
     {
@@ -400,7 +405,8 @@
       ],
       "categories": [
         "backend-stack",
-        "git-workflow"
+        "git-workflow",
+        "worktree"
       ]
     },
     {
@@ -448,7 +454,8 @@
       ],
       "categories": [
         "frontend",
-        "git-workflow"
+        "git-workflow",
+        "worktree"
       ]
     },
     {
@@ -731,7 +738,9 @@
     {
       "id": 47,
       "categories": [
-        "general"
+        "general",
+        "high-risk",
+        "git-workflow"
       ],
       "prompt": "This is a production-critical payment migration. Research first, stage it, define rollback, and handle the PR safely.",
       "expected_output": "High-risk production change scenarios should attach Sentinel Architect (NB) and Git Workflow Guardian while keeping the owning specialist in charge.",
@@ -814,7 +823,9 @@
     },
     {
       "categories": [
-        "general"
+        "general",
+        "root-cause",
+        "high-risk"
       ],
       "prompt": "We already tried two fixes. It still fails in production. Stop guessing, inspect the logs, find the root cause, and only then propose the next step.",
       "expected_output": "Repeated failed attempts plus explicit root-cause language should escalate to Sentinel Architect (NB), with Technical Trinity attached for runtime or implementation analysis.",
@@ -830,7 +841,9 @@
     },
     {
       "categories": [
-        "general"
+        "general",
+        "root-cause",
+        "high-risk"
       ],
       "prompt": "This MCP server registration still fails after multiple attempts. Read the logs, inspect the config, identify the root cause, and stage the safest fix.",
       "expected_output": "MCP or config-runtime root-cause requests should escalate to Sentinel Architect (NB) and attach Technical Trinity for system-level diagnosis.",
@@ -871,7 +884,8 @@
       "id": 55,
       "categories": [
         "iteration",
-        "release-gate"
+        "release-gate",
+        "release-readiness"
       ],
       "prompt": "Is this version ready to ship? Do not answer from benchmark alone. Run the formal release gate.",
       "expected_output": "Release-readiness prompts should enable the formal ship-or-hold gate instead of routing to generic git workflow.",
@@ -890,6 +904,7 @@
       "categories": [
         "iteration",
         "release-gate",
+        "release-readiness",
         "chinese",
         "mixed-language"
       ],

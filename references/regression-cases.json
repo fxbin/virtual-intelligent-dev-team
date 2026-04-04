@@ -747,6 +747,30 @@
       }
     },
     {
+      "name": "verify_git_workflow_allowed",
+      "text": "Refactor this Flask service and then commit and push the branch.",
+      "check": "git-workflow",
+      "expect": {
+        "allowed": true,
+        "summary_contains": "required",
+        "detail_equals": {
+          "needs_git_workflow": true
+        }
+      }
+    },
+    {
+      "name": "verify_worktree_allowed",
+      "text": "Use FastAPI for a backend service, then commit, push, and isolate the work in a worktree.",
+      "check": "worktree",
+      "expect": {
+        "allowed": true,
+        "summary_contains": "required",
+        "detail_equals": {
+          "needs_worktree": true
+        }
+      }
+    },
+    {
       "name": "verify_wrong_lead_rejected",
       "text": "Review this Django API for security issues.",
       "check": "lead-assignment",

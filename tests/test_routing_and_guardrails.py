@@ -3268,6 +3268,33 @@ class ValidatorScriptTests(unittest.TestCase):
         self.assertEqual("process-skill", result["check"])
         self.assertIn("pre-development-planning", result["router_snapshot"]["process_skills"])
 
+    def test_verify_action_accepts_git_workflow(self) -> None:
+        result = verify_action.verify_action(
+            text="Refactor this Flask service and then commit and push the branch.",
+            config=load_config(),
+            repo_path=REPO_ROOT,
+            check="git-workflow",
+        )
+
+        self.assertTrue(result["allowed"])
+        self.assertTrue(result["details"]["needs_git_workflow"])
+        self.assertIn("git-workflow", result["router_snapshot"]["process_skills"])
+
+    def test_verify_action_accepts_worktree(self) -> None:
+        result = verify_action.verify_action(
+            text="Use FastAPI for a backend service, then commit, push, and isolate the work in a worktree.",
+            config=load_config(),
+            repo_path=REPO_ROOT,
+            check="worktree",
+        )
+
+        self.assertTrue(result["allowed"])
+        self.assertTrue(result["details"]["needs_worktree"])
+        self.assertEqual(
+            result["details"]["repo_strategy"]["base_branch"],
+            result["details"]["base_branch"],
+        )
+
     def test_verify_action_rejects_wrong_lead_assignment(self) -> None:
         result = verify_action.verify_action(
             text="Review this Django API for security issues.",

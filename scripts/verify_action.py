@@ -59,6 +59,13 @@ def _details_for_process_skill(result: dict[str, object], process_skill: str) ->
     }
 
 
+def _get_process_plan_entry(result: dict[str, object], skill_name: str) -> dict[str, object]:
+    for item in result.get("process_plan", []):
+        if isinstance(item, dict) and item.get("skill") == skill_name:
+            return item
+    return {}
+
+
 def _verify_process_skill(result: dict[str, object], process_skill: str) -> dict[str, object]:
     allowed = process_skill in result.get("process_skills", [])
     details = _details_for_process_skill(result, process_skill)
@@ -72,6 +79,67 @@ def _verify_process_skill(result: dict[str, object], process_skill: str) -> dict
         "allowed": allowed,
         "summary": summary,
         "details": details,
+        "recommended_next_step": next_step,
+    }
+
+
+def _verify_git_workflow(result: dict[str, object]) -> dict[str, object]:
+    allowed = bool(result.get("needs_git_workflow"))
+    plan_entry = _get_process_plan_entry(result, "git-workflow")
+    git_profile = result.get("git_workflow_profile", {})
+    repo_strategy = (
+        git_profile.get("repo_strategy", {})
+        if isinstance(git_profile, dict)
+        else {}
+    )
+    commands = plan_entry.get("commands", []) if isinstance(plan_entry.get("commands"), list) else []
+    templates = git_profile.get("templates", {}) if isinstance(git_profile, dict) else {}
+    if allowed:
+        summary = "Git workflow guardrail flow is required for this request."
+        next_step = "Start from the git-workflow plan entry, run the guardrail checks in order, and do not skip G0-G4."
+    else:
+        summary = "Git workflow guardrail flow is not required for this request."
+        next_step = "Do not force commit / push / PR handling unless the request explicitly includes delivery workflow actions."
+    return {
+        "allowed": allowed,
+        "summary": summary,
+        "details": {
+            "needs_git_workflow": bool(result.get("needs_git_workflow")),
+            "recommended_process_skills": result.get("process_skills", []),
+            "commands": commands,
+            "repo_strategy": repo_strategy,
+            "templates": templates,
+        },
+        "recommended_next_step": next_step,
+    }
+
+
+def _verify_worktree(result: dict[str, object]) -> dict[str, object]:
+    allowed = bool(result.get("needs_worktree"))
+    plan_entry = _get_process_plan_entry(result, "using-git-worktrees")
+    commands = plan_entry.get("commands", []) if isinstance(plan_entry.get("commands"), list) else []
+    git_profile = result.get("git_workflow_profile", {})
+    repo_strategy = (
+        git_profile.get("repo_strategy", {})
+        if isinstance(git_profile, dict)
+        else {}
+    )
+    if allowed:
+        summary = "Git worktree isolation is required for this request."
+        next_step = "Use the worktree plan entry first so execution stays isolated from the main working tree."
+    else:
+        summary = "Git worktree isolation is not required for this request."
+        next_step = "Stay in the current working tree unless the request explicitly asks for isolation or parallel task branches."
+    return {
+        "allowed": allowed,
+        "summary": summary,
+        "details": {
+            "needs_worktree": bool(result.get("needs_worktree")),
+            "recommended_process_skills": result.get("process_skills", []),
+            "commands": commands,
+            "repo_strategy": repo_strategy,
+            "base_branch": str(repo_strategy.get("base_branch", "main")),
+        },
         "recommended_next_step": next_step,
     }
 
@@ -110,15 +178,10 @@ def _verify_lead_assignment(
 
 def _verify_release_gate(result: dict[str, object]) -> dict[str, object]:
     allowed = bool(result.get("needs_release_gate"))
-    commands: list[str] = []
-    decisions: list[str] = []
-    artifacts: list[str] = []
-    for item in result.get("process_plan", []):
-        if isinstance(item, dict) and item.get("skill") == "release-gate":
-            commands = item.get("commands", []) if isinstance(item.get("commands"), list) else []
-            decisions = item.get("decisions", []) if isinstance(item.get("decisions"), list) else []
-            artifacts = item.get("artifacts", []) if isinstance(item.get("artifacts"), list) else []
-            break
+    entry = _get_process_plan_entry(result, "release-gate")
+    commands = entry.get("commands", []) if isinstance(entry.get("commands"), list) else []
+    decisions = entry.get("decisions", []) if isinstance(entry.get("decisions"), list) else []
+    artifacts = entry.get("artifacts", []) if isinstance(entry.get("artifacts"), list) else []
     if allowed:
         summary = "Formal release gate is required for this request."
         next_step = "Run `python scripts/run_release_gate.py --output-dir evals/release-gate --pretty` before answering ship or hold."
@@ -186,6 +249,10 @@ def verify_action(
         if not process_skill:
             raise ValueError("--process-skill is required for check=process-skill")
         outcome = _verify_process_skill(result, process_skill)
+    elif check == "git-workflow":
+        outcome = _verify_git_workflow(result)
+    elif check == "worktree":
+        outcome = _verify_worktree(result)
     elif check == "lead-assignment":
         if not lead_agent:
             raise ValueError("--lead-agent is required for check=lead-assignment")
@@ -208,6 +275,8 @@ def verify_action(
             "lead_agent": result.get("lead_agent"),
             "assistant_agents": result.get("assistant_agents"),
             "process_skills": result.get("process_skills"),
+            "needs_git_workflow": result.get("needs_git_workflow"),
+            "needs_worktree": result.get("needs_worktree"),
             "needs_release_gate": result.get("needs_release_gate"),
             "needs_iteration": result.get("needs_iteration"),
         },
@@ -220,7 +289,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--check",
         required=True,
-        choices=["process-skill", "lead-assignment", "release-gate", "iteration"],
+        choices=[
+            "process-skill",
+            "git-workflow",
+            "worktree",
+            "lead-assignment",
+            "release-gate",
+            "iteration",
+        ],
         help="What to verify before taking action.",
     )
     parser.add_argument("--process-skill", help="Process skill name for check=process-skill.")
