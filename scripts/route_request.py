@@ -15,8 +15,8 @@ from pathlib import Path
 
 DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent.parent / "references" / "routing-rules.json"
 ASCII_WORD_CLASS = "a-z0-9"
-TRACK_REGULAR = "三省六部轨"
-TRACK_FAST = "军机处直通轨"
+TRACK_REGULAR = "regular track"
+TRACK_FAST = "fast track"
 
 
 def load_config(config_path: Path) -> dict[str, object]:
@@ -617,7 +617,14 @@ def get_governance_defaults(config: dict[str, object]) -> dict[str, object]:
     defaults = {
         "assistant_count_min": 1,
         "confidence_max": 0.75,
-        "force_keywords": ["圆桌会议", "三省六部", "多智能体治理", "cross-functional", "governance"],
+        "force_keywords": [
+            "圆桌会议",
+            "多智能体治理",
+            "cross-functional",
+            "governance",
+            "roundtable governance",
+            "regular governance",
+        ],
     }
     privy_defaults = {
         "prefer_regular_for_git": True,
@@ -1072,7 +1079,7 @@ def build_governance_plan(
     if dual_sign_required:
         decision_protocol = "双签通过：Sentinel Architect (NB) + Code Audit Council"
     elif fast_track_enabled:
-        decision_protocol = "先执行后审计：军机直通后进入时限回审"
+        decision_protocol = "快速执行 + 限时回审"
     elif roundtable_enabled:
         decision_protocol = "圆桌共识 + 主责智能体拍板"
     elif len(assistants) > 0:
@@ -1084,7 +1091,7 @@ def build_governance_plan(
         "roundtable_enabled": roundtable_enabled,
         "risk_level": risk_level,
         "privy_council": {
-            "name": "枢机院",
+            "name": "governance council",
             "selected_track": selected_track,
             "rationale": fast_track_rationale,
             "blockers": fast_track_blockers,
@@ -1097,25 +1104,25 @@ def build_governance_plan(
         "tracks": {
             "regular": {
                 "name": TRACK_REGULAR,
-                "flow": ["中书省提案", "门下省审议", "尚书省分发", "六部执行"],
+                "flow": ["提案分流", "风险审议", "执行分发", "交付跟进"],
             },
             "fast": {
                 "name": TRACK_FAST,
-                "flow": ["军机处下达", "执行部门直达", "快速反馈", "结果回奏"],
+                "flow": ["快速指派", "执行直达", "快速反馈", "结果回传"],
             },
         },
         "agenda": [
             "议题定义",
-            "方案辩论（中书省提案）",
-            "风险投票（门下省审议）",
-            "执行决议（尚书省落地）",
+            "方案辩论（提案组）",
+            "风险投票（审议组）",
+            "执行决议（执行组）",
         ],
-        "three_departments": {
-            "中书省": {"role": "提案", "agents": proposal_agents},
-            "门下省": {"role": "审议", "agents": review_agents},
-            "尚书省": {"role": "执行", "agents": execution_agents},
+        "governance_groups": {
+            "proposal_group": {"label": "提案组", "role": "proposal", "agents": proposal_agents},
+            "review_group": {"label": "审议组", "role": "review", "agents": review_agents},
+            "execution_group": {"label": "执行组", "role": "execution", "agents": execution_agents},
         },
-        "six_ministries": ministry_assignments,
+        "delivery_lanes": ministry_assignments,
         "execution_contract": {
             "dri_required": require_dri,
             "dri_agent": dri_agent,
@@ -1136,7 +1143,7 @@ def build_governance_plan(
         "post_audit": {
             "required": post_audit_required,
             "flow": ["T+0执行", "T+1审计复盘", "T+2规则回写"],
-            "archive_target": "国史馆知识库",
+            "archive_target": "governance knowledge base",
             "archive_level": default_archive_level,
             "archive_levels": archive_levels,
             "promotion_rules": promotion_rules,
@@ -1399,11 +1406,11 @@ def pick_mode(
     medium_confidence: float,
 ) -> str:
     if fast_track_enabled:
-        return "模式 G：枢机快反（军机处直通）"
+        return "模式 G：快速治理（fast track）"
     if needs_pre_development_planning and process_only:
         return "规划驱动模式：先做开发前准备"
     if roundtable_enabled:
-        return "模式 F：圆桌治理（三省六部）"
+        return "模式 F：圆桌治理（regular track）"
     if process_only:
         return "流程驱动模式：按流程技能执行"
     if language_only:

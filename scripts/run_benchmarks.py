@@ -207,9 +207,9 @@ def parse_expectation(expectation: str, result: dict[str, object]) -> tuple[bool
         if expected == "0.0":
             return float(value) == 0.0, f"{field.strip()}={value!r}"
         if expected == "regular track":
-            return str(value) in {"regular track", "三省六部轨"}, f"{field.strip()}={value!r}"
+            return str(value) == "regular track", f"{field.strip()}={value!r}"
         if expected == "fast track":
-            return str(value) in {"fast track", "军机处直通轨"}, f"{field.strip()}={value!r}"
+            return str(value) == "fast track", f"{field.strip()}={value!r}"
         return str(value) == expected, f"{field.strip()}={value!r}"
 
     return False, "unsupported expectation"

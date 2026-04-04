@@ -1,7 +1,7 @@
 {
   "meta": {
     "author": "fxbin",
-    "version": "v4.25.1",
+    "version": "v4.25.3",
     "updated": "2026-04-04"
   },
   "thresholds": {
@@ -18,10 +18,11 @@
       "confidence_max": 0.75,
       "force_keywords": [
         "圆桌会议",
-        "三省六部",
         "多智能体治理",
         "cross-functional",
-        "governance"
+        "governance",
+        "roundtable governance",
+        "regular governance"
       ]
     },
     "privy_council": {
