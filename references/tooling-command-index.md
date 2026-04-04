@@ -20,6 +20,18 @@ python scripts/route_request.py --text "<user request>" --config references/rout
 python scripts/validate_virtual_team.py --pretty
 ```
 
+- 执行动作前先做合法性校验
+
+```bash
+python scripts/verify_action.py --text "<user request>" --check process-skill --process-skill bounded-iteration --pretty
+```
+
+- 机械契约 lint
+
+```bash
+python scripts/lint_virtual_team_contract.py --pretty
+```
+
 - Git guardrail
 
 ```bash
@@ -127,6 +139,8 @@ python scripts/materialize_candidate_patch.py --brief .skill-iterations/candidat
 
 ## 七、使用原则
 
+- 高风险、多阶段、多人协作前，先用 `verify_action.py` 确认 process skill / lead assignment / release gate / iteration 是否真的该开
+- 改了路由、索引、playbook、脚本命令后，先跑 `lint_virtual_team_contract.py`，再跑 `validate_virtual_team.py`
 - 开发前规划分支只在大改造、迁移、重写、先规划后开发时启用
 - iteration 深循环时，先开本索引，再补对应 playbook
 - `run_release_gate.py` 优先用于 `ship / hold` 判断，不用 benchmark 结果硬代替

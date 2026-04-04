@@ -100,3 +100,9 @@
 - Git / worktree
   - `git-workflow-playbook.md`
   - `using-git-worktrees-playbook.md`
+
+执行前如果不确定“该不该开某个 process lane / release gate / iteration / lead 组合”，先回到：
+
+- `tooling-command-index.md`
+  - 用 `verify_action.py` 先做一次动作合法性校验
+  - 用 `lint_virtual_team_contract.py` 检查索引、命令和 process contract 是否漂移

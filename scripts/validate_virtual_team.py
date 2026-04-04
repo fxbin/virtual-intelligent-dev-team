@@ -19,6 +19,8 @@ CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 CASES_PATH = SKILL_DIR / "references" / "regression-cases.json"
 ROUTE_SCRIPT = SKILL_DIR / "scripts" / "route_request.py"
 GUARDRAIL_SCRIPT = SKILL_DIR / "scripts" / "git_workflow_guardrail.py"
+VERIFY_ACTION_SCRIPT = SKILL_DIR / "scripts" / "verify_action.py"
+CONTRACT_LINT_SCRIPT = SKILL_DIR / "scripts" / "lint_virtual_team_contract.py"
 
 
 def load_module(name: str, path: Path):
@@ -32,6 +34,8 @@ def load_module(name: str, path: Path):
 
 route_request = load_module("virtual_team_route_request_validator", ROUTE_SCRIPT)
 guardrail = load_module("virtual_team_guardrail_validator", GUARDRAIL_SCRIPT)
+verify_action = load_module("virtual_team_verify_action_validator", VERIFY_ACTION_SCRIPT)
+contract_lint = load_module("virtual_team_contract_lint_validator", CONTRACT_LINT_SCRIPT)
 
 
 def load_json(path: Path) -> dict[str, object]:
@@ -223,6 +227,62 @@ def validate_guardrail_cases(cases: list[dict[str, object]]) -> list[dict[str, o
     return results
 
 
+def validate_verify_action_cases(
+    config: dict[str, object], cases: list[dict[str, object]]
+) -> list[dict[str, object]]:
+    results: list[dict[str, object]] = []
+    for case in cases:
+        name = str(case.get("name", "unnamed"))
+        text = str(case.get("text", ""))
+        check_name = str(case.get("check", ""))
+        expect = case.get("expect", {})
+        if not isinstance(expect, dict):
+            raise AssertionError(f"{name}: expect must be an object")
+
+        result = verify_action.verify_action(
+            text=text,
+            config=config,
+            repo_path=REPO_ROOT,
+            check=check_name,
+            process_skill=str(case.get("process_skill", "")) or None,
+            lead_agent=str(case.get("lead_agent", "")) or None,
+            assistant_agents=[
+                str(item)
+                for item in case.get("assistant_agents", [])
+                if isinstance(item, str)
+            ],
+        )
+
+        if "allowed" in expect:
+            check(result["allowed"] == expect["allowed"], f"{name}: unexpected allowed decision")
+        if "summary_contains" in expect:
+            needle = str(expect["summary_contains"])
+            check(needle in str(result.get("summary", "")), f"{name}: summary missing {needle!r}")
+        if "recommended_next_step_contains" in expect:
+            needle = str(expect["recommended_next_step_contains"])
+            check(
+                needle in str(result.get("recommended_next_step", "")),
+                f"{name}: recommended_next_step missing {needle!r}",
+            )
+        if "detail_equals" in expect:
+            detail_equals = expect["detail_equals"]
+            check(isinstance(detail_equals, dict), f"{name}: detail_equals must be an object")
+            details = result.get("details", {})
+            check(isinstance(details, dict), f"{name}: result details must be an object")
+            for key, value in detail_equals.items():
+                check(details.get(key) == value, f"{name}: unexpected details[{key!r}]")
+        results.append({"name": name, "status": "passed"})
+    return results
+
+
+def validate_contract_lint() -> list[dict[str, object]]:
+    result = contract_lint.lint_contract(SKILL_DIR)
+    errors = result.get("errors", [])
+    if not bool(result.get("ok")):
+        raise AssertionError(f"contract lint failed: {' | '.join(str(item) for item in errors)}")
+    return [{"name": "mechanical_contract_lint", "status": "passed"}]
+
+
 def validate() -> dict[str, object]:
     config = load_config()
     cases = load_json(CASES_PATH)
@@ -230,14 +290,18 @@ def validate() -> dict[str, object]:
     routing_cases = cases.get("routing_cases", [])
     process_plan_cases = cases.get("process_plan_cases", [])
     guardrail_cases = cases.get("guardrail_cases", [])
+    verify_action_cases = cases.get("verify_action_cases", [])
     check(isinstance(routing_cases, list), "routing_cases must be a list")
     check(isinstance(process_plan_cases, list), "process_plan_cases must be a list")
     check(isinstance(guardrail_cases, list), "guardrail_cases must be a list")
+    check(isinstance(verify_action_cases, list), "verify_action_cases must be a list")
 
     sections = {
+        "contract_lint": validate_contract_lint(),
         "routing_cases": validate_routing_cases(config, routing_cases),
         "process_plan_cases": validate_process_plan_cases(process_plan_cases),
         "guardrail_cases": validate_guardrail_cases(guardrail_cases),
+        "verify_action_cases": validate_verify_action_cases(config, verify_action_cases),
     }
     total_passed = sum(len(items) for items in sections.values())
     return {

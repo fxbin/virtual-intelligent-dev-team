@@ -711,5 +711,52 @@
       "name": "g3_behind_should_report_sync",
       "type": "g3_behind_should_report_sync"
     }
+  ],
+  "verify_action_cases": [
+    {
+      "name": "verify_pre_development_planning_allowed",
+      "text": "Rewrite this project in Rust, but plan before coding and keep a progress tracker for later sessions.",
+      "check": "process-skill",
+      "process_skill": "pre-development-planning",
+      "expect": {
+        "allowed": true,
+        "summary_contains": "allowed",
+        "recommended_next_step_contains": "process_plan"
+      }
+    },
+    {
+      "name": "verify_release_gate_allowed",
+      "text": "Is this version ready to ship? Do not answer from benchmark alone. Run the formal release gate.",
+      "check": "release-gate",
+      "expect": {
+        "allowed": true,
+        "summary_contains": "required",
+        "recommended_next_step_contains": "run_release_gate.py"
+      }
+    },
+    {
+      "name": "verify_iteration_profile_allowed",
+      "text": "Run another iteration, benchmark it against the baseline, and stop if the result regresses.",
+      "check": "iteration",
+      "expect": {
+        "allowed": true,
+        "summary_contains": "enabled",
+        "detail_equals": {
+          "needs_iteration": true
+        }
+      }
+    },
+    {
+      "name": "verify_wrong_lead_rejected",
+      "text": "Review this Django API for security issues.",
+      "check": "lead-assignment",
+      "lead_agent": "Technical Trinity",
+      "assistant_agents": [],
+      "expect": {
+        "allowed": false,
+        "summary_contains": "conflicts",
+        "recommended_next_step_contains": "Code Audit Council"
+      }
+    }
   ]
 }

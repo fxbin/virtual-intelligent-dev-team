@@ -26,6 +26,8 @@ RUN_OFFLINE_DRILL_SCRIPT = SKILL_DIR / "scripts" / "run_offline_loop_drill.py"
 RUN_RELEASE_GATE_SCRIPT = SKILL_DIR / "scripts" / "run_release_gate.py"
 INIT_PRE_DEVELOPMENT_SCRIPT = SKILL_DIR / "scripts" / "init_pre_development_plan.py"
 VALIDATOR_SCRIPT = SKILL_DIR / "scripts" / "validate_virtual_team.py"
+VERIFY_ACTION_SCRIPT = SKILL_DIR / "scripts" / "verify_action.py"
+CONTRACT_LINT_SCRIPT = SKILL_DIR / "scripts" / "lint_virtual_team_contract.py"
 CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 
 
@@ -51,6 +53,8 @@ benchmark_runner = load_module("virtual_intelligent_dev_team_run_benchmarks", RU
 offline_loop_drill = load_module("virtual_intelligent_dev_team_run_offline_loop_drill", RUN_OFFLINE_DRILL_SCRIPT)
 release_gate = load_module("virtual_intelligent_dev_team_run_release_gate", RUN_RELEASE_GATE_SCRIPT)
 planning_init = load_module("virtual_intelligent_dev_team_planning_init", INIT_PRE_DEVELOPMENT_SCRIPT)
+verify_action = load_module("virtual_intelligent_dev_team_verify_action", VERIFY_ACTION_SCRIPT)
+contract_lint = load_module("virtual_intelligent_dev_team_contract_lint", CONTRACT_LINT_SCRIPT)
 
 
 def load_config() -> dict[str, object]:
@@ -3251,6 +3255,37 @@ class IterationHelperTests(unittest.TestCase):
 
 
 class ValidatorScriptTests(unittest.TestCase):
+    def test_verify_action_accepts_planning_process_skill(self) -> None:
+        result = verify_action.verify_action(
+            text="Rewrite this project in Rust, but plan before coding and keep a progress tracker for later sessions.",
+            config=load_config(),
+            repo_path=REPO_ROOT,
+            check="process-skill",
+            process_skill="pre-development-planning",
+        )
+
+        self.assertTrue(result["allowed"])
+        self.assertEqual("process-skill", result["check"])
+        self.assertIn("pre-development-planning", result["router_snapshot"]["process_skills"])
+
+    def test_verify_action_rejects_wrong_lead_assignment(self) -> None:
+        result = verify_action.verify_action(
+            text="Review this Django API for security issues.",
+            config=load_config(),
+            repo_path=REPO_ROOT,
+            check="lead-assignment",
+            lead_agent="Technical Trinity",
+            assistant_agents=[],
+        )
+
+        self.assertFalse(result["allowed"])
+        self.assertEqual("Code Audit Council", result["details"]["expected_lead_agent"])
+
+    def test_contract_lint_passes(self) -> None:
+        result = contract_lint.lint_contract(SKILL_DIR)
+
+        self.assertTrue(result["ok"], msg="\n".join(result["errors"]))
+
     def test_validator_script_passes(self) -> None:
         proc = subprocess.run(
             [sys.executable, str(VALIDATOR_SCRIPT)],

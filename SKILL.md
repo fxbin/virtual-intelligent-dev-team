@@ -258,6 +258,13 @@ When Git workflow is relevant:
   - `G4` push or PR
 - Stop on conflict, permission error, non-fast-forward failure, or destructive-risk command.
 
+## Pre-action verification
+
+Before opening a process lane or forcing a multi-agent execution shape for a high-risk request:
+
+- Use [references/tooling-command-index.md](references/tooling-command-index.md) and run `verify_action.py` first when you need to confirm process-skill legality, lead assignment, release-gate activation, or bounded-iteration activation.
+- Treat `lint_virtual_team_contract.py` as the mechanical drift check for routing indexes, plan references, and script command examples.
+
 Never auto-run dangerous Git commands such as:
 
 - `git reset --hard`
