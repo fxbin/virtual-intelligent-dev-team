@@ -2,7 +2,23 @@
 
 Use these runbooks when the user request implies a recurring multi-role pattern. They help the lead choose a default coordination shape quickly.
 
-## 1. Startup MVP
+## 1. Large-Scale Transformation Planning
+
+- Lead: `Technical Trinity`
+- Common assistants: `Sentinel Architect (NB)`, `Git Workflow Guardian`
+- Use when: the user wants a rewrite, migration, architecture overhaul, project-wide refactor, or explicitly asks to plan before coding.
+- Flow:
+  1. Confirm scope, target state, constraints, and priorities.
+  2. Produce a lightweight analysis / plan / progress pack before implementation.
+  3. Add Sentinel when the change is research-first, production-sensitive, or conflict-heavy.
+  4. Add Git support only if branch, worktree, or PR sequencing is already part of the ask.
+- Success markers:
+  - transformation boundary is explicit
+  - first execution phase is clear
+  - progress anchor exists for resume
+  - merge-risk notes exist when parallel work is realistic
+
+## 2. Startup MVP
 
 - Lead: `Technical Trinity` or `World-Class Product Architect`
 - Common assistants: `Executive Trinity`, `Git Workflow Guardian`
@@ -18,7 +34,7 @@ Use these runbooks when the user request implies a recurring multi-role pattern.
   - technical landing plan
   - explicit launch or validation risk
 
-## 2. Audit and Fix
+## 3. Audit and Fix
 
 - Lead: `Code Audit Council`
 - Common assistants: language specialist, `Technical Trinity`, `Git Workflow Guardian`
@@ -33,7 +49,7 @@ Use these runbooks when the user request implies a recurring multi-role pattern.
   - concrete remediation path
   - no mixing of audit verdict and speculative redesign
 
-## 3. Strategy with Technical Landing
+## 4. Strategy with Technical Landing
 
 - Lead: `Executive Trinity`
 - Common assistants: `Technical Trinity`, `Sentinel Architect (NB)`
@@ -47,7 +63,7 @@ Use these runbooks when the user request implies a recurring multi-role pattern.
   - measurable business rationale
   - realistic technical landing path
 
-## 4. Regulated or Unfamiliar Domain Build
+## 5. Regulated or Unfamiliar Domain Build
 
 - Lead: `Omni-Architect`
 - Common assistants: `Technical Trinity`, `Code Audit Council`
@@ -61,7 +77,7 @@ Use these runbooks when the user request implies a recurring multi-role pattern.
   - constraints explicitly tied to architecture
   - risk boundaries made visible
 
-## 5. Frontend UX with Backend Coupling
+## 6. Frontend UX with Backend Coupling
 
 - Lead: `World-Class Product Architect`
 - Common assistants: `Technical Trinity`, `Git Workflow Guardian`
@@ -76,7 +92,7 @@ Use these runbooks when the user request implies a recurring multi-role pattern.
   - clear interaction and state model
   - backend contract or implementation coupling called out
 
-## 6. High-Risk Production Change
+## 7. High-Risk Production Change
 
 - Lead: `Sentinel Architect (NB)`
 - Common assistants: owning specialist, `Git Workflow Guardian`, `Code Audit Council`
@@ -92,7 +108,7 @@ Use these runbooks when the user request implies a recurring multi-role pattern.
 - explicit stop conditions
 - post-change verification
 
-## 7. Repeated Failure and Root-Cause Debugging
+## 8. Repeated Failure and Root-Cause Debugging
 
 - Lead: `Sentinel Architect (NB)`
 - Common assistants: `Technical Trinity`, `Code Audit Council`
@@ -109,7 +125,7 @@ Use these runbooks when the user request implies a recurring multi-role pattern.
 - no speculative patching
 - minimal validating next step
 
-## 8. Evidence-Driven Iteration
+## 9. Evidence-Driven Iteration
 
 - Lead: semantic owner for the task
 - Common assistants: `Sentinel Architect (NB)` for high-risk rounds, `Code Audit Council` for verification-heavy loops, `Git Workflow Guardian` when delivery sequencing is part of the ask

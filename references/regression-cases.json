@@ -414,6 +414,19 @@
       }
     },
     {
+      "name": "rewrite_project_planning_branch",
+      "text": "Rewrite this project in Rust, plan before coding, and keep a progress tracker we can resume later.",
+      "expect": {
+        "lead_agent": "Technical Trinity",
+        "assistant_agents": [],
+        "needs_git_workflow": false,
+        "process_skills": [
+          "pre-development-planning"
+        ],
+        "priority_agent": null
+      }
+    },
+    {
       "name": "audit_fix_handoff_shape",
       "text": "This is a PR. Review this Django service for security issues, then tell me the exact fixes and the safest next delivery step.",
       "expect": {
@@ -652,6 +665,22 @@
           "python scripts/run_release_gate.py --output-dir evals/release-gate --previous-output evals/benchmark-results/benchmark-results.json --pretty",
           "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --release-label release-ready --pretty",
           "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --auto-run-next-iteration-on-hold --hold-loop-max-rounds 3 --pretty"
+        ]
+      }
+    },
+    {
+      "name": "pre_development_planning_plan",
+      "needs_pre_development_planning": true,
+      "needs_iteration": false,
+      "needs_worktree": false,
+      "needs_git_workflow": false,
+      "repo_strategy": {
+        "strategy": "trunk-main",
+        "base_branch": "main"
+      },
+      "expect": {
+        "commands_contains": [
+          "python scripts/init_pre_development_plan.py --root . --task-name \"<task-name>\" --task-description \"<task-description>\" --phase-name foundation --pretty"
         ]
       }
     }

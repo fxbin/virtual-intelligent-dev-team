@@ -11,6 +11,9 @@
         "assistant_agents is empty",
         "needs_git_workflow is false",
         "process_skills is empty"
+      ],
+      "categories": [
+        "review"
       ]
     },
     {
@@ -22,6 +25,10 @@
         "lead_agent is Code Audit Council",
         "assistant_agents contains Java Virtuoso",
         "priority_routing agent is Code Audit Council"
+      ],
+      "categories": [
+        "backend-stack",
+        "review"
       ]
     },
     {
@@ -34,6 +41,9 @@
         "detected_languages contains go",
         "language_routing.go is Technical Trinity",
         "needs_git_workflow is false"
+      ],
+      "categories": [
+        "backend-stack"
       ]
     },
     {
@@ -45,6 +55,9 @@
         "lead_agent is World-Class Product Architect",
         "assistant_agents is empty",
         "needs_git_workflow is false"
+      ],
+      "categories": [
+        "frontend"
       ]
     },
     {
@@ -58,6 +71,9 @@
         "process_skills contains git-workflow",
         "process_plan first commands contain python scripts/git_workflow_guardrail.py --repo . --stage G3 --pretty",
         "process_plan first commands contain git push -u origin feat/<ticket>-<summary>"
+      ],
+      "categories": [
+        "git-workflow"
       ]
     },
     {
@@ -69,6 +85,9 @@
         "lead_agent is Sentinel Architect (NB)",
         "needs_git_workflow is false",
         "assistant_agents is empty"
+      ],
+      "categories": [
+        "general"
       ]
     },
     {
@@ -80,6 +99,10 @@
         "lead_agent is Executive Trinity",
         "assistant_agents contains Technical Trinity",
         "mode is not single-agent execution"
+      ],
+      "categories": [
+        "strategy-domain",
+        "cross-domain"
       ]
     },
     {
@@ -91,6 +114,9 @@
         "lead_agent is Omni-Architect",
         "assistant_agents contains Technical Trinity",
         "governance_plan.privy_council.selected_track is regular track"
+      ],
+      "categories": [
+        "strategy-domain"
       ]
     },
     {
@@ -102,6 +128,10 @@
         "lead_agent is Git Workflow Guardian",
         "assistant_agents is empty",
         "needs_git_workflow is true"
+      ],
+      "categories": [
+        "git-workflow",
+        "review"
       ]
     },
     {
@@ -113,6 +143,9 @@
         "confidence is 0.0",
         "clarifying_question is not null",
         "reason.unknown_only_fallback is true"
+      ],
+      "categories": [
+        "general"
       ]
     },
     {
@@ -125,6 +158,10 @@
         "detected_languages contains python",
         "language_routing.python is Technical Trinity",
         "needs_git_workflow is false"
+      ],
+      "categories": [
+        "backend-stack",
+        "cross-domain"
       ]
     },
     {
@@ -137,6 +174,10 @@
         "assistant_agents contains Technical Trinity",
         "priority_routing agent is Code Audit Council",
         "needs_git_workflow is false"
+      ],
+      "categories": [
+        "backend-stack",
+        "review"
       ]
     },
     {
@@ -149,6 +190,10 @@
         "detected_languages contains python",
         "needs_git_workflow is true",
         "process_skills contains git-workflow"
+      ],
+      "categories": [
+        "backend-stack",
+        "git-workflow"
       ]
     },
     {
@@ -161,6 +206,9 @@
         "detected_languages contains python",
         "language_routing.python is Technical Trinity",
         "needs_git_workflow is false"
+      ],
+      "categories": [
+        "backend-stack"
       ]
     },
     {
@@ -174,6 +222,11 @@
         "assistant_agents contains Technical Trinity",
         "needs_git_workflow is true",
         "priority_routing agent is Code Audit Council"
+      ],
+      "categories": [
+        "backend-stack",
+        "git-workflow",
+        "review"
       ]
     },
     {
@@ -189,6 +242,11 @@
         "needs_git_workflow is true",
         "process_skills contains using-git-worktrees",
         "process_skills contains git-workflow"
+      ],
+      "categories": [
+        "backend-stack",
+        "git-workflow",
+        "cross-domain"
       ]
     },
     {
@@ -201,6 +259,9 @@
         "detected_languages contains go",
         "language_routing.go is Technical Trinity",
         "needs_git_workflow is false"
+      ],
+      "categories": [
+        "backend-stack"
       ]
     },
     {
@@ -214,6 +275,11 @@
         "detected_languages contains go",
         "needs_git_workflow is true",
         "priority_routing agent is Code Audit Council"
+      ],
+      "categories": [
+        "backend-stack",
+        "git-workflow",
+        "review"
       ]
     },
     {
@@ -229,6 +295,10 @@
         "needs_git_workflow is true",
         "process_skills contains using-git-worktrees",
         "process_skills contains git-workflow"
+      ],
+      "categories": [
+        "backend-stack",
+        "git-workflow"
       ]
     },
     {
@@ -241,6 +311,9 @@
         "detected_languages contains nodejs",
         "language_routing.nodejs is Technical Trinity",
         "needs_git_workflow is false"
+      ],
+      "categories": [
+        "backend-stack"
       ]
     },
     {
@@ -254,6 +327,11 @@
         "detected_languages contains nodejs",
         "needs_git_workflow is true",
         "priority_routing agent is Code Audit Council"
+      ],
+      "categories": [
+        "backend-stack",
+        "git-workflow",
+        "review"
       ]
     },
     {
@@ -269,6 +347,10 @@
         "needs_git_workflow is true",
         "process_skills contains using-git-worktrees",
         "process_skills contains git-workflow"
+      ],
+      "categories": [
+        "backend-stack",
+        "git-workflow"
       ]
     },
     {
@@ -280,6 +362,9 @@
         "lead_agent is Java Virtuoso",
         "assistant_agents is empty",
         "needs_git_workflow is false"
+      ],
+      "categories": [
+        "backend-stack"
       ]
     },
     {
@@ -293,6 +378,11 @@
         "assistant_agents contains Git Workflow Guardian",
         "needs_git_workflow is true",
         "priority_routing agent is Code Audit Council"
+      ],
+      "categories": [
+        "backend-stack",
+        "git-workflow",
+        "review"
       ]
     },
     {
@@ -307,6 +397,10 @@
         "needs_git_workflow is true",
         "process_skills contains using-git-worktrees",
         "process_skills contains git-workflow"
+      ],
+      "categories": [
+        "backend-stack",
+        "git-workflow"
       ]
     },
     {
@@ -318,6 +412,9 @@
         "lead_agent is World-Class Product Architect",
         "assistant_agents is empty",
         "needs_git_workflow is false"
+      ],
+      "categories": [
+        "frontend"
       ]
     },
     {
@@ -330,6 +427,10 @@
         "assistant_agents is empty",
         "needs_git_workflow is false",
         "process_skills is empty"
+      ],
+      "categories": [
+        "frontend",
+        "review"
       ]
     },
     {
@@ -344,6 +445,10 @@
         "needs_git_workflow is true",
         "process_skills contains using-git-worktrees",
         "process_skills contains git-workflow"
+      ],
+      "categories": [
+        "frontend",
+        "git-workflow"
       ]
     },
     {
@@ -355,6 +460,9 @@
         "lead_agent is World-Class Product Architect",
         "assistant_agents is empty",
         "needs_git_workflow is false"
+      ],
+      "categories": [
+        "frontend"
       ]
     },
     {
@@ -366,6 +474,9 @@
         "lead_agent is World-Class Product Architect",
         "assistant_agents is empty",
         "needs_git_workflow is false"
+      ],
+      "categories": [
+        "frontend"
       ]
     },
     {
@@ -377,6 +488,9 @@
         "lead_agent is World-Class Product Architect",
         "assistant_agents is empty",
         "needs_git_workflow is false"
+      ],
+      "categories": [
+        "frontend"
       ]
     },
     {
@@ -388,6 +502,10 @@
         "lead_agent is World-Class Product Architect",
         "assistant_agents is empty",
         "needs_git_workflow is false"
+      ],
+      "categories": [
+        "frontend",
+        "review"
       ]
     },
     {
@@ -399,6 +517,10 @@
         "lead_agent is World-Class Product Architect",
         "assistant_agents contains Technical Trinity",
         "needs_git_workflow is false"
+      ],
+      "categories": [
+        "frontend",
+        "cross-domain"
       ]
     },
     {
@@ -410,6 +532,9 @@
         "lead_agent is World-Class Product Architect",
         "assistant_agents is empty",
         "needs_git_workflow is false"
+      ],
+      "categories": [
+        "frontend"
       ]
     },
     {
@@ -421,6 +546,9 @@
         "lead_agent is World-Class Product Architect",
         "assistant_agents is empty",
         "needs_git_workflow is false"
+      ],
+      "categories": [
+        "frontend"
       ]
     },
     {
@@ -432,6 +560,10 @@
         "lead_agent is World-Class Product Architect",
         "assistant_agents contains Technical Trinity",
         "needs_git_workflow is false"
+      ],
+      "categories": [
+        "frontend",
+        "cross-domain"
       ]
     },
     {
@@ -443,6 +575,11 @@
         "lead_agent is World-Class Product Architect",
         "assistant_agents is empty",
         "needs_git_workflow is false"
+      ],
+      "categories": [
+        "frontend",
+        "chinese",
+        "mixed-language"
       ]
     },
     {
@@ -454,6 +591,11 @@
         "lead_agent is World-Class Product Architect",
         "assistant_agents contains Technical Trinity",
         "needs_git_workflow is false"
+      ],
+      "categories": [
+        "iteration",
+        "chinese",
+        "mixed-language"
       ]
     },
     {
@@ -466,6 +608,12 @@
         "assistant_agents contains Git Workflow Guardian",
         "needs_git_workflow is true",
         "priority_routing agent is None"
+      ],
+      "categories": [
+        "frontend",
+        "git-workflow",
+        "chinese",
+        "mixed-language"
       ]
     },
     {
@@ -477,6 +625,12 @@
         "lead_agent is Executive Trinity",
         "assistant_agents contains Technical Trinity",
         "needs_git_workflow is false"
+      ],
+      "categories": [
+        "strategy-domain",
+        "cross-domain",
+        "chinese",
+        "mixed-language"
       ]
     },
     {
@@ -488,6 +642,12 @@
         "lead_agent is Code Audit Council",
         "assistant_agents contains Technical Trinity",
         "needs_git_workflow is false"
+      ],
+      "categories": [
+        "review",
+        "cross-domain",
+        "chinese",
+        "mixed-language"
       ]
     },
     {
@@ -499,14 +659,19 @@
         "lead_agent is World-Class Product Architect",
         "assistant_agents contains Technical Trinity",
         "needs_git_workflow is false"
+      ],
+      "categories": [
+        "frontend",
+        "review",
+        "chinese",
+        "mixed-language"
       ]
     },
     {
       "id": 43,
       "categories": [
-        "startup-mvp",
-        "strategy-domain",
         "frontend",
+        "strategy-domain",
         "cross-domain"
       ],
       "prompt": "We need a startup MVP with product UX, backend delivery, and launch strategy.",
@@ -521,10 +686,8 @@
     {
       "id": 44,
       "categories": [
-        "audit-fix",
-        "review",
         "backend-stack",
-        "git-workflow"
+        "review"
       ],
       "prompt": "This is a PR. Review this Django service for security issues, then tell me the exact fixes and the safest next delivery step.",
       "expected_output": "Audit-and-fix handoff scenarios should keep Code Audit Council as lead, attach Technical Trinity, and preserve review priority routing.",
@@ -539,9 +702,7 @@
     {
       "id": 45,
       "categories": [
-        "regulated-domain",
-        "strategy-domain",
-        "cross-domain"
+        "strategy-domain"
       ],
       "prompt": "Design a healthcare workflow system with compliance constraints and technical landing.",
       "expected_output": "Regulated-domain runbook scenarios should route to Omni-Architect and attach Technical Trinity for technical landing.",
@@ -570,9 +731,7 @@
     {
       "id": 47,
       "categories": [
-        "high-risk",
-        "git-workflow",
-        "backend-stack"
+        "general"
       ],
       "prompt": "This is a production-critical payment migration. Research first, stage it, define rollback, and handle the PR safely.",
       "expected_output": "High-risk production change scenarios should attach Sentinel Architect (NB) and Git Workflow Guardian while keeping the owning specialist in charge.",
@@ -589,10 +748,9 @@
     {
       "id": 48,
       "categories": [
-        "review",
-        "git-workflow",
         "backend-stack",
-        "boundary-conflict"
+        "git-workflow",
+        "review"
       ],
       "prompt": "Review this Spring Boot PR, then commit and push the fixes.",
       "expected_output": "When review, git delivery, and Java stack signals conflict, review should remain lead while Git and implementation specialists attach as assistants.",
@@ -610,9 +768,8 @@
       "id": 49,
       "categories": [
         "frontend",
-        "cross-domain",
         "git-workflow",
-        "boundary-conflict"
+        "cross-domain"
       ],
       "prompt": "Redesign the dashboard UX, align it with the backend API, then commit and push.",
       "expected_output": "When frontend/backend coupling and explicit git delivery conflict, World-Class Product Architect should remain lead while Technical Trinity and Git Workflow Guardian attach as assistants.",
@@ -629,9 +786,7 @@
       "id": 50,
       "categories": [
         "strategy-domain",
-        "cross-domain",
-        "git-workflow",
-        "boundary-conflict"
+        "cross-domain"
       ],
       "prompt": "Set the pricing strategy, then define the implementation plan and rollout PR flow.",
       "expected_output": "When strategy, implementation, and rollout PR flow conflict, Executive Trinity should remain lead while Git Workflow Guardian and Technical Trinity attach.",
@@ -646,9 +801,7 @@
     {
       "id": 51,
       "categories": [
-        "regulated-domain",
-        "git-workflow",
-        "boundary-conflict"
+        "cross-domain"
       ],
       "prompt": "Design a healthcare backend, then open the PR and define rollback.",
       "expected_output": "When regulated-domain architecture and explicit PR or rollback flow conflict, Omni-Architect should remain lead and Git Workflow Guardian should attach as the workflow copilot.",
@@ -661,9 +814,7 @@
     },
     {
       "categories": [
-        "root-cause",
-        "debugging",
-        "high-risk"
+        "general"
       ],
       "prompt": "We already tried two fixes. It still fails in production. Stop guessing, inspect the logs, find the root cause, and only then propose the next step.",
       "expected_output": "Repeated failed attempts plus explicit root-cause language should escalate to Sentinel Architect (NB), with Technical Trinity attached for runtime or implementation analysis.",
@@ -679,9 +830,7 @@
     },
     {
       "categories": [
-        "root-cause",
-        "debugging",
-        "config-runtime"
+        "general"
       ],
       "prompt": "This MCP server registration still fails after multiple attempts. Read the logs, inspect the config, identify the root cause, and stage the safest fix.",
       "expected_output": "MCP or config-runtime root-cause requests should escalate to Sentinel Architect (NB) and attach Technical Trinity for system-level diagnosis.",
@@ -698,24 +847,22 @@
     {
       "id": 54,
       "categories": [
-        "iteration",
-        "process",
-        "optimization"
+        "iteration"
       ],
       "prompt": "Run another iteration, benchmark it against the baseline, and stop if the result regresses.",
       "expected_output": "Explicit optimization-loop prompts should enable bounded iteration, keep the lead lightweight, and expose the iteration plan.",
       "files": [],
-  "expectations": [
-    "lead_agent is Technical Trinity",
-    "needs_iteration is true",
-    "process_skills contains bounded-iteration",
-    "iteration_profile.enabled is true",
-    "process_plan first commands contain mkdir -p .skill-iterations",
-    "process_plan first commands contain cp assets/iteration-plan-template.json .skill-iterations/iteration-plan.json",
-    "process_plan first commands contain python scripts/register_benchmark_baseline.py --workspace .skill-iterations --label stable --report <baseline-report> --pretty",
-    "process_plan first commands contain python scripts/run_iteration_cycle.py --workspace .skill-iterations --round-id round-01 --objective \"<goal>\" --baseline-label stable --owner \"Technical Trinity\" --candidate \"<candidate-change>\" --candidate-worktree ../wt-round-01 --candidate-output-dir .tmp-iteration-round-01 --pretty",
-    "process_plan first commands contain python scripts/compare_benchmark_results.py --baseline .skill-iterations/baselines/stable/benchmark-results.json --candidate .tmp-iteration-round-01/benchmark-results.json --pretty",
-    "process_plan first commands contain python scripts/promote_iteration_baseline.py --workspace .skill-iterations --round-id round-01 --label accepted-round-01 --pretty",
+      "expectations": [
+        "lead_agent is Technical Trinity",
+        "needs_iteration is true",
+        "process_skills contains bounded-iteration",
+        "iteration_profile.enabled is true",
+        "process_plan first commands contain mkdir -p .skill-iterations",
+        "process_plan first commands contain cp assets/iteration-plan-template.json .skill-iterations/iteration-plan.json",
+        "process_plan first commands contain python scripts/register_benchmark_baseline.py --workspace .skill-iterations --label stable --report <baseline-report> --pretty",
+        "process_plan first commands contain python scripts/run_iteration_cycle.py --workspace .skill-iterations --round-id round-01 --objective \"<goal>\" --baseline-label stable --owner \"Technical Trinity\" --candidate \"<candidate-change>\" --candidate-worktree ../wt-round-01 --candidate-output-dir .tmp-iteration-round-01 --pretty",
+        "process_plan first commands contain python scripts/compare_benchmark_results.py --baseline .skill-iterations/baselines/stable/benchmark-results.json --candidate .tmp-iteration-round-01/benchmark-results.json --pretty",
+        "process_plan first commands contain python scripts/promote_iteration_baseline.py --workspace .skill-iterations --round-id round-01 --label accepted-round-01 --pretty",
         "process_plan first commands contain python scripts/sync_distilled_patterns.py --workspace .skill-iterations --pretty",
         "process_plan first commands contain python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.json --pretty"
       ]
@@ -723,8 +870,8 @@
     {
       "id": 55,
       "categories": [
-        "release-gate",
-        "process"
+        "iteration",
+        "release-gate"
       ],
       "prompt": "Is this version ready to ship? Do not answer from benchmark alone. Run the formal release gate.",
       "expected_output": "Release-readiness prompts should enable the formal ship-or-hold gate instead of routing to generic git workflow.",
@@ -741,9 +888,10 @@
     {
       "id": 56,
       "categories": [
+        "iteration",
         "release-gate",
-        "process",
-        "chinese"
+        "chinese",
+        "mixed-language"
       ],
       "prompt": "这版现在能不能提交/发版？不要只看 benchmark，通过正式 release gate 做提交前验收。",
       "expected_output": "Chinese release-readiness prompts with ambiguous 提交/发版 wording should still prefer the formal release gate and suppress generic git workflow routing.",
@@ -755,6 +903,37 @@
         "needs_git_workflow is false",
         "process_skills contains release-gate",
         "process_plan first commands contain python scripts/run_release_gate.py --output-dir evals/release-gate --pretty"
+      ]
+    },
+    {
+      "id": 57,
+      "categories": [
+        "backend-stack",
+        "planning"
+      ],
+      "prompt": "Rewrite this project in Rust, plan before coding, and keep a progress tracker we can resume later.",
+      "expected_output": "Large rewrite planning should enable the pre-development planning branch, keep Technical Trinity as the default lead, and emit planning artifacts instead of jumping straight to iteration or Git workflow.",
+      "files": [],
+      "expectations": [
+        "lead_agent is Technical Trinity",
+        "needs_pre_development_planning is true",
+        "process_skills contains pre-development-planning",
+        "process_plan first commands contain python scripts/init_pre_development_plan.py --root . --task-name \"<task-name>\" --task-description \"<task-description>\" --phase-name foundation --pretty"
+      ]
+    },
+    {
+      "id": 58,
+      "categories": [
+        "planning",
+        "chinese"
+      ],
+      "prompt": "这个核心模块要大规模迁移，先调研再执行，先规划再开发。",
+      "expected_output": "Chinese research-first migration should keep the pre-development planning branch active while Sentinel Architect (NB) owns the high-risk planning flow.",
+      "files": [],
+      "expectations": [
+        "lead_agent is Sentinel Architect (NB)",
+        "needs_pre_development_planning is true",
+        "process_skills contains pre-development-planning"
       ]
     }
   ]

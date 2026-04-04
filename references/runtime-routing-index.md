@@ -45,9 +45,11 @@
 请求像固定多角色模式时，读：
 
 - `scenario-runbooks.md`
+- `pre-development-planning-playbook.md`
 
 典型场景：
 
+- Large-scale transformation planning
 - Startup MVP
 - Audit and fix
 - Strategy with technical landing
@@ -57,7 +59,21 @@
 - Repeated-failure or root-cause debugging
 - Evidence-driven iteration
 
-## 四、bounded iteration
+## 四、开发前规划
+
+用户明确要“先规划再开发”、大规模重写、迁移、架构改造时，先读：
+
+- `pre-development-planning-playbook.md`
+
+需要模板时再打开：
+
+- `assets/pre-development-project-overview-template.md`
+- `assets/pre-development-task-breakdown-template.md`
+- `assets/pre-development-progress-master-template.md`
+- `assets/pre-development-phase-template.md`
+- `references/pre-development-output-template.md`
+
+## 五、bounded iteration
 
 用户要求优化、再来一轮、benchmark 比较、候选比较、持续迭代时，按簇打开：
 
@@ -72,9 +88,9 @@
   - `evidence-ledger-schema.md`
   - `baseline-registry.md`
   - `rollback-and-stop-rules.md`
-  - `mutation-catalog-patterns.md`
+- `mutation-catalog-patterns.md`
 
-## 五、root cause / release / Git
+## 六、root cause / release / Git
 
 - repeated failure / 根因排查
   - `root-cause-escalation-playbook.md`

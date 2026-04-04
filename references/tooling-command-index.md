@@ -26,7 +26,23 @@ python scripts/validate_virtual_team.py --pretty
 python scripts/git_workflow_guardrail.py
 ```
 
-## 二、bounded iteration 资产
+## 二、开发前规划资产
+
+模板：
+
+- `assets/pre-development-project-overview-template.md`
+- `assets/pre-development-task-breakdown-template.md`
+- `assets/pre-development-progress-master-template.md`
+- `assets/pre-development-phase-template.md`
+- `references/pre-development-output-template.md`
+
+常用初始化命令：
+
+```bash
+python scripts/init_pre_development_plan.py --root . --task-name "<task-name>" --task-description "<task-description>" --phase-name foundation --pretty
+```
+
+## 三、bounded iteration 资产
 
 模板：
 
@@ -37,7 +53,7 @@ python scripts/git_workflow_guardrail.py
 - `assets/distilled-patterns-template.md`
 - `assets/iteration-plan-template.json`
 
-## 三、iteration 命令
+## 四、iteration 命令
 
 - 初始化 round
 
@@ -69,7 +85,7 @@ python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill
 python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.json --resume --pretty
 ```
 
-## 四、release / drill / compare
+## 五、release / drill / compare
 
 - offline drill
 
@@ -89,7 +105,7 @@ python scripts/run_release_gate.py --output-dir evals/release-gate --pretty
 python scripts/compare_benchmark_results.py --baseline <baseline-report> --candidate <candidate-report> --pretty
 ```
 
-## 五、promotion / sync / materialize
+## 六、promotion / sync / materialize
 
 - promote baseline
 
@@ -109,8 +125,9 @@ python scripts/sync_distilled_patterns.py --workspace .skill-iterations --pretty
 python scripts/materialize_candidate_patch.py --brief .skill-iterations/candidate-briefs/round-01.json --candidate-root ../wt-round-01 --patch-output .skill-iterations/patches/round-01.patch --pretty
 ```
 
-## 六、使用原则
+## 七、使用原则
 
+- 开发前规划分支只在大改造、迁移、重写、先规划后开发时启用
 - iteration 深循环时，先开本索引，再补对应 playbook
 - `run_release_gate.py` 优先用于 `ship / hold` 判断，不用 benchmark 结果硬代替
 - `run_iteration_loop.py --resume` 只对同一 plan 文件恢复

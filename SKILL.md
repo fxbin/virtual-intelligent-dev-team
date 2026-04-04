@@ -1,6 +1,6 @@
 ---
 name: virtual-intelligent-dev-team
-description: Intelligent expert-team router and bounded-iteration orchestrator for complex requests. Dispatch the best lead agent from Java Virtuoso, Sentinel Architect (NB), Technical Trinity, Code Audit Council, Git Workflow Guardian, Omni-Architect, Executive Trinity, and World-Class Product Architect, attach the right copilot agents when work crosses code, architecture, security, git workflow, domain strategy, business decisions, or frontend UX, enable evidence-driven iteration when the user asks for optimization loops, repeated retries, benchmark comparison, or candidate evaluation, and trigger the formal release gate when the user asks whether a version is ready to ship or submit.
+description: Intelligent expert-team router and bounded-iteration orchestrator for complex requests. Dispatch the best lead agent from Java Virtuoso, Sentinel Architect (NB), Technical Trinity, Code Audit Council, Git Workflow Guardian, Omni-Architect, Executive Trinity, and World-Class Product Architect, attach the right copilot agents when work crosses code, architecture, security, git workflow, domain strategy, business decisions, or frontend UX, enter a lightweight pre-development planning branch for large rewrites, migrations, and project-wide transformations before coding, enable evidence-driven iteration when the user asks for optimization loops, repeated retries, benchmark comparison, or candidate evaluation, and trigger the formal release gate when the user asks whether a version is ready to ship or submit.
 ---
 
 # Virtual Intelligent Dev Team
@@ -8,27 +8,30 @@ description: Intelligent expert-team router and bounded-iteration orchestrator f
 Handle complex requests with one unified workflow:
 
 1. Identify task type, risk level, language stack, and Git/process needs.
-2. Choose one lead agent.
-3. Add one or two assistant agents only when they add clear value.
-4. Enable governance or process guardrails only when needed.
-5. Use a compact handoff when lead and assistants need structured coordination.
-6. If the user asks for optimization, repeated improvement, benchmark comparison, or another round, enter bounded iteration instead of open-ended self-looping.
-7. If the user asks whether the current version can ship, submit, or pass formal acceptance, run the release gate instead of answering from a benchmark summary alone.
-8. Produce one unified response instead of disconnected role fragments.
+2. If the request is a large rewrite, migration, overhaul, or "plan before coding" transformation, enter the pre-development planning branch first.
+3. Choose one lead agent.
+4. Add one or two assistant agents only when they add clear value.
+5. Enable governance or process guardrails only when needed.
+6. Use a compact handoff when lead and assistants need structured coordination.
+7. If the user asks for optimization, repeated improvement, benchmark comparison, or another round, enter bounded iteration instead of open-ended self-looping.
+8. If the user asks whether the current version can ship, submit, or pass formal acceptance, run the release gate instead of answering from a benchmark summary alone.
+9. Produce one unified response instead of disconnected role fragments.
 
 ## Positioning
 
 This skill is not only an expert router. It is a bounded work-loop skill for complex tasks.
 
-Its current operating model has four practical closure layers:
+Its current operating model has five practical closure layers:
 
-1. `Routing closure`
+1. `Planning closure`
+   - For large-scale rewrites, migrations, and project-wide transformations, produce a lightweight analysis / plan / progress pack before implementation starts.
+2. `Routing closure`
    - Route work across lead, assistant, governance, and process tracks based on task shape, risk, stack, and workflow signals.
-2. `Iteration closure`
+3. `Iteration closure`
    - Support baseline registration, round memory, self-feedback, `keep / retry / rollback / stop`, `pivot`, and `resume`.
-3. `Release closure`
+4. `Release closure`
    - Use a formal release gate to decide `ship` or `hold`, and bootstrap the next remediation loop when the outcome is `hold`.
-4. `Drill closure`
+5. `Drill closure`
    - Verify the workflow through offline drills that cover rollback, resume, and release-gate bootstrap paths.
 
 The goal is evidence-driven execution with boundaries, not open-ended autonomous looping.
@@ -37,6 +40,8 @@ The goal is evidence-driven execution with boundaries, not open-ended autonomous
 
 - `评估当前项目里的版本，看看能不能继续优化`
   - Route into bounded iteration with evidence, baseline comparison, and next-round decisions.
+- `先别写代码，先把这个单体拆分迁移项目规划清楚`
+  - Enter pre-development planning, generate the transformation brief and progress anchor, then hand back to execution.
 - `继续下一轮，直到结果稳定`
   - Keep the same semantic owner, persist round memory, and use `keep / retry / rollback / stop` instead of vague retries.
 - `这个版本现在能发布吗`
@@ -80,6 +85,7 @@ Use this skill when:
 
 - The user does not know which specialist should own the task.
 - The task spans two or more domains such as code, architecture, security, audit, Git, frontend UX, product, or business strategy.
+- The user asks for a large rewrite, migration, overhaul, project-wide refactor, or explicitly wants planning before coding.
 - The user needs a cross-domain decision such as:
   - audit plus implementation
   - strategy plus technical landing
@@ -94,6 +100,13 @@ Use bounded iteration only when the request benefits from it:
 - benchmark or regression comparison
 - repeated retries with evidence required
 - candidate comparison before committing to a direction
+
+Use pre-development planning only when the request benefits from it:
+
+- rewrite or migrate a whole project or major subsystem
+- architecture overhaul before implementation
+- project-wide refactor with dependency-aware phase planning
+- "plan first, code later" requests that need durable progress tracking
 
 ## Team catalog
 
@@ -187,6 +200,17 @@ If the task matches a common multi-role pattern, load the closest runbook from
 
 Use runbooks to speed coordination shape, not to force a rigid ceremony.
 
+## Pre-development planning
+
+When the user asks for a large-scale rewrite, migration, overhaul, or planning-before-coding transformation:
+
+- Read `references/pre-development-planning-playbook.md`.
+- Use `references/pre-development-output-template.md` for the user-facing planning summary.
+- Keep the branch lightweight: produce only the smallest planning pack that will de-risk execution.
+- Prefer a persistent progress anchor such as `docs/progress/MASTER.md` when the work will span multiple conversations or sessions.
+- Add parallel lanes and merge-risk notes only when the task is large enough to benefit from multi-agent execution.
+- After the planning pack exists, return to normal routing, iteration, release, and Git rules for actual delivery.
+
 ## Bounded iteration
 
 When the user asks to iterate, optimize, benchmark, compare candidates, or keep improving until stable:
@@ -278,7 +302,12 @@ After routing, answer with one unified structure:
    - Whether roundtable governance is enabled
    - Selected governance track
    - DRI, SLO, dual-sign, and post-audit requirements when relevant
-6. `Optimization Loop` when bounded iteration is active
+6. `Planning Pack` when pre-development planning is active
+   - Confirmed transformation scope, target, and constraints
+   - Analysis artifacts to create or refresh
+   - Phase plan, lane notes, and merge-risk guidance
+   - Progress anchor and resume point
+7. `Optimization Loop` when bounded iteration is active
    - Objective and baseline
    - Current round and evidence source
    - Active owner, round memory, and self-feedback chain

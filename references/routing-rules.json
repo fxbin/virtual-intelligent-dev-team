@@ -1,8 +1,8 @@
 {
   "meta": {
     "author": "fxbin",
-    "version": "v4.24.1",
-    "updated": "2026-03-22"
+    "version": "v4.25.1",
+    "updated": "2026-04-04"
   },
   "thresholds": {
     "max_agent_score": 20,
@@ -114,6 +114,7 @@
     }
   },
   "process_skill_lead_agents": {
+    "pre-development-planning": "Technical Trinity",
     "bounded-iteration": "Technical Trinity",
     "release-gate": "Technical Trinity",
     "git-workflow": "Git Workflow Guardian",
@@ -1515,6 +1516,88 @@
     }
   },
   "process_skill_rules": {
+    "pre-development-planning": [
+      {
+        "keyword": "rewrite",
+        "score": 1
+      },
+      {
+        "keyword": "migrate",
+        "score": 1
+      },
+      {
+        "keyword": "overhaul",
+        "score": 1
+      },
+      {
+        "keyword": "transform",
+        "score": 1
+      },
+      {
+        "keyword": "refactor entire project",
+        "score": 1
+      },
+      {
+        "keyword": "plan before coding",
+        "score": 1
+      },
+      {
+        "keyword": "planning before coding",
+        "score": 1
+      },
+      {
+        "keyword": "project-wide refactor",
+        "score": 1
+      },
+      {
+        "keyword": "large-scale refactor",
+        "score": 1
+      },
+      {
+        "keyword": "architecture migration",
+        "score": 1
+      },
+      {
+        "keyword": "rewrite this project",
+        "score": 1
+      },
+      {
+        "keyword": "大规模",
+        "score": 1
+      },
+      {
+        "keyword": "大规模迁移",
+        "score": 1
+      },
+      {
+        "keyword": "大规模重构",
+        "score": 1
+      },
+      {
+        "keyword": "项目级重构",
+        "score": 1
+      },
+      {
+        "keyword": "整仓改造",
+        "score": 1
+      },
+      {
+        "keyword": "整个项目重写",
+        "score": 1
+      },
+      {
+        "keyword": "规范驱动",
+        "score": 1
+      },
+      {
+        "keyword": "先规划再开发",
+        "score": 1
+      },
+      {
+        "keyword": "先别写代码",
+        "score": 1
+      }
+    ],
     "bounded-iteration": [
       {
         "keyword": "iterate",

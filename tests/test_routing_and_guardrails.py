@@ -24,6 +24,7 @@ RUN_ITERATION_LOOP_SCRIPT = SKILL_DIR / "scripts" / "run_iteration_loop.py"
 RUN_BENCHMARKS_SCRIPT = SKILL_DIR / "scripts" / "run_benchmarks.py"
 RUN_OFFLINE_DRILL_SCRIPT = SKILL_DIR / "scripts" / "run_offline_loop_drill.py"
 RUN_RELEASE_GATE_SCRIPT = SKILL_DIR / "scripts" / "run_release_gate.py"
+INIT_PRE_DEVELOPMENT_SCRIPT = SKILL_DIR / "scripts" / "init_pre_development_plan.py"
 VALIDATOR_SCRIPT = SKILL_DIR / "scripts" / "validate_virtual_team.py"
 CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 
@@ -49,6 +50,7 @@ iteration_loop = load_module("virtual_intelligent_dev_team_iteration_loop", RUN_
 benchmark_runner = load_module("virtual_intelligent_dev_team_run_benchmarks", RUN_BENCHMARKS_SCRIPT)
 offline_loop_drill = load_module("virtual_intelligent_dev_team_run_offline_loop_drill", RUN_OFFLINE_DRILL_SCRIPT)
 release_gate = load_module("virtual_intelligent_dev_team_run_release_gate", RUN_RELEASE_GATE_SCRIPT)
+planning_init = load_module("virtual_intelligent_dev_team_planning_init", INIT_PRE_DEVELOPMENT_SCRIPT)
 
 
 def load_config() -> dict[str, object]:
@@ -173,6 +175,33 @@ class RoutingTests(unittest.TestCase):
         self.assertIn("bounded-iteration", result["process_skills"])
         self.assertTrue(result["iteration_profile"]["enabled"])
         self.assertGreaterEqual(result["iteration_profile"]["round_cap_offline"], 120)
+
+    def test_large_scale_rewrite_enables_pre_development_planning(self) -> None:
+        result = route_request.route_request(
+            "Rewrite this project in Rust, but plan before coding and keep a progress tracker for later sessions.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertEqual("Technical Trinity", result["lead_agent"])
+        self.assertTrue(result["needs_pre_development_planning"])
+        self.assertIn("pre-development-planning", result["process_skills"])
+        self.assertEqual("pre-development-planning", result["process_plan"][0]["skill"])
+        self.assertIn(
+            "python scripts/init_pre_development_plan.py --root . --task-name \"<task-name>\" --task-description \"<task-description>\" --phase-name foundation --pretty",
+            result["process_plan"][0]["commands"],
+        )
+
+    def test_chinese_research_first_migration_keeps_planning_branch_with_sentinel(self) -> None:
+        result = route_request.route_request(
+            "这个核心模块要大规模迁移，先调研再执行，先规划再开发。",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertEqual("Sentinel Architect (NB)", result["lead_agent"])
+        self.assertTrue(result["needs_pre_development_planning"])
+        self.assertIn("pre-development-planning", result["process_skills"])
 
     def test_frontend_iteration_keeps_semantic_lead(self) -> None:
         result = route_request.route_request(
@@ -721,6 +750,27 @@ class GuardrailTests(unittest.TestCase):
 
 
 class IterationHelperTests(unittest.TestCase):
+    def test_init_pre_development_plan_creates_expected_artifacts(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp) / "planning-root"
+            payload = planning_init.initialize_pre_development_plan(
+                root=root,
+                task_name="Rust Rewrite",
+                task_description="Rewrite the monolith into a Rust service stack.",
+                phase_name="Foundation",
+            )
+
+            master_path = Path(payload["artifacts"]["master"])
+            overview_path = Path(payload["artifacts"]["project_overview"])
+            phase_path = Path(payload["artifacts"]["phase"])
+
+            self.assertTrue(master_path.exists())
+            self.assertTrue(overview_path.exists())
+            self.assertTrue(phase_path.exists())
+            self.assertIn("Rust Rewrite", master_path.read_text(encoding="utf-8"))
+            self.assertIn("Rewrite the monolith into a Rust service stack.", overview_path.read_text(encoding="utf-8"))
+            self.assertIn("Phase 1: Foundation", phase_path.read_text(encoding="utf-8"))
+
     def test_init_iteration_round_creates_expected_assets(self) -> None:
         with make_tempdir() as tmp:
             workspace = Path(tmp) / "rounds"

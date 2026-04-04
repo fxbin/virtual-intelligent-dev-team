@@ -126,6 +126,9 @@ def validate_process_plan_cases(cases: list[dict[str, object]]) -> list[dict[str
             raise AssertionError(f"process plan case {name} is malformed")
 
         plan = route_request.build_process_plan(
+            needs_pre_development_planning=bool(
+                case.get("needs_pre_development_planning", False)
+            ),
             needs_iteration=bool(case.get("needs_iteration", False)),
             needs_worktree=bool(case.get("needs_worktree", False)),
             needs_release_gate=bool(case.get("needs_release_gate", False)),

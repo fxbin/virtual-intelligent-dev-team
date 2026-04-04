@@ -229,7 +229,7 @@ def should_suppress_git_agent_scoring(
 
 def detect_process_skills(
     text: str, config: dict[str, object]
-) -> tuple[bool, bool, bool, bool, list[str], dict[str, list[str]]]:
+) -> tuple[bool, bool, bool, bool, bool, list[str], dict[str, list[str]]]:
     lowered = text.lower()
     process_rules = config.get("process_skill_rules", {})
     if not isinstance(process_rules, dict):
@@ -282,16 +282,24 @@ def detect_process_skills(
     if should_suppress_bounded_iteration(process_hits):
         process_hits.pop("bounded-iteration", None)
 
+    needs_pre_development_planning = "pre-development-planning" in process_hits
     needs_iteration = "bounded-iteration" in process_hits
     needs_worktree = "using-git-worktrees" in process_hits
     needs_release_gate = "release-gate" in process_hits
     needs_git_workflow = "git-workflow" in process_hits
     process_skills = [
         skill
-        for skill in ("bounded-iteration", "using-git-worktrees", "release-gate", "git-workflow")
+        for skill in (
+            "pre-development-planning",
+            "bounded-iteration",
+            "using-git-worktrees",
+            "release-gate",
+            "git-workflow",
+        )
         if skill in process_hits
     ]
     return (
+        needs_pre_development_planning,
         needs_iteration,
         needs_worktree,
         needs_release_gate,
@@ -1142,8 +1150,9 @@ def build_governance_plan(
 
 
 def build_process_plan(
-    needs_iteration: bool,
-    needs_worktree: bool,
+    needs_pre_development_planning: bool = False,
+    needs_iteration: bool = False,
+    needs_worktree: bool = False,
     needs_release_gate: bool = False,
     needs_git_workflow: bool = False,
     repo_strategy: dict[str, str] | None = None,
@@ -1170,6 +1179,33 @@ def build_process_plan(
                 "assets/distilled-patterns-template.md",
             ],
         }
+    if needs_pre_development_planning:
+        plan.append(
+            {
+                "skill": "pre-development-planning",
+                "reference": "references/pre-development-planning-playbook.md",
+                "steps": [
+                    "先锁定 transformation scope、target、constraints 和 primary priority",
+                    "只分析支撑规划所需的 architecture、entry points、key modules 和 risks",
+                    "生成轻量 planning pack，而不是提前进入重实现",
+                    "当任务足够大时，再补 phase lanes、merge risk 和 resume protocol",
+                    "建立 docs/progress/MASTER.md 作为跨会话 progress anchor",
+                    "按 pre-development output template 向用户汇报 planning pack",
+                    "规划完成后，再回到正常 lead / assistant / governance / iteration / release 路径",
+                ],
+                "commands": [
+                    "python scripts/init_pre_development_plan.py --root . --task-name \"<task-name>\" --task-description \"<task-description>\" --phase-name foundation --pretty",
+                    "python scripts/route_request.py --text \"<rewrite-or-migration-request>\" --config references/routing-rules.json --pretty",
+                ],
+                "artifacts": [
+                    "docs/analysis/project-overview.md",
+                    "docs/plan/task-breakdown.md",
+                    "docs/progress/MASTER.md",
+                    "docs/progress/phase-1-foundation.md",
+                ],
+                "resume_anchor": "docs/progress/MASTER.md",
+            }
+        )
     if needs_iteration:
         plan.append(
             {
@@ -1352,6 +1388,7 @@ def rebalance_git_lead_for_semantic_owner(
 def pick_mode(
     confidence: float,
     sentinel_overlay: bool,
+    needs_pre_development_planning: bool,
     process_only: bool,
     language_only: bool,
     unknown_only: bool,
@@ -1363,6 +1400,8 @@ def pick_mode(
 ) -> str:
     if fast_track_enabled:
         return "模式 G：枢机快反（军机处直通）"
+    if needs_pre_development_planning and process_only:
+        return "规划驱动模式：先做开发前准备"
     if roundtable_enabled:
         return "模式 F：圆桌治理（三省六部）"
     if process_only:
@@ -1395,6 +1434,7 @@ def build_clarifying_question(text: str, need_clarify: bool) -> str | None:
 def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict[str, object]:
     scores, reasons = compute_scores(text, config)
     (
+        needs_pre_development_planning,
         needs_iteration,
         needs_worktree,
         needs_release_gate,
@@ -1541,6 +1581,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         except Exception:
             pass
     process_plan = build_process_plan(
+        needs_pre_development_planning=needs_pre_development_planning,
         needs_iteration=needs_iteration,
         needs_worktree=needs_worktree,
         needs_release_gate=needs_release_gate,
@@ -1553,6 +1594,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
     mode = pick_mode(
         confidence=confidence,
         sentinel_overlay=sentinel_overlay,
+        needs_pre_development_planning=needs_pre_development_planning,
         process_only=process_only,
         language_only=language_only,
         unknown_only=unknown_only,
@@ -1589,6 +1631,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "lead_agent": lead_agent,
         "assistant_agents": assistants,
         "detected_languages": detected_languages,
+        "needs_pre_development_planning": needs_pre_development_planning,
         "language_routing": language_routing,
         "needs_iteration": needs_iteration,
         "needs_worktree": needs_worktree,

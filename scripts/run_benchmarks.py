@@ -63,6 +63,22 @@ def classify_prompt(text: str) -> list[str]:
         tags.append("frontend")
     if any(route_request.keyword_matches(lowered, token) for token in ["python", "django", "flask", "fastapi", "celery", "go", "gin", "node", "nestjs", "java", "spring", "rust"]):
         tags.append("backend-stack")
+    if any(
+        route_request.keyword_matches(lowered, token)
+        for token in [
+            "rewrite",
+            "migrate",
+            "overhaul",
+            "transform",
+            "plan before coding",
+            "planning before coding",
+            "large-scale refactor",
+            "大规模迁移",
+            "大规模重构",
+            "先规划再开发",
+        ]
+    ):
+        tags.append("planning")
     if any(route_request.keyword_matches(lowered, token) for token in ["commit", "push", "worktree", "branch", "git", "rebase", "merge"]):
         tags.append("git-workflow")
     if any(route_request.keyword_matches(lowered, token) for token in ["review", "audit", "security review", "ux review", "code review"]):
