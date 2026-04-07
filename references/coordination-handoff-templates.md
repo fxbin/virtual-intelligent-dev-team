@@ -21,7 +21,10 @@ Use these templates when a lead agent needs structured input from one or more as
     - [Criterion 2]
 - Return format:
   - Summary:
+  - Claim:
+  - Evidence:
   - Risks:
+  - Decision:
   - Recommendation:
 ```
 
@@ -43,6 +46,10 @@ Use when `Code Audit Council` reviews work owned by another lead.
   - [Fix 2]
 - Evidence needed for closure:
   - [Test, diff, benchmark, screenshot, proof]
+- Return delta:
+  - Claim:
+  - Evidence:
+  - Decision:
 ```
 
 ## 3. Git Execution Handoff
@@ -64,6 +71,10 @@ Use when `Git Workflow Guardian` needs to control sequencing while another agent
   - [Conflict]
   - [Permission issue]
   - [Non-fast-forward]
+- Return delta:
+  - Claim:
+  - Evidence:
+  - Next action:
 ```
 
 ## 4. Strategy-to-Execution Handoff
@@ -84,6 +95,9 @@ Use when `Executive Trinity` or `Omni-Architect` needs `Technical Trinity` to la
   - System shape
   - Delivery phases
   - Main risks
+  - Claim
+  - Evidence
+  - Decision
 ```
 
 ## 5. Escalation Snapshot
@@ -104,6 +118,10 @@ Use only when risk, ambiguity, or disagreement is high enough to justify stronge
   - [What must be decided now]
 - Recommended governance mode:
   - [Roundtable / Sentinel-led staged execution]
+- Return delta:
+  - Claim:
+  - Evidence:
+  - Decision:
 ```
 
 ## 6. Root-Cause Escalation Handoff
@@ -130,6 +148,11 @@ Use when `Sentinel Architect (NB)` takes over after repeated failed attempts or 
   - [Exact next action]
 - Guardrail:
   - Do not propose a production fix before validation unless the user asks for containment only.
+- Return delta:
+  - Claim:
+  - Evidence:
+  - Decision:
+  - Next action:
 ```
 
 ## 7. Iteration Review Handoff
@@ -157,6 +180,7 @@ Use when a lead is running a bounded optimization loop and needs one assistant t
   - stop
 - Expected return:
   - Decision
+  - Claim
   - Evidence summary
   - Main risk
 ```

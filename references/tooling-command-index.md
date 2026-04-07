@@ -72,6 +72,28 @@ python scripts/init_pre_development_plan.py --root . --task-name "<task-name>" -
 - `assets/self-feedback-template.md`
 - `assets/distilled-patterns-template.md`
 - `assets/iteration-plan-template.json`
+- `references/project-memory-lite.md`
+
+## 三点五、project memory lite
+
+推荐锚点：
+
+- `docs/progress/MASTER.md`
+- `.skill-iterations/current-round-memory.md`
+- `.skill-iterations/distilled-patterns.md`
+
+常用初始化命令：
+
+```bash
+mkdir -p docs/progress
+cp assets/pre-development-progress-master-template.md docs/progress/MASTER.md
+```
+
+```bash
+mkdir -p .skill-iterations
+cp assets/round-memory-template.md .skill-iterations/current-round-memory.md
+cp assets/distilled-patterns-template.md .skill-iterations/distilled-patterns.md
+```
 
 ## 四、iteration 命令
 
@@ -148,6 +170,7 @@ python scripts/materialize_candidate_patch.py --brief .skill-iterations/candidat
 ## 七、使用原则
 
 - 高风险、多阶段、多人协作前，先用 `verify_action.py` 确认 process skill / lead assignment / release gate / iteration 是否真的该开
+- 需要跨会话恢复时，优先只推荐一个主锚点，再补最多两个 supporting artifacts
 - 改了路由、索引、playbook、脚本命令后，先跑 `lint_virtual_team_contract.py`，再跑 `validate_virtual_team.py`
 - 开发前规划分支只在大改造、迁移、重写、先规划后开发时启用
 - iteration 深循环时，先开本索引，再补对应 playbook

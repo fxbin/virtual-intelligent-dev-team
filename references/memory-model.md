@@ -2,6 +2,16 @@
 
 Bounded iteration needs memory, but not uncontrolled history replay.
 
+Project Memory Lite sits above per-round iteration memory.
+
+Use it when:
+
+- the task spans sessions
+- a planning pack needs a durable resume point
+- release gate or remediation needs one stable handoff anchor
+
+The default lightweight anchors are defined in `references/project-memory-lite.md`.
+
 ## Memory Tiers
 
 ## 1. Round Memory
@@ -73,6 +83,19 @@ It should include:
 - current open loops
 - distilled patterns
 
+## 6. Project Memory Lite
+
+Use a minimal persistent anchor when the loop or planning work must survive a pause.
+
+Preferred anchors:
+
+- `docs/progress/MASTER.md`
+- `.skill-iterations/current-round-memory.md`
+- `.skill-iterations/distilled-patterns.md`
+
+This tier should point to the latest stable resume surface, not duplicate every
+per-round file.
+
 Autonomous candidate generation should read this compact chain first and only fall back to raw per-round files when the chain is missing or stale.
 
 ## Retention Rules
@@ -89,3 +112,4 @@ Autonomous candidate generation should read this compact chain first and only fa
 - Do not reload every prior round by default.
 - Do not merge speculative notes into evergreen guidance.
 - Do not let memory silently change the objective.
+- Do not return more resume artifacts than the next session actually needs.

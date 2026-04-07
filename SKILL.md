@@ -36,6 +36,10 @@ Its current operating model has five practical closure layers:
 
 The goal is evidence-driven execution with boundaries, not open-ended autonomous looping.
 
+One more runtime rule:
+
+- When routing alone is not enough, return the smallest matching workflow bundle and resume anchor instead of inventing a new ceremony.
+
 ## Quick examples
 
 - `评估当前项目里的版本，看看能不能继续优化`
@@ -293,13 +297,16 @@ After routing, answer with one unified structure:
    - Lead agent
    - Assistant agents
    - Why they were selected
+   - Workflow bundle
 2. `Execution Result`
    - Key conclusion
    - Key decision
    - Main risks
+   - Evidence delta from assistants when applicable
 3. `Next Step`
    - Smallest executable action
    - User confirmation needed, if any
+   - Progress anchor and resume artifacts when relevant
 4. `Git Workflow`
    - Whether `using-git-worktrees` is needed
    - Whether `git-workflow` is needed

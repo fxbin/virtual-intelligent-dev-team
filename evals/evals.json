@@ -24,7 +24,9 @@
       "expectations": [
         "lead_agent is Code Audit Council",
         "assistant_agents contains Java Virtuoso",
-        "priority_routing agent is Code Audit Council"
+        "priority_routing agent is Code Audit Council",
+        "workflow_bundle is audit-fix-deliver",
+        "resume_artifacts contains .skill-iterations/current-round-memory.md"
       ],
       "categories": [
         "backend-stack",
@@ -933,7 +935,9 @@
         "lead_agent is Technical Trinity",
         "needs_pre_development_planning is true",
         "process_skills contains pre-development-planning",
-        "process_plan first commands contain python scripts/init_pre_development_plan.py --root . --task-name \"<task-name>\" --task-description \"<task-description>\" --phase-name foundation --pretty"
+        "process_plan first commands contain python scripts/init_pre_development_plan.py --root . --task-name \"<task-name>\" --task-description \"<task-description>\" --phase-name foundation --pretty",
+        "workflow_bundle is plan-first-build",
+        "progress_anchor_recommended is docs/progress/MASTER.md"
       ]
     },
     {
@@ -948,7 +952,57 @@
       "expectations": [
         "lead_agent is Sentinel Architect (NB)",
         "needs_pre_development_planning is true",
-        "process_skills contains pre-development-planning"
+        "process_skills contains pre-development-planning",
+        "workflow_bundle is plan-first-build"
+      ]
+    },
+    {
+      "id": 59,
+      "categories": [
+        "iteration",
+        "workflow-bundle"
+      ],
+      "prompt": "Run another iteration, benchmark it against the baseline, and stop if the result regresses.",
+      "expected_output": "Evidence-driven optimization should return the remediation loop bundle with a resume-ready round-memory anchor.",
+      "files": [],
+      "expectations": [
+        "lead_agent is Technical Trinity",
+        "needs_iteration is true",
+        "workflow_bundle is root-cause-remediate",
+        "progress_anchor_recommended is .skill-iterations/current-round-memory.md",
+        "resume_artifacts contains .skill-iterations/distilled-patterns.md"
+      ]
+    },
+    {
+      "id": 60,
+      "categories": [
+        "release-gate",
+        "workflow-bundle"
+      ],
+      "prompt": "Is this version ready to ship? Do not answer from benchmark alone. Run the formal release gate.",
+      "expected_output": "Formal ship readiness should return the ship-hold-remediate bundle and point the next session at release-gate artifacts.",
+      "files": [],
+      "expectations": [
+        "lead_agent is Technical Trinity",
+        "needs_release_gate is true",
+        "workflow_bundle is ship-hold-remediate",
+        "progress_anchor_recommended is evals/release-gate/release-gate-report.md",
+        "resume_artifacts contains evals/release-gate/next-iteration-brief.json"
+      ]
+    },
+    {
+      "id": 61,
+      "categories": [
+        "review",
+        "workflow-bundle"
+      ],
+      "prompt": "This is a PR. Please do a security review and give refactor advice.",
+      "expected_output": "Audit-first requests should expose the audit-fix-deliver workflow bundle even when Git workflow is not required.",
+      "files": [],
+      "expectations": [
+        "lead_agent is Code Audit Council",
+        "needs_git_workflow is false",
+        "workflow_bundle is audit-fix-deliver"
       ]
     }
   ]

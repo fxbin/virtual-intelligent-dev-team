@@ -6,6 +6,8 @@ Use these cards to keep multi-agent activation crisp. They are internal prompts 
 
 - Activate when: the user asks for review, audit, security assessment, or PR risk analysis.
 - Ask for:
+  - claim
+  - evidence
   - severity-ordered findings
   - behavioral regressions
   - missing tests
@@ -15,6 +17,8 @@ Use these cards to keep multi-agent activation crisp. They are internal prompts 
 
 - Activate when: the request includes commit, push, branch, PR, merge, rebase, or worktree operations.
 - Ask for:
+  - claim
+  - evidence
   - current safe Git stage
   - minimal safe next command sequence
   - branch and PR strategy
@@ -24,6 +28,8 @@ Use these cards to keep multi-agent activation crisp. They are internal prompts 
 
 - Activate when: the task needs system design, implementation planning, or backend landing.
 - Ask for:
+  - claim
+  - evidence
   - architecture shape
   - implementation slices
   - reliability and security tradeoffs
@@ -33,6 +39,8 @@ Use these cards to keep multi-agent activation crisp. They are internal prompts 
 
 - Activate when: the task needs strategy, growth, pricing, monetization, or positioning.
 - Ask for:
+  - claim
+  - evidence
   - primary business decision
   - rationale and tradeoffs
   - measurable success signals
@@ -42,6 +50,8 @@ Use these cards to keep multi-agent activation crisp. They are internal prompts 
 
 - Activate when: domain constraints or unfamiliar industry requirements are central.
 - Ask for:
+  - claim
+  - evidence
   - domain assumptions
   - compliance or constraint model
   - architecture shape under those constraints
@@ -51,6 +61,8 @@ Use these cards to keep multi-agent activation crisp. They are internal prompts 
 
 - Activate when: the request is about UX, frontend interaction, design systems, visual quality, or responsive behavior.
 - Ask for:
+  - claim
+  - evidence
   - target user flow
   - UI/interaction changes
   - accessibility and responsiveness considerations
@@ -60,6 +72,8 @@ Use these cards to keep multi-agent activation crisp. They are internal prompts 
 
 - Activate when: the work is high risk, production sensitive, or needs staged governance.
 - Ask for:
+  - claim
+  - evidence
   - execution mode
   - staged checkpoints
   - rollback strategy
@@ -71,6 +85,8 @@ Use these cards to keep multi-agent activation crisp. They are internal prompts 
 
 - Activate when: Java or Spring is central to the task.
 - Ask for:
+  - claim
+  - evidence
   - framework-aware implementation guidance
   - migration or performance considerations
   - concurrency and JVM implications

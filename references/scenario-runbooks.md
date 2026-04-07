@@ -17,6 +17,8 @@ Use these runbooks when the user request implies a recurring multi-role pattern.
   - first execution phase is clear
   - progress anchor exists for resume
   - merge-risk notes exist when parallel work is realistic
+- Preferred bundle:
+  - `plan-first-build`
 
 ## 2. Startup MVP
 
@@ -48,6 +50,8 @@ Use these runbooks when the user request implies a recurring multi-role pattern.
   - severity-ordered findings
   - concrete remediation path
   - no mixing of audit verdict and speculative redesign
+- Preferred bundle:
+  - `audit-fix-deliver`
 
 ## 4. Strategy with Technical Landing
 
@@ -107,6 +111,8 @@ Use these runbooks when the user request implies a recurring multi-role pattern.
 - rollback thinking
 - explicit stop conditions
 - post-change verification
+- Preferred bundle:
+  - `ship-hold-remediate` when release judgment is central
 
 ## 8. Repeated Failure and Root-Cause Debugging
 
@@ -124,6 +130,8 @@ Use these runbooks when the user request implies a recurring multi-role pattern.
 - root cause separated from symptom
 - no speculative patching
 - minimal validating next step
+- Preferred bundle:
+  - `root-cause-remediate`
 
 ## 9. Evidence-Driven Iteration
 
@@ -141,3 +149,5 @@ Use these runbooks when the user request implies a recurring multi-role pattern.
   - every round has evidence
   - no silent regression
   - loop stops intentionally instead of drifting
+- Preferred bundle:
+  - `root-cause-remediate`

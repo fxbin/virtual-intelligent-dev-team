@@ -99,6 +99,8 @@ class RoutingTests(unittest.TestCase):
 
         self.assertEqual("Code Audit Council", result["lead_agent"])
         self.assertIn("Java Virtuoso", result["assistant_agents"])
+        self.assertEqual("audit-fix-deliver", result["workflow_bundle"])
+        self.assertIn(".skill-iterations/current-round-memory.md", result["resume_artifacts"])
         self.assertEqual(
             "Code Audit Council",
             (result["reason"]["priority_routing"] or {}).get("agent"),
@@ -115,6 +117,7 @@ class RoutingTests(unittest.TestCase):
         self.assertFalse(result["needs_git_workflow"])
         self.assertEqual([], result["assistant_agents"])
         self.assertEqual([], result["process_skills"])
+        self.assertEqual("audit-fix-deliver", result["workflow_bundle"])
 
     def test_ui_review_stays_with_product_architect(self) -> None:
         result = route_request.route_request(
@@ -180,6 +183,11 @@ class RoutingTests(unittest.TestCase):
         self.assertIn("bounded-iteration", result["process_skills"])
         self.assertTrue(result["iteration_profile"]["enabled"])
         self.assertGreaterEqual(result["iteration_profile"]["round_cap_offline"], 120)
+        self.assertEqual("root-cause-remediate", result["workflow_bundle"])
+        self.assertEqual(
+            ".skill-iterations/current-round-memory.md",
+            result["progress_anchor_recommended"],
+        )
 
     def test_large_scale_rewrite_enables_pre_development_planning(self) -> None:
         result = route_request.route_request(
@@ -191,6 +199,9 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual("Technical Trinity", result["lead_agent"])
         self.assertTrue(result["needs_pre_development_planning"])
         self.assertIn("pre-development-planning", result["process_skills"])
+        self.assertEqual("plan-first-build", result["workflow_bundle"])
+        self.assertEqual("docs/progress/MASTER.md", result["progress_anchor_recommended"])
+        self.assertIn("docs/progress/MASTER.md", result["resume_artifacts"])
         self.assertEqual("pre-development-planning", result["process_plan"][0]["skill"])
         self.assertIn(
             "python scripts/init_pre_development_plan.py --root . --task-name \"<task-name>\" --task-description \"<task-description>\" --phase-name foundation --pretty",
@@ -207,6 +218,7 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual("Sentinel Architect (NB)", result["lead_agent"])
         self.assertTrue(result["needs_pre_development_planning"])
         self.assertIn("pre-development-planning", result["process_skills"])
+        self.assertEqual("plan-first-build", result["workflow_bundle"])
 
     def test_frontend_iteration_keeps_semantic_lead(self) -> None:
         result = route_request.route_request(
@@ -218,6 +230,7 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual("World-Class Product Architect", result["lead_agent"])
         self.assertTrue(result["needs_iteration"])
         self.assertEqual(["bounded-iteration"], result["process_skills"])
+        self.assertEqual("root-cause-remediate", result["workflow_bundle"])
 
     def test_strategy_iteration_keeps_semantic_lead(self) -> None:
         result = route_request.route_request(
@@ -240,6 +253,11 @@ class RoutingTests(unittest.TestCase):
         self.assertTrue(result["needs_release_gate"])
         self.assertFalse(result["needs_git_workflow"])
         self.assertIn("release-gate", result["process_skills"])
+        self.assertEqual("ship-hold-remediate", result["workflow_bundle"])
+        self.assertEqual(
+            "evals/release-gate/release-gate-report.md",
+            result["progress_anchor_recommended"],
+        )
 
     def test_chinese_release_readiness_suppresses_ambiguous_git_submit_signal(self) -> None:
         result = route_request.route_request(
@@ -302,6 +320,8 @@ class RoutingTests(unittest.TestCase):
             "python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.json --resume --pretty",
             commands,
         )
+        self.assertEqual(".skill-iterations/current-round-memory.md", plan[0]["resume_anchor"])
+        self.assertIn(".skill-iterations/distilled-patterns.md", plan[0]["resume_artifacts"])
 
     def test_release_gate_plan_includes_formal_ship_hold_gate(self) -> None:
         plan = route_request.build_process_plan(
@@ -329,6 +349,8 @@ class RoutingTests(unittest.TestCase):
             "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --auto-run-next-iteration-on-hold --hold-loop-max-rounds 3 --pretty",
             commands,
         )
+        self.assertEqual("evals/release-gate/release-gate-report.md", plan[0]["resume_anchor"])
+        self.assertIn("evals/release-gate/next-iteration-brief.json", plan[0]["resume_artifacts"])
 
     def test_rebase_conflict_adds_sentinel_assistant(self) -> None:
         result = route_request.route_request(

@@ -9,6 +9,10 @@
           "Java Virtuoso"
         ],
         "needs_git_workflow": false,
+        "workflow_bundle": "audit-fix-deliver",
+        "resume_artifacts_contains": [
+          ".skill-iterations/current-round-memory.md"
+        ],
         "priority_agent": "Code Audit Council"
       }
     },
@@ -87,6 +91,19 @@
       }
     },
     {
+      "name": "rewrite_plan_first_bundle",
+      "text": "Rewrite this project in Rust, but plan before coding and keep a progress tracker for later sessions.",
+      "expect": {
+        "lead_agent": "Technical Trinity",
+        "workflow_bundle": "plan-first-build",
+        "progress_anchor_recommended": "docs/progress/MASTER.md",
+        "resume_artifacts_contains": [
+          "docs/progress/MASTER.md"
+        ],
+        "priority_agent": null
+      }
+    },
+    {
       "name": "python_django_review",
       "text": "Review this Django API for security issues.",
       "expect": {
@@ -95,6 +112,7 @@
           "Technical Trinity"
         ],
         "needs_git_workflow": false,
+        "workflow_bundle": "audit-fix-deliver",
         "priority_agent": "Code Audit Council"
       }
     },

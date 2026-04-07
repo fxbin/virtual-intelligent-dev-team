@@ -1211,6 +1211,11 @@ def build_process_plan(
                     "docs/progress/phase-1-foundation.md",
                 ],
                 "resume_anchor": "docs/progress/MASTER.md",
+                "resume_artifacts": [
+                    "docs/progress/MASTER.md",
+                    "docs/analysis/project-overview.md",
+                    "docs/plan/task-breakdown.md",
+                ],
             }
         )
     if needs_iteration:
@@ -1266,6 +1271,11 @@ def build_process_plan(
                         ],
                     ),
                 "plan_template": "assets/iteration-plan-template.json",
+                "resume_anchor": ".skill-iterations/current-round-memory.md",
+                "resume_artifacts": [
+                    ".skill-iterations/current-round-memory.md",
+                    ".skill-iterations/distilled-patterns.md",
+                ],
             }
         )
     if needs_worktree:
@@ -1313,6 +1323,11 @@ def build_process_plan(
                     ".skill-iterations/iteration-plan.release-gate.json",
                     "evals/release-gate/benchmark-results.json",
                     "evals/release-gate/benchmark-report.md",
+                ],
+                "resume_anchor": "evals/release-gate/release-gate-report.md",
+                "resume_artifacts": [
+                    "evals/release-gate/release-gate-report.md",
+                    "evals/release-gate/next-iteration-brief.json",
                 ],
             }
         )
@@ -1436,6 +1451,129 @@ def build_clarifying_question(text: str, need_clarify: bool) -> str | None:
     if has_cjk(text):
         return "请补充技术栈、目标和期望产出（代码、方案或审计）？"
     return "Please share tech stack, target outcome, and expected output type (code, architecture, or review)."
+
+
+def text_has_any_keyword(text: str, keywords: list[str]) -> bool:
+    lowered = text.lower()
+    return any(keyword_matches(lowered, keyword.lower()) for keyword in keywords)
+
+
+def build_workflow_bundle(
+    *,
+    text: str,
+    lead_agent: str,
+    needs_pre_development_planning: bool,
+    needs_iteration: bool,
+    needs_release_gate: bool,
+    needs_git_workflow: bool,
+    sentinel_overlay: bool,
+) -> dict[str, object]:
+    root_cause_keywords = [
+        "root cause",
+        "根因",
+        "still fails",
+        "failed again",
+        "logs",
+        "log",
+        "repro",
+        "复现",
+        "排查",
+        "investigate",
+        "debug",
+        "why is this broken",
+    ]
+    audit_keywords = [
+        "review",
+        "audit",
+        "security review",
+        "审计",
+        "代码审查",
+        "漏洞",
+        "refactor advice",
+    ]
+
+    if needs_release_gate:
+        return {
+            "name": "ship-hold-remediate",
+            "reason": "Formal release readiness or acceptance is central, so release gate drives the journey.",
+            "steps": [
+                "run the release gate first",
+                "answer ship or hold with explicit evidence",
+                "if hold, generate the next remediation brief",
+                "resume through the release-gate outputs instead of restarting from scratch",
+            ],
+            "progress_anchor_recommended": "evals/release-gate/release-gate-report.md",
+            "resume_artifacts": [
+                "evals/release-gate/release-gate-report.md",
+                "evals/release-gate/next-iteration-brief.json",
+            ],
+        }
+
+    if needs_pre_development_planning:
+        return {
+            "name": "plan-first-build",
+            "reason": "The request is rewrite/migration/plan-first shaped, so planning pack and durable progress anchor come before execution.",
+            "steps": [
+                "lock transformation scope, target, and constraints",
+                "generate the planning pack",
+                "create or refresh the progress anchor",
+                "return to normal delivery routing only after the planning pack exists",
+            ],
+            "progress_anchor_recommended": "docs/progress/MASTER.md",
+            "resume_artifacts": [
+                "docs/progress/MASTER.md",
+                "docs/analysis/project-overview.md",
+                "docs/plan/task-breakdown.md",
+            ],
+        }
+
+    if needs_iteration or (
+        (lead_agent == "Sentinel Architect (NB)" or sentinel_overlay)
+        and text_has_any_keyword(text, root_cause_keywords)
+    ):
+        return {
+            "name": "root-cause-remediate",
+            "reason": "The request needs evidence-backed diagnosis or bounded remediation, so the loop should preserve validating evidence and rollback decisions.",
+            "steps": [
+                "freeze guesswork and summarize what is already known",
+                "collect the missing evidence or run the next validating check",
+                "test one remediation hypothesis at a time",
+                "keep, retry, rollback, or stop based on evidence",
+            ],
+            "progress_anchor_recommended": ".skill-iterations/current-round-memory.md",
+            "resume_artifacts": [
+                ".skill-iterations/current-round-memory.md",
+                ".skill-iterations/distilled-patterns.md",
+            ],
+        }
+
+    if lead_agent == "Code Audit Council" or text_has_any_keyword(text, audit_keywords):
+        return {
+            "name": "audit-fix-deliver",
+            "reason": "The request is review-led, so the default path is findings first, remediation second, and Git delivery only when explicitly needed.",
+            "steps": [
+                "produce findings first",
+                "separate blockers from follow-up improvements",
+                "define the smallest safe remediation step",
+                "enter Git delivery only if commit, push, or PR actions are requested",
+            ],
+            "progress_anchor_recommended": ".skill-iterations/current-round-memory.md",
+            "resume_artifacts": [
+                ".skill-iterations/current-round-memory.md",
+                ".skill-iterations/distilled-patterns.md",
+            ],
+        }
+
+    return {
+        "name": "direct-execution",
+        "reason": "No larger recurring journey is needed beyond the selected lead and process skills.",
+        "steps": [
+            "keep the route lightweight",
+            "execute the smallest next action under the current lead",
+        ],
+        "progress_anchor_recommended": None,
+        "resume_artifacts": [],
+    }
 
 
 def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict[str, object]:
@@ -1620,6 +1758,15 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         and not language_only
     )
     clarifying_question = build_clarifying_question(text=text, need_clarify=need_clarify)
+    workflow_bundle = build_workflow_bundle(
+        text=text,
+        lead_agent=lead_agent,
+        needs_pre_development_planning=needs_pre_development_planning,
+        needs_iteration=needs_iteration,
+        needs_release_gate=needs_release_gate,
+        needs_git_workflow=needs_git_workflow,
+        sentinel_overlay=sentinel_overlay,
+    )
 
     reason = {
         "lead_positive_hits": reasons.get(lead_agent, {}).get("positive", []),
@@ -1632,6 +1779,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "priority_routing": priority_route,
         "language_hits": language_hits,
         "process_skill_hits": process_hits,
+        "workflow_bundle_reason": workflow_bundle.get("reason"),
     }
 
     return {
@@ -1663,6 +1811,11 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "confidence": confidence,
         "mode": mode,
         "clarifying_question": clarifying_question,
+        "workflow_bundle": workflow_bundle.get("name"),
+        "workflow_steps": workflow_bundle.get("steps", []),
+        "workflow_reason": workflow_bundle.get("reason"),
+        "progress_anchor_recommended": workflow_bundle.get("progress_anchor_recommended"),
+        "resume_artifacts": workflow_bundle.get("resume_artifacts", []),
         "scores": scores,
         "reason": reason,
     }

@@ -28,6 +28,8 @@
   - lead / assistant 紧凑交接模板
 - `dispatch-activation-cards.md`
   - assistant 激活卡
+- `workflow-bundles.md`
+  - 默认交付旅程与恢复锚点
 
 常见 lead 速记：
 
@@ -46,6 +48,7 @@
 
 - `scenario-runbooks.md`
 - `pre-development-planning-playbook.md`
+- `workflow-bundles.md`
 
 典型场景：
 
@@ -58,6 +61,11 @@
 - High-risk production change
 - Repeated-failure or root-cause debugging
 - Evidence-driven iteration
+
+如果不仅要知道“谁做 lead”，还要知道“默认走哪条交付旅程、恢复点在哪”，补读：
+
+- `workflow-bundles.md`
+- `project-memory-lite.md`
 
 ## 四、开发前规划
 
@@ -89,6 +97,7 @@
   - `baseline-registry.md`
   - `rollback-and-stop-rules.md`
 - `mutation-catalog-patterns.md`
+- `project-memory-lite.md`
 
 ## 六、root cause / release / Git
 

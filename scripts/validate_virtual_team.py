@@ -113,6 +113,21 @@ def validate_routing_cases(config: dict[str, object], cases: list[dict[str, obje
             check(result["needs_release_gate"] == expect["needs_release_gate"], f"{name}: unexpected needs_release_gate")
         if "process_skills" in expect:
             check(result["process_skills"] == expect["process_skills"], f"{name}: unexpected process_skills")
+        if "workflow_bundle" in expect:
+            check(result["workflow_bundle"] == expect["workflow_bundle"], f"{name}: unexpected workflow_bundle")
+        if "progress_anchor_recommended" in expect:
+            check(
+                result["progress_anchor_recommended"] == expect["progress_anchor_recommended"],
+                f"{name}: unexpected progress_anchor_recommended",
+            )
+        if "resume_artifacts_contains" in expect:
+            expected_artifacts = expect["resume_artifacts_contains"]
+            check(isinstance(expected_artifacts, list), f"{name}: resume_artifacts_contains must be a list")
+            for artifact in expected_artifacts:
+                check(
+                    artifact in result.get("resume_artifacts", []),
+                    f"{name}: missing resume artifact {artifact}",
+                )
 
         priority_agent = (result["reason"]["priority_routing"] or {}).get("agent")
         check(priority_agent == expect.get("priority_agent"), f"{name}: unexpected priority routing agent")

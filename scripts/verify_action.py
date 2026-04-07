@@ -218,6 +218,9 @@ def _verify_iteration(result: dict[str, object]) -> dict[str, object]:
         "summary": summary,
         "details": {
             "needs_iteration": bool(result.get("needs_iteration")),
+            "workflow_bundle": result.get("workflow_bundle"),
+            "progress_anchor_recommended": result.get("progress_anchor_recommended"),
+            "resume_artifacts": result.get("resume_artifacts", []),
             "round_caps": {
                 "online": int(profile.get("round_cap_online", 0)),
                 "offline": int(profile.get("round_cap_offline", 0)),
@@ -279,6 +282,9 @@ def verify_action(
             "needs_worktree": result.get("needs_worktree"),
             "needs_release_gate": result.get("needs_release_gate"),
             "needs_iteration": result.get("needs_iteration"),
+            "workflow_bundle": result.get("workflow_bundle"),
+            "progress_anchor_recommended": result.get("progress_anchor_recommended"),
+            "resume_artifacts": result.get("resume_artifacts"),
         },
     }
 
