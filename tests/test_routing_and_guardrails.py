@@ -3960,6 +3960,8 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("## Team Dispatch", markdown)
         self.assertIn("Workflow bundle: plan-first-build", markdown)
         self.assertIn("Bundle confidence: 0.96 (process-skill)", markdown)
+        self.assertIn("Workflow source explanation: This bundle is activated by an explicit process skill, so it should be treated as the primary execution journey.", markdown)
+        self.assertIn("Smallest executable action: lock transformation scope, target, and constraints", markdown)
         self.assertIn("Progress anchor: docs/progress/MASTER.md", markdown)
         self.assertIn("## Planning Pack", markdown)
 
@@ -3976,6 +3978,7 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("主责智能体：Sentinel Architect (NB)", markdown)
         self.assertIn("bundle 置信度：0.96（来源：process-skill）", markdown)
         self.assertIn("路由原因：当前请求属于重写、迁移或先规划后开发，应先产出 planning pack 和持久化进度锚点。", markdown)
+        self.assertIn("工作流来源解释：这条 bundle 由显式 process skill 激活，应视为当前任务的主执行旅程。", markdown)
         self.assertIn("最小可执行动作：先锁定改造范围、目标和约束", markdown)
         self.assertIn("## 规划包", markdown)
 
@@ -4002,6 +4005,39 @@ class ResponsePackTests(unittest.TestCase):
 
         self.assertIn("review-first path", markdown)
         self.assertIn("Workflow bundle: audit-fix-deliver", markdown)
+        self.assertIn("Workflow source explanation: This bundle is activated by both the selected lead and matching request keywords, so the journey is strongly anchored in task semantics.", markdown)
+
+    def test_generate_response_pack_auto_uses_english_release_scaffold(self) -> None:
+        result = route_request.route_request(
+            "Is this version ready to ship? Do not answer from benchmark alone. Run the formal release gate.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        markdown = response_pack.build_response_pack(result)
+
+        self.assertIn("## Team Dispatch", markdown)
+        self.assertIn("Workflow bundle: ship-hold-remediate", markdown)
+        self.assertIn("Why this route: Formal release readiness or acceptance is central, so release gate drives the journey.", markdown)
+        self.assertIn("Workflow source explanation: This bundle is activated by an explicit process skill, so it should be treated as the primary execution journey.", markdown)
+        self.assertIn("Key conclusion: run the formal release gate before making a ship decision.", markdown)
+        self.assertIn("Smallest executable action: run the release gate first", markdown)
+
+    def test_generate_response_pack_auto_uses_english_iteration_scaffold(self) -> None:
+        result = route_request.route_request(
+            "Run another iteration, benchmark it against the baseline, and stop if the result regresses.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        markdown = response_pack.build_response_pack(result)
+
+        self.assertIn("## Team Dispatch", markdown)
+        self.assertIn("Workflow bundle: root-cause-remediate", markdown)
+        self.assertIn("Workflow source explanation: This bundle is activated by an explicit process skill, so it should be treated as the primary execution journey.", markdown)
+        self.assertIn("Key conclusion: stay inside the bounded loop and change only one variable per round.", markdown)
+        self.assertIn("Smallest executable action: freeze guesswork and summarize what is already known", markdown)
+        self.assertIn("## Optimization Loop", markdown)
 
     def test_generate_response_pack_auto_uses_chinese_review_scaffold(self) -> None:
         result = route_request.route_request(
@@ -4016,6 +4052,7 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("主责智能体：Code Audit Council", markdown)
         self.assertIn("协作智能体：Java Virtuoso", markdown)
         self.assertIn("路由原因：当前请求以审计或 review 为主，应先给出 findings，再决定修复与交付。", markdown)
+        self.assertIn("工作流来源解释：这条 bundle 同时由主责和请求关键词触发，因此和任务语义强绑定。", markdown)
         self.assertIn("最小可执行动作：先给出 findings", markdown)
 
     def test_generate_response_pack_auto_uses_chinese_release_scaffold(self) -> None:
@@ -4030,6 +4067,7 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("## 团队派工", markdown)
         self.assertIn("工作流 bundle：ship-hold-remediate", markdown)
         self.assertIn("路由原因：当前请求明确以正式发布判断或验收为中心，应先走 release gate。", markdown)
+        self.assertIn("工作流来源解释：这条 bundle 由显式 process skill 激活，应视为当前任务的主执行旅程。", markdown)
         self.assertIn("关键结论：先跑正式 release gate，再决定 ship 还是 hold。", markdown)
         self.assertIn("最小可执行动作：先运行正式 release gate", markdown)
 
@@ -4046,6 +4084,7 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("主责智能体：World-Class Product Architect", markdown)
         self.assertIn("工作流 bundle：root-cause-remediate", markdown)
         self.assertIn("路由原因：当前请求需要基于证据做诊断或有边界迭代，应保留验证证据与回滚决策。", markdown)
+        self.assertIn("工作流来源解释：这条 bundle 由显式 process skill 激活，应视为当前任务的主执行旅程。", markdown)
         self.assertIn("最小可执行动作：先冻结猜测并总结当前已知信息", markdown)
         self.assertIn("## 优化闭环", markdown)
 

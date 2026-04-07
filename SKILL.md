@@ -338,6 +338,7 @@ The lead agent owns the response structure. Assistants should only add the delta
 When you need a fast user-facing draft from the router result, prefer the response-pack generator from
 `references/tooling-command-index.md` instead of inventing a fresh output shape each time.
 For Chinese requests, the response-pack generator can now auto-switch to a Chinese scaffold, and you can still force `--language zh` when needed.
+The response pack should expose the workflow source explanation to the user when that explanation helps justify why the route is process-led, lead-led, or only a fallback.
 
 ## Built-in references and checks
 

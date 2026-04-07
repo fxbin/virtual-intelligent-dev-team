@@ -114,6 +114,35 @@ def localize_workflow_steps(bundle: str, steps: list[str], language: str) -> lis
     return translations.get(bundle, steps)
 
 
+def explain_workflow_source(source: str, language: str) -> str:
+    explanations = {
+        "process-skill": {
+            "en": "This bundle is activated by an explicit process skill, so it should be treated as the primary execution journey.",
+            "zh": "这条 bundle 由显式 process skill 激活，应视为当前任务的主执行旅程。",
+        },
+        "keyword+lead": {
+            "en": "This bundle is activated by the combination of task keywords and the selected lead, so it is evidence-backed but not purely process-driven.",
+            "zh": "这条 bundle 由任务关键词和当前主责共同触发，有证据基础，但不是纯流程驱动。",
+        },
+        "lead+keyword": {
+            "en": "This bundle is activated by both the selected lead and matching request keywords, so the journey is strongly anchored in task semantics.",
+            "zh": "这条 bundle 同时由主责和请求关键词触发，因此和任务语义强绑定。",
+        },
+        "lead-default": {
+            "en": "This bundle is activated mainly by the selected lead's default journey, so keep the route but do not overstate it as a hard process lane.",
+            "zh": "这条 bundle 主要来自当前主责的默认旅程，可以沿用，但不要把它表述成强约束流程。",
+        },
+        "fallback": {
+            "en": "This bundle is only a lightweight fallback and should not be treated as a strong process commitment.",
+            "zh": "这条 bundle 只是轻量兜底，不应被表述成强流程承诺。",
+        },
+    }
+    entry = explanations.get(source, {})
+    if isinstance(entry, dict):
+        return str(entry.get(language, entry.get("en", "")))
+    return ""
+
+
 def build_response_pack(
     result: dict[str, object],
     template: str = "auto",
@@ -164,6 +193,10 @@ def build_response_pack(
         workflow_reason,
         selected_language,
     )
+    workflow_source_explanation = explain_workflow_source(
+        workflow_bundle_source,
+        selected_language,
+    )
     localized_workflow_steps = localize_workflow_steps(
         workflow_bundle,
         [str(item) for item in workflow_steps],
@@ -186,6 +219,7 @@ def build_response_pack(
             f"- 工作流 bundle：{workflow_bundle}",
             f"- bundle 置信度：{bundle_confidence}（来源：{workflow_bundle_source}）",
             f"- 路由原因：{localized_workflow_reason or '详见路由结果。'}",
+            f"- 工作流来源解释：{workflow_source_explanation or '当前没有额外来源解释。'}",
             "",
         ]
     else:
@@ -196,6 +230,7 @@ def build_response_pack(
             f"- Workflow bundle: {workflow_bundle}",
             f"- Bundle confidence: {bundle_confidence} ({workflow_bundle_source})",
             f"- Why this route: {localized_workflow_reason or 'See router reasoning.'}",
+            f"- Workflow source explanation: {workflow_source_explanation or 'No extra source explanation is available.'}",
             "",
         ]
 
