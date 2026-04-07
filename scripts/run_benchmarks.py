@@ -19,6 +19,7 @@ TEST_SCRIPT = SKILL_DIR / "tests" / "test_routing_and_guardrails.py"
 VALIDATOR_SCRIPT = SKILL_DIR / "scripts" / "validate_virtual_team.py"
 ROUTE_SCRIPT = SKILL_DIR / "scripts" / "route_request.py"
 OFFLINE_DRILL_SCRIPT = SKILL_DIR / "scripts" / "run_offline_loop_drill.py"
+RESPONSE_PACK_SCRIPT = SKILL_DIR / "scripts" / "generate_response_pack.py"
 CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 EVALS_PATH = SKILL_DIR / "evals" / "evals.json"
 DEFAULT_OUTPUT_DIR = SKILL_DIR / "evals" / "benchmark-results"
@@ -35,6 +36,7 @@ def load_module(name: str, path: Path):
 
 route_request = load_module("virtual_team_route_request_benchmark", ROUTE_SCRIPT)
 offline_loop_drill = load_module("virtual_team_offline_loop_drill_benchmark", OFFLINE_DRILL_SCRIPT)
+response_pack = load_module("virtual_team_response_pack_benchmark", RESPONSE_PACK_SCRIPT)
 
 
 def load_json(path: Path) -> dict[str, object]:
@@ -162,7 +164,14 @@ def read_nested(data: object, path: str) -> object:
     return current
 
 
-def parse_expectation(expectation: str, result: dict[str, object]) -> tuple[bool, str]:
+def parse_expectation(
+    expectation: str,
+    result: dict[str, object],
+    response_pack_markdown: str,
+) -> tuple[bool, str]:
+    if expectation.startswith("response_pack contains "):
+        expected = expectation.removeprefix("response_pack contains ")
+        return expected in response_pack_markdown, f"response_pack={response_pack_markdown!r}"
     if expectation == "assistant_agents is empty":
         value = result.get("assistant_agents")
         return value == [], f"assistant_agents={value!r}"
@@ -233,9 +242,10 @@ def evaluate_evals(config: dict[str, object]) -> dict[str, object]:
         if not isinstance(expectations, list):
             expectations = []
         result = route_request.route_request(prompt, config, repo_path=REPO_ROOT)
+        response_pack_markdown = response_pack.build_response_pack(result)
         failures: list[str] = []
         for raw in expectations:
-            ok, detail = parse_expectation(str(raw), result)
+            ok, detail = parse_expectation(str(raw), result, response_pack_markdown)
             if not ok:
                 failures.append(f"{raw} [{detail}]")
         raw_categories = item.get("categories")
@@ -255,6 +265,7 @@ def evaluate_evals(config: dict[str, object]) -> dict[str, object]:
                 "tags": tags,
                 "lead_agent": result.get("lead_agent"),
                 "assistant_agents": result.get("assistant_agents"),
+                "response_pack_preview": response_pack_markdown[:400],
                 "passed": passed,
                 "failures": failures,
             }

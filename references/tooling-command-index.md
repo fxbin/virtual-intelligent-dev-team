@@ -83,6 +83,12 @@ python scripts/generate_response_pack.py --text "<中文请求>" --repo . --lang
 - 输出骨架会同时带出 `workflow_bundle`、`bundle_confidence` 和 `workflow_bundle_source`
 - 用户可见输出里也应带出 `workflow_bundle_source_explanation`
   - 特别适合 release / planning / iteration 这类容易被问“为什么要先走这条流程”的场景
+- 当前推荐结构：
+  - `Execution Result`
+  - `Evidence`
+  - `Next Action`
+  - `Resume`
+  - 再进入 `Git Workflow / Governance / Planning Pack / Optimization Loop`
 
 ## 二、开发前规划资产
 

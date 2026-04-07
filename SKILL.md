@@ -307,26 +307,34 @@ After routing, answer with one unified structure:
    - Main risks
    - Evidence delta from assistants when applicable
    - Assistant delta contract when assistants are active
-3. `Next Step`
+3. `Evidence`
+   - Route evidence
+   - Workflow source explanation
+   - Process skills in effect
+   - Assistant delta contract when assistants are active
+4. `Next Action`
    - Smallest executable action
+   - Current owner
    - User confirmation needed, if any
-   - Progress anchor and resume artifacts when relevant
-4. `Git Workflow`
+5. `Resume`
+   - Progress anchor
+   - Resume artifacts when relevant
+6. `Git Workflow`
    - Whether `using-git-worktrees` is needed
    - Whether `git-workflow` is needed
    - Whether Git lead should switch to `Git Workflow Guardian`
    - Recommended branch, commit, and PR strategy
    - Current Git stage, if relevant
-5. `Governance`
+7. `Governance`
    - Whether roundtable governance is enabled
    - Selected governance track
    - DRI, SLO, dual-sign, and post-audit requirements when relevant
-6. `Planning Pack` when pre-development planning is active
+8. `Planning Pack` when pre-development planning is active
    - Confirmed transformation scope, target, and constraints
    - Analysis artifacts to create or refresh
    - Phase plan, lane notes, and merge-risk guidance
    - Progress anchor and resume point
-7. `Optimization Loop` when bounded iteration is active
+9. `Optimization Loop` when bounded iteration is active
    - Objective and baseline
    - Current round and evidence source
    - Active owner, round memory, and self-feedback chain

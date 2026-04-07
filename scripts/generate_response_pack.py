@@ -210,6 +210,15 @@ def build_response_pack(
         if selected_language == "zh"
         else "execute the next direct step under the lead."
     )
+    assistant_contract_line = (
+        f"- Assistant delta contract：必填字段 {', '.join(contract.get('required_fields', []))}。"
+        if selected_language == "zh" and contract.get("enabled")
+        else "- Assistant delta contract：当前不需要。"
+        if selected_language == "zh"
+        else f"- Assistant delta contract: required fields {', '.join(contract.get('required_fields', []))}."
+        if contract.get("enabled")
+        else "- Assistant delta contract: not required."
+    )
 
     if selected_language == "zh":
         lines = [
@@ -330,14 +339,18 @@ def build_response_pack(
     if selected_language == "zh":
         lines.extend(
             [
-                (
-                    f"- Assistant delta contract：必填字段 {', '.join(contract.get('required_fields', []))}。"
-                    if contract.get("enabled")
-                    else "- Assistant delta contract：当前不需要。"
-                ),
                 "",
-                "## 下一步",
+                "## 证据与约束",
+                f"- 路由证据：{localized_workflow_reason or '详见路由结果。'}",
+                f"- 工作流来源解释：{workflow_source_explanation or '当前没有额外来源解释。'}",
+                f"- 流程技能：{', '.join(process_skills) if process_skills else none_text}",
+                assistant_contract_line,
+                "",
+                "## 下一动作",
                 f"- 最小可执行动作：{localized_workflow_steps[0] if localized_workflow_steps else direct_step_text}",
+                f"- 当前主责：{lead}",
+                "",
+                "## 恢复信息",
                 f"- 进度锚点：{progress_anchor or not_required_text}",
                 "- 恢复工件：",
                 _bullet_list([str(item) for item in resume_artifacts], none_text),
@@ -360,14 +373,18 @@ def build_response_pack(
     else:
         lines.extend(
             [
-                (
-                    f"- Assistant delta contract: required fields {', '.join(contract.get('required_fields', []))}."
-                    if contract.get("enabled")
-                    else "- Assistant delta contract: not required."
-                ),
                 "",
-                "## Next Step",
+                "## Evidence",
+                f"- Route evidence: {localized_workflow_reason or 'See router reasoning.'}",
+                f"- Workflow source explanation: {workflow_source_explanation or 'No extra source explanation is available.'}",
+                f"- Process skills: {', '.join(process_skills) if process_skills else none_text}",
+                assistant_contract_line,
+                "",
+                "## Next Action",
                 f"- Smallest executable action: {localized_workflow_steps[0] if localized_workflow_steps else direct_step_text}",
+                f"- Current owner: {lead}",
+                "",
+                "## Resume",
                 f"- Progress anchor: {progress_anchor or not_required_text}",
                 "- Resume artifacts:",
                 _bullet_list([str(item) for item in resume_artifacts], none_text),

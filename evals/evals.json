@@ -1007,7 +1007,10 @@
         "needs_release_gate is true",
         "workflow_bundle is ship-hold-remediate",
         "progress_anchor_recommended is evals/release-gate/release-gate-report.md",
-        "resume_artifacts contains evals/release-gate/next-iteration-brief.json"
+        "resume_artifacts contains evals/release-gate/next-iteration-brief.json",
+        "response_pack contains Workflow source explanation: This bundle is activated by an explicit process skill, so it should be treated as the primary execution journey.",
+        "response_pack contains ## Evidence",
+        "response_pack contains ## Resume"
       ]
     },
     {
@@ -1022,7 +1025,8 @@
       "expectations": [
         "lead_agent is Code Audit Council",
         "needs_git_workflow is false",
-        "workflow_bundle is audit-fix-deliver"
+        "workflow_bundle is audit-fix-deliver",
+        "response_pack contains Workflow source explanation: This bundle is activated by both the selected lead and matching request keywords, so the journey is strongly anchored in task semantics."
       ]
     },
     {
@@ -1041,6 +1045,24 @@
         "assistant_delta_contract.strict_mode is true",
         "assistant_delta_contract.required_fields contains claim",
         "assistant_delta_contract.required_fields contains evidence"
+      ]
+    },
+    {
+      "id": 64,
+      "categories": [
+        "planning",
+        "chinese",
+        "workflow-bundle"
+      ],
+      "prompt": "这个核心模块要大规模迁移，先调研再执行，先规划再开发。",
+      "expected_output": "Chinese planning response packs should expose structured evidence and resume blocks alongside the workflow source explanation.",
+      "files": [],
+      "expectations": [
+        "lead_agent is Sentinel Architect (NB)",
+        "workflow_bundle is plan-first-build",
+        "response_pack contains 工作流来源解释：这条 bundle 由显式 process skill 激活，应视为当前任务的主执行旅程。",
+        "response_pack contains ## 证据与约束",
+        "response_pack contains ## 恢复信息"
       ]
     }
   ]

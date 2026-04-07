@@ -3490,6 +3490,22 @@ class OfflineLoopDrillScriptTests(unittest.TestCase):
 
 
 class BenchmarkAndReleaseGateTests(unittest.TestCase):
+    def test_benchmark_expectation_supports_response_pack_contains(self) -> None:
+        result = route_request.route_request(
+            "Is this version ready to ship? Do not answer from benchmark alone. Run the formal release gate.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+        markdown = response_pack.build_response_pack(result)
+
+        ok, detail = benchmark_runner.parse_expectation(
+            "response_pack contains Workflow source explanation: This bundle is activated by an explicit process skill, so it should be treated as the primary execution journey.",
+            result,
+            markdown,
+        )
+
+        self.assertTrue(ok, detail)
+
     def test_run_benchmark_suite_can_include_offline_drill(self) -> None:
         with make_tempdir() as tmp:
             output_dir = Path(tmp) / "benchmark-output"
@@ -3961,6 +3977,9 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("Workflow bundle: plan-first-build", markdown)
         self.assertIn("Bundle confidence: 0.96 (process-skill)", markdown)
         self.assertIn("Workflow source explanation: This bundle is activated by an explicit process skill, so it should be treated as the primary execution journey.", markdown)
+        self.assertIn("## Evidence", markdown)
+        self.assertIn("## Next Action", markdown)
+        self.assertIn("## Resume", markdown)
         self.assertIn("Smallest executable action: lock transformation scope, target, and constraints", markdown)
         self.assertIn("Progress anchor: docs/progress/MASTER.md", markdown)
         self.assertIn("## Planning Pack", markdown)
@@ -3979,6 +3998,9 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("bundle 置信度：0.96（来源：process-skill）", markdown)
         self.assertIn("路由原因：当前请求属于重写、迁移或先规划后开发，应先产出 planning pack 和持久化进度锚点。", markdown)
         self.assertIn("工作流来源解释：这条 bundle 由显式 process skill 激活，应视为当前任务的主执行旅程。", markdown)
+        self.assertIn("## 证据与约束", markdown)
+        self.assertIn("## 下一动作", markdown)
+        self.assertIn("## 恢复信息", markdown)
         self.assertIn("最小可执行动作：先锁定改造范围、目标和约束", markdown)
         self.assertIn("## 规划包", markdown)
 
@@ -4020,6 +4042,7 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("Workflow bundle: ship-hold-remediate", markdown)
         self.assertIn("Why this route: Formal release readiness or acceptance is central, so release gate drives the journey.", markdown)
         self.assertIn("Workflow source explanation: This bundle is activated by an explicit process skill, so it should be treated as the primary execution journey.", markdown)
+        self.assertIn("## Evidence", markdown)
         self.assertIn("Key conclusion: run the formal release gate before making a ship decision.", markdown)
         self.assertIn("Smallest executable action: run the release gate first", markdown)
 
@@ -4035,6 +4058,7 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("## Team Dispatch", markdown)
         self.assertIn("Workflow bundle: root-cause-remediate", markdown)
         self.assertIn("Workflow source explanation: This bundle is activated by an explicit process skill, so it should be treated as the primary execution journey.", markdown)
+        self.assertIn("## Resume", markdown)
         self.assertIn("Key conclusion: stay inside the bounded loop and change only one variable per round.", markdown)
         self.assertIn("Smallest executable action: freeze guesswork and summarize what is already known", markdown)
         self.assertIn("## Optimization Loop", markdown)
