@@ -11,6 +11,7 @@ import sys
 from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
+import re
 
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
@@ -37,6 +38,9 @@ def load_module(name: str, path: Path):
 route_request = load_module("virtual_team_route_request_benchmark", ROUTE_SCRIPT)
 offline_loop_drill = load_module("virtual_team_offline_loop_drill_benchmark", OFFLINE_DRILL_SCRIPT)
 response_pack = load_module("virtual_team_response_pack_benchmark", RESPONSE_PACK_SCRIPT)
+MISSING = object()
+INTEGER_RE = re.compile(r"^-?\d+$")
+FLOAT_RE = re.compile(r"^-?\d+\.\d+$")
 
 
 def load_json(path: Path) -> dict[str, object]:
@@ -151,7 +155,7 @@ def run_command(command: list[str], cwd: Path) -> dict[str, object]:
     }
 
 
-def read_nested(data: object, path: str) -> object:
+def read_nested(data: object, path: str, default: object = MISSING) -> object:
     aliases = {
         "priority_routing agent": "reason.priority_routing.agent",
     }
@@ -159,9 +163,31 @@ def read_nested(data: object, path: str) -> object:
     current = data
     for part in path.split("."):
         if not isinstance(current, dict) or part not in current:
-            return None
+            return default
         current = current[part]
     return current
+
+
+def parse_scalar_literal(raw: str) -> object:
+    if raw == "true":
+        return True
+    if raw == "false":
+        return False
+    if raw == "null":
+        return None
+    if INTEGER_RE.match(raw):
+        return int(raw)
+    if FLOAT_RE.match(raw):
+        return float(raw)
+    return raw
+
+
+def as_numeric(value: object) -> float | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    return None
 
 
 def parse_field_expectation(
@@ -170,9 +196,59 @@ def parse_field_expectation(
     *,
     context_label: str,
 ) -> tuple[bool, str]:
+    if expectation.endswith(" does not exist"):
+        field = expectation.removesuffix(" does not exist").strip()
+        value = read_nested(data, field, default=MISSING)
+        return value is MISSING, f"{context_label}.{field}={value!r}"
+
+    if expectation.endswith(" exists"):
+        field = expectation.removesuffix(" exists").strip()
+        value = read_nested(data, field, default=MISSING)
+        return value is not MISSING, f"{context_label}.{field}={value!r}"
+
+    if expectation.endswith(" is null"):
+        field = expectation.removesuffix(" is null").strip()
+        value = read_nested(data, field, default=MISSING)
+        return value is None, f"{context_label}.{field}={value!r}"
+
+    if expectation.endswith(" is not null"):
+        field = expectation.removesuffix(" is not null").strip()
+        value = read_nested(data, field, default=MISSING)
+        return value is not MISSING and value is not None, f"{context_label}.{field}={value!r}"
+
+    if " length is not " in expectation:
+        field, expected = expectation.split(" length is not ", 1)
+        value = read_nested(data, field.strip(), default=MISSING)
+        if value is MISSING or not hasattr(value, "__len__"):
+            return False, f"{context_label}.{field.strip()}={value!r}"
+        return len(value) != int(expected), f"{context_label}.{field.strip()}={value!r}"
+
+    if " length is " in expectation:
+        field, expected = expectation.split(" length is ", 1)
+        value = read_nested(data, field.strip(), default=MISSING)
+        if value is MISSING or not hasattr(value, "__len__"):
+            return False, f"{context_label}.{field.strip()}={value!r}"
+        return len(value) == int(expected), f"{context_label}.{field.strip()}={value!r}"
+
+    for operator in (" >= ", " <= ", " > ", " < "):
+        if operator in expectation:
+            field, expected = expectation.split(operator, 1)
+            value = read_nested(data, field.strip(), default=MISSING)
+            numeric_value = as_numeric(value)
+            expected_value = as_numeric(parse_scalar_literal(expected))
+            if value is MISSING or numeric_value is None or expected_value is None:
+                return False, f"{context_label}.{field.strip()}={value!r}"
+            if operator == " >= ":
+                return numeric_value >= expected_value, f"{context_label}.{field.strip()}={value!r}"
+            if operator == " <= ":
+                return numeric_value <= expected_value, f"{context_label}.{field.strip()}={value!r}"
+            if operator == " > ":
+                return numeric_value > expected_value, f"{context_label}.{field.strip()}={value!r}"
+            return numeric_value < expected_value, f"{context_label}.{field.strip()}={value!r}"
+
     if " contains " in expectation:
         field, expected = expectation.split(" contains ", 1)
-        value = read_nested(data, field.strip())
+        value = read_nested(data, field.strip(), default=MISSING)
         if isinstance(value, list):
             return expected in value, f"{context_label}.{field.strip()}={value!r}"
         if isinstance(value, str):
@@ -181,23 +257,29 @@ def parse_field_expectation(
 
     if " is not " in expectation:
         field, expected = expectation.split(" is not ", 1)
-        value = read_nested(data, field.strip())
-        return str(value) != expected, f"{context_label}.{field.strip()}={value!r}"
+        value = read_nested(data, field.strip(), default=MISSING)
+        expected_value = parse_scalar_literal(expected)
+        if expected_value is None:
+            return value is not None and value is not MISSING, f"{context_label}.{field.strip()}={value!r}"
+        if isinstance(expected_value, bool):
+            return value is not expected_value, f"{context_label}.{field.strip()}={value!r}"
+        if isinstance(expected_value, (int, float)) and not isinstance(expected_value, bool):
+            numeric_value = as_numeric(value)
+            return numeric_value is not None and numeric_value != float(expected_value), f"{context_label}.{field.strip()}={value!r}"
+        return str(value) != str(expected_value), f"{context_label}.{field.strip()}={value!r}"
 
     if " is " in expectation:
         field, expected = expectation.split(" is ", 1)
-        value = read_nested(data, field.strip())
-        if expected == "true":
-            return value is True, f"{context_label}.{field.strip()}={value!r}"
-        if expected == "false":
-            return value is False, f"{context_label}.{field.strip()}={value!r}"
-        if expected == "0.0":
-            return float(value) == 0.0, f"{context_label}.{field.strip()}={value!r}"
-        if expected == "regular track":
-            return str(value) == "regular track", f"{context_label}.{field.strip()}={value!r}"
-        if expected == "fast track":
-            return str(value) == "fast track", f"{context_label}.{field.strip()}={value!r}"
-        return str(value) == expected, f"{context_label}.{field.strip()}={value!r}"
+        value = read_nested(data, field.strip(), default=MISSING)
+        expected_value = parse_scalar_literal(expected)
+        if expected_value is None:
+            return value is None, f"{context_label}.{field.strip()}={value!r}"
+        if isinstance(expected_value, bool):
+            return value is expected_value, f"{context_label}.{field.strip()}={value!r}"
+        if isinstance(expected_value, (int, float)) and not isinstance(expected_value, bool):
+            numeric_value = as_numeric(value)
+            return numeric_value is not None and numeric_value == float(expected_value), f"{context_label}.{field.strip()}={value!r}"
+        return str(value) == str(expected_value), f"{context_label}.{field.strip()}={value!r}"
 
     return False, f"unsupported expectation for {context_label}"
 

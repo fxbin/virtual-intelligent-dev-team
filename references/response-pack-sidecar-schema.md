@@ -115,3 +115,5 @@
   - `.schema.json`
   - helper 常量
   - 代表性 payload 的 schema 通过性
+- 稳定区块现在默认拒绝未声明字段
+  - 先收紧顶层与 `team_dispatch / execution_result / evidence / next_action / resume / git_workflow / governance`

@@ -386,7 +386,7 @@ def verify_action(
     else:
         raise ValueError(f"Unsupported check: {check}")
 
-    return {
+    output = {
         "ok": True,
         "check": check,
         "allowed": outcome["allowed"],
@@ -409,6 +409,8 @@ def verify_action(
             "resume_artifacts": result.get("resume_artifacts"),
         },
     }
+    response_contract.validate_verify_action_result(output)
+    return output
 
 
 def parse_args() -> argparse.Namespace:

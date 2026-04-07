@@ -955,8 +955,10 @@
         "process_plan first commands contain python scripts/init_pre_development_plan.py --root . --task-name \"<task-name>\" --task-description \"<task-description>\" --phase-name foundation --pretty",
         "process_plan first commands contain python scripts/init_project_memory.py --root . --mode planning --pretty",
         "workflow_bundle is plan-first-build",
-        "bundle_confidence is 0.96",
-        "progress_anchor_recommended is docs/progress/MASTER.md"
+        "bundle_confidence >= 0.95",
+        "progress_anchor_recommended is docs/progress/MASTER.md",
+        "response_pack_json planning_pack exists",
+        "response_pack_json optimization_loop does not exist"
       ]
     },
     {
@@ -990,7 +992,8 @@
         "workflow_bundle is root-cause-remediate",
         "progress_anchor_recommended is .skill-iterations/current-round-memory.md",
         "resume_artifacts contains .skill-iterations/distilled-patterns.md",
-        "process_plan first commands contain python scripts/init_project_memory.py --root . --mode iteration --pretty"
+        "process_plan first commands contain python scripts/init_project_memory.py --root . --mode iteration --pretty",
+        "response_pack_json optimization_loop exists"
       ]
     },
     {

@@ -1,0 +1,604 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:verify-action-result.schema",
+  "title": "Virtual Intelligent Dev Team Verify Action Result",
+  "type": "object",
+  "required": [
+    "ok",
+    "check",
+    "allowed",
+    "summary",
+    "details",
+    "explanation_card",
+    "recommended_next_step",
+    "router_snapshot"
+  ],
+  "properties": {
+    "ok": {
+      "const": true
+    },
+    "check": {
+      "enum": [
+        "process-skill",
+        "git-workflow",
+        "worktree",
+        "lead-assignment",
+        "release-gate",
+        "iteration",
+        "workflow-bundle",
+        "assistant-delta-contract"
+      ]
+    },
+    "allowed": {
+      "type": "boolean"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "details": {
+      "type": "object"
+    },
+    "explanation_card": {
+      "$ref": "#/$defs/explanation_card"
+    },
+    "recommended_next_step": {
+      "type": "string"
+    },
+    "router_snapshot": {
+      "$ref": "#/$defs/router_snapshot"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "check": {
+            "const": "process-skill"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "details": {
+            "$ref": "#/$defs/process_skill_details"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "check": {
+            "const": "git-workflow"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "details": {
+            "$ref": "#/$defs/git_workflow_details"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "check": {
+            "const": "worktree"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "details": {
+            "$ref": "#/$defs/worktree_details"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "check": {
+            "const": "lead-assignment"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "details": {
+            "$ref": "#/$defs/lead_assignment_details"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "check": {
+            "const": "release-gate"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "details": {
+            "$ref": "#/$defs/release_gate_details"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "check": {
+            "const": "iteration"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "details": {
+            "$ref": "#/$defs/iteration_details"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "check": {
+            "const": "workflow-bundle"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "details": {
+            "$ref": "#/$defs/workflow_bundle_details"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "check": {
+            "const": "assistant-delta-contract"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "details": {
+            "$ref": "#/$defs/assistant_delta_contract_details"
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "string_array": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "string_or_null": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "repo_strategy": {
+      "type": "object",
+      "required": [
+        "strategy",
+        "base_branch"
+      ],
+      "properties": {
+        "strategy": {
+          "type": "string"
+        },
+        "base_branch": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "git_templates": {
+      "type": "object",
+      "required": [
+        "branch_name",
+        "commit_message",
+        "pr_title",
+        "pr_sections",
+        "base_branch"
+      ],
+      "properties": {
+        "branch_name": {
+          "type": "string"
+        },
+        "commit_message": {
+          "type": "string"
+        },
+        "pr_title": {
+          "type": "string"
+        },
+        "pr_sections": {
+          "$ref": "#/$defs/string_array"
+        },
+        "base_branch": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "round_caps": {
+      "type": "object",
+      "required": [
+        "online",
+        "offline"
+      ],
+      "properties": {
+        "online": {
+          "type": "integer"
+        },
+        "offline": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "explanation_card": {
+      "type": "object",
+      "required": [
+        "workflow_bundle",
+        "workflow_bundle_source",
+        "workflow_source_explanation",
+        "route_evidence",
+        "next_action",
+        "current_owner",
+        "progress_anchor",
+        "resume_artifacts"
+      ],
+      "properties": {
+        "workflow_bundle": {
+          "type": "string"
+        },
+        "workflow_bundle_source": {
+          "type": "string"
+        },
+        "workflow_source_explanation": {
+          "type": "string"
+        },
+        "route_evidence": {
+          "type": "string"
+        },
+        "next_action": {
+          "type": "string"
+        },
+        "current_owner": {
+          "type": "string"
+        },
+        "progress_anchor": {
+          "type": "string"
+        },
+        "resume_artifacts": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "router_snapshot": {
+      "type": "object",
+      "required": [
+        "lead_agent",
+        "assistant_agents",
+        "process_skills",
+        "needs_git_workflow",
+        "needs_worktree",
+        "needs_release_gate",
+        "needs_iteration",
+        "workflow_bundle",
+        "bundle_confidence",
+        "workflow_bundle_source",
+        "progress_anchor_recommended",
+        "resume_artifacts"
+      ],
+      "properties": {
+        "lead_agent": {
+          "type": "string"
+        },
+        "assistant_agents": {
+          "$ref": "#/$defs/string_array"
+        },
+        "process_skills": {
+          "$ref": "#/$defs/string_array"
+        },
+        "needs_git_workflow": {
+          "type": "boolean"
+        },
+        "needs_worktree": {
+          "type": "boolean"
+        },
+        "needs_release_gate": {
+          "type": "boolean"
+        },
+        "needs_iteration": {
+          "type": "boolean"
+        },
+        "workflow_bundle": {
+          "type": "string"
+        },
+        "bundle_confidence": {
+          "type": "number"
+        },
+        "workflow_bundle_source": {
+          "type": "string"
+        },
+        "progress_anchor_recommended": {
+          "$ref": "#/$defs/string_or_null"
+        },
+        "resume_artifacts": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "process_skill_details": {
+      "type": "object",
+      "required": [
+        "requested_process_skill",
+        "recommended_process_skills",
+        "matching_reason_hits",
+        "commands",
+        "references"
+      ],
+      "properties": {
+        "requested_process_skill": {
+          "type": "string"
+        },
+        "recommended_process_skills": {
+          "$ref": "#/$defs/string_array"
+        },
+        "matching_reason_hits": {
+          "$ref": "#/$defs/string_array"
+        },
+        "commands": {
+          "$ref": "#/$defs/string_array"
+        },
+        "references": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "git_workflow_details": {
+      "type": "object",
+      "required": [
+        "needs_git_workflow",
+        "recommended_process_skills",
+        "commands",
+        "repo_strategy",
+        "templates"
+      ],
+      "properties": {
+        "needs_git_workflow": {
+          "type": "boolean"
+        },
+        "recommended_process_skills": {
+          "$ref": "#/$defs/string_array"
+        },
+        "commands": {
+          "$ref": "#/$defs/string_array"
+        },
+        "repo_strategy": {
+          "$ref": "#/$defs/repo_strategy"
+        },
+        "templates": {
+          "$ref": "#/$defs/git_templates"
+        }
+      },
+      "additionalProperties": false
+    },
+    "worktree_details": {
+      "type": "object",
+      "required": [
+        "needs_worktree",
+        "recommended_process_skills",
+        "commands",
+        "repo_strategy",
+        "base_branch"
+      ],
+      "properties": {
+        "needs_worktree": {
+          "type": "boolean"
+        },
+        "recommended_process_skills": {
+          "$ref": "#/$defs/string_array"
+        },
+        "commands": {
+          "$ref": "#/$defs/string_array"
+        },
+        "repo_strategy": {
+          "$ref": "#/$defs/repo_strategy"
+        },
+        "base_branch": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "lead_assignment_details": {
+      "type": "object",
+      "required": [
+        "requested_lead_agent",
+        "requested_assistant_agents",
+        "expected_lead_agent",
+        "expected_assistant_agents",
+        "unexpected_assistant_agents",
+        "missing_recommended_assistants"
+      ],
+      "properties": {
+        "requested_lead_agent": {
+          "type": "string"
+        },
+        "requested_assistant_agents": {
+          "$ref": "#/$defs/string_array"
+        },
+        "expected_lead_agent": {
+          "type": "string"
+        },
+        "expected_assistant_agents": {
+          "$ref": "#/$defs/string_array"
+        },
+        "unexpected_assistant_agents": {
+          "$ref": "#/$defs/string_array"
+        },
+        "missing_recommended_assistants": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "release_gate_details": {
+      "type": "object",
+      "required": [
+        "needs_release_gate",
+        "recommended_process_skills",
+        "commands",
+        "decisions",
+        "artifacts"
+      ],
+      "properties": {
+        "needs_release_gate": {
+          "type": "boolean"
+        },
+        "recommended_process_skills": {
+          "$ref": "#/$defs/string_array"
+        },
+        "commands": {
+          "$ref": "#/$defs/string_array"
+        },
+        "decisions": {
+          "$ref": "#/$defs/string_array"
+        },
+        "artifacts": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "iteration_details": {
+      "type": "object",
+      "required": [
+        "needs_iteration",
+        "workflow_bundle",
+        "progress_anchor_recommended",
+        "resume_artifacts",
+        "round_caps",
+        "max_same_hypothesis_retries",
+        "require_objective_signal",
+        "allowed_decisions",
+        "required_artifacts"
+      ],
+      "properties": {
+        "needs_iteration": {
+          "type": "boolean"
+        },
+        "workflow_bundle": {
+          "type": "string"
+        },
+        "progress_anchor_recommended": {
+          "$ref": "#/$defs/string_or_null"
+        },
+        "resume_artifacts": {
+          "$ref": "#/$defs/string_array"
+        },
+        "round_caps": {
+          "$ref": "#/$defs/round_caps"
+        },
+        "max_same_hypothesis_retries": {
+          "type": "integer"
+        },
+        "require_objective_signal": {
+          "type": "boolean"
+        },
+        "allowed_decisions": {
+          "$ref": "#/$defs/string_array"
+        },
+        "required_artifacts": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "workflow_bundle_details": {
+      "type": "object",
+      "required": [
+        "workflow_bundle",
+        "bundle_confidence",
+        "workflow_bundle_source",
+        "workflow_bundle_source_explanation",
+        "progress_anchor_recommended",
+        "resume_artifacts",
+        "workflow_steps"
+      ],
+      "properties": {
+        "workflow_bundle": {
+          "type": "string"
+        },
+        "bundle_confidence": {
+          "type": "number"
+        },
+        "workflow_bundle_source": {
+          "type": "string"
+        },
+        "workflow_bundle_source_explanation": {
+          "type": "string"
+        },
+        "progress_anchor_recommended": {
+          "$ref": "#/$defs/string_or_null"
+        },
+        "resume_artifacts": {
+          "$ref": "#/$defs/string_array"
+        },
+        "workflow_steps": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "assistant_delta_contract_details": {
+      "type": "object",
+      "required": [
+        "assistant_delta_contract",
+        "assistant_count",
+        "assistants",
+        "required_field_failures",
+        "special_field_failures"
+      ],
+      "properties": {
+        "assistant_delta_contract": {
+          "type": "object"
+        },
+        "assistant_count": {
+          "type": "integer"
+        },
+        "assistants": {
+          "$ref": "#/$defs/string_array"
+        },
+        "required_field_failures": {
+          "$ref": "#/$defs/string_array"
+        },
+        "special_field_failures": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

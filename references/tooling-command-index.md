@@ -42,6 +42,8 @@ python scripts/verify_action.py --text "<user request>" --check workflow-bundle 
   - `workflow_bundle_source`
   - `workflow_bundle_source_explanation`
   - 适合在高风险、多阶段或“为什么是这条流程”容易被误解时先解释再执行
+- `verify_action.py` 的 JSON 结果契约见：
+  - `references/verify-action-result.schema.json`
 
 ```bash
 python scripts/verify_action.py --text "<user request>" --check assistant-delta-contract --pretty
@@ -104,6 +106,13 @@ python scripts/generate_response_pack.py --text "<user request>" --repo . --outp
 - `generate_response_pack.py` 写 sidecar 前会先做 schema 校验
 - benchmark 断言优先用 `response_pack_json <path> is/contains ...`
   - 只在需要验证 Markdown 文案骨架时才继续用 `response_pack contains ...`
+- 结构化断言额外支持：
+  - `<path> exists`
+  - `<path> does not exist`
+  - `<path> is null`
+  - `<path> is not null`
+  - `<path> length is <n>`
+  - `<path> >= <number>` / `<=` / `>` / `<`
 
 ## 二、开发前规划资产
 
@@ -207,6 +216,9 @@ python scripts/run_offline_loop_drill.py --workspace .tmp-offline-loop-drill --p
 ```bash
 python scripts/run_release_gate.py --output-dir evals/release-gate --pretty
 ```
+
+- `run_release_gate.py` 的 JSON 结果契约见：
+  - `references/release-gate-result.schema.json`
 
 - benchmark compare
 

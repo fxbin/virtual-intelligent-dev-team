@@ -1327,12 +1327,13 @@ def run_release_gate(
     )
     json_path = output_dir / "release-gate-results.json"
     markdown_path = output_dir / "release-gate-report.md"
+    result["json_report"] = str(json_path)
+    result["markdown_report"] = str(markdown_path)
+    response_contract.validate_release_gate_result(result)
     with json_path.open("w", encoding="utf-8") as file:
         json.dump(result, file, ensure_ascii=False, indent=2)
     with markdown_path.open("w", encoding="utf-8") as file:
         file.write(render_markdown(result))
-    result["json_report"] = str(json_path)
-    result["markdown_report"] = str(markdown_path)
     return result
 
 

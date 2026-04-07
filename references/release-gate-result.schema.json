@@ -1,0 +1,326 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:release-gate-result.schema",
+  "title": "Virtual Intelligent Dev Team Release Gate Result",
+  "type": "object",
+  "required": [
+    "generated_at",
+    "skill_name",
+    "ok",
+    "decision",
+    "reason",
+    "summary",
+    "release_label",
+    "follow_up",
+    "benchmark_json",
+    "benchmark_markdown",
+    "offline_drill_report",
+    "explanation_card",
+    "json_report",
+    "markdown_report"
+  ],
+  "properties": {
+    "generated_at": {
+      "type": "string"
+    },
+    "skill_name": {
+      "const": "virtual-intelligent-dev-team"
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "decision": {
+      "enum": [
+        "ship",
+        "hold"
+      ]
+    },
+    "reason": {
+      "type": "string"
+    },
+    "summary": {
+      "$ref": "#/$defs/summary"
+    },
+    "release_label": {
+      "type": "string"
+    },
+    "follow_up": {
+      "type": "object"
+    },
+    "benchmark_json": {
+      "type": "string"
+    },
+    "benchmark_markdown": {
+      "type": "string"
+    },
+    "offline_drill_report": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "explanation_card": {
+      "$ref": "#/$defs/explanation_card"
+    },
+    "json_report": {
+      "type": "string"
+    },
+    "markdown_report": {
+      "type": "string"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "const": "ship"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "ok": {
+            "const": true
+          },
+          "follow_up": {
+            "$ref": "#/$defs/ship_follow_up"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "const": "hold"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "ok": {
+            "const": false
+          },
+          "follow_up": {
+            "$ref": "#/$defs/hold_follow_up"
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "string_array": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "tests_passed",
+        "validator_passed",
+        "evals_passed",
+        "offline_drill_enabled",
+        "offline_drill_passed",
+        "overall_passed"
+      ],
+      "properties": {
+        "tests_passed": {
+          "type": "boolean"
+        },
+        "validator_passed": {
+          "type": "boolean"
+        },
+        "evals_passed": {
+          "type": "boolean"
+        },
+        "offline_drill_enabled": {
+          "type": "boolean"
+        },
+        "offline_drill_passed": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "overall_passed": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "explanation_card": {
+      "type": "object",
+      "required": [
+        "workflow_bundle",
+        "workflow_bundle_source",
+        "workflow_source_explanation",
+        "route_evidence",
+        "next_action",
+        "current_owner",
+        "progress_anchor",
+        "resume_artifacts"
+      ],
+      "properties": {
+        "workflow_bundle": {
+          "type": "string"
+        },
+        "workflow_bundle_source": {
+          "type": "string"
+        },
+        "workflow_source_explanation": {
+          "type": "string"
+        },
+        "route_evidence": {
+          "type": "string"
+        },
+        "next_action": {
+          "type": "string"
+        },
+        "current_owner": {
+          "type": "string"
+        },
+        "progress_anchor": {
+          "type": "string"
+        },
+        "resume_artifacts": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ship_follow_up": {
+      "type": "object",
+      "required": [
+        "loop_state",
+        "next_action",
+        "release_label",
+        "closure_json",
+        "closure_markdown",
+        "baseline_registration",
+        "distilled_pattern_sync"
+      ],
+      "properties": {
+        "loop_state": {
+          "const": "closed"
+        },
+        "next_action": {
+          "const": "archive-and-promote"
+        },
+        "release_label": {
+          "type": "string"
+        },
+        "closure_json": {
+          "type": "string"
+        },
+        "closure_markdown": {
+          "type": "string"
+        },
+        "baseline_registration": {
+          "type": "object"
+        },
+        "distilled_pattern_sync": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    "hold_auto_iteration": {
+      "type": "object",
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "result": {},
+        "error": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "hold_bootstrap": {
+      "type": "object",
+      "required": [
+        "workspace",
+        "candidate_repo",
+        "plan_json",
+        "open_loops",
+        "iteration_context_chain",
+        "baseline_registration",
+        "distilled_pattern_sync",
+        "recommended_command"
+      ],
+      "properties": {
+        "workspace": {
+          "type": "string"
+        },
+        "candidate_repo": {
+          "type": "string"
+        },
+        "plan_json": {
+          "type": "string"
+        },
+        "open_loops": {
+          "type": "string"
+        },
+        "iteration_context_chain": {
+          "type": "string"
+        },
+        "baseline_registration": {
+          "type": "object"
+        },
+        "distilled_pattern_sync": {
+          "type": "object"
+        },
+        "recommended_command": {
+          "type": "string"
+        },
+        "auto_iteration": {
+          "$ref": "#/$defs/hold_auto_iteration"
+        }
+      },
+      "additionalProperties": false
+    },
+    "hold_follow_up": {
+      "type": "object",
+      "required": [
+        "loop_state",
+        "next_action",
+        "blockers",
+        "brief_json",
+        "brief_markdown",
+        "iteration_workspace"
+      ],
+      "properties": {
+        "loop_state": {
+          "const": "reopened"
+        },
+        "next_action": {
+          "const": "bounded-iteration"
+        },
+        "blockers": {
+          "$ref": "#/$defs/string_array"
+        },
+        "brief_json": {
+          "type": "string"
+        },
+        "brief_markdown": {
+          "type": "string"
+        },
+        "iteration_workspace": {
+          "type": "string"
+        },
+        "bootstrap": {
+          "$ref": "#/$defs/hold_bootstrap"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

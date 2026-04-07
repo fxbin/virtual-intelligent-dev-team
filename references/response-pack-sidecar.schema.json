@@ -62,7 +62,7 @@
       "$ref": "#/$defs/optimization_loop"
     }
   },
-  "additionalProperties": true,
+  "additionalProperties": false,
   "$defs": {
     "string_array": {
       "type": "array",
@@ -104,7 +104,7 @@
           "type": "string"
         }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "execution_result": {
       "type": "object",
@@ -124,7 +124,7 @@
           "type": "string"
         }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "evidence": {
       "type": "object",
@@ -158,10 +158,10 @@
               "type": "string"
             }
           },
-          "additionalProperties": true
+          "additionalProperties": false
         }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "next_action": {
       "type": "object",
@@ -177,7 +177,7 @@
           "type": "string"
         }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "resume": {
       "type": "object",
@@ -193,7 +193,7 @@
           "$ref": "#/$defs/string_array"
         }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "git_workflow": {
       "type": "object",
@@ -221,7 +221,7 @@
           "type": "string"
         }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "governance": {
       "type": "object",
@@ -245,7 +245,7 @@
           "type": "boolean"
         }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "planning_pack": {
       "type": "object",
@@ -261,7 +261,7 @@
           "$ref": "#/$defs/string_array"
         }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "optimization_loop": {
       "type": "object",
@@ -285,7 +285,7 @@
           "type": "string"
         }
       },
-      "additionalProperties": true
+      "additionalProperties": false
     }
   }
 }

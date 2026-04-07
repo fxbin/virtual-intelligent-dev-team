@@ -7,7 +7,9 @@ import argparse
 import importlib.util
 import json
 import re
+import tempfile
 from pathlib import Path
+from unittest import mock
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -15,10 +17,14 @@ SKILL_DIR = SCRIPT_DIR.parent
 ROUTE_SCRIPT = SCRIPT_DIR / "route_request.py"
 RESPONSE_PACK_SCRIPT = SCRIPT_DIR / "generate_response_pack.py"
 RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
+VERIFY_ACTION_SCRIPT = SCRIPT_DIR / "verify_action.py"
+RELEASE_GATE_SCRIPT = SCRIPT_DIR / "run_release_gate.py"
 CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 VERSION_PATH = SKILL_DIR / "VERSION"
 SIDECAR_SCHEMA_PATH = SKILL_DIR / "references" / "response-pack-sidecar-schema.md"
 SIDECAR_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "response-pack-sidecar.schema.json"
+VERIFY_ACTION_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "verify-action-result.schema.json"
+RELEASE_GATE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "release-gate-result.schema.json"
 MARKDOWN_PATH_RE = re.compile(r"(?<![\w./-])((?:assets|references|scripts)/[A-Za-z0-9_./-]+\.(?:md|json|py))(?![\w./-])")
 BARE_REFERENCE_RE = re.compile(r"^\s*-\s+`([A-Za-z0-9_.-]+\.(?:md|json))`\s*$")
 SCRIPT_COMMAND_RE = re.compile(r"python\s+(scripts/[A-Za-z0-9_.-]+\.py)\b")
@@ -70,8 +76,12 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
     version_path = resolved_skill_dir / "VERSION"
     response_pack_script = resolved_skill_dir / "scripts" / "generate_response_pack.py"
     response_contract_script = resolved_skill_dir / "scripts" / "response_contract.py"
+    verify_action_script = resolved_skill_dir / "scripts" / "verify_action.py"
+    release_gate_script = resolved_skill_dir / "scripts" / "run_release_gate.py"
     sidecar_schema_path = resolved_skill_dir / "references" / "response-pack-sidecar-schema.md"
     sidecar_schema_json_path = resolved_skill_dir / "references" / "response-pack-sidecar.schema.json"
+    verify_action_schema_json_path = resolved_skill_dir / "references" / "verify-action-result.schema.json"
+    release_gate_schema_json_path = resolved_skill_dir / "references" / "release-gate-result.schema.json"
     route_script = resolved_skill_dir / "scripts" / "route_request.py"
     index_paths = [
         resolved_skill_dir / "references" / "tooling-command-index.md",
@@ -95,6 +105,22 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             response_contract_script,
         )
         if response_contract_script.exists()
+        else None
+    )
+    local_verify_action = (
+        load_module(
+            f"virtual_team_contract_lint_verify_action_{resolved_skill_dir.name}",
+            verify_action_script,
+        )
+        if verify_action_script.exists()
+        else None
+    )
+    local_release_gate = (
+        load_module(
+            f"virtual_team_contract_lint_release_gate_{resolved_skill_dir.name}",
+            release_gate_script,
+        )
+        if release_gate_script.exists()
         else None
     )
     config = load_json(config_path)
@@ -130,14 +156,28 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
         errors,
         "Missing references/response-pack-sidecar.schema.json. Restore the executable sidecar schema before release.",
     )
+    _check(
+        verify_action_schema_json_path.exists(),
+        errors,
+        "Missing references/verify-action-result.schema.json. Restore the verify_action executable schema before release.",
+    )
+    _check(
+        release_gate_schema_json_path.exists(),
+        errors,
+        "Missing references/release-gate-result.schema.json. Restore the release_gate executable schema before release.",
+    )
     checks.append(
         {
-            "name": "response-pack-sidecar-files",
+            "name": "response-contract-schema-files",
             "passed": (
                 response_pack_script.exists()
                 and response_contract_script.exists()
+                and verify_action_script.exists()
+                and release_gate_script.exists()
                 and sidecar_schema_path.exists()
                 and sidecar_schema_json_path.exists()
+                and verify_action_schema_json_path.exists()
+                and release_gate_schema_json_path.exists()
             ),
         }
     )
@@ -243,6 +283,149 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
         )
     else:
         checks.append({"name": "response-pack-sidecar-contract", "passed": False})
+
+    verify_action_failures: list[str] = []
+    if (
+        local_verify_action is not None
+        and local_response_contract is not None
+        and hasattr(local_response_contract, "validate_verify_action_result")
+    ):
+        verify_config = local_verify_action.load_config(config_path)
+        verify_samples = [
+            {
+                "check": "process-skill",
+                "text": "Rewrite this project in Rust, but plan before coding and keep a progress tracker for later sessions.",
+                "kwargs": {"process_skill": "pre-development-planning"},
+            },
+            {
+                "check": "git-workflow",
+                "text": "Refactor this Flask service and then commit and push the branch.",
+                "kwargs": {},
+            },
+            {
+                "check": "worktree",
+                "text": "Use FastAPI for a backend service, then commit, push, and isolate the work in a worktree.",
+                "kwargs": {},
+            },
+            {
+                "check": "lead-assignment",
+                "text": "Review this Django API for security issues.",
+                "kwargs": {"lead_agent": "Technical Trinity", "assistant_agents": []},
+            },
+            {
+                "check": "release-gate",
+                "text": "Is this version ready to ship? Do not answer from benchmark alone. Run the formal release gate.",
+                "kwargs": {},
+            },
+            {
+                "check": "iteration",
+                "text": "Run another iteration, benchmark it against the baseline, and stop if the result regresses.",
+                "kwargs": {},
+            },
+            {
+                "check": "workflow-bundle",
+                "text": "Rewrite this project in Rust, but plan before coding and keep a progress tracker for later sessions.",
+                "kwargs": {},
+            },
+            {
+                "check": "assistant-delta-contract",
+                "text": "This SaaS is not growing. Set the strategy and also land the technical plan.",
+                "kwargs": {},
+            },
+        ]
+        for sample in verify_samples:
+            try:
+                local_verify_action.verify_action(
+                    text=sample["text"],
+                    config=verify_config,
+                    repo_path=resolved_skill_dir.parent,
+                    check=sample["check"],
+                    **sample["kwargs"],
+                )
+            except Exception as exc:
+                verify_action_failures.append(f"{sample['check']}: {exc}")
+    else:
+        verify_action_failures.append("verify_action schema validator missing")
+    _check(
+        len(verify_action_failures) == 0,
+        errors,
+        "verify_action schema validation failed for sample results: "
+        + "; ".join(verify_action_failures),
+    )
+    checks.append(
+        {
+            "name": "verify-action-contract",
+            "passed": len(verify_action_failures) == 0,
+            "details": {"schema_json": str(verify_action_schema_json_path)},
+        }
+    )
+
+    release_gate_failures: list[str] = []
+    if (
+        local_release_gate is not None
+        and local_response_contract is not None
+        and hasattr(local_response_contract, "validate_release_gate_result")
+    ):
+        release_gate_samples = [
+            (
+                "hold",
+                {
+                    "tests_passed": True,
+                    "validator_passed": True,
+                    "evals_passed": True,
+                    "offline_drill_enabled": True,
+                    "offline_drill_passed": False,
+                    "overall_passed": False,
+                },
+            ),
+            (
+                "ship",
+                {
+                    "tests_passed": True,
+                    "validator_passed": True,
+                    "evals_passed": True,
+                    "offline_drill_enabled": True,
+                    "offline_drill_passed": True,
+                    "overall_passed": True,
+                },
+            ),
+        ]
+        for sample_name, summary in release_gate_samples:
+            try:
+                with tempfile.TemporaryDirectory() as tmp:
+                    output_dir = Path(tmp) / sample_name
+                    benchmark_output = output_dir / "benchmark-results.json"
+                    benchmark_report = output_dir / "benchmark-report.md"
+                    with mock.patch.object(
+                        local_release_gate.benchmark_runner,
+                        "run_benchmark_suite",
+                        return_value={
+                            "summary": summary,
+                            "json_report": str(benchmark_output),
+                            "markdown_report": str(benchmark_report),
+                            "offline_drill_run": {
+                                "markdown_report": str(output_dir / "offline-loop-drill-report.md"),
+                            },
+                        },
+                    ):
+                        local_release_gate.run_release_gate(output_dir=output_dir)
+            except Exception as exc:
+                release_gate_failures.append(f"{sample_name}: {exc}")
+    else:
+        release_gate_failures.append("release_gate schema validator missing")
+    _check(
+        len(release_gate_failures) == 0,
+        errors,
+        "release_gate schema validation failed for sample results: "
+        + "; ".join(release_gate_failures),
+    )
+    checks.append(
+        {
+            "name": "release-gate-contract",
+            "passed": len(release_gate_failures) == 0,
+            "details": {"schema_json": str(release_gate_schema_json_path)},
+        }
+    )
 
     lead_agents = config.get("process_skill_lead_agents", {})
     process_rules = config.get("process_skill_rules", {})

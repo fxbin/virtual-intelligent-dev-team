@@ -3361,6 +3361,61 @@ class IterationHelperTests(unittest.TestCase):
 
 
 class ValidatorScriptTests(unittest.TestCase):
+    def test_verify_action_outputs_match_json_schema(self) -> None:
+        cases = [
+            (
+                "process-skill",
+                "Rewrite this project in Rust, but plan before coding and keep a progress tracker for later sessions.",
+                {"process_skill": "pre-development-planning"},
+            ),
+            (
+                "git-workflow",
+                "Refactor this Flask service and then commit and push the branch.",
+                {},
+            ),
+            (
+                "worktree",
+                "Use FastAPI for a backend service, then commit, push, and isolate the work in a worktree.",
+                {},
+            ),
+            (
+                "lead-assignment",
+                "Review this Django API for security issues.",
+                {"lead_agent": "Technical Trinity", "assistant_agents": []},
+            ),
+            (
+                "release-gate",
+                "Is this version ready to ship? Do not answer from benchmark alone. Run the formal release gate.",
+                {},
+            ),
+            (
+                "iteration",
+                "Run another iteration, benchmark it against the baseline, and stop if the result regresses.",
+                {},
+            ),
+            (
+                "workflow-bundle",
+                "Rewrite this project in Rust, but plan before coding and keep a progress tracker for later sessions.",
+                {},
+            ),
+            (
+                "assistant-delta-contract",
+                "This SaaS is not growing. Set the strategy and also land the technical plan.",
+                {},
+            ),
+        ]
+
+        for check, text, kwargs in cases:
+            with self.subTest(check=check):
+                result = verify_action.verify_action(
+                    text=text,
+                    config=load_config(),
+                    repo_path=REPO_ROOT,
+                    check=check,
+                    **kwargs,
+                )
+                response_contract.validate_verify_action_result(result)
+
     def test_verify_action_accepts_planning_process_skill(self) -> None:
         result = verify_action.verify_action(
             text="Rewrite this project in Rust, but plan before coding and keep a progress tracker for later sessions.",
@@ -3582,6 +3637,39 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
 
         self.assertTrue(ok, detail)
 
+    def test_benchmark_field_expectation_supports_exists_length_and_comparison(self) -> None:
+        result = route_request.route_request(
+            "Rewrite this project in Rust, but plan before coding and keep a progress tracker for later sessions.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+        payload = response_pack.build_response_pack_payload(result)
+
+        for expectation in [
+            "planning_pack exists",
+            "optimization_loop does not exist",
+            "team_dispatch.assistant_agents length is 0",
+            "team_dispatch.bundle_confidence >= 0.95",
+            "resume.progress_anchor is not null",
+        ]:
+            with self.subTest(expectation=expectation):
+                assert_field_expectation(self, expectation, payload, label="response_pack_json")
+
+    def test_benchmark_field_expectation_supports_null_on_router_snapshot(self) -> None:
+        result = verify_action.verify_action(
+            text="Refactor this Flask service and then commit and push the branch.",
+            config=load_config(),
+            repo_path=REPO_ROOT,
+            check="git-workflow",
+        )
+
+        assert_field_expectation(
+            self,
+            "progress_anchor_recommended is null",
+            result["router_snapshot"],
+            label="router_snapshot",
+        )
+
     def test_run_benchmark_suite_can_include_offline_drill(self) -> None:
         with make_tempdir() as tmp:
             output_dir = Path(tmp) / "benchmark-output"
@@ -3674,6 +3762,7 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
             ):
                 result = release_gate.run_release_gate(output_dir=output_dir)
 
+            response_contract.validate_release_gate_result(result)
             self.assertFalse(result["ok"])
             self.assertEqual("hold", result["decision"])
             self.assertEqual("offline loop drill failed", result["reason"])
@@ -3724,6 +3813,7 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
             ):
                 result = release_gate.run_release_gate(output_dir=output_dir)
 
+            response_contract.validate_release_gate_result(result)
             brief = baseline_registry.load_json(Path(result["follow_up"]["brief_json"]))
             self.assertEqual("hold", result["decision"])
             self.assertEqual("reopened", brief["loop_state"])
@@ -3777,6 +3867,7 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
                     iteration_workspace=workspace,
                 )
 
+            response_contract.validate_release_gate_result(result)
             bootstrap = result["follow_up"]["bootstrap"]
             self.assertTrue(Path(bootstrap["candidate_repo"]).exists())
             self.assertTrue((Path(bootstrap["candidate_repo"]) / "scripts" / "run_release_gate.py").exists())
@@ -3943,6 +4034,7 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
                     auto_run_next_iteration_on_hold=True,
                 )
 
+            response_contract.validate_release_gate_result(result)
             bootstrap = result["follow_up"]["bootstrap"]
             self.assertEqual("completed", bootstrap["auto_iteration"]["status"])
             self.assertEqual(1, bootstrap["auto_iteration"]["result"]["round_count"])
@@ -4014,6 +4106,7 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
                     release_label="v4.20.0",
                 )
 
+            response_contract.validate_release_gate_result(result)
             self.assertTrue(result["ok"])
             self.assertEqual("ship", result["decision"])
             self.assertEqual("closed", result["follow_up"]["loop_state"])
@@ -4083,6 +4176,19 @@ class ResponsePackTests(unittest.TestCase):
         payload.pop("resume", None)
 
         with self.assertRaisesRegex(ValueError, "resume"):
+            response_contract.validate_response_pack_payload(payload)
+
+    def test_generate_response_pack_payload_schema_rejects_unexpected_top_level_field(self) -> None:
+        result = route_request.route_request(
+            "Rewrite this project in Rust, but plan before coding and keep a progress tracker for later sessions.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        payload = response_pack.build_response_pack_payload(result)
+        payload["unexpected_extra"] = True
+
+        with self.assertRaisesRegex(ValueError, "Additional properties are not allowed"):
             response_contract.validate_response_pack_payload(payload)
 
     def test_generate_response_pack_payload_exposes_structured_sections(self) -> None:
