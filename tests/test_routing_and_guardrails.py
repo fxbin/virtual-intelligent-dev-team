@@ -104,6 +104,7 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual("Code Audit Council", result["lead_agent"])
         self.assertIn("Java Virtuoso", result["assistant_agents"])
         self.assertEqual("audit-fix-deliver", result["workflow_bundle"])
+        self.assertGreaterEqual(result["bundle_confidence"], 0.8)
         self.assertIn(".skill-iterations/current-round-memory.md", result["resume_artifacts"])
         self.assertEqual(
             "Code Audit Council",
@@ -204,6 +205,7 @@ class RoutingTests(unittest.TestCase):
         self.assertTrue(result["needs_pre_development_planning"])
         self.assertIn("pre-development-planning", result["process_skills"])
         self.assertEqual("plan-first-build", result["workflow_bundle"])
+        self.assertEqual(0.96, result["bundle_confidence"])
         self.assertEqual("docs/progress/MASTER.md", result["progress_anchor_recommended"])
         self.assertIn("docs/progress/MASTER.md", result["resume_artifacts"])
         self.assertEqual("pre-development-planning", result["process_plan"][0]["skill"])
@@ -276,6 +278,7 @@ class RoutingTests(unittest.TestCase):
         self.assertIn("Technical Trinity", result["assistant_delta_contract"]["assistants"])
         self.assertIn("claim", result["assistant_delta_contract"]["required_fields"])
         self.assertIn("evidence", result["assistant_delta_contract"]["required_fields"])
+        self.assertIn("next_action", result["assistant_delta_contract"]["by_agent"]["Technical Trinity"])
 
     def test_chinese_release_readiness_suppresses_ambiguous_git_submit_signal(self) -> None:
         result = route_request.route_request(
@@ -3929,8 +3932,33 @@ class ResponsePackTests(unittest.TestCase):
 
         self.assertIn("## Team Dispatch", markdown)
         self.assertIn("Workflow bundle: plan-first-build", markdown)
+        self.assertIn("Bundle confidence: 0.96", markdown)
         self.assertIn("Progress anchor: docs/progress/MASTER.md", markdown)
         self.assertIn("## Planning Pack", markdown)
+
+    def test_generate_response_pack_release_template(self) -> None:
+        result = route_request.route_request(
+            "Is this version ready to ship? Do not answer from benchmark alone. Run the formal release gate.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        markdown = response_pack.build_response_pack(result, template="release")
+
+        self.assertIn("run the formal release gate", markdown)
+        self.assertIn("## Governance", markdown)
+
+    def test_generate_response_pack_review_template(self) -> None:
+        result = route_request.route_request(
+            "This is a PR. Please do a security review and give refactor advice.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        markdown = response_pack.build_response_pack(result, template="review")
+
+        self.assertIn("review-first path", markdown)
+        self.assertIn("Workflow bundle: audit-fix-deliver", markdown)
 
     def test_verify_action_assistant_delta_contract(self) -> None:
         result = verify_action.verify_action(
@@ -3946,6 +3974,7 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("Technical Trinity", details["assistants"])
         self.assertIn("claim", details["required_fields"])
         self.assertIn("Technical Trinity", details["by_agent"])
+        self.assertEqual([], result["details"]["special_field_failures"])
 
 
 if __name__ == "__main__":

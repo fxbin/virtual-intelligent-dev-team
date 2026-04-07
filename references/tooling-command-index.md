@@ -60,6 +60,14 @@ python scripts/git_workflow_guardrail.py
 python scripts/generate_response_pack.py --text "<user request>" --repo . --output .tmp-response-pack.md
 ```
 
+```bash
+python scripts/generate_response_pack.py --text "<user request>" --repo . --template planning --output .tmp-response-pack.md
+```
+
+```bash
+python scripts/generate_response_pack.py --text "<user request>" --repo . --template release --output .tmp-response-pack.md
+```
+
 ## 二、开发前规划资产
 
 模板：

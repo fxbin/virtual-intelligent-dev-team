@@ -298,6 +298,7 @@ After routing, answer with one unified structure:
    - Assistant agents
    - Why they were selected
    - Workflow bundle
+   - Bundle confidence
 2. `Execution Result`
    - Key conclusion
    - Key decision

@@ -1497,6 +1497,8 @@ def build_workflow_bundle(
     if needs_release_gate:
         return {
             "name": "ship-hold-remediate",
+            "confidence": 0.98,
+            "source": "process-skill",
             "reason": "Formal release readiness or acceptance is central, so release gate drives the journey.",
             "steps": [
                 "run the release gate first",
@@ -1514,6 +1516,8 @@ def build_workflow_bundle(
     if needs_pre_development_planning:
         return {
             "name": "plan-first-build",
+            "confidence": 0.96,
+            "source": "process-skill",
             "reason": "The request is rewrite/migration/plan-first shaped, so planning pack and durable progress anchor come before execution.",
             "steps": [
                 "lock transformation scope, target, and constraints",
@@ -1533,8 +1537,11 @@ def build_workflow_bundle(
         (lead_agent == "Sentinel Architect (NB)" or sentinel_overlay)
         and text_has_any_keyword(text, root_cause_keywords)
     ):
+        keyword_triggered = text_has_any_keyword(text, root_cause_keywords)
         return {
             "name": "root-cause-remediate",
+            "confidence": 0.93 if needs_iteration else 0.84,
+            "source": "process-skill" if needs_iteration else "keyword+lead",
             "reason": "The request needs evidence-backed diagnosis or bounded remediation, so the loop should preserve validating evidence and rollback decisions.",
             "steps": [
                 "freeze guesswork and summarize what is already known",
@@ -1550,8 +1557,11 @@ def build_workflow_bundle(
         }
 
     if lead_agent == "Code Audit Council" or text_has_any_keyword(text, audit_keywords):
+        keyword_triggered = text_has_any_keyword(text, audit_keywords)
         return {
             "name": "audit-fix-deliver",
+            "confidence": 0.88 if lead_agent == "Code Audit Council" and keyword_triggered else 0.78,
+            "source": "lead+keyword" if keyword_triggered else "lead-default",
             "reason": "The request is review-led, so the default path is findings first, remediation second, and Git delivery only when explicitly needed.",
             "steps": [
                 "produce findings first",
@@ -1568,6 +1578,8 @@ def build_workflow_bundle(
 
     return {
         "name": "direct-execution",
+        "confidence": 0.35,
+        "source": "fallback",
         "reason": "No larger recurring journey is needed beyond the selected lead and process skills.",
         "steps": [
             "keep the route lightweight",
@@ -1603,6 +1615,7 @@ def build_assistant_delta_contract(
         "required_fields": ["claim", "evidence", "decision"],
         "optional_fields": ["risk", "next_action"],
         "by_agent": by_agent,
+        "strict_mode": True,
         "rule": "Assistants should return only the delta that materially changes the lead decision.",
     }
 
@@ -1849,6 +1862,8 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "mode": mode,
         "clarifying_question": clarifying_question,
         "workflow_bundle": workflow_bundle.get("name"),
+        "bundle_confidence": workflow_bundle.get("confidence"),
+        "workflow_bundle_source": workflow_bundle.get("source"),
         "workflow_steps": workflow_bundle.get("steps", []),
         "workflow_reason": workflow_bundle.get("reason"),
         "progress_anchor_recommended": workflow_bundle.get("progress_anchor_recommended"),

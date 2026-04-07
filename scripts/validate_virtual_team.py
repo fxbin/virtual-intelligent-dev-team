@@ -115,6 +115,8 @@ def validate_routing_cases(config: dict[str, object], cases: list[dict[str, obje
             check(result["process_skills"] == expect["process_skills"], f"{name}: unexpected process_skills")
         if "workflow_bundle" in expect:
             check(result["workflow_bundle"] == expect["workflow_bundle"], f"{name}: unexpected workflow_bundle")
+        if "bundle_confidence" in expect:
+            check(result["bundle_confidence"] == expect["bundle_confidence"], f"{name}: unexpected bundle_confidence")
         if "progress_anchor_recommended" in expect:
             check(
                 result["progress_anchor_recommended"] == expect["progress_anchor_recommended"],

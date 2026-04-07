@@ -96,6 +96,7 @@
       "expect": {
         "lead_agent": "Technical Trinity",
         "workflow_bundle": "plan-first-build",
+        "bundle_confidence": 0.96,
         "progress_anchor_recommended": "docs/progress/MASTER.md",
         "resume_artifacts_contains": [
           "docs/progress/MASTER.md"
@@ -775,6 +776,7 @@
         "summary_contains": "plan-first-build",
         "detail_equals": {
           "workflow_bundle": "plan-first-build",
+          "bundle_confidence": 0.96,
           "progress_anchor_recommended": "docs/progress/MASTER.md"
         }
       }

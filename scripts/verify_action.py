@@ -236,10 +236,16 @@ def _verify_iteration(result: dict[str, object]) -> dict[str, object]:
 
 def _verify_workflow_bundle(result: dict[str, object]) -> dict[str, object]:
     bundle = result.get("workflow_bundle")
+    bundle_confidence = result.get("bundle_confidence")
     progress_anchor = result.get("progress_anchor_recommended")
     resume_artifacts = result.get("resume_artifacts", [])
     workflow_steps = result.get("workflow_steps", [])
-    allowed = isinstance(bundle, str) and bundle not in {"", "direct-execution"}
+    numeric_confidence = float(bundle_confidence) if isinstance(bundle_confidence, (int, float)) else 0.0
+    allowed = (
+        isinstance(bundle, str)
+        and bundle not in {"", "direct-execution"}
+        and numeric_confidence >= 0.6
+    )
     if allowed:
         summary = f"Workflow bundle `{bundle}` is active for this request."
         next_step = "Follow the workflow bundle first, then use the recommended progress anchor to resume safely."
@@ -251,6 +257,7 @@ def _verify_workflow_bundle(result: dict[str, object]) -> dict[str, object]:
         "summary": summary,
         "details": {
             "workflow_bundle": bundle,
+            "bundle_confidence": numeric_confidence,
             "progress_anchor_recommended": progress_anchor,
             "resume_artifacts": resume_artifacts,
             "workflow_steps": workflow_steps,
@@ -269,16 +276,33 @@ def _verify_assistant_delta_contract(result: dict[str, object]) -> dict[str, obj
     by_agent = contract.get("by_agent", {})
     if not isinstance(by_agent, dict):
         by_agent = {}
+    strict_mode = bool(contract.get("strict_mode"))
 
     enabled = bool(contract.get("enabled"))
     required_fields = contract.get("required_fields", [])
     if not isinstance(required_fields, list):
         required_fields = []
+    special_field_failures: list[str] = []
+    required_field_failures: list[str] = []
+
+    for agent in assistants:
+        fields = by_agent.get(agent, [])
+        if not isinstance(fields, list):
+            fields = []
+        missing_required = [field for field in required_fields if field not in fields]
+        if missing_required:
+            required_field_failures.append(f"{agent}: missing required fields {', '.join(missing_required)}")
+        extra_fields = [field for field in fields if field not in required_fields]
+        if strict_mode and len(extra_fields) == 0:
+            special_field_failures.append(f"{agent}: missing agent-specific delta field")
+
     allowed = (
         len(assistants) > 0
         and enabled
         and all(field in required_fields for field in ["claim", "evidence", "decision"])
         and all(agent in by_agent for agent in assistants)
+        and len(required_field_failures) == 0
+        and len(special_field_failures) == 0
     )
     if allowed:
         summary = "Assistant delta contract is active and structurally valid for this request."
@@ -293,6 +317,8 @@ def _verify_assistant_delta_contract(result: dict[str, object]) -> dict[str, obj
             "assistant_delta_contract": contract,
             "assistant_count": len(assistants),
             "assistants": assistants,
+            "required_field_failures": required_field_failures,
+            "special_field_failures": special_field_failures,
         },
         "recommended_next_step": next_step,
     }
@@ -351,6 +377,7 @@ def verify_action(
             "needs_release_gate": result.get("needs_release_gate"),
             "needs_iteration": result.get("needs_iteration"),
             "workflow_bundle": result.get("workflow_bundle"),
+            "bundle_confidence": result.get("bundle_confidence"),
             "progress_anchor_recommended": result.get("progress_anchor_recommended"),
             "resume_artifacts": result.get("resume_artifacts"),
         },

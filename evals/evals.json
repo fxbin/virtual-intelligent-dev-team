@@ -938,6 +938,7 @@
         "process_plan first commands contain python scripts/init_pre_development_plan.py --root . --task-name \"<task-name>\" --task-description \"<task-description>\" --phase-name foundation --pretty",
         "process_plan first commands contain python scripts/init_project_memory.py --root . --mode planning --pretty",
         "workflow_bundle is plan-first-build",
+        "bundle_confidence is 0.96",
         "progress_anchor_recommended is docs/progress/MASTER.md"
       ]
     },
@@ -1020,6 +1021,7 @@
         "lead_agent is Executive Trinity",
         "assistant_delta_contract.enabled is true",
         "assistant_delta_contract.lead_owner is Executive Trinity",
+        "assistant_delta_contract.strict_mode is true",
         "assistant_delta_contract.required_fields contains claim",
         "assistant_delta_contract.required_fields contains evidence"
       ]
