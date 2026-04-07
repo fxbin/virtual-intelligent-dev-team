@@ -38,6 +38,11 @@ python scripts/verify_action.py --text "<user request>" --check worktree --prett
 python scripts/verify_action.py --text "<user request>" --check workflow-bundle --pretty
 ```
 
+- `workflow-bundle` 校验现在会返回：
+  - `workflow_bundle_source`
+  - `workflow_bundle_source_explanation`
+  - 适合在高风险、多阶段或“为什么是这条流程”容易被误解时先解释再执行
+
 ```bash
 python scripts/verify_action.py --text "<user request>" --check assistant-delta-contract --pretty
 ```

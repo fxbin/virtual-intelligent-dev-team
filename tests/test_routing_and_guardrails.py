@@ -3975,6 +3975,8 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("## 团队派工", markdown)
         self.assertIn("主责智能体：Sentinel Architect (NB)", markdown)
         self.assertIn("bundle 置信度：0.96（来源：process-skill）", markdown)
+        self.assertIn("路由原因：当前请求属于重写、迁移或先规划后开发，应先产出 planning pack 和持久化进度锚点。", markdown)
+        self.assertIn("最小可执行动作：先锁定改造范围、目标和约束", markdown)
         self.assertIn("## 规划包", markdown)
 
     def test_generate_response_pack_release_template(self) -> None:
@@ -4000,6 +4002,65 @@ class ResponsePackTests(unittest.TestCase):
 
         self.assertIn("review-first path", markdown)
         self.assertIn("Workflow bundle: audit-fix-deliver", markdown)
+
+    def test_generate_response_pack_auto_uses_chinese_review_scaffold(self) -> None:
+        result = route_request.route_request(
+            "请 review 这个 Java GC 问题并给出建议",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        markdown = response_pack.build_response_pack(result)
+
+        self.assertIn("## 团队派工", markdown)
+        self.assertIn("主责智能体：Code Audit Council", markdown)
+        self.assertIn("协作智能体：Java Virtuoso", markdown)
+        self.assertIn("路由原因：当前请求以审计或 review 为主，应先给出 findings，再决定修复与交付。", markdown)
+        self.assertIn("最小可执行动作：先给出 findings", markdown)
+
+    def test_generate_response_pack_auto_uses_chinese_release_scaffold(self) -> None:
+        result = route_request.route_request(
+            "这版现在能不能提交/发版？不要只看 benchmark，通过正式 release gate 做提交前验收。",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        markdown = response_pack.build_response_pack(result)
+
+        self.assertIn("## 团队派工", markdown)
+        self.assertIn("工作流 bundle：ship-hold-remediate", markdown)
+        self.assertIn("路由原因：当前请求明确以正式发布判断或验收为中心，应先走 release gate。", markdown)
+        self.assertIn("关键结论：先跑正式 release gate，再决定 ship 还是 hold。", markdown)
+        self.assertIn("最小可执行动作：先运行正式 release gate", markdown)
+
+    def test_generate_response_pack_auto_uses_chinese_iteration_scaffold(self) -> None:
+        result = route_request.route_request(
+            "继续优化这个 React dashboard UX，跑 benchmark，对比上一轮，直到稳定。",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        markdown = response_pack.build_response_pack(result)
+
+        self.assertIn("## 团队派工", markdown)
+        self.assertIn("主责智能体：World-Class Product Architect", markdown)
+        self.assertIn("工作流 bundle：root-cause-remediate", markdown)
+        self.assertIn("路由原因：当前请求需要基于证据做诊断或有边界迭代，应保留验证证据与回滚决策。", markdown)
+        self.assertIn("最小可执行动作：先冻结猜测并总结当前已知信息", markdown)
+        self.assertIn("## 优化闭环", markdown)
+
+    def test_verify_action_workflow_bundle_includes_source_explanation(self) -> None:
+        result = verify_action.verify_action(
+            text="Rewrite this project in Rust, but plan before coding and keep a progress tracker for later sessions.",
+            config=load_config(),
+            repo_path=REPO_ROOT,
+            check="workflow-bundle",
+        )
+
+        self.assertTrue(result["allowed"])
+        self.assertEqual("process-skill", result["details"]["workflow_bundle_source"])
+        self.assertIn("primary execution journey", result["details"]["workflow_bundle_source_explanation"])
+        self.assertEqual("process-skill", result["router_snapshot"]["workflow_bundle_source"])
 
     def test_verify_action_assistant_delta_contract(self) -> None:
         result = verify_action.verify_action(

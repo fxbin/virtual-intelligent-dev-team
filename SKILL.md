@@ -300,6 +300,7 @@ After routing, answer with one unified structure:
    - Workflow bundle
    - Bundle confidence
    - Workflow bundle source
+   - Workflow bundle source explanation when the route is process-heavy or easy to misread
 2. `Execution Result`
    - Key conclusion
    - Key decision

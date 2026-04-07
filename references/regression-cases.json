@@ -795,6 +795,7 @@
         "detail_equals": {
           "workflow_bundle": "plan-first-build",
           "bundle_confidence": 0.96,
+          "workflow_bundle_source": "process-skill",
           "progress_anchor_recommended": "docs/progress/MASTER.md"
         }
       }

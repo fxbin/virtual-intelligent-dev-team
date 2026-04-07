@@ -237,18 +237,29 @@ def _verify_iteration(result: dict[str, object]) -> dict[str, object]:
 def _verify_workflow_bundle(result: dict[str, object]) -> dict[str, object]:
     bundle = result.get("workflow_bundle")
     bundle_confidence = result.get("bundle_confidence")
+    bundle_source = result.get("workflow_bundle_source")
     progress_anchor = result.get("progress_anchor_recommended")
     resume_artifacts = result.get("resume_artifacts", [])
     workflow_steps = result.get("workflow_steps", [])
     numeric_confidence = float(bundle_confidence) if isinstance(bundle_confidence, (int, float)) else 0.0
+    source_text = str(bundle_source) if isinstance(bundle_source, str) else ""
+    source_explanations = {
+        "process-skill": "The workflow bundle is activated by an explicit process skill, so it should be treated as the primary execution journey.",
+        "keyword+lead": "The workflow bundle is activated by the combination of task keywords and a high-risk lead, so it is evidence-backed but not purely process-driven.",
+        "lead+keyword": "The workflow bundle is activated by both the selected lead and matching request keywords, so the journey is strongly anchored in task semantics.",
+        "lead-default": "The workflow bundle is activated mainly by the selected lead's default journey, so keep the route but avoid overstating it as a hard process lane.",
+        "fallback": "The workflow bundle is only a lightweight fallback and should not be treated as a strong process commitment.",
+    }
+    known_source = source_text in source_explanations
     allowed = (
         isinstance(bundle, str)
         and bundle not in {"", "direct-execution"}
         and numeric_confidence >= 0.6
+        and known_source
     )
     if allowed:
-        summary = f"Workflow bundle `{bundle}` is active for this request."
-        next_step = "Follow the workflow bundle first, then use the recommended progress anchor to resume safely."
+        summary = f"Workflow bundle `{bundle}` is active for this request (source: {source_text})."
+        next_step = "Follow the workflow bundle first, use the source explanation to justify the journey, then use the recommended progress anchor to resume safely."
     else:
         summary = "No special workflow bundle is required for this request."
         next_step = "Keep execution lightweight and follow the lead plus active process skills only."
@@ -258,6 +269,11 @@ def _verify_workflow_bundle(result: dict[str, object]) -> dict[str, object]:
         "details": {
             "workflow_bundle": bundle,
             "bundle_confidence": numeric_confidence,
+            "workflow_bundle_source": source_text,
+            "workflow_bundle_source_explanation": source_explanations.get(
+                source_text,
+                "Unknown workflow bundle source. Re-check the router contract before treating the bundle as authoritative.",
+            ),
             "progress_anchor_recommended": progress_anchor,
             "resume_artifacts": resume_artifacts,
             "workflow_steps": workflow_steps,
@@ -378,6 +394,7 @@ def verify_action(
             "needs_iteration": result.get("needs_iteration"),
             "workflow_bundle": result.get("workflow_bundle"),
             "bundle_confidence": result.get("bundle_confidence"),
+            "workflow_bundle_source": result.get("workflow_bundle_source"),
             "progress_anchor_recommended": result.get("progress_anchor_recommended"),
             "resume_artifacts": result.get("resume_artifacts"),
         },

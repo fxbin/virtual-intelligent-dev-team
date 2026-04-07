@@ -65,6 +65,55 @@ def format_missing(value: object, language: str) -> str:
     return "无" if language == "zh" else "n/a"
 
 
+def localize_workflow_reason(bundle: str, reason: str, language: str) -> str:
+    if language != "zh":
+        return reason
+    translations = {
+        "ship-hold-remediate": "当前请求明确以正式发布判断或验收为中心，应先走 release gate。",
+        "plan-first-build": "当前请求属于重写、迁移或先规划后开发，应先产出 planning pack 和持久化进度锚点。",
+        "root-cause-remediate": "当前请求需要基于证据做诊断或有边界迭代，应保留验证证据与回滚决策。",
+        "audit-fix-deliver": "当前请求以审计或 review 为主，应先给出 findings，再决定修复与交付。",
+        "direct-execution": "当前请求没有命中更强的流程旅程，保持轻量直执行即可。",
+    }
+    return translations.get(bundle, reason)
+
+
+def localize_workflow_steps(bundle: str, steps: list[str], language: str) -> list[str]:
+    if language != "zh":
+        return steps
+    translations = {
+        "ship-hold-remediate": [
+            "先运行正式 release gate",
+            "基于明确证据回答 ship 或 hold",
+            "如果是 hold，产出下一轮 remediation brief",
+            "后续通过 release-gate 工件恢复，而不是从头重启",
+        ],
+        "plan-first-build": [
+            "先锁定改造范围、目标和约束",
+            "生成 planning pack",
+            "创建或刷新进度锚点",
+            "planning pack 建好后再回到正常交付路由",
+        ],
+        "root-cause-remediate": [
+            "先冻结猜测并总结当前已知信息",
+            "补齐缺失证据，或执行下一步验证性检查",
+            "一次只验证一个 remediation 假设",
+            "根据证据做 keep、retry、rollback 或 stop",
+        ],
+        "audit-fix-deliver": [
+            "先给出 findings",
+            "把 blocker 和后续优化项拆开",
+            "定义最小且安全的修复动作",
+            "只有在明确要求 commit、push 或 PR 时再进入 Git 交付",
+        ],
+        "direct-execution": [
+            "保持路由轻量",
+            "由当前主责执行最小下一步",
+        ],
+    }
+    return translations.get(bundle, steps)
+
+
 def build_response_pack(
     result: dict[str, object],
     template: str = "auto",
@@ -110,6 +159,16 @@ def build_response_pack(
     needs_iteration = bool(result.get("needs_iteration"))
     selected_template = infer_template(result) if template == "auto" else template
     selected_language = infer_language(result) if language == "auto" else language
+    localized_workflow_reason = localize_workflow_reason(
+        workflow_bundle,
+        workflow_reason,
+        selected_language,
+    )
+    localized_workflow_steps = localize_workflow_steps(
+        workflow_bundle,
+        [str(item) for item in workflow_steps],
+        selected_language,
+    )
 
     none_text = "无" if selected_language == "zh" else "none"
     not_required_text = "当前不需要" if selected_language == "zh" else "not required"
@@ -126,7 +185,7 @@ def build_response_pack(
             f"- 协作智能体：{', '.join(assistants) if assistants else none_text}",
             f"- 工作流 bundle：{workflow_bundle}",
             f"- bundle 置信度：{bundle_confidence}（来源：{workflow_bundle_source}）",
-            f"- 路由原因：{workflow_reason or '详见路由结果。'}",
+            f"- 路由原因：{localized_workflow_reason or '详见路由结果。'}",
             "",
         ]
     else:
@@ -136,7 +195,7 @@ def build_response_pack(
             f"- Assistant agents: {', '.join(assistants) if assistants else none_text}",
             f"- Workflow bundle: {workflow_bundle}",
             f"- Bundle confidence: {bundle_confidence} ({workflow_bundle_source})",
-            f"- Why this route: {workflow_reason or 'See router reasoning.'}",
+            f"- Why this route: {localized_workflow_reason or 'See router reasoning.'}",
             "",
         ]
 
@@ -243,7 +302,7 @@ def build_response_pack(
                 ),
                 "",
                 "## 下一步",
-                f"- 最小可执行动作：{workflow_steps[0] if workflow_steps else direct_step_text}",
+                f"- 最小可执行动作：{localized_workflow_steps[0] if localized_workflow_steps else direct_step_text}",
                 f"- 进度锚点：{progress_anchor or not_required_text}",
                 "- 恢复工件：",
                 _bullet_list([str(item) for item in resume_artifacts], none_text),
@@ -273,7 +332,7 @@ def build_response_pack(
                 ),
                 "",
                 "## Next Step",
-                f"- Smallest executable action: {workflow_steps[0] if workflow_steps else direct_step_text}",
+                f"- Smallest executable action: {localized_workflow_steps[0] if localized_workflow_steps else direct_step_text}",
                 f"- Progress anchor: {progress_anchor or not_required_text}",
                 "- Resume artifacts:",
                 _bullet_list([str(item) for item in resume_artifacts], none_text),
@@ -302,7 +361,7 @@ def build_response_pack(
                     "- 已确认路径：先做轻量开发前规划，再进入实现。",
                     f"- 推荐锚点：{progress_anchor or 'docs/progress/MASTER.md'}",
                     "- 工作流步骤：",
-                    _bullet_list([str(item) for item in workflow_steps], none_text),
+                    _bullet_list(localized_workflow_steps, none_text),
                     "",
                 ]
             )
@@ -313,7 +372,7 @@ def build_response_pack(
                     "- Confirmed path: lightweight pre-development planning before implementation.",
                     f"- Recommended anchor: {progress_anchor or 'docs/progress/MASTER.md'}",
                     "- Workflow steps:",
-                    _bullet_list([str(item) for item in workflow_steps], none_text),
+                    _bullet_list(localized_workflow_steps, none_text),
                     "",
                 ]
             )
