@@ -3457,6 +3457,27 @@ class ValidatorScriptTests(unittest.TestCase):
                 msg="\n".join(result["errors"]),
             )
 
+    def test_contract_lint_fails_on_sidecar_schema_version_mismatch_fixture(self) -> None:
+        with make_tempdir() as tmp:
+            fixture_dir = Path(tmp) / "virtual-intelligent-dev-team-fixture"
+            shutil.copytree(SKILL_DIR, fixture_dir)
+            schema_path = fixture_dir / "references" / "response-pack-sidecar-schema.md"
+            schema_path.write_text(
+                schema_path.read_text(encoding="utf-8").replace(
+                    "版本：`response-pack-sidecar/v1`",
+                    "版本：`response-pack-sidecar/v999`",
+                ),
+                encoding="utf-8",
+            )
+
+            result = contract_lint.lint_contract(fixture_dir)
+
+            self.assertFalse(result["ok"])
+            self.assertTrue(
+                any("Sidecar schema version mismatch" in message for message in result["errors"]),
+                msg="\n".join(result["errors"]),
+            )
+
     def test_validator_script_passes(self) -> None:
         proc = subprocess.run(
             [sys.executable, str(VALIDATOR_SCRIPT)],
@@ -3502,11 +3523,31 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
             repo_path=REPO_ROOT,
         )
         markdown = response_pack.build_response_pack(result)
+        payload = response_pack.build_response_pack_payload(result)
 
         ok, detail = benchmark_runner.parse_expectation(
             "response_pack contains Workflow source explanation: This bundle is activated by an explicit process skill, so it should be treated as the primary execution journey.",
             result,
             markdown,
+            payload,
+        )
+
+        self.assertTrue(ok, detail)
+
+    def test_benchmark_expectation_supports_response_pack_json(self) -> None:
+        result = route_request.route_request(
+            "Rewrite this project in Rust, but plan before coding and keep a progress tracker for later sessions.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+        markdown = response_pack.build_response_pack(result)
+        payload = response_pack.build_response_pack_payload(result)
+
+        ok, detail = benchmark_runner.parse_expectation(
+            "response_pack_json resume.progress_anchor is docs/progress/MASTER.md",
+            result,
+            markdown,
+            payload,
         )
 
         self.assertTrue(ok, detail)

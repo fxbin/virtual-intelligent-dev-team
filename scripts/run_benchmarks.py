@@ -164,14 +164,60 @@ def read_nested(data: object, path: str) -> object:
     return current
 
 
+def parse_field_expectation(
+    expectation: str,
+    data: object,
+    *,
+    context_label: str,
+) -> tuple[bool, str]:
+    if " contains " in expectation:
+        field, expected = expectation.split(" contains ", 1)
+        value = read_nested(data, field.strip())
+        if isinstance(value, list):
+            return expected in value, f"{context_label}.{field.strip()}={value!r}"
+        if isinstance(value, str):
+            return expected in value, f"{context_label}.{field.strip()}={value!r}"
+        return False, f"{context_label}.{field.strip()}={value!r}"
+
+    if " is not " in expectation:
+        field, expected = expectation.split(" is not ", 1)
+        value = read_nested(data, field.strip())
+        return str(value) != expected, f"{context_label}.{field.strip()}={value!r}"
+
+    if " is " in expectation:
+        field, expected = expectation.split(" is ", 1)
+        value = read_nested(data, field.strip())
+        if expected == "true":
+            return value is True, f"{context_label}.{field.strip()}={value!r}"
+        if expected == "false":
+            return value is False, f"{context_label}.{field.strip()}={value!r}"
+        if expected == "0.0":
+            return float(value) == 0.0, f"{context_label}.{field.strip()}={value!r}"
+        if expected == "regular track":
+            return str(value) == "regular track", f"{context_label}.{field.strip()}={value!r}"
+        if expected == "fast track":
+            return str(value) == "fast track", f"{context_label}.{field.strip()}={value!r}"
+        return str(value) == expected, f"{context_label}.{field.strip()}={value!r}"
+
+    return False, f"unsupported expectation for {context_label}"
+
+
 def parse_expectation(
     expectation: str,
     result: dict[str, object],
     response_pack_markdown: str,
+    response_pack_payload: dict[str, object],
 ) -> tuple[bool, str]:
     if expectation.startswith("response_pack contains "):
         expected = expectation.removeprefix("response_pack contains ")
         return expected in response_pack_markdown, f"response_pack={response_pack_markdown!r}"
+    if expectation.startswith("response_pack_json "):
+        inner_expectation = expectation.removeprefix("response_pack_json ")
+        return parse_field_expectation(
+            inner_expectation,
+            response_pack_payload,
+            context_label="response_pack_json",
+        )
     if expectation == "assistant_agents is empty":
         value = result.get("assistant_agents")
         return value == [], f"assistant_agents={value!r}"
@@ -194,34 +240,7 @@ def parse_expectation(
             return False, f"process_plan[0].commands={commands!r}"
         return expected in commands, f"process_plan[0].commands={commands!r}"
 
-    if " contains " in expectation:
-        field, expected = expectation.split(" contains ", 1)
-        value = read_nested(result, field.strip())
-        if isinstance(value, list):
-            return expected in value, f"{field.strip()}={value!r}"
-        return False, f"{field.strip()}={value!r}"
-
-    if " is not " in expectation:
-        field, expected = expectation.split(" is not ", 1)
-        value = read_nested(result, field.strip())
-        return str(value) != expected, f"{field.strip()}={value!r}"
-
-    if " is " in expectation:
-        field, expected = expectation.split(" is ", 1)
-        value = read_nested(result, field.strip())
-        if expected == "true":
-            return value is True, f"{field.strip()}={value!r}"
-        if expected == "false":
-            return value is False, f"{field.strip()}={value!r}"
-        if expected == "0.0":
-            return float(value) == 0.0, f"{field.strip()}={value!r}"
-        if expected == "regular track":
-            return str(value) == "regular track", f"{field.strip()}={value!r}"
-        if expected == "fast track":
-            return str(value) == "fast track", f"{field.strip()}={value!r}"
-        return str(value) == expected, f"{field.strip()}={value!r}"
-
-    return False, "unsupported expectation"
+    return parse_field_expectation(expectation, result, context_label="result")
 
 
 def evaluate_evals(config: dict[str, object]) -> dict[str, object]:
@@ -243,9 +262,15 @@ def evaluate_evals(config: dict[str, object]) -> dict[str, object]:
             expectations = []
         result = route_request.route_request(prompt, config, repo_path=REPO_ROOT)
         response_pack_markdown = response_pack.build_response_pack(result)
+        response_pack_payload = response_pack.build_response_pack_payload(result)
         failures: list[str] = []
         for raw in expectations:
-            ok, detail = parse_expectation(str(raw), result, response_pack_markdown)
+            ok, detail = parse_expectation(
+                str(raw),
+                result,
+                response_pack_markdown,
+                response_pack_payload,
+            )
             if not ok:
                 failures.append(f"{raw} [{detail}]")
         raw_categories = item.get("categories")

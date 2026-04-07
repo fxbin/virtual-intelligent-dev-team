@@ -13,11 +13,15 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 ROUTE_SCRIPT = SCRIPT_DIR / "route_request.py"
+RESPONSE_PACK_SCRIPT = SCRIPT_DIR / "generate_response_pack.py"
+RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
 CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 VERSION_PATH = SKILL_DIR / "VERSION"
+SIDECAR_SCHEMA_PATH = SKILL_DIR / "references" / "response-pack-sidecar-schema.md"
 MARKDOWN_PATH_RE = re.compile(r"(?<![\w./-])((?:assets|references|scripts)/[A-Za-z0-9_./-]+\.(?:md|json|py))(?![\w./-])")
 BARE_REFERENCE_RE = re.compile(r"^\s*-\s+`([A-Za-z0-9_.-]+\.(?:md|json))`\s*$")
 SCRIPT_COMMAND_RE = re.compile(r"python\s+(scripts/[A-Za-z0-9_.-]+\.py)\b")
+SCHEMA_VERSION_RE = re.compile(r"版本：`([^`]+)`")
 
 
 def load_module(name: str, path: Path):
@@ -27,9 +31,6 @@ def load_module(name: str, path: Path):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
-
-
-route_request = load_module("virtual_team_contract_lint_route_request", ROUTE_SCRIPT)
 
 
 def load_json(path: Path) -> dict[str, object]:
@@ -66,10 +67,34 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
     resolved_skill_dir = skill_dir.resolve() if skill_dir is not None else SKILL_DIR
     config_path = resolved_skill_dir / "references" / "routing-rules.json"
     version_path = resolved_skill_dir / "VERSION"
+    response_pack_script = resolved_skill_dir / "scripts" / "generate_response_pack.py"
+    response_contract_script = resolved_skill_dir / "scripts" / "response_contract.py"
+    sidecar_schema_path = resolved_skill_dir / "references" / "response-pack-sidecar-schema.md"
+    route_script = resolved_skill_dir / "scripts" / "route_request.py"
     index_paths = [
         resolved_skill_dir / "references" / "tooling-command-index.md",
         resolved_skill_dir / "references" / "runtime-routing-index.md",
     ]
+    local_route_request = load_module(
+        f"virtual_team_contract_lint_route_request_{resolved_skill_dir.name}",
+        route_script,
+    )
+    local_response_pack = (
+        load_module(
+            f"virtual_team_contract_lint_response_pack_{resolved_skill_dir.name}",
+            response_pack_script,
+        )
+        if response_pack_script.exists()
+        else None
+    )
+    local_response_contract = (
+        load_module(
+            f"virtual_team_contract_lint_response_contract_{resolved_skill_dir.name}",
+            response_contract_script,
+        )
+        if response_contract_script.exists()
+        else None
+    )
     config = load_json(config_path)
     errors: list[str] = []
     checks: list[dict[str, object]] = []
@@ -82,6 +107,94 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
         f"VERSION mismatch: `{version}` != routing-rules meta.version `{config_version}`. Fix both files together before release.",
     )
     checks.append({"name": "version-sync", "passed": version == config_version})
+
+    _check(
+        response_pack_script.exists(),
+        errors,
+        "Missing scripts/generate_response_pack.py. Restore the response-pack generator before release.",
+    )
+    _check(
+        response_contract_script.exists(),
+        errors,
+        "Missing scripts/response_contract.py. Restore the shared response contract helper before release.",
+    )
+    _check(
+        sidecar_schema_path.exists(),
+        errors,
+        "Missing references/response-pack-sidecar-schema.md. Restore the sidecar schema document before release.",
+    )
+    checks.append(
+        {
+            "name": "response-pack-sidecar-files",
+            "passed": response_pack_script.exists() and response_contract_script.exists() and sidecar_schema_path.exists(),
+        }
+    )
+
+    schema_constant = getattr(local_response_contract, "SIDECAR_SCHEMA_VERSION", "")
+    _check(
+        isinstance(schema_constant, str) and schema_constant.strip() != "",
+        errors,
+        "response_contract.py must expose a non-empty SIDECAR_SCHEMA_VERSION constant.",
+    )
+
+    schema_doc_version = ""
+    if sidecar_schema_path.exists():
+        schema_doc_text = sidecar_schema_path.read_text(encoding="utf-8")
+        match = SCHEMA_VERSION_RE.search(schema_doc_text)
+        schema_doc_version = match.group(1).strip() if match else ""
+        _check(
+            schema_doc_version != "",
+            errors,
+            "response-pack-sidecar-schema.md must declare its schema version in the `版本：` header.",
+        )
+        if isinstance(schema_constant, str) and schema_constant.strip():
+            _check(
+                schema_doc_version == schema_constant,
+                errors,
+                f"Sidecar schema version mismatch: schema doc `{schema_doc_version}` != response_contract `{schema_constant}`.",
+            )
+
+    build_payload = getattr(local_response_pack, "build_response_pack_payload", None)
+    _check(
+        callable(build_payload),
+        errors,
+        "generate_response_pack.py must expose build_response_pack_payload for machine-readable response packs.",
+    )
+    payload: dict[str, object] = {}
+    if callable(build_payload):
+        payload = build_payload({})
+        _check(
+            payload.get("schema_version") == schema_constant,
+            errors,
+            "build_response_pack_payload must expose schema_version that matches response_contract.SIDECAR_SCHEMA_VERSION.",
+        )
+        required_sections = {
+            "team_dispatch",
+            "execution_result",
+            "evidence",
+            "next_action",
+            "resume",
+            "git_workflow",
+            "governance",
+        }
+        missing_sections = sorted(section for section in required_sections if section not in payload)
+        _check(
+            len(missing_sections) == 0,
+            errors,
+            f"build_response_pack_payload is missing required top-level sections: {missing_sections}.",
+        )
+        checks.append(
+            {
+                "name": "response-pack-sidecar-contract",
+                "passed": len(missing_sections) == 0 and payload.get("schema_version") == schema_constant,
+                "details": {
+                    "schema_version": payload.get("schema_version"),
+                    "required_sections": sorted(required_sections),
+                },
+            }
+        )
+    else:
+        checks.append({"name": "response-pack-sidecar-contract", "passed": False})
 
     lead_agents = config.get("process_skill_lead_agents", {})
     process_rules = config.get("process_skill_rules", {})
@@ -124,7 +237,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
         "git-workflow": {"needs_git_workflow": True},
     }
     for skill_name, flags in skill_flags.items():
-        plan = route_request.build_process_plan(repo_strategy=repo_strategy, **flags)
+        plan = local_route_request.build_process_plan(repo_strategy=repo_strategy, **flags)
         matching = [item for item in plan if isinstance(item, dict) and item.get("skill") == skill_name]
         _check(
             len(matching) == 1,

@@ -1008,10 +1008,10 @@
         "workflow_bundle is ship-hold-remediate",
         "progress_anchor_recommended is evals/release-gate/release-gate-report.md",
         "resume_artifacts contains evals/release-gate/next-iteration-brief.json",
-        "response_pack contains Workflow source explanation: This bundle is activated by an explicit process skill, so it should be treated as the primary execution journey.",
-        "response_pack contains ## Evidence",
-        "response_pack contains ## Next Action",
-        "response_pack contains ## Resume"
+        "response_pack_json schema_version is response-pack-sidecar/v1",
+        "response_pack_json evidence.workflow_source_explanation contains primary execution journey",
+        "response_pack_json next_action.smallest_executable_action contains run the release gate first",
+        "response_pack_json resume.progress_anchor is evals/release-gate/release-gate-report.md"
       ]
     },
     {
@@ -1027,7 +1027,8 @@
         "lead_agent is Code Audit Council",
         "needs_git_workflow is false",
         "workflow_bundle is audit-fix-deliver",
-        "response_pack contains Workflow source explanation: This bundle is activated by both the selected lead and matching request keywords, so the journey is strongly anchored in task semantics."
+        "response_pack_json team_dispatch.workflow_bundle_source is lead+keyword",
+        "response_pack_json evidence.workflow_source_explanation contains strongly anchored in task semantics"
       ]
     },
     {
@@ -1061,10 +1062,10 @@
       "expectations": [
         "lead_agent is Sentinel Architect (NB)",
         "workflow_bundle is plan-first-build",
-        "response_pack contains 工作流来源解释：这条 bundle 由显式 process skill 激活，应视为当前任务的主执行旅程。",
-        "response_pack contains ## 证据与约束",
-        "response_pack contains ## 下一动作",
-        "response_pack contains ## 恢复信息"
+        "response_pack_json language is zh",
+        "response_pack_json evidence.workflow_source_explanation contains 主执行旅程",
+        "response_pack_json resume.progress_anchor is docs/progress/MASTER.md",
+        "response_pack_json next_action.current_owner is Sentinel Architect (NB)"
       ]
     }
   ]
