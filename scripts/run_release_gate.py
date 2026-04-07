@@ -71,6 +71,7 @@ def load_benchmark_fixture(path: Path) -> dict[str, object]:
         raise RuntimeError(f"benchmark fixture json_report does not exist: {json_report}")
     if not markdown_report.exists():
         raise RuntimeError(f"benchmark fixture markdown_report does not exist: {markdown_report}")
+    response_contract.validate_benchmark_run_result(load_json(json_report))
     offline_drill_run = payload.get("offline_drill_run")
     if isinstance(offline_drill_run, dict):
         markdown = str(offline_drill_run.get("markdown_report", "")).strip()

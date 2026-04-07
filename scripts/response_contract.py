@@ -16,6 +16,8 @@ SKILL_DIR = SCRIPT_DIR.parent
 SIDECAR_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "response-pack-sidecar.schema.json"
 VERIFY_ACTION_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "verify-action-result.schema.json"
 RELEASE_GATE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "release-gate-result.schema.json"
+BENCHMARK_EVALS_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-evals.schema.json"
+BENCHMARK_RUN_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-run-result.schema.json"
 
 
 @lru_cache(maxsize=None)
@@ -69,6 +71,44 @@ def validate_release_gate_result(payload: dict[str, object]) -> None:
         payload,
         schema_path=RELEASE_GATE_SCHEMA_JSON_PATH,
         label="release_gate result",
+    )
+
+
+def validate_benchmark_evals_payload(payload: dict[str, object]) -> None:
+    validate_payload_against_schema(
+        payload,
+        schema_path=BENCHMARK_EVALS_SCHEMA_JSON_PATH,
+        label="benchmark evals",
+    )
+    evals = payload.get("evals", [])
+    if not isinstance(evals, list):
+        raise ValueError("benchmark evals schema validation failed at evals: expected an array of eval cases")
+
+    seen_ids: set[int] = set()
+    duplicate_ids: list[int] = []
+    for item in evals:
+        if not isinstance(item, dict):
+            continue
+        eval_id = item.get("id")
+        if not isinstance(eval_id, int):
+            continue
+        if eval_id in seen_ids and eval_id not in duplicate_ids:
+            duplicate_ids.append(eval_id)
+            continue
+        seen_ids.add(eval_id)
+
+    if duplicate_ids:
+        raise ValueError(
+            "benchmark evals schema validation failed at evals: duplicate eval ids "
+            + ", ".join(str(item) for item in duplicate_ids)
+        )
+
+
+def validate_benchmark_run_result(payload: dict[str, object]) -> None:
+    validate_payload_against_schema(
+        payload,
+        schema_path=BENCHMARK_RUN_RESULT_SCHEMA_JSON_PATH,
+        label="benchmark run result",
     )
 
 

@@ -963,6 +963,14 @@ class IterationHelperTests(unittest.TestCase):
         result = benchmark_compare.compare_results(baseline=baseline, candidate=candidate)
         self.assertEqual("rollback", result["decision"])
 
+    def test_compare_benchmark_load_json_rejects_invalid_report_fixture(self) -> None:
+        with make_tempdir() as tmp:
+            report = Path(tmp) / "invalid-benchmark.json"
+            report.write_text(json.dumps({"summary": {"overall_passed": True}}, ensure_ascii=False), encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "benchmark run result schema validation failed"):
+                benchmark_compare.load_json(report)
+
     def test_register_baseline_creates_registry_and_stored_report(self) -> None:
         with make_tempdir() as tmp:
             workspace = Path(tmp) / "rounds"
@@ -988,6 +996,23 @@ class IterationHelperTests(unittest.TestCase):
 
             self.assertTrue(Path(result["registry"]).exists())
             self.assertTrue(Path(result["stored_report"]).exists())
+
+    def test_register_baseline_rejects_invalid_report_fixture(self) -> None:
+        with make_tempdir() as tmp:
+            workspace = Path(tmp) / "rounds"
+            source_report = workspace / "source.json"
+            source_report.parent.mkdir(parents=True, exist_ok=True)
+            source_report.write_text(
+                json.dumps({"summary": {"overall_passed": True}}, ensure_ascii=False),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "benchmark run result schema validation failed"):
+                baseline_registry.register_baseline(
+                    workspace=workspace,
+                    label="stable",
+                    report_path=source_report,
+                )
 
     def test_run_iteration_cycle_writes_state_and_open_loops(self) -> None:
         with make_tempdir() as tmp:
@@ -3563,6 +3588,23 @@ class ValidatorScriptTests(unittest.TestCase):
                 msg="\n".join(result["errors"]),
             )
 
+    def test_contract_lint_fails_on_duplicate_eval_id_fixture(self) -> None:
+        with make_tempdir() as tmp:
+            fixture_dir = Path(tmp) / "virtual-intelligent-dev-team-fixture"
+            shutil.copytree(SKILL_DIR, fixture_dir)
+            evals_path = fixture_dir / "evals" / "evals.json"
+            payload = json.loads(evals_path.read_text(encoding="utf-8"))
+            payload["evals"][1]["id"] = payload["evals"][0]["id"]
+            evals_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+            result = contract_lint.lint_contract(fixture_dir)
+
+            self.assertFalse(result["ok"])
+            self.assertTrue(
+                any("benchmark evals contract validation failed" in message for message in result["errors"]),
+                msg="\n".join(result["errors"]),
+            )
+
     def test_validator_script_passes(self) -> None:
         proc = subprocess.run(
             [sys.executable, str(VALIDATOR_SCRIPT)],
@@ -3785,18 +3827,23 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
             self.assertTrue(result["summary"]["overall_passed"])
             self.assertIn("offline_drill_run", result)
             self.assertTrue(Path(result["json_report"]).exists())
+            report_payload = json.loads(Path(result["json_report"]).read_text(encoding="utf-8"))
+            response_contract.validate_benchmark_run_result(report_payload)
             report = Path(result["markdown_report"]).read_text(encoding="utf-8")
             self.assertIn("Offline loop drill", report)
 
     def test_evaluate_evals_supports_verify_action_and_release_gate_runners(self) -> None:
         config = load_config()
         fixture = {
+            "skill_name": "virtual-intelligent-dev-team",
             "evals": [
                 {
                     "id": 9001,
                     "runner": "verify_action",
                     "check": "git-workflow",
                     "prompt": "Refactor this Flask service and then commit and push the branch.",
+                    "expected_output": "verify_action runner should stay schema-valid for git-workflow decisions.",
+                    "files": [],
                     "expectations": [
                         "allowed is true",
                         "verify_action_json details.needs_git_workflow is true"
@@ -3807,6 +3854,8 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
                     "id": 9002,
                     "runner": "release_gate",
                     "prompt": "Release gate fixture hold path",
+                    "expected_output": "release_gate runner should return a hold decision when offline drill evidence fails.",
+                    "files": [],
                     "release_gate_summary": {
                         "tests_passed": True,
                         "validator_passed": True,
@@ -3831,6 +3880,59 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
 
         self.assertEqual(2, result["passed"])
         self.assertEqual(2, result["total"])
+
+    def test_evaluate_evals_rejects_invalid_verify_action_fixture_before_execution(self) -> None:
+        config = load_config()
+        fixture = {
+            "skill_name": "virtual-intelligent-dev-team",
+            "evals": [
+                {
+                    "id": 9101,
+                    "runner": "verify_action",
+                    "prompt": "Refactor this Flask service and then commit and push the branch.",
+                    "expected_output": "invalid fixture should fail schema validation before execution.",
+                    "files": [],
+                    "expectations": ["allowed is true"],
+                    "categories": ["git-workflow"]
+                }
+            ]
+        }
+        with make_tempdir() as tmp:
+            fixture_path = Path(tmp) / "evals.json"
+            fixture_path.write_text(json.dumps(fixture, ensure_ascii=False, indent=2), encoding="utf-8")
+            with mock.patch.object(benchmark_runner, "EVALS_PATH", fixture_path):
+                with self.assertRaisesRegex(ValueError, "benchmark evals schema validation failed"):
+                    benchmark_runner.evaluate_evals(config)
+
+    def test_evaluate_evals_rejects_duplicate_eval_ids_before_execution(self) -> None:
+        config = load_config()
+        fixture = {
+            "skill_name": "virtual-intelligent-dev-team",
+            "evals": [
+                {
+                    "id": 9201,
+                    "prompt": "Please review this Java GC issue and give recommendations.",
+                    "expected_output": "route runner baseline fixture.",
+                    "files": [],
+                    "expectations": ["lead_agent is Code Audit Council"],
+                    "categories": ["review"]
+                },
+                {
+                    "id": 9201,
+                    "prompt": "Design a Go plus Gin high-concurrency API gateway.",
+                    "expected_output": "duplicate id fixture should be rejected.",
+                    "files": [],
+                    "expectations": ["lead_agent is Technical Trinity"],
+                    "categories": ["backend-stack"]
+                }
+            ]
+        }
+        with make_tempdir() as tmp:
+            fixture_path = Path(tmp) / "evals.json"
+            fixture_path.write_text(json.dumps(fixture, ensure_ascii=False, indent=2), encoding="utf-8")
+            with mock.patch.object(benchmark_runner, "EVALS_PATH", fixture_path):
+                with self.assertRaisesRegex(ValueError, "duplicate eval ids"):
+                    benchmark_runner.evaluate_evals(config)
 
     def test_release_gate_holds_when_offline_drill_fails(self) -> None:
         with make_tempdir() as tmp:

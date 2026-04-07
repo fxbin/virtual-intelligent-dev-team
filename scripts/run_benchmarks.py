@@ -22,6 +22,7 @@ VALIDATOR_SCRIPT = SKILL_DIR / "scripts" / "validate_virtual_team.py"
 ROUTE_SCRIPT = SKILL_DIR / "scripts" / "route_request.py"
 OFFLINE_DRILL_SCRIPT = SKILL_DIR / "scripts" / "run_offline_loop_drill.py"
 RESPONSE_PACK_SCRIPT = SKILL_DIR / "scripts" / "generate_response_pack.py"
+RESPONSE_CONTRACT_SCRIPT = SKILL_DIR / "scripts" / "response_contract.py"
 VERIFY_ACTION_SCRIPT = SKILL_DIR / "scripts" / "verify_action.py"
 RELEASE_GATE_SCRIPT = SKILL_DIR / "scripts" / "run_release_gate.py"
 CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
@@ -41,6 +42,7 @@ def load_module(name: str, path: Path):
 route_request = load_module("virtual_team_route_request_benchmark", ROUTE_SCRIPT)
 offline_loop_drill = load_module("virtual_team_offline_loop_drill_benchmark", OFFLINE_DRILL_SCRIPT)
 response_pack = load_module("virtual_team_response_pack_benchmark", RESPONSE_PACK_SCRIPT)
+response_contract = load_module("virtual_team_response_contract_benchmark", RESPONSE_CONTRACT_SCRIPT)
 verify_action = load_module("virtual_team_verify_action_benchmark", VERIFY_ACTION_SCRIPT)
 MISSING = object()
 INTEGER_RE = re.compile(r"^-?\d+$")
@@ -342,6 +344,7 @@ def parse_expectation(
 
 def evaluate_evals(config: dict[str, object]) -> dict[str, object]:
     payload = load_json(EVALS_PATH)
+    response_contract.validate_benchmark_evals_payload(payload)
     evals = payload.get("evals", [])
     if not isinstance(evals, list):
         raise RuntimeError("evals.json evals must be a list")
@@ -626,6 +629,7 @@ def load_previous_result(path: Path) -> dict[str, object] | None:
     if not path.exists():
         return None
     data = load_json(path)
+    response_contract.validate_benchmark_run_result(data)
     if "eval_run" not in data or "summary" not in data:
         return None
     return data
@@ -729,6 +733,8 @@ def run_benchmark_suite(
         previous = load_previous_result(previous_output.resolve())
         if previous is not None:
             result["diff"] = build_diff(result, previous)
+
+    response_contract.validate_benchmark_run_result(result)
 
     json_path = output_dir / "benchmark-results.json"
     md_path = output_dir / "benchmark-report.md"

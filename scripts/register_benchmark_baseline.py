@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime
+import importlib.util
 import json
 import re
 import shutil
@@ -12,6 +13,20 @@ from pathlib import Path
 
 
 LABEL_PATTERN = re.compile(r"^[A-Za-z0-9._-]+$")
+SCRIPT_DIR = Path(__file__).resolve().parent
+RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
+
+
+def load_module(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Unable to load module from {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+response_contract = load_module("virtual_team_register_baseline_response_contract", RESPONSE_CONTRACT_SCRIPT)
 
 
 def load_json(path: Path) -> dict[str, object]:
@@ -19,6 +34,12 @@ def load_json(path: Path) -> dict[str, object]:
         data = json.load(file)
     if not isinstance(data, dict):
         raise RuntimeError(f"{path} must contain a JSON object")
+    return data
+
+
+def load_benchmark_report(path: Path) -> dict[str, object]:
+    data = load_json(path)
+    response_contract.validate_benchmark_run_result(data)
     return data
 
 
@@ -57,7 +78,7 @@ def register_baseline(
     if not LABEL_PATTERN.fullmatch(label):
         raise RuntimeError("baseline label must match [A-Za-z0-9._-]+")
 
-    payload = load_json(report_path)
+    payload = load_benchmark_report(report_path)
     baselines_dir = workspace / "baselines"
     registry_path = baselines_dir / "registry.json"
     baseline_dir = baselines_dir / label

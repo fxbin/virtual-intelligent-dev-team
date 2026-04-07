@@ -4,8 +4,25 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 from pathlib import Path
+
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
+
+
+def load_module(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Unable to load module from {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+response_contract = load_module("virtual_team_compare_benchmark_response_contract", RESPONSE_CONTRACT_SCRIPT)
 
 
 def load_json(path: Path) -> dict[str, object]:
@@ -13,6 +30,7 @@ def load_json(path: Path) -> dict[str, object]:
         data = json.load(file)
     if not isinstance(data, dict):
         raise RuntimeError(f"{path} must contain a JSON object")
+    response_contract.validate_benchmark_run_result(data)
     return data
 
 

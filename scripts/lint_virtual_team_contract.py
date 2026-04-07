@@ -21,10 +21,13 @@ VERIFY_ACTION_SCRIPT = SCRIPT_DIR / "verify_action.py"
 RELEASE_GATE_SCRIPT = SCRIPT_DIR / "run_release_gate.py"
 CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 VERSION_PATH = SKILL_DIR / "VERSION"
+BENCHMARK_EVALS_PATH = SKILL_DIR / "evals" / "evals.json"
 SIDECAR_SCHEMA_PATH = SKILL_DIR / "references" / "response-pack-sidecar-schema.md"
 SIDECAR_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "response-pack-sidecar.schema.json"
 VERIFY_ACTION_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "verify-action-result.schema.json"
 RELEASE_GATE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "release-gate-result.schema.json"
+BENCHMARK_EVALS_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-evals.schema.json"
+BENCHMARK_RUN_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-run-result.schema.json"
 MARKDOWN_PATH_RE = re.compile(r"(?<![\w./-])((?:assets|references|scripts)/[A-Za-z0-9_./-]+\.(?:md|json|py))(?![\w./-])")
 BARE_REFERENCE_RE = re.compile(r"^\s*-\s+`([A-Za-z0-9_.-]+\.(?:md|json))`\s*$")
 SCRIPT_COMMAND_RE = re.compile(r"python\s+(scripts/[A-Za-z0-9_.-]+\.py)\b")
@@ -78,10 +81,13 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
     response_contract_script = resolved_skill_dir / "scripts" / "response_contract.py"
     verify_action_script = resolved_skill_dir / "scripts" / "verify_action.py"
     release_gate_script = resolved_skill_dir / "scripts" / "run_release_gate.py"
+    benchmark_evals_path = resolved_skill_dir / "evals" / "evals.json"
     sidecar_schema_path = resolved_skill_dir / "references" / "response-pack-sidecar-schema.md"
     sidecar_schema_json_path = resolved_skill_dir / "references" / "response-pack-sidecar.schema.json"
     verify_action_schema_json_path = resolved_skill_dir / "references" / "verify-action-result.schema.json"
     release_gate_schema_json_path = resolved_skill_dir / "references" / "release-gate-result.schema.json"
+    benchmark_evals_schema_json_path = resolved_skill_dir / "references" / "benchmark-evals.schema.json"
+    benchmark_run_result_schema_json_path = resolved_skill_dir / "references" / "benchmark-run-result.schema.json"
     route_script = resolved_skill_dir / "scripts" / "route_request.py"
     index_paths = [
         resolved_skill_dir / "references" / "tooling-command-index.md",
@@ -166,6 +172,21 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
         errors,
         "Missing references/release-gate-result.schema.json. Restore the release_gate executable schema before release.",
     )
+    _check(
+        benchmark_evals_path.exists(),
+        errors,
+        "Missing evals/evals.json. Restore the benchmark eval catalog before release.",
+    )
+    _check(
+        benchmark_evals_schema_json_path.exists(),
+        errors,
+        "Missing references/benchmark-evals.schema.json. Restore the benchmark eval executable schema before release.",
+    )
+    _check(
+        benchmark_run_result_schema_json_path.exists(),
+        errors,
+        "Missing references/benchmark-run-result.schema.json. Restore the benchmark result executable schema before release.",
+    )
     checks.append(
         {
             "name": "response-contract-schema-files",
@@ -178,6 +199,9 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 and sidecar_schema_json_path.exists()
                 and verify_action_schema_json_path.exists()
                 and release_gate_schema_json_path.exists()
+                and benchmark_evals_path.exists()
+                and benchmark_evals_schema_json_path.exists()
+                and benchmark_run_result_schema_json_path.exists()
             ),
         }
     )
@@ -424,6 +448,119 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             "name": "release-gate-contract",
             "passed": len(release_gate_failures) == 0,
             "details": {"schema_json": str(release_gate_schema_json_path)},
+        }
+    )
+
+    benchmark_evals_failures: list[str] = []
+    if (
+        benchmark_evals_path.exists()
+        and local_response_contract is not None
+        and hasattr(local_response_contract, "validate_benchmark_evals_payload")
+    ):
+        try:
+            local_response_contract.validate_benchmark_evals_payload(load_json(benchmark_evals_path))
+        except Exception as exc:
+            benchmark_evals_failures.append(str(exc))
+    else:
+        benchmark_evals_failures.append("benchmark evals schema validator missing")
+    _check(
+        len(benchmark_evals_failures) == 0,
+        errors,
+        "benchmark evals contract validation failed: " + "; ".join(benchmark_evals_failures),
+    )
+    checks.append(
+        {
+            "name": "benchmark-evals-contract",
+            "passed": len(benchmark_evals_failures) == 0,
+            "details": {
+                "schema_json": str(benchmark_evals_schema_json_path),
+                "evals_json": str(benchmark_evals_path),
+            },
+        }
+    )
+
+    benchmark_run_result_failures: list[str] = []
+    if local_response_contract is not None and hasattr(local_response_contract, "validate_benchmark_run_result"):
+        benchmark_run_samples = [
+            (
+                "minimal",
+                {
+                    "summary": {"overall_passed": True},
+                    "eval_run": {"passed": 1, "total": 1},
+                },
+            ),
+            (
+                "full",
+                {
+                    "generated_at": "2026-04-08T12:00:00",
+                    "skill_name": "virtual-intelligent-dev-team",
+                    "test_run": {
+                        "command": ["python", "tests.py"],
+                        "cwd": str(resolved_skill_dir),
+                        "returncode": 0,
+                        "stdout": "",
+                        "stderr": "",
+                        "passed": True,
+                    },
+                    "validator_run": {
+                        "command": ["python", "validate.py"],
+                        "cwd": str(resolved_skill_dir),
+                        "returncode": 0,
+                        "stdout": "",
+                        "stderr": "",
+                        "passed": True,
+                    },
+                    "eval_run": {
+                        "passed": 1,
+                        "total": 1,
+                        "cases": [
+                            {
+                                "id": 1,
+                                "prompt": "fixture",
+                                "tags": ["contract-output"],
+                                "runner": "route",
+                                "lead_agent": "Technical Trinity",
+                                "assistant_agents": [],
+                                "response_pack_preview": "",
+                                "passed": True,
+                                "failures": [],
+                            }
+                        ],
+                        "category_breakdown": [
+                            {"category": "contract-output", "passed": 1, "total": 1, "pass_rate": 1.0}
+                        ],
+                    },
+                    "summary": {
+                        "tests_passed": True,
+                        "validator_passed": True,
+                        "evals_passed": True,
+                        "offline_drill_enabled": False,
+                        "offline_drill_passed": None,
+                        "overall_passed": True,
+                        "lead_distribution": {"Technical Trinity": 1},
+                        "assistant_distribution": {},
+                        "eval_failures": [],
+                    },
+                },
+            ),
+        ]
+        for sample_name, sample_payload in benchmark_run_samples:
+            try:
+                local_response_contract.validate_benchmark_run_result(sample_payload)
+            except Exception as exc:
+                benchmark_run_result_failures.append(f"{sample_name}: {exc}")
+    else:
+        benchmark_run_result_failures.append("benchmark run result schema validator missing")
+    _check(
+        len(benchmark_run_result_failures) == 0,
+        errors,
+        "benchmark run result contract validation failed: " + "; ".join(benchmark_run_result_failures),
+    )
+    checks.append(
+        {
+            "name": "benchmark-run-result-contract",
+            "passed": len(benchmark_run_result_failures) == 0,
+            "details": {"schema_json": str(benchmark_run_result_schema_json_path)},
         }
     )
 

@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:benchmark-evals.schema",
+  "title": "Virtual Intelligent Dev Team Benchmark Evals",
+  "type": "object",
+  "required": [
+    "skill_name",
+    "evals"
+  ],
+  "properties": {
+    "skill_name": {
+      "const": "virtual-intelligent-dev-team"
+    },
+    "evals": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/eval_case"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "string_array": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "release_gate_summary": {
+      "type": "object",
+      "required": [
+        "tests_passed",
+        "validator_passed",
+        "evals_passed",
+        "offline_drill_enabled",
+        "offline_drill_passed",
+        "overall_passed"
+      ],
+      "properties": {
+        "tests_passed": {
+          "type": "boolean"
+        },
+        "validator_passed": {
+          "type": "boolean"
+        },
+        "evals_passed": {
+          "type": "boolean"
+        },
+        "offline_drill_enabled": {
+          "type": "boolean"
+        },
+        "offline_drill_passed": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "overall_passed": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "eval_case": {
+      "type": "object",
+      "required": [
+        "id",
+        "prompt",
+        "expected_output",
+        "files",
+        "expectations",
+        "categories"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "runner": {
+          "enum": [
+            "route",
+            "verify_action",
+            "release_gate"
+          ]
+        },
+        "prompt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expected_output": {
+          "type": "string",
+          "minLength": 1
+        },
+        "files": {
+          "$ref": "#/$defs/string_array"
+        },
+        "expectations": {
+          "$ref": "#/$defs/string_array",
+          "minItems": 1
+        },
+        "categories": {
+          "$ref": "#/$defs/string_array",
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "check": {
+          "enum": [
+            "process-skill",
+            "git-workflow",
+            "worktree",
+            "lead-assignment",
+            "release-gate",
+            "iteration",
+            "workflow-bundle",
+            "assistant-delta-contract"
+          ]
+        },
+        "process_skill": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lead_agent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "assistant_agents": {
+          "$ref": "#/$defs/string_array"
+        },
+        "release_gate_summary": {
+          "$ref": "#/$defs/release_gate_summary"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "runner": {
+                "const": "verify_action"
+              }
+            },
+            "required": [
+              "runner"
+            ]
+          },
+          "then": {
+            "required": [
+              "check"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "check": {
+                "const": "process-skill"
+              }
+            },
+            "required": [
+              "check"
+            ]
+          },
+          "then": {
+            "required": [
+              "process_skill"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "check": {
+                "const": "lead-assignment"
+              }
+            },
+            "required": [
+              "check"
+            ]
+          },
+          "then": {
+            "required": [
+              "lead_agent"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "runner": {
+                "const": "release_gate"
+              }
+            },
+            "required": [
+              "runner"
+            ]
+          },
+          "then": {
+            "required": [
+              "release_gate_summary"
+            ]
+          }
+        }
+      ],
+      "additionalProperties": false
+    }
+  }
+}

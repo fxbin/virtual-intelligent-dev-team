@@ -1,0 +1,245 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:benchmark-run-result.schema",
+  "title": "Virtual Intelligent Dev Team Benchmark Run Result",
+  "type": "object",
+  "required": [
+    "summary",
+    "eval_run"
+  ],
+  "properties": {
+    "generated_at": {
+      "type": "string"
+    },
+    "skill_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "test_run": {
+      "$ref": "#/$defs/command_run"
+    },
+    "validator_run": {
+      "$ref": "#/$defs/command_run"
+    },
+    "eval_run": {
+      "$ref": "#/$defs/eval_run"
+    },
+    "offline_drill_run": {
+      "type": "object"
+    },
+    "summary": {
+      "$ref": "#/$defs/summary"
+    },
+    "diff": {
+      "type": "object"
+    },
+    "json_report": {
+      "type": "string"
+    },
+    "markdown_report": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "string_array": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "command_run": {
+      "type": "object",
+      "required": [
+        "passed",
+        "stdout",
+        "stderr",
+        "returncode"
+      ],
+      "properties": {
+        "command": {
+          "$ref": "#/$defs/string_array"
+        },
+        "cwd": {
+          "type": "string"
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "stdout": {
+          "type": "string"
+        },
+        "stderr": {
+          "type": "string"
+        },
+        "returncode": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "summary_failure": {
+      "type": "object",
+      "required": [
+        "id",
+        "prompt",
+        "failures"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "failures": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "summary_counter": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "overall_passed"
+      ],
+      "properties": {
+        "tests_passed": {
+          "type": "boolean"
+        },
+        "validator_passed": {
+          "type": "boolean"
+        },
+        "evals_passed": {
+          "type": "boolean"
+        },
+        "offline_drill_enabled": {
+          "type": "boolean"
+        },
+        "offline_drill_passed": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "overall_passed": {
+          "type": "boolean"
+        },
+        "lead_distribution": {
+          "$ref": "#/$defs/summary_counter"
+        },
+        "assistant_distribution": {
+          "$ref": "#/$defs/summary_counter"
+        },
+        "eval_failures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/summary_failure"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "eval_case": {
+      "type": "object",
+      "required": [
+        "id",
+        "prompt",
+        "passed",
+        "failures"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "tags": {
+          "$ref": "#/$defs/string_array"
+        },
+        "runner": {
+          "type": "string"
+        },
+        "lead_agent": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "assistant_agents": {
+          "$ref": "#/$defs/string_array"
+        },
+        "response_pack_preview": {
+          "type": "string"
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "failures": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "category_breakdown_item": {
+      "type": "object",
+      "required": [
+        "category",
+        "passed",
+        "total"
+      ],
+      "properties": {
+        "category": {
+          "type": "string"
+        },
+        "passed": {
+          "type": "integer"
+        },
+        "total": {
+          "type": "integer"
+        },
+        "pass_rate": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
+    "eval_run": {
+      "type": "object",
+      "required": [
+        "passed",
+        "total"
+      ],
+      "properties": {
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/eval_case"
+          }
+        },
+        "category_breakdown": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/category_breakdown_item"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

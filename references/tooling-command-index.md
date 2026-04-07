@@ -55,6 +55,15 @@ python scripts/verify_action.py --text "<user request>" --check assistant-delta-
 python scripts/lint_virtual_team_contract.py --pretty
 ```
 
+- benchmark eval 配置契约见：
+  - `references/benchmark-evals.schema.json`
+- benchmark 结果契约见：
+  - `references/benchmark-run-result.schema.json`
+- `run_benchmarks.py` / `lint_virtual_team_contract.py` 现在会先校验：
+  - `evals/evals.json` 的 JSON schema
+  - eval `id` 是否重复
+  - `benchmark-results.json` 的核心结构
+
 - Git guardrail
 
 ```bash
@@ -222,6 +231,11 @@ python scripts/run_release_gate.py --output-dir evals/release-gate --pretty
 
 - `run_release_gate.py` 的 JSON 结果契约见：
   - `references/release-gate-result.schema.json`
+
+- benchmark eval runner 支持：
+  - `route`
+  - `verify_action`
+  - `release_gate`
 
 - benchmark compare
 
