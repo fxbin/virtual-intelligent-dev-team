@@ -1070,6 +1070,51 @@
         "response_pack_json resume.progress_anchor is docs/progress/MASTER.md",
         "response_pack_json next_action.current_owner is Sentinel Architect (NB)"
       ]
+    },
+    {
+      "id": 65,
+      "runner": "verify_action",
+      "check": "git-workflow",
+      "categories": [
+        "git-workflow",
+        "contract-output"
+      ],
+      "prompt": "Refactor this Flask service and then commit and push the branch.",
+      "expected_output": "verify_action should expose a schema-valid git-workflow decision with stable router snapshot fields.",
+      "files": [],
+      "expectations": [
+        "allowed is true",
+        "verify_action_json details.needs_git_workflow is true",
+        "verify_action_json details.commands length is 12",
+        "verify_action_json router_snapshot.progress_anchor_recommended is null",
+        "verify_action_json explanation_card.workflow_bundle_source is fallback"
+      ]
+    },
+    {
+      "id": 66,
+      "runner": "release_gate",
+      "categories": [
+        "release-gate",
+        "contract-output"
+      ],
+      "prompt": "Release gate fixture: offline drill failure should hold and reopen the loop.",
+      "expected_output": "release_gate should expose a schema-valid hold result with reopened follow-up artifacts when offline drill fails.",
+      "files": [],
+      "release_gate_summary": {
+        "tests_passed": true,
+        "validator_passed": true,
+        "evals_passed": true,
+        "offline_drill_enabled": true,
+        "offline_drill_passed": false,
+        "overall_passed": false
+      },
+      "expectations": [
+        "decision is hold",
+        "release_gate_json ok is false",
+        "release_gate_json follow_up.loop_state is reopened",
+        "release_gate_json explanation_card.workflow_bundle is ship-hold-remediate",
+        "release_gate_json explanation_card.resume_artifacts length is 2"
+      ]
     }
   ]
 }

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import tempfile
 import subprocess
 import sys
 from collections import Counter, defaultdict
@@ -21,6 +22,8 @@ VALIDATOR_SCRIPT = SKILL_DIR / "scripts" / "validate_virtual_team.py"
 ROUTE_SCRIPT = SKILL_DIR / "scripts" / "route_request.py"
 OFFLINE_DRILL_SCRIPT = SKILL_DIR / "scripts" / "run_offline_loop_drill.py"
 RESPONSE_PACK_SCRIPT = SKILL_DIR / "scripts" / "generate_response_pack.py"
+VERIFY_ACTION_SCRIPT = SKILL_DIR / "scripts" / "verify_action.py"
+RELEASE_GATE_SCRIPT = SKILL_DIR / "scripts" / "run_release_gate.py"
 CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 EVALS_PATH = SKILL_DIR / "evals" / "evals.json"
 DEFAULT_OUTPUT_DIR = SKILL_DIR / "evals" / "benchmark-results"
@@ -38,6 +41,7 @@ def load_module(name: str, path: Path):
 route_request = load_module("virtual_team_route_request_benchmark", ROUTE_SCRIPT)
 offline_loop_drill = load_module("virtual_team_offline_loop_drill_benchmark", OFFLINE_DRILL_SCRIPT)
 response_pack = load_module("virtual_team_response_pack_benchmark", RESPONSE_PACK_SCRIPT)
+verify_action = load_module("virtual_team_verify_action_benchmark", VERIFY_ACTION_SCRIPT)
 MISSING = object()
 INTEGER_RE = re.compile(r"^-?\d+$")
 FLOAT_RE = re.compile(r"^-?\d+\.\d+$")
@@ -289,7 +293,10 @@ def parse_expectation(
     result: dict[str, object],
     response_pack_markdown: str,
     response_pack_payload: dict[str, object],
+    extra_payloads: dict[str, object] | None = None,
 ) -> tuple[bool, str]:
+    if extra_payloads is None:
+        extra_payloads = {}
     if expectation.startswith("response_pack contains "):
         expected = expectation.removeprefix("response_pack contains ")
         return expected in response_pack_markdown, f"response_pack={response_pack_markdown!r}"
@@ -300,6 +307,14 @@ def parse_expectation(
             response_pack_payload,
             context_label="response_pack_json",
         )
+    if expectation.startswith("verify_action_json "):
+        inner_expectation = expectation.removeprefix("verify_action_json ")
+        verify_payload = extra_payloads.get("verify_action_json", {})
+        return parse_field_expectation(inner_expectation, verify_payload, context_label="verify_action_json")
+    if expectation.startswith("release_gate_json "):
+        inner_expectation = expectation.removeprefix("release_gate_json ")
+        release_payload = extra_payloads.get("release_gate_json", {})
+        return parse_field_expectation(inner_expectation, release_payload, context_label="release_gate_json")
     if expectation == "assistant_agents is empty":
         value = result.get("assistant_agents")
         return value == [], f"assistant_agents={value!r}"
@@ -342,9 +357,72 @@ def evaluate_evals(config: dict[str, object]) -> dict[str, object]:
         expectations = item.get("expectations", [])
         if not isinstance(expectations, list):
             expectations = []
-        result = route_request.route_request(prompt, config, repo_path=REPO_ROOT)
-        response_pack_markdown = response_pack.build_response_pack(result)
-        response_pack_payload = response_pack.build_response_pack_payload(result)
+        runner = str(item.get("runner", "route")).strip() or "route"
+        response_pack_markdown = ""
+        response_pack_payload: dict[str, object] = {}
+        extra_payloads: dict[str, object] = {}
+
+        if runner == "route":
+            result = route_request.route_request(prompt, config, repo_path=REPO_ROOT)
+            response_pack_markdown = response_pack.build_response_pack(result)
+            response_pack_payload = response_pack.build_response_pack_payload(result)
+        elif runner == "verify_action":
+            check = str(item.get("check", "")).strip()
+            assistant_agents = item.get("assistant_agents", [])
+            if not isinstance(assistant_agents, list):
+                assistant_agents = []
+            result = verify_action.verify_action(
+                text=prompt,
+                config=config,
+                repo_path=REPO_ROOT,
+                check=check,
+                process_skill=str(item.get("process_skill", "")).strip() or None,
+                lead_agent=str(item.get("lead_agent", "")).strip() or None,
+                assistant_agents=[str(agent) for agent in assistant_agents if str(agent).strip() != ""],
+            )
+            extra_payloads["verify_action_json"] = result
+        elif runner == "release_gate":
+            summary = item.get("release_gate_summary", {})
+            if not isinstance(summary, dict):
+                raise RuntimeError(f"release_gate eval {item.get('id')} must provide release_gate_summary object")
+            release_gate_module = load_module(
+                f"virtual_team_release_gate_benchmark_eval_{item.get('id')}",
+                RELEASE_GATE_SCRIPT,
+            )
+            with tempfile.TemporaryDirectory(prefix="virtual-team-release-gate-eval-") as tmp:
+                temp_root = Path(tmp)
+                benchmark_json = temp_root / "benchmark-results.json"
+                benchmark_markdown = temp_root / "benchmark-report.md"
+                benchmark_json.write_text(
+                    json.dumps(
+                        {
+                            "summary": summary,
+                            "eval_run": {"passed": 0, "total": 0, "cases": [], "category_breakdown": []},
+                        },
+                        ensure_ascii=False,
+                        indent=2,
+                    ),
+                    encoding="utf-8",
+                )
+                benchmark_markdown.write_text("# Benchmark Report\n", encoding="utf-8")
+                fixture_payload: dict[str, object] = {
+                    "summary": summary,
+                    "json_report": str(benchmark_json),
+                    "markdown_report": str(benchmark_markdown),
+                }
+                if bool(summary.get("offline_drill_enabled")):
+                    offline_report = temp_root / "offline-loop-drill-report.md"
+                    offline_report.write_text("# Offline Loop Drill Report\n", encoding="utf-8")
+                    fixture_payload["offline_drill_run"] = {"markdown_report": str(offline_report)}
+                fixture_path = temp_root / "benchmark-fixture.json"
+                fixture_path.write_text(json.dumps(fixture_payload, ensure_ascii=False, indent=2), encoding="utf-8")
+                result = release_gate_module.run_release_gate(
+                    output_dir=temp_root / "release-gate-output",
+                    benchmark_fixture=fixture_path,
+                )
+            extra_payloads["release_gate_json"] = result
+        else:
+            raise RuntimeError(f"Unsupported eval runner: {runner}")
         failures: list[str] = []
         for raw in expectations:
             ok, detail = parse_expectation(
@@ -352,6 +430,7 @@ def evaluate_evals(config: dict[str, object]) -> dict[str, object]:
                 result,
                 response_pack_markdown,
                 response_pack_payload,
+                extra_payloads,
             )
             if not ok:
                 failures.append(f"{raw} [{detail}]")
@@ -370,8 +449,9 @@ def evaluate_evals(config: dict[str, object]) -> dict[str, object]:
                 "id": item.get("id"),
                 "prompt": prompt,
                 "tags": tags,
+                "runner": runner,
                 "lead_agent": result.get("lead_agent"),
-                "assistant_agents": result.get("assistant_agents"),
+                "assistant_agents": result.get("assistant_agents") if isinstance(result.get("assistant_agents"), list) else [],
                 "response_pack_preview": response_pack_markdown[:400],
                 "passed": passed,
                 "failures": failures,

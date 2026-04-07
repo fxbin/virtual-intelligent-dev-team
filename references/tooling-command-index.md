@@ -106,6 +106,9 @@ python scripts/generate_response_pack.py --text "<user request>" --repo . --outp
 - `generate_response_pack.py` 写 sidecar 前会先做 schema 校验
 - benchmark 断言优先用 `response_pack_json <path> is/contains ...`
   - 只在需要验证 Markdown 文案骨架时才继续用 `response_pack contains ...`
+- 如果 eval runner 不是默认路由：
+  - `verify_action_json <path> ...`
+  - `release_gate_json <path> ...`
 - 结构化断言额外支持：
   - `<path> exists`
   - `<path> does not exist`

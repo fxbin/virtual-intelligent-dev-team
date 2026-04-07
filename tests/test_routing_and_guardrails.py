@@ -3637,6 +3637,59 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
 
         self.assertTrue(ok, detail)
 
+    def test_benchmark_expectation_supports_verify_action_json(self) -> None:
+        result = verify_action.verify_action(
+            text="Refactor this Flask service and then commit and push the branch.",
+            config=load_config(),
+            repo_path=REPO_ROOT,
+            check="git-workflow",
+        )
+
+        ok, detail = benchmark_runner.parse_expectation(
+            "verify_action_json details.needs_git_workflow is true",
+            result,
+            "",
+            {},
+            {"verify_action_json": result},
+        )
+
+        self.assertTrue(ok, detail)
+
+    def test_benchmark_expectation_supports_release_gate_json(self) -> None:
+        with make_tempdir() as tmp:
+            output_dir = Path(tmp) / "release-gate-output"
+
+            with mock.patch.object(
+                release_gate.benchmark_runner,
+                "run_benchmark_suite",
+                return_value={
+                    "summary": {
+                        "tests_passed": True,
+                        "validator_passed": True,
+                        "evals_passed": True,
+                        "offline_drill_enabled": True,
+                        "offline_drill_passed": False,
+                        "overall_passed": False,
+                    },
+                    "json_report": str(output_dir / "benchmark-results.json"),
+                    "markdown_report": str(output_dir / "benchmark-report.md"),
+                    "offline_drill_run": {
+                        "markdown_report": str(output_dir / "offline-loop-drill-report.md"),
+                    },
+                },
+            ):
+                result = release_gate.run_release_gate(output_dir=output_dir)
+
+        ok, detail = benchmark_runner.parse_expectation(
+            "release_gate_json follow_up.loop_state is reopened",
+            result,
+            "",
+            {},
+            {"release_gate_json": result},
+        )
+
+        self.assertTrue(ok, detail)
+
     def test_benchmark_field_expectation_supports_exists_length_and_comparison(self) -> None:
         result = route_request.route_request(
             "Rewrite this project in Rust, but plan before coding and keep a progress tracker for later sessions.",
@@ -3734,6 +3787,50 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
             self.assertTrue(Path(result["json_report"]).exists())
             report = Path(result["markdown_report"]).read_text(encoding="utf-8")
             self.assertIn("Offline loop drill", report)
+
+    def test_evaluate_evals_supports_verify_action_and_release_gate_runners(self) -> None:
+        config = load_config()
+        fixture = {
+            "evals": [
+                {
+                    "id": 9001,
+                    "runner": "verify_action",
+                    "check": "git-workflow",
+                    "prompt": "Refactor this Flask service and then commit and push the branch.",
+                    "expectations": [
+                        "allowed is true",
+                        "verify_action_json details.needs_git_workflow is true"
+                    ],
+                    "categories": ["git-workflow"]
+                },
+                {
+                    "id": 9002,
+                    "runner": "release_gate",
+                    "prompt": "Release gate fixture hold path",
+                    "release_gate_summary": {
+                        "tests_passed": True,
+                        "validator_passed": True,
+                        "evals_passed": True,
+                        "offline_drill_enabled": True,
+                        "offline_drill_passed": False,
+                        "overall_passed": False
+                    },
+                    "expectations": [
+                        "decision is hold",
+                        "release_gate_json follow_up.loop_state is reopened"
+                    ],
+                    "categories": ["release-gate"]
+                }
+            ]
+        }
+        with make_tempdir() as tmp:
+            fixture_path = Path(tmp) / "evals.json"
+            fixture_path.write_text(json.dumps(fixture, ensure_ascii=False, indent=2), encoding="utf-8")
+            with mock.patch.object(benchmark_runner, "EVALS_PATH", fixture_path):
+                result = benchmark_runner.evaluate_evals(config)
+
+        self.assertEqual(2, result["passed"])
+        self.assertEqual(2, result["total"])
 
     def test_release_gate_holds_when_offline_drill_fails(self) -> None:
         with make_tempdir() as tmp:
