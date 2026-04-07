@@ -34,6 +34,10 @@ python scripts/verify_action.py --text "<user request>" --check git-workflow --p
 python scripts/verify_action.py --text "<user request>" --check worktree --pretty
 ```
 
+```bash
+python scripts/verify_action.py --text "<user request>" --check workflow-bundle --pretty
+```
+
 - 机械契约 lint
 
 ```bash
@@ -83,6 +87,14 @@ python scripts/init_pre_development_plan.py --root . --task-name "<task-name>" -
 - `.skill-iterations/distilled-patterns.md`
 
 常用初始化命令：
+
+```bash
+python scripts/init_project_memory.py --root . --mode planning --pretty
+```
+
+```bash
+python scripts/init_project_memory.py --root . --mode iteration --pretty
+```
 
 ```bash
 mkdir -p docs/progress

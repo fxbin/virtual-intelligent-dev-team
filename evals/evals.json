@@ -1004,6 +1004,23 @@
         "needs_git_workflow is false",
         "workflow_bundle is audit-fix-deliver"
       ]
+    },
+    {
+      "id": 62,
+      "categories": [
+        "cross-domain",
+        "workflow-bundle"
+      ],
+      "prompt": "This SaaS is not growing. Set the strategy and also land the technical plan.",
+      "expected_output": "Cross-domain strategy routing should keep a structured assistant delta contract so the lead can merge evidence instead of loose role fragments.",
+      "files": [],
+      "expectations": [
+        "lead_agent is Executive Trinity",
+        "assistant_delta_contract.enabled is true",
+        "assistant_delta_contract.lead_owner is Executive Trinity",
+        "assistant_delta_contract.required_fields contains claim",
+        "assistant_delta_contract.required_fields contains evidence"
+      ]
     }
   ]
 }

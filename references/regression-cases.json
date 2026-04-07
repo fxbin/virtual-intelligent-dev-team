@@ -765,6 +765,19 @@
       }
     },
     {
+      "name": "verify_workflow_bundle_allowed",
+      "text": "Rewrite this project in Rust, but plan before coding and keep a progress tracker for later sessions.",
+      "check": "workflow-bundle",
+      "expect": {
+        "allowed": true,
+        "summary_contains": "plan-first-build",
+        "detail_equals": {
+          "workflow_bundle": "plan-first-build",
+          "progress_anchor_recommended": "docs/progress/MASTER.md"
+        }
+      }
+    },
+    {
       "name": "verify_git_workflow_allowed",
       "text": "Refactor this Flask service and then commit and push the branch.",
       "check": "git-workflow",

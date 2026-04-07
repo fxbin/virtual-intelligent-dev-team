@@ -1576,6 +1576,20 @@ def build_workflow_bundle(
     }
 
 
+def build_assistant_delta_contract(
+    lead_agent: str, assistants: list[str], workflow_bundle: str | None
+) -> dict[str, object]:
+    return {
+        "enabled": len(assistants) > 0,
+        "lead_owner": lead_agent,
+        "assistants": assistants,
+        "workflow_bundle": workflow_bundle,
+        "required_fields": ["claim", "evidence", "decision"],
+        "optional_fields": ["risk", "next_action"],
+        "rule": "Assistants should return only the delta that materially changes the lead decision.",
+    }
+
+
 def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict[str, object]:
     scores, reasons = compute_scores(text, config)
     (
@@ -1767,6 +1781,11 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         needs_git_workflow=needs_git_workflow,
         sentinel_overlay=sentinel_overlay,
     )
+    assistant_delta_contract = build_assistant_delta_contract(
+        lead_agent=lead_agent,
+        assistants=assistants,
+        workflow_bundle=str(workflow_bundle.get("name")),
+    )
 
     reason = {
         "lead_positive_hits": reasons.get(lead_agent, {}).get("positive", []),
@@ -1780,6 +1799,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "language_hits": language_hits,
         "process_skill_hits": process_hits,
         "workflow_bundle_reason": workflow_bundle.get("reason"),
+        "assistant_delta_contract_enabled": assistant_delta_contract.get("enabled"),
     }
 
     return {
@@ -1816,6 +1836,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "workflow_reason": workflow_bundle.get("reason"),
         "progress_anchor_recommended": workflow_bundle.get("progress_anchor_recommended"),
         "resume_artifacts": workflow_bundle.get("resume_artifacts", []),
+        "assistant_delta_contract": assistant_delta_contract,
         "scores": scores,
         "reason": reason,
     }

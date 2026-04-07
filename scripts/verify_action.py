@@ -234,6 +234,31 @@ def _verify_iteration(result: dict[str, object]) -> dict[str, object]:
     }
 
 
+def _verify_workflow_bundle(result: dict[str, object]) -> dict[str, object]:
+    bundle = result.get("workflow_bundle")
+    progress_anchor = result.get("progress_anchor_recommended")
+    resume_artifacts = result.get("resume_artifacts", [])
+    workflow_steps = result.get("workflow_steps", [])
+    allowed = isinstance(bundle, str) and bundle not in {"", "direct-execution"}
+    if allowed:
+        summary = f"Workflow bundle `{bundle}` is active for this request."
+        next_step = "Follow the workflow bundle first, then use the recommended progress anchor to resume safely."
+    else:
+        summary = "No special workflow bundle is required for this request."
+        next_step = "Keep execution lightweight and follow the lead plus active process skills only."
+    return {
+        "allowed": allowed,
+        "summary": summary,
+        "details": {
+            "workflow_bundle": bundle,
+            "progress_anchor_recommended": progress_anchor,
+            "resume_artifacts": resume_artifacts,
+            "workflow_steps": workflow_steps,
+        },
+        "recommended_next_step": next_step,
+    }
+
+
 def verify_action(
     *,
     text: str,
@@ -264,6 +289,8 @@ def verify_action(
         outcome = _verify_release_gate(result)
     elif check == "iteration":
         outcome = _verify_iteration(result)
+    elif check == "workflow-bundle":
+        outcome = _verify_workflow_bundle(result)
     else:
         raise ValueError(f"Unsupported check: {check}")
 
@@ -302,6 +329,7 @@ def parse_args() -> argparse.Namespace:
             "lead-assignment",
             "release-gate",
             "iteration",
+            "workflow-bundle",
         ],
         help="What to verify before taking action.",
     )

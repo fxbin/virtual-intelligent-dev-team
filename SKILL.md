@@ -303,6 +303,7 @@ After routing, answer with one unified structure:
    - Key decision
    - Main risks
    - Evidence delta from assistants when applicable
+   - Assistant delta contract when assistants are active
 3. `Next Step`
    - Smallest executable action
    - User confirmation needed, if any

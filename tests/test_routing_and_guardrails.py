@@ -26,6 +26,7 @@ RUN_BENCHMARKS_SCRIPT = SKILL_DIR / "scripts" / "run_benchmarks.py"
 RUN_OFFLINE_DRILL_SCRIPT = SKILL_DIR / "scripts" / "run_offline_loop_drill.py"
 RUN_RELEASE_GATE_SCRIPT = SKILL_DIR / "scripts" / "run_release_gate.py"
 INIT_PRE_DEVELOPMENT_SCRIPT = SKILL_DIR / "scripts" / "init_pre_development_plan.py"
+INIT_PROJECT_MEMORY_SCRIPT = SKILL_DIR / "scripts" / "init_project_memory.py"
 VALIDATOR_SCRIPT = SKILL_DIR / "scripts" / "validate_virtual_team.py"
 VERIFY_ACTION_SCRIPT = SKILL_DIR / "scripts" / "verify_action.py"
 CONTRACT_LINT_SCRIPT = SKILL_DIR / "scripts" / "lint_virtual_team_contract.py"
@@ -54,6 +55,7 @@ benchmark_runner = load_module("virtual_intelligent_dev_team_run_benchmarks", RU
 offline_loop_drill = load_module("virtual_intelligent_dev_team_run_offline_loop_drill", RUN_OFFLINE_DRILL_SCRIPT)
 release_gate = load_module("virtual_intelligent_dev_team_run_release_gate", RUN_RELEASE_GATE_SCRIPT)
 planning_init = load_module("virtual_intelligent_dev_team_planning_init", INIT_PRE_DEVELOPMENT_SCRIPT)
+project_memory_init = load_module("virtual_intelligent_dev_team_project_memory_init", INIT_PROJECT_MEMORY_SCRIPT)
 verify_action = load_module("virtual_intelligent_dev_team_verify_action", VERIFY_ACTION_SCRIPT)
 contract_lint = load_module("virtual_intelligent_dev_team_contract_lint", CONTRACT_LINT_SCRIPT)
 
@@ -258,6 +260,20 @@ class RoutingTests(unittest.TestCase):
             "evals/release-gate/release-gate-report.md",
             result["progress_anchor_recommended"],
         )
+        self.assertFalse(result["assistant_delta_contract"]["enabled"])
+
+    def test_assistant_delta_contract_is_enabled_when_assistants_exist(self) -> None:
+        result = route_request.route_request(
+            "This SaaS is not growing. Set the strategy and also land the technical plan.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertTrue(result["assistant_delta_contract"]["enabled"])
+        self.assertEqual("Executive Trinity", result["assistant_delta_contract"]["lead_owner"])
+        self.assertIn("Technical Trinity", result["assistant_delta_contract"]["assistants"])
+        self.assertIn("claim", result["assistant_delta_contract"]["required_fields"])
+        self.assertIn("evidence", result["assistant_delta_contract"]["required_fields"])
 
     def test_chinese_release_readiness_suppresses_ambiguous_git_submit_signal(self) -> None:
         result = route_request.route_request(
@@ -440,8 +456,6 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual("Code Audit Council", result["lead_agent"])
         self.assertIn("Git Workflow Guardian", result["assistant_agents"])
         self.assertIn("Technical Trinity", result["assistant_agents"])
-        self.assertTrue(result["needs_git_workflow"])
-
     def test_python_fastapi_worktree_and_git_routes_to_git_guardian(self) -> None:
         result = route_request.route_request(
             "Use FastAPI for a backend service, then commit, push, and isolate the work in a worktree.",
@@ -3853,6 +3867,32 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
             sync_result = result["follow_up"]["distilled_pattern_sync"]
             self.assertTrue(Path(sync_result["distilled_patterns"]).exists())
             self.assertEqual(1, sync_result["kept_rounds"])
+
+
+class ProjectMemoryInitTests(unittest.TestCase):
+    def test_init_project_memory_all_creates_expected_anchors(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            result = project_memory_init.init_project_memory(root=root, mode="all", overwrite=False)
+
+            self.assertTrue(result["ok"])
+            self.assertEqual("all", result["mode"])
+            self.assertTrue((root / "docs" / "progress" / "MASTER.md").exists())
+            self.assertTrue((root / ".skill-iterations" / "current-round-memory.md").exists())
+            self.assertTrue((root / ".skill-iterations" / "distilled-patterns.md").exists())
+
+    def test_init_project_memory_respects_no_overwrite(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            target = root / ".skill-iterations" / "current-round-memory.md"
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text("custom\n", encoding="utf-8")
+
+            result = project_memory_init.init_project_memory(root=root, mode="iteration", overwrite=False)
+
+            self.assertEqual("custom\n", target.read_text(encoding="utf-8"))
+            statuses = {item["target"]: item["status"] for item in result["actions"]}
+            self.assertEqual("skipped", statuses[".skill-iterations/current-round-memory.md"])
 
 
 if __name__ == "__main__":

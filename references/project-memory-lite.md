@@ -61,6 +61,12 @@ Do not ask the next session to replay every round file by default.
 
 ## Recommended Materialization
 
+- One-step initialization:
+
+```bash
+python scripts/init_project_memory.py --root . --mode all --pretty
+```
+
 - Planning anchor:
 
 ```bash
