@@ -99,6 +99,9 @@ python scripts/generate_response_pack.py --text "<user request>" --repo . --outp
   - 适合在执行前把 `workflow_bundle / source explanation / next action / resume anchor` 直接喂给别的脚本
 - JSON sidecar 的稳定字段说明见：
   - `references/response-pack-sidecar-schema.md`
+- 可执行 schema 见：
+  - `references/response-pack-sidecar.schema.json`
+- `generate_response_pack.py` 写 sidecar 前会先做 schema 校验
 - benchmark 断言优先用 `response_pack_json <path> is/contains ...`
   - 只在需要验证 Markdown 文案骨架时才继续用 `response_pack contains ...`
 

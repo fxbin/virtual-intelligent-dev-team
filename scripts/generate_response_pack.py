@@ -317,17 +317,17 @@ def build_response_pack_payload(
             "resume_artifacts": [str(item) for item in resume_artifacts],
         },
         "git_workflow": {
-            "using_git_worktrees": format_bool(result.get("needs_worktree"), selected_language),
-            "git_workflow": format_bool(result.get("needs_git_workflow"), selected_language),
+            "using_git_worktrees": bool(result.get("needs_worktree")),
+            "git_workflow": bool(result.get("needs_git_workflow")),
             "suggested_branch": format_missing(templates.get("branch_name", ""), selected_language),
             "suggested_commit": format_missing(templates.get("commit_message", ""), selected_language),
             "suggested_pr_title": format_missing(templates.get("pr_title", ""), selected_language),
         },
         "governance": {
-            "roundtable_enabled": format_bool(governance.get("roundtable_enabled"), selected_language),
+            "roundtable_enabled": bool(governance.get("roundtable_enabled")),
             "selected_track": privy.get("selected_track", "regular track"),
             "risk_level": governance.get("risk_level", "unknown"),
-            "dual_sign_required": format_bool(privy.get("dual_sign_required"), selected_language),
+            "dual_sign_required": bool(privy.get("dual_sign_required")),
         },
     }
     if needs_planning:
@@ -425,17 +425,17 @@ def build_response_pack(
                 _bullet_list([str(item) for item in (resume.get('resume_artifacts', []) if isinstance(resume.get('resume_artifacts'), list) else [])], none_text),
                 "",
                 "## Git 工作流",
-                f"- using-git-worktrees：{git_workflow.get('using_git_worktrees', '否')}",
-                f"- git-workflow：{git_workflow.get('git_workflow', '否')}",
+                f"- using-git-worktrees：{format_bool(git_workflow.get('using_git_worktrees'), selected_language)}",
+                f"- git-workflow：{format_bool(git_workflow.get('git_workflow'), selected_language)}",
                 f"- 建议分支：{git_workflow.get('suggested_branch', '无')}",
                 f"- 建议提交：{git_workflow.get('suggested_commit', '无')}",
                 f"- 建议 PR 标题：{git_workflow.get('suggested_pr_title', '无')}",
                 "",
                 "## 治理信息",
-                f"- 是否开启 roundtable：{governance.get('roundtable_enabled', '否')}",
+                f"- 是否开启 roundtable：{format_bool(governance.get('roundtable_enabled'), selected_language)}",
                 f"- 当前治理轨道：{governance.get('selected_track', 'regular track')}",
                 f"- 风险等级：{governance.get('risk_level', 'unknown')}",
-                f"- 是否需要双签：{governance.get('dual_sign_required', '否')}",
+                f"- 是否需要双签：{format_bool(governance.get('dual_sign_required'), selected_language)}",
                 "",
             ]
         )
@@ -459,17 +459,17 @@ def build_response_pack(
                 _bullet_list([str(item) for item in (resume.get('resume_artifacts', []) if isinstance(resume.get('resume_artifacts'), list) else [])], none_text),
                 "",
                 "## Git Workflow",
-                f"- using-git-worktrees: {git_workflow.get('using_git_worktrees', 'no')}",
-                f"- git-workflow: {git_workflow.get('git_workflow', 'no')}",
+                f"- using-git-worktrees: {format_bool(git_workflow.get('using_git_worktrees'), selected_language)}",
+                f"- git-workflow: {format_bool(git_workflow.get('git_workflow'), selected_language)}",
                 f"- Suggested branch: {git_workflow.get('suggested_branch', 'n/a')}",
                 f"- Suggested commit: {git_workflow.get('suggested_commit', 'n/a')}",
                 f"- Suggested PR title: {git_workflow.get('suggested_pr_title', 'n/a')}",
                 "",
                 "## Governance",
-                f"- Roundtable enabled: {governance.get('roundtable_enabled', 'no')}",
+                f"- Roundtable enabled: {format_bool(governance.get('roundtable_enabled'), selected_language)}",
                 f"- Selected governance track: {governance.get('selected_track', 'regular track')}",
                 f"- Risk level: {governance.get('risk_level', 'unknown')}",
-                f"- Dual-sign required: {governance.get('dual_sign_required', 'no')}",
+                f"- Dual-sign required: {format_bool(governance.get('dual_sign_required'), selected_language)}",
                 "",
             ]
         )
@@ -554,6 +554,7 @@ def main() -> None:
         repo_path=Path(args.repo).resolve(),
     )
     payload = build_response_pack_payload(result, template=args.template, language=args.language)
+    response_contract.validate_response_pack_payload(payload)
     markdown = build_response_pack(result, template=args.template, language=args.language)
     if args.output:
         output_path = Path(args.output).resolve()

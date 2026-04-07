@@ -3,8 +3,37 @@
 
 from __future__ import annotations
 
+import json
+from functools import lru_cache
+from pathlib import Path
+
+from jsonschema import Draft202012Validator
+
 
 SIDECAR_SCHEMA_VERSION = "response-pack-sidecar/v1"
+SCRIPT_DIR = Path(__file__).resolve().parent
+SKILL_DIR = SCRIPT_DIR.parent
+SIDECAR_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "response-pack-sidecar.schema.json"
+
+
+@lru_cache(maxsize=1)
+def load_sidecar_schema() -> dict[str, object]:
+    with SIDECAR_SCHEMA_JSON_PATH.open("r", encoding="utf-8") as file:
+        payload = json.load(file)
+    if not isinstance(payload, dict):
+        raise ValueError(f"{SIDECAR_SCHEMA_JSON_PATH} must contain a JSON object")
+    Draft202012Validator.check_schema(payload)
+    return payload
+
+
+def validate_response_pack_payload(payload: dict[str, object]) -> None:
+    validator = Draft202012Validator(load_sidecar_schema())
+    errors = sorted(validator.iter_errors(payload), key=lambda item: list(item.path))
+    if not errors:
+        return
+    first = errors[0]
+    path = ".".join(str(part) for part in first.path) or "<root>"
+    raise ValueError(f"response-pack sidecar schema validation failed at {path}: {first.message}")
 
 
 def build_explanation_card_from_payload(payload: dict[str, object]) -> dict[str, object]:

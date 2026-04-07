@@ -18,6 +18,7 @@ RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
 CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 VERSION_PATH = SKILL_DIR / "VERSION"
 SIDECAR_SCHEMA_PATH = SKILL_DIR / "references" / "response-pack-sidecar-schema.md"
+SIDECAR_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "response-pack-sidecar.schema.json"
 MARKDOWN_PATH_RE = re.compile(r"(?<![\w./-])((?:assets|references|scripts)/[A-Za-z0-9_./-]+\.(?:md|json|py))(?![\w./-])")
 BARE_REFERENCE_RE = re.compile(r"^\s*-\s+`([A-Za-z0-9_.-]+\.(?:md|json))`\s*$")
 SCRIPT_COMMAND_RE = re.compile(r"python\s+(scripts/[A-Za-z0-9_.-]+\.py)\b")
@@ -70,6 +71,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
     response_pack_script = resolved_skill_dir / "scripts" / "generate_response_pack.py"
     response_contract_script = resolved_skill_dir / "scripts" / "response_contract.py"
     sidecar_schema_path = resolved_skill_dir / "references" / "response-pack-sidecar-schema.md"
+    sidecar_schema_json_path = resolved_skill_dir / "references" / "response-pack-sidecar.schema.json"
     route_script = resolved_skill_dir / "scripts" / "route_request.py"
     index_paths = [
         resolved_skill_dir / "references" / "tooling-command-index.md",
@@ -123,10 +125,20 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
         errors,
         "Missing references/response-pack-sidecar-schema.md. Restore the sidecar schema document before release.",
     )
+    _check(
+        sidecar_schema_json_path.exists(),
+        errors,
+        "Missing references/response-pack-sidecar.schema.json. Restore the executable sidecar schema before release.",
+    )
     checks.append(
         {
             "name": "response-pack-sidecar-files",
-            "passed": response_pack_script.exists() and response_contract_script.exists() and sidecar_schema_path.exists(),
+            "passed": (
+                response_pack_script.exists()
+                and response_contract_script.exists()
+                and sidecar_schema_path.exists()
+                and sidecar_schema_json_path.exists()
+            ),
         }
     )
 
@@ -183,13 +195,49 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             errors,
             f"build_response_pack_payload is missing required top-level sections: {missing_sections}.",
         )
+        if hasattr(local_response_contract, "validate_response_pack_payload"):
+            sample_payloads = {
+                "default": payload,
+                "planning": build_payload({"needs_pre_development_planning": True}),
+                "release": build_payload({"needs_release_gate": True}),
+                "iteration": build_payload(
+                    {
+                        "needs_iteration": True,
+                        "iteration_profile": {
+                            "round_cap_online": 3,
+                            "round_cap_offline": 120,
+                            "allowed_decisions": ["keep", "retry", "rollback", "stop"],
+                        },
+                        "progress_anchor_recommended": ".skill-iterations/current-round-memory.md",
+                    }
+                ),
+            }
+            schema_validation_failures: list[str] = []
+            for sample_name, sample_payload in sample_payloads.items():
+                try:
+                    local_response_contract.validate_response_pack_payload(sample_payload)
+                except Exception as exc:
+                    schema_validation_failures.append(f"{sample_name}: {exc}")
+            _check(
+                len(schema_validation_failures) == 0,
+                errors,
+                "response-pack sidecar schema validation failed for sample payloads: "
+                + "; ".join(schema_validation_failures),
+            )
+        else:
+            schema_validation_failures = ["response_contract.validate_response_pack_payload missing"]
         checks.append(
             {
                 "name": "response-pack-sidecar-contract",
-                "passed": len(missing_sections) == 0 and payload.get("schema_version") == schema_constant,
+                "passed": (
+                    len(missing_sections) == 0
+                    and payload.get("schema_version") == schema_constant
+                    and len(schema_validation_failures) == 0
+                ),
                 "details": {
                     "schema_version": payload.get("schema_version"),
                     "required_sections": sorted(required_sections),
+                    "schema_json": str(sidecar_schema_json_path),
                 },
             }
         )

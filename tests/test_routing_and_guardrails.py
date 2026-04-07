@@ -87,6 +87,21 @@ def configure_repo(repo: Path) -> None:
     git("config", "user.email", "codex@example.com", cwd=repo)
 
 
+def assert_field_expectation(
+    testcase: unittest.TestCase,
+    expectation: str,
+    data: object,
+    *,
+    label: str,
+) -> None:
+    ok, detail = benchmark_runner.parse_field_expectation(
+        expectation,
+        data,
+        context_label=label,
+    )
+    testcase.assertTrue(ok, detail)
+
+
 @contextmanager
 def make_tempdir():
     TMP_ROOT.mkdir(parents=True, exist_ok=True)
@@ -3358,9 +3373,24 @@ class ValidatorScriptTests(unittest.TestCase):
         self.assertTrue(result["allowed"])
         self.assertEqual("process-skill", result["check"])
         self.assertIn("pre-development-planning", result["router_snapshot"]["process_skills"])
-        self.assertEqual("plan-first-build", result["explanation_card"]["workflow_bundle"])
-        self.assertIn("primary execution journey", result["explanation_card"]["workflow_source_explanation"])
-        self.assertEqual("docs/progress/MASTER.md", result["explanation_card"]["progress_anchor"])
+        assert_field_expectation(
+            self,
+            "workflow_bundle is plan-first-build",
+            result["explanation_card"],
+            label="verify_action.explanation_card",
+        )
+        assert_field_expectation(
+            self,
+            "workflow_source_explanation contains primary execution journey",
+            result["explanation_card"],
+            label="verify_action.explanation_card",
+        )
+        assert_field_expectation(
+            self,
+            "progress_anchor is docs/progress/MASTER.md",
+            result["explanation_card"],
+            label="verify_action.explanation_card",
+        )
 
     def test_verify_action_accepts_git_workflow(self) -> None:
         result = verify_action.verify_action(
@@ -3651,8 +3681,18 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
             self.assertTrue(Path(result["markdown_report"]).exists())
             self.assertEqual("reopened", result["follow_up"]["loop_state"])
             self.assertEqual("bounded-iteration", result["follow_up"]["next_action"])
-            self.assertEqual("ship-hold-remediate", result["explanation_card"]["workflow_bundle"])
-            self.assertIn("Release gate is the active acceptance lane", result["explanation_card"]["workflow_source_explanation"])
+            assert_field_expectation(
+                self,
+                "workflow_bundle is ship-hold-remediate",
+                result["explanation_card"],
+                label="release_gate.explanation_card",
+            )
+            assert_field_expectation(
+                self,
+                "workflow_source_explanation contains Release gate is the active acceptance lane",
+                result["explanation_card"],
+                label="release_gate.explanation_card",
+            )
             self.assertTrue(Path(result["follow_up"]["brief_json"]).exists())
             self.assertTrue(Path(result["follow_up"]["brief_markdown"]).exists())
             markdown = Path(result["markdown_report"]).read_text(encoding="utf-8")
@@ -4015,6 +4055,36 @@ class ProjectMemoryInitTests(unittest.TestCase):
 
 
 class ResponsePackTests(unittest.TestCase):
+    def test_generate_response_pack_payload_matches_json_schema(self) -> None:
+        prompts = [
+            "Rewrite this project in Rust, but plan before coding and keep a progress tracker for later sessions.",
+            "Is this version ready to ship? Do not answer from benchmark alone. Run the formal release gate.",
+            "Iterate on the React dashboard UX, benchmark the variants, and keep improving until stable.",
+        ]
+
+        for prompt in prompts:
+            with self.subTest(prompt=prompt):
+                result = route_request.route_request(
+                    prompt,
+                    load_config(),
+                    repo_path=REPO_ROOT,
+                )
+                payload = response_pack.build_response_pack_payload(result)
+                response_contract.validate_response_pack_payload(payload)
+
+    def test_generate_response_pack_payload_schema_rejects_missing_resume(self) -> None:
+        result = route_request.route_request(
+            "Is this version ready to ship? Do not answer from benchmark alone. Run the formal release gate.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        payload = response_pack.build_response_pack_payload(result)
+        payload.pop("resume", None)
+
+        with self.assertRaisesRegex(ValueError, "resume"):
+            response_contract.validate_response_pack_payload(payload)
+
     def test_generate_response_pack_payload_exposes_structured_sections(self) -> None:
         result = route_request.route_request(
             "Is this version ready to ship? Do not answer from benchmark alone. Run the formal release gate.",
@@ -4056,6 +4126,7 @@ class ResponsePackTests(unittest.TestCase):
             self.assertTrue(output.exists())
             sidecar = output.with_suffix(".json")
             written = json.loads(sidecar.read_text(encoding="utf-8"))
+            response_contract.validate_response_pack_payload(written)
             self.assertEqual(response_contract.SIDECAR_SCHEMA_VERSION, written["schema_version"])
             self.assertEqual("planning", written["template"])
             self.assertEqual("docs/progress/MASTER.md", written["resume"]["progress_anchor"])

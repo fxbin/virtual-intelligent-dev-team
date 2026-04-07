@@ -3,6 +3,7 @@
 版本：`response-pack-sidecar/v1`
 
 这份文档定义 `generate_response_pack.py` 在写出 Markdown 时同步生成的 JSON sidecar 结构。
+可执行 schema 见：`references/response-pack-sidecar.schema.json`
 
 目标：
 
@@ -104,3 +105,13 @@
 - 若 `schema_version` 变化：
   - 同步更新 `tooling-command-index.md`
   - 同步更新相关 benchmark / tests
+  - 同步更新 `references/response-pack-sidecar.schema.json`
+
+## 执行约束
+
+- `generate_response_pack.py` 在写 sidecar 前会先跑 schema 校验
+- `lint_virtual_team_contract.py` 会校验：
+  - 文档版本
+  - `.schema.json`
+  - helper 常量
+  - 代表性 payload 的 schema 通过性

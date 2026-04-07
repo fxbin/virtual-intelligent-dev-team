@@ -1,0 +1,291 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:response-pack-sidecar.schema",
+  "title": "Virtual Intelligent Dev Team Response Pack Sidecar",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "language",
+    "template",
+    "team_dispatch",
+    "execution_result",
+    "evidence",
+    "next_action",
+    "resume",
+    "git_workflow",
+    "governance"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "response-pack-sidecar/v1"
+    },
+    "language": {
+      "enum": [
+        "en",
+        "zh"
+      ]
+    },
+    "template": {
+      "enum": [
+        "default",
+        "review",
+        "planning",
+        "release",
+        "iteration"
+      ]
+    },
+    "team_dispatch": {
+      "$ref": "#/$defs/team_dispatch"
+    },
+    "execution_result": {
+      "$ref": "#/$defs/execution_result"
+    },
+    "evidence": {
+      "$ref": "#/$defs/evidence"
+    },
+    "next_action": {
+      "$ref": "#/$defs/next_action"
+    },
+    "resume": {
+      "$ref": "#/$defs/resume"
+    },
+    "git_workflow": {
+      "$ref": "#/$defs/git_workflow"
+    },
+    "governance": {
+      "$ref": "#/$defs/governance"
+    },
+    "planning_pack": {
+      "$ref": "#/$defs/planning_pack"
+    },
+    "optimization_loop": {
+      "$ref": "#/$defs/optimization_loop"
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "string_array": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "team_dispatch": {
+      "type": "object",
+      "required": [
+        "lead_agent",
+        "assistant_agents",
+        "workflow_bundle",
+        "bundle_confidence",
+        "workflow_bundle_source",
+        "route_reason",
+        "workflow_source_explanation"
+      ],
+      "properties": {
+        "lead_agent": {
+          "type": "string"
+        },
+        "assistant_agents": {
+          "$ref": "#/$defs/string_array"
+        },
+        "workflow_bundle": {
+          "type": "string"
+        },
+        "bundle_confidence": {
+          "type": "number"
+        },
+        "workflow_bundle_source": {
+          "type": "string"
+        },
+        "route_reason": {
+          "type": "string"
+        },
+        "workflow_source_explanation": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "execution_result": {
+      "type": "object",
+      "required": [
+        "key_conclusion",
+        "key_decision",
+        "main_risks"
+      ],
+      "properties": {
+        "key_conclusion": {
+          "type": "string"
+        },
+        "key_decision": {
+          "type": "string"
+        },
+        "main_risks": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "route_evidence",
+        "workflow_source_explanation",
+        "process_skills",
+        "assistant_delta_contract"
+      ],
+      "properties": {
+        "route_evidence": {
+          "type": "string"
+        },
+        "workflow_source_explanation": {
+          "type": "string"
+        },
+        "process_skills": {
+          "$ref": "#/$defs/string_array"
+        },
+        "assistant_delta_contract": {
+          "type": "object",
+          "required": [
+            "enabled",
+            "summary"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "summary": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "next_action": {
+      "type": "object",
+      "required": [
+        "smallest_executable_action",
+        "current_owner"
+      ],
+      "properties": {
+        "smallest_executable_action": {
+          "type": "string"
+        },
+        "current_owner": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "resume": {
+      "type": "object",
+      "required": [
+        "progress_anchor",
+        "resume_artifacts"
+      ],
+      "properties": {
+        "progress_anchor": {
+          "type": "string"
+        },
+        "resume_artifacts": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": true
+    },
+    "git_workflow": {
+      "type": "object",
+      "required": [
+        "using_git_worktrees",
+        "git_workflow",
+        "suggested_branch",
+        "suggested_commit",
+        "suggested_pr_title"
+      ],
+      "properties": {
+        "using_git_worktrees": {
+          "type": "boolean"
+        },
+        "git_workflow": {
+          "type": "boolean"
+        },
+        "suggested_branch": {
+          "type": "string"
+        },
+        "suggested_commit": {
+          "type": "string"
+        },
+        "suggested_pr_title": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "governance": {
+      "type": "object",
+      "required": [
+        "roundtable_enabled",
+        "selected_track",
+        "risk_level",
+        "dual_sign_required"
+      ],
+      "properties": {
+        "roundtable_enabled": {
+          "type": "boolean"
+        },
+        "selected_track": {
+          "type": "string"
+        },
+        "risk_level": {
+          "type": "string"
+        },
+        "dual_sign_required": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "planning_pack": {
+      "type": "object",
+      "required": [
+        "recommended_anchor",
+        "workflow_steps"
+      ],
+      "properties": {
+        "recommended_anchor": {
+          "type": "string"
+        },
+        "workflow_steps": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": true
+    },
+    "optimization_loop": {
+      "type": "object",
+      "required": [
+        "round_cap_online",
+        "round_cap_offline",
+        "allowed_decisions",
+        "resume_anchor"
+      ],
+      "properties": {
+        "round_cap_online": {
+          "type": "integer"
+        },
+        "round_cap_offline": {
+          "type": "integer"
+        },
+        "allowed_decisions": {
+          "$ref": "#/$defs/string_array"
+        },
+        "resume_anchor": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}
