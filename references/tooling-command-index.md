@@ -68,6 +68,15 @@ python scripts/generate_response_pack.py --text "<user request>" --repo . --temp
 python scripts/generate_response_pack.py --text "<user request>" --repo . --template release --output .tmp-response-pack.md
 ```
 
+```bash
+python scripts/generate_response_pack.py --text "<中文请求>" --repo . --language zh --output .tmp-response-pack.md
+```
+
+- 默认 `--language auto`
+  - 请求里有中文时优先输出中文骨架
+  - 也可以显式用 `--language zh` 或 `--language en` 覆盖
+- 输出骨架会同时带出 `workflow_bundle`、`bundle_confidence` 和 `workflow_bundle_source`
+
 ## 二、开发前规划资产
 
 模板：

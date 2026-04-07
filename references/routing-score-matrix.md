@@ -46,6 +46,46 @@
 - `sentinel_overlay_threshold`：默认 `6`，命中即叠加治理流程。
 - `default_unknown_lead_agent`：默认 `Technical Trinity`，全 0 分时用于兜底主责。
 
+## Workflow Bundle 置信度
+
+- `bundle_confidence` 解释的是“当前工作流 bundle 的确定性”，不是主责路由分数本身。
+- 它和 `confidence` 分开存在：
+  - `confidence` 看的是 lead 在候选智能体中的相对占优程度。
+  - `bundle_confidence` 看的是请求是否已经落入稳定、可复用的流程旅程。
+- 当前口径：
+  - `ship-hold-remediate = 0.98`
+    - 来源 `process-skill`
+    - 正式 release gate 被明确请求时，流程确定性最高。
+  - `plan-first-build = 0.96`
+    - 来源 `process-skill`
+    - 重写 / 迁移 / 先规划后开发场景，先建 planning pack 的路径非常稳定。
+  - `root-cause-remediate = 0.93`
+    - 来源 `process-skill`
+    - 显式 iteration / benchmark / compare / keep improving 场景。
+  - `root-cause-remediate = 0.84`
+    - 来源 `keyword+lead`
+    - 由高风险 lead 或根因排查关键词触发，但还没进入完整 iteration 流程。
+  - `audit-fix-deliver = 0.88`
+    - 来源 `lead+keyword`
+    - 审计 lead 与 review/audit 类关键词同时成立。
+  - `audit-fix-deliver = 0.78`
+    - 来源 `lead-default`
+    - 只有审计 lead 成立，但文本里没有足够强的 review 关键词。
+  - `direct-execution = 0.35`
+    - 来源 `fallback`
+    - 没有更强的流程旅程，保持轻量直执行。
+- `workflow_bundle_source` 用来解释这个值为什么成立，当前来源分为：
+  - `process-skill`
+  - `keyword+lead`
+  - `lead+keyword`
+  - `lead-default`
+  - `fallback`
+- 验证建议：
+  - 当 `bundle_confidence >= 0.6` 时，允许把 bundle 当作显式执行旅程。
+  - 当 `bundle_confidence < 0.6` 时，优先保持轻量执行，不要把 bundle 说成强约束流程。
+- 低 lead `confidence` 不等于一定要加 assistants。
+  - `process_only`、`language_only`、`unknown_only` 这三类场景，即使 lead `confidence` 很低，也默认不扩成多 assistant，因为问题信息量不足或只是流程/语言驱动。
+
 ## 流程技能路由（非主责评分）
 
 - `using-git-worktrees` 与 `git-workflow` 仅作为流程增强，不参与主责智能体打分。

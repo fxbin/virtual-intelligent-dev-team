@@ -299,6 +299,7 @@ After routing, answer with one unified structure:
    - Why they were selected
    - Workflow bundle
    - Bundle confidence
+   - Workflow bundle source
 2. `Execution Result`
    - Key conclusion
    - Key decision
@@ -335,6 +336,7 @@ The lead agent owns the response structure. Assistants should only add the delta
 
 When you need a fast user-facing draft from the router result, prefer the response-pack generator from
 `references/tooling-command-index.md` instead of inventing a fresh output shape each time.
+For Chinese requests, the response-pack generator can now auto-switch to a Chinese scaffold, and you can still force `--language zh` when needed.
 
 ## Built-in references and checks
 

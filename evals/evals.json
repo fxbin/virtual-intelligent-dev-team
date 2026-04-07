@@ -144,11 +144,28 @@
       "files": [],
       "expectations": [
         "confidence is 0.0",
+        "assistant_agents is empty",
         "clarifying_question is not null",
         "reason.unknown_only_fallback is true"
       ],
       "categories": [
         "general",
+        "clarification"
+      ]
+    },
+    {
+      "id": 63,
+      "prompt": "Run the formal release gate.",
+      "expected_output": "Process-only, low-confidence requests should stay single-lead instead of expanding to assistants.",
+      "files": [],
+      "expectations": [
+        "lead_agent is Technical Trinity",
+        "process_skills contains release-gate",
+        "assistant_agents is empty",
+        "confidence is 0.0"
+      ],
+      "categories": [
+        "release-gate",
         "clarification"
       ]
     },

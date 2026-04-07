@@ -1859,6 +1859,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
             ],
         },
         "confidence": confidence,
+        "request_language": "zh" if has_cjk(text) else "en",
         "mode": mode,
         "clarifying_question": clarifying_question,
         "workflow_bundle": workflow_bundle.get("name"),

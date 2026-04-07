@@ -105,6 +105,24 @@
       }
     },
     {
+      "name": "unknown_request_low_confidence",
+      "text": "Help me figure out what to do with this requirement.",
+      "expect": {
+        "lead_agent": "Technical Trinity",
+        "assistant_agents": [],
+        "priority_agent": null
+      }
+    },
+    {
+      "name": "process_only_release_gate_low_confidence",
+      "text": "Run the formal release gate.",
+      "expect": {
+        "lead_agent": "Technical Trinity",
+        "assistant_agents": [],
+        "priority_agent": null
+      }
+    },
+    {
       "name": "python_django_review",
       "text": "Review this Django API for security issues.",
       "expect": {

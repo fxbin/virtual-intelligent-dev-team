@@ -248,6 +248,33 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual("Executive Trinity", result["lead_agent"])
         self.assertTrue(result["needs_iteration"])
 
+    def test_unknown_request_low_confidence_keeps_no_assistants(self) -> None:
+        result = route_request.route_request(
+            "Help me figure out what to do with this requirement.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertEqual("Technical Trinity", result["lead_agent"])
+        self.assertEqual([], result["assistant_agents"])
+        self.assertEqual(0.0, result["confidence"])
+        self.assertEqual("en", result["request_language"])
+        self.assertIsNotNone(result["clarifying_question"])
+
+    def test_process_only_release_gate_low_confidence_keeps_no_assistants(self) -> None:
+        result = route_request.route_request(
+            "Run the formal release gate.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertEqual("Technical Trinity", result["lead_agent"])
+        self.assertIn("release-gate", result["process_skills"])
+        self.assertEqual([], result["assistant_agents"])
+        self.assertEqual(0.0, result["confidence"])
+        self.assertEqual("en", result["request_language"])
+        self.assertIsNone(result["clarifying_question"])
+
     def test_release_readiness_routes_to_formal_release_gate_without_git_workflow(self) -> None:
         result = route_request.route_request(
             "Is this version ready to ship? Do not answer from benchmark alone. Run the formal release gate.",
@@ -3932,9 +3959,23 @@ class ResponsePackTests(unittest.TestCase):
 
         self.assertIn("## Team Dispatch", markdown)
         self.assertIn("Workflow bundle: plan-first-build", markdown)
-        self.assertIn("Bundle confidence: 0.96", markdown)
+        self.assertIn("Bundle confidence: 0.96 (process-skill)", markdown)
         self.assertIn("Progress anchor: docs/progress/MASTER.md", markdown)
         self.assertIn("## Planning Pack", markdown)
+
+    def test_generate_response_pack_auto_uses_chinese_scaffold(self) -> None:
+        result = route_request.route_request(
+            "这个核心模块要大规模迁移，先调研再执行，先规划再开发。",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        markdown = response_pack.build_response_pack(result)
+
+        self.assertIn("## 团队派工", markdown)
+        self.assertIn("主责智能体：Sentinel Architect (NB)", markdown)
+        self.assertIn("bundle 置信度：0.96（来源：process-skill）", markdown)
+        self.assertIn("## 规划包", markdown)
 
     def test_generate_response_pack_release_template(self) -> None:
         result = route_request.route_request(
