@@ -18,6 +18,7 @@ BENCHMARK_SCRIPT = SCRIPT_DIR / "run_benchmarks.py"
 BASELINE_SCRIPT = SCRIPT_DIR / "register_benchmark_baseline.py"
 ITERATION_LOOP_SCRIPT = SCRIPT_DIR / "run_iteration_loop.py"
 SYNC_PATTERNS_SCRIPT = SCRIPT_DIR / "sync_distilled_patterns.py"
+RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
 DEFAULT_OUTPUT_DIR = SKILL_DIR / "evals" / "release-gate"
 DEFAULT_ITERATION_WORKSPACE = SKILL_DIR / ".skill-iterations"
 LABEL_SAFE_CHARS = re.compile(r"[^A-Za-z0-9._-]+")
@@ -36,6 +37,7 @@ benchmark_runner = load_module("virtual_team_release_gate_benchmark", BENCHMARK_
 baseline_registry = load_module("virtual_team_release_gate_baseline_registry", BASELINE_SCRIPT)
 iteration_loop = load_module("virtual_team_release_gate_iteration_loop", ITERATION_LOOP_SCRIPT)
 pattern_sync = load_module("virtual_team_release_gate_pattern_sync", SYNC_PATTERNS_SCRIPT)
+response_contract = load_module("virtual_team_release_gate_response_contract", RESPONSE_CONTRACT_SCRIPT)
 
 
 def load_json(path: Path) -> dict[str, object]:
@@ -1245,54 +1247,6 @@ def render_markdown(result: dict[str, object]) -> str:
     return "\n".join(lines)
 
 
-def build_release_gate_explanation_card(
-    *,
-    decision: str,
-    reason: str,
-    summary: dict[str, object],
-    follow_up: dict[str, object],
-) -> dict[str, object]:
-    resume_artifacts: list[str] = []
-    for key in ("brief_json", "brief_markdown", "closure_json", "closure_markdown"):
-        value = str(follow_up.get(key, "")).strip()
-        if value:
-            resume_artifacts.append(value)
-    bootstrap = follow_up.get("bootstrap", {})
-    if isinstance(bootstrap, dict):
-        for key in ("plan_json", "workspace"):
-            value = str(bootstrap.get(key, "")).strip()
-            if value:
-                resume_artifacts.append(value)
-    progress_anchor = (
-        str(follow_up.get("brief_markdown", "")).strip()
-        or str(follow_up.get("closure_markdown", "")).strip()
-        or "not required"
-    )
-    workflow_source_explanation = (
-        "Release gate is the active acceptance lane because the current decision must be justified by benchmark and drill evidence."
-    )
-    route_evidence = (
-        f"Release gate decision is `{decision}` because {reason}. "
-        f"tests={'PASS' if summary.get('tests_passed') else 'FAIL'}, "
-        f"validator={'PASS' if summary.get('validator_passed') else 'FAIL'}, "
-        f"evals={'PASS' if summary.get('evals_passed') else 'FAIL'}, "
-        f"offline-drill={'PASS' if summary.get('offline_drill_passed') else 'FAIL'}."
-    )
-    next_action = str(follow_up.get("next_action", "")).strip()
-    if next_action == "":
-        next_action = "archive the release-ready baseline" if decision == "ship" else "bootstrap the next bounded iteration"
-    return {
-        "workflow_bundle": "ship-hold-remediate",
-        "workflow_bundle_source": "process-skill",
-        "workflow_source_explanation": workflow_source_explanation,
-        "route_evidence": route_evidence,
-        "next_action": next_action,
-        "current_owner": "Technical Trinity",
-        "progress_anchor": progress_anchor,
-        "resume_artifacts": resume_artifacts,
-    }
-
-
 def run_release_gate(
     *,
     output_dir: Path,
@@ -1365,7 +1319,7 @@ def run_release_gate(
         "benchmark_markdown": benchmark_result["markdown_report"],
         "offline_drill_report": benchmark_result.get("offline_drill_run", {}).get("markdown_report"),
     }
-    result["explanation_card"] = build_release_gate_explanation_card(
+    result["explanation_card"] = response_contract.build_release_gate_explanation_card(
         decision=decision,
         reason=reason,
         summary=summary,

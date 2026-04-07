@@ -12,6 +12,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 ROUTE_SCRIPT = SCRIPT_DIR / "route_request.py"
+RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
 DEFAULT_CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 
 
@@ -25,6 +26,7 @@ def load_module(name: str, path: Path):
 
 
 route_request = load_module("virtual_team_generate_response_pack_route_request", ROUTE_SCRIPT)
+response_contract = load_module("virtual_team_generate_response_pack_response_contract", RESPONSE_CONTRACT_SCRIPT)
 
 
 def _bullet_list(items: list[str], empty_text: str) -> str:
@@ -284,6 +286,7 @@ def build_response_pack_payload(
             }
 
     payload: dict[str, object] = {
+        "schema_version": response_contract.SIDECAR_SCHEMA_VERSION,
         "language": selected_language,
         "template": selected_template,
         "team_dispatch": {

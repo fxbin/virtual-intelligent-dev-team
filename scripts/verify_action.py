@@ -13,6 +13,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 ROUTE_SCRIPT = SCRIPT_DIR / "route_request.py"
 RESPONSE_PACK_SCRIPT = SCRIPT_DIR / "generate_response_pack.py"
+RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
 DEFAULT_CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 
 
@@ -27,6 +28,7 @@ def load_module(name: str, path: Path):
 
 route_request = load_module("virtual_team_verify_action_route_request", ROUTE_SCRIPT)
 response_pack = load_module("virtual_team_verify_action_response_pack", RESPONSE_PACK_SCRIPT)
+response_contract = load_module("virtual_team_verify_action_response_contract", RESPONSE_CONTRACT_SCRIPT)
 
 
 def load_config(config_path: Path) -> dict[str, object]:
@@ -344,28 +346,7 @@ def _verify_assistant_delta_contract(result: dict[str, object]) -> dict[str, obj
 
 def _build_explanation_card(result: dict[str, object]) -> dict[str, object]:
     payload = response_pack.build_response_pack_payload(result)
-    evidence = payload.get("evidence", {})
-    next_action = payload.get("next_action", {})
-    resume = payload.get("resume", {})
-    team_dispatch = payload.get("team_dispatch", {})
-    if not isinstance(evidence, dict):
-        evidence = {}
-    if not isinstance(next_action, dict):
-        next_action = {}
-    if not isinstance(resume, dict):
-        resume = {}
-    if not isinstance(team_dispatch, dict):
-        team_dispatch = {}
-    return {
-        "workflow_bundle": team_dispatch.get("workflow_bundle"),
-        "workflow_bundle_source": team_dispatch.get("workflow_bundle_source"),
-        "workflow_source_explanation": evidence.get("workflow_source_explanation"),
-        "route_evidence": evidence.get("route_evidence"),
-        "next_action": next_action.get("smallest_executable_action"),
-        "current_owner": next_action.get("current_owner"),
-        "progress_anchor": resume.get("progress_anchor"),
-        "resume_artifacts": resume.get("resume_artifacts", []),
-    }
+    return response_contract.build_explanation_card_from_payload(payload)
 
 
 def verify_action(

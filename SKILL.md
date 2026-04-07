@@ -348,6 +348,7 @@ When you need a fast user-facing draft from the router result, prefer the respon
 For Chinese requests, the response-pack generator can now auto-switch to a Chinese scaffold, and you can still force `--language zh` when needed.
 The response pack should expose the workflow source explanation to the user when that explanation helps justify why the route is process-led, lead-led, or only a fallback.
 When a response pack is written to disk, it should also be able to emit a machine-readable JSON sidecar so downstream scripts can consume the same `Team Dispatch / Evidence / Next Action / Resume` structure without reparsing markdown.
+The sidecar schema is documented in [references/response-pack-sidecar-schema.md](references/response-pack-sidecar-schema.md).
 
 ## Built-in references and checks
 

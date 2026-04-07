@@ -28,6 +28,7 @@ RUN_RELEASE_GATE_SCRIPT = SKILL_DIR / "scripts" / "run_release_gate.py"
 INIT_PRE_DEVELOPMENT_SCRIPT = SKILL_DIR / "scripts" / "init_pre_development_plan.py"
 INIT_PROJECT_MEMORY_SCRIPT = SKILL_DIR / "scripts" / "init_project_memory.py"
 GENERATE_RESPONSE_PACK_SCRIPT = SKILL_DIR / "scripts" / "generate_response_pack.py"
+RESPONSE_CONTRACT_SCRIPT = SKILL_DIR / "scripts" / "response_contract.py"
 VALIDATOR_SCRIPT = SKILL_DIR / "scripts" / "validate_virtual_team.py"
 VERIFY_ACTION_SCRIPT = SKILL_DIR / "scripts" / "verify_action.py"
 CONTRACT_LINT_SCRIPT = SKILL_DIR / "scripts" / "lint_virtual_team_contract.py"
@@ -58,6 +59,7 @@ release_gate = load_module("virtual_intelligent_dev_team_run_release_gate", RUN_
 planning_init = load_module("virtual_intelligent_dev_team_planning_init", INIT_PRE_DEVELOPMENT_SCRIPT)
 project_memory_init = load_module("virtual_intelligent_dev_team_project_memory_init", INIT_PROJECT_MEMORY_SCRIPT)
 response_pack = load_module("virtual_intelligent_dev_team_response_pack", GENERATE_RESPONSE_PACK_SCRIPT)
+response_contract = load_module("virtual_intelligent_dev_team_response_contract", RESPONSE_CONTRACT_SCRIPT)
 verify_action = load_module("virtual_intelligent_dev_team_verify_action", VERIFY_ACTION_SCRIPT)
 contract_lint = load_module("virtual_intelligent_dev_team_contract_lint", CONTRACT_LINT_SCRIPT)
 
@@ -3981,6 +3983,7 @@ class ResponsePackTests(unittest.TestCase):
 
         payload = response_pack.build_response_pack_payload(result)
 
+        self.assertEqual(response_contract.SIDECAR_SCHEMA_VERSION, payload["schema_version"])
         self.assertEqual("en", payload["language"])
         self.assertEqual("release", payload["template"])
         self.assertEqual("ship-hold-remediate", payload["team_dispatch"]["workflow_bundle"])
@@ -4012,6 +4015,7 @@ class ResponsePackTests(unittest.TestCase):
             self.assertTrue(output.exists())
             sidecar = output.with_suffix(".json")
             written = json.loads(sidecar.read_text(encoding="utf-8"))
+            self.assertEqual(response_contract.SIDECAR_SCHEMA_VERSION, written["schema_version"])
             self.assertEqual("planning", written["template"])
             self.assertEqual("docs/progress/MASTER.md", written["resume"]["progress_anchor"])
 

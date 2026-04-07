@@ -97,6 +97,8 @@ python scripts/generate_response_pack.py --text "<user request>" --repo . --outp
   - 再进入 `Git Workflow / Governance / Planning Pack / Optimization Loop`
 - `verify_action.py` 现在也会回传 `explanation_card`
   - 适合在执行前把 `workflow_bundle / source explanation / next action / resume anchor` 直接喂给别的脚本
+- JSON sidecar 的稳定字段说明见：
+  - `references/response-pack-sidecar-schema.md`
 
 ## 二、开发前规划资产
 
