@@ -1171,6 +1171,9 @@ def build_ship_follow_up(
 
 
 def render_markdown(result: dict[str, object]) -> str:
+    explanation_card = result.get("explanation_card", {})
+    if not isinstance(explanation_card, dict):
+        explanation_card = {}
     lines = [
         "# Release Gate Report",
         "",
@@ -1193,6 +1196,31 @@ def render_markdown(result: dict[str, object]) -> str:
         f"- Reason: {result['reason']}",
         "",
     ]
+    lines.extend(
+        [
+            "## Evidence",
+            "",
+            f"- Route evidence: {explanation_card.get('route_evidence', result['reason'])}",
+            f"- Workflow source explanation: {explanation_card.get('workflow_source_explanation', 'Release gate is the active acceptance lane for this decision.')}",
+            f"- Gate status summary: tests=`{'PASS' if result['summary'].get('tests_passed') else 'FAIL'}`, validator=`{'PASS' if result['summary'].get('validator_passed') else 'FAIL'}`, evals=`{'PASS' if result['summary'].get('evals_passed') else 'FAIL'}`, offline-drill=`{'PASS' if result['summary'].get('offline_drill_passed') else 'FAIL'}`",
+            "",
+            "## Next Action",
+            "",
+            f"- Smallest executable action: {explanation_card.get('next_action', result['follow_up'].get('next_action') if isinstance(result.get('follow_up'), dict) else 'n/a')}",
+            f"- Current owner: {explanation_card.get('current_owner', 'Technical Trinity')}",
+            "",
+            "## Resume",
+            "",
+            f"- Progress anchor: {explanation_card.get('progress_anchor', 'not required')}",
+            "- Resume artifacts:",
+        ]
+    )
+    resume_artifacts = explanation_card.get("resume_artifacts", [])
+    if isinstance(resume_artifacts, list) and resume_artifacts:
+        lines.extend([f"- `{item}`" for item in resume_artifacts])
+    else:
+        lines.append("- none")
+    lines.append("")
     follow_up = result.get("follow_up", {})
     if isinstance(follow_up, dict):
         lines.extend(
@@ -1215,6 +1243,54 @@ def render_markdown(result: dict[str, object]) -> str:
             lines.append(f"- Release closure Markdown: `{follow_up['closure_markdown']}`")
         lines.append("")
     return "\n".join(lines)
+
+
+def build_release_gate_explanation_card(
+    *,
+    decision: str,
+    reason: str,
+    summary: dict[str, object],
+    follow_up: dict[str, object],
+) -> dict[str, object]:
+    resume_artifacts: list[str] = []
+    for key in ("brief_json", "brief_markdown", "closure_json", "closure_markdown"):
+        value = str(follow_up.get(key, "")).strip()
+        if value:
+            resume_artifacts.append(value)
+    bootstrap = follow_up.get("bootstrap", {})
+    if isinstance(bootstrap, dict):
+        for key in ("plan_json", "workspace"):
+            value = str(bootstrap.get(key, "")).strip()
+            if value:
+                resume_artifacts.append(value)
+    progress_anchor = (
+        str(follow_up.get("brief_markdown", "")).strip()
+        or str(follow_up.get("closure_markdown", "")).strip()
+        or "not required"
+    )
+    workflow_source_explanation = (
+        "Release gate is the active acceptance lane because the current decision must be justified by benchmark and drill evidence."
+    )
+    route_evidence = (
+        f"Release gate decision is `{decision}` because {reason}. "
+        f"tests={'PASS' if summary.get('tests_passed') else 'FAIL'}, "
+        f"validator={'PASS' if summary.get('validator_passed') else 'FAIL'}, "
+        f"evals={'PASS' if summary.get('evals_passed') else 'FAIL'}, "
+        f"offline-drill={'PASS' if summary.get('offline_drill_passed') else 'FAIL'}."
+    )
+    next_action = str(follow_up.get("next_action", "")).strip()
+    if next_action == "":
+        next_action = "archive the release-ready baseline" if decision == "ship" else "bootstrap the next bounded iteration"
+    return {
+        "workflow_bundle": "ship-hold-remediate",
+        "workflow_bundle_source": "process-skill",
+        "workflow_source_explanation": workflow_source_explanation,
+        "route_evidence": route_evidence,
+        "next_action": next_action,
+        "current_owner": "Technical Trinity",
+        "progress_anchor": progress_anchor,
+        "resume_artifacts": resume_artifacts,
+    }
 
 
 def run_release_gate(
@@ -1289,6 +1365,12 @@ def run_release_gate(
         "benchmark_markdown": benchmark_result["markdown_report"],
         "offline_drill_report": benchmark_result.get("offline_drill_run", {}).get("markdown_report"),
     }
+    result["explanation_card"] = build_release_gate_explanation_card(
+        decision=decision,
+        reason=reason,
+        summary=summary,
+        follow_up=follow_up if isinstance(follow_up, dict) else {},
+    )
     json_path = output_dir / "release-gate-results.json"
     markdown_path = output_dir / "release-gate-report.md"
     with json_path.open("w", encoding="utf-8") as file:

@@ -3356,6 +3356,9 @@ class ValidatorScriptTests(unittest.TestCase):
         self.assertTrue(result["allowed"])
         self.assertEqual("process-skill", result["check"])
         self.assertIn("pre-development-planning", result["router_snapshot"]["process_skills"])
+        self.assertEqual("plan-first-build", result["explanation_card"]["workflow_bundle"])
+        self.assertIn("primary execution journey", result["explanation_card"]["workflow_source_explanation"])
+        self.assertEqual("docs/progress/MASTER.md", result["explanation_card"]["progress_anchor"])
 
     def test_verify_action_accepts_git_workflow(self) -> None:
         result = verify_action.verify_action(
@@ -3605,8 +3608,13 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
             self.assertTrue(Path(result["markdown_report"]).exists())
             self.assertEqual("reopened", result["follow_up"]["loop_state"])
             self.assertEqual("bounded-iteration", result["follow_up"]["next_action"])
+            self.assertEqual("ship-hold-remediate", result["explanation_card"]["workflow_bundle"])
+            self.assertIn("Release gate is the active acceptance lane", result["explanation_card"]["workflow_source_explanation"])
             self.assertTrue(Path(result["follow_up"]["brief_json"]).exists())
             self.assertTrue(Path(result["follow_up"]["brief_markdown"]).exists())
+            markdown = Path(result["markdown_report"]).read_text(encoding="utf-8")
+            self.assertIn("## Evidence", markdown)
+            self.assertIn("## Resume", markdown)
 
     def test_release_gate_hold_emits_next_iteration_brief(self) -> None:
         with make_tempdir() as tmp:
@@ -3964,6 +3972,49 @@ class ProjectMemoryInitTests(unittest.TestCase):
 
 
 class ResponsePackTests(unittest.TestCase):
+    def test_generate_response_pack_payload_exposes_structured_sections(self) -> None:
+        result = route_request.route_request(
+            "Is this version ready to ship? Do not answer from benchmark alone. Run the formal release gate.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        payload = response_pack.build_response_pack_payload(result)
+
+        self.assertEqual("en", payload["language"])
+        self.assertEqual("release", payload["template"])
+        self.assertEqual("ship-hold-remediate", payload["team_dispatch"]["workflow_bundle"])
+        self.assertIn("primary execution journey", payload["evidence"]["workflow_source_explanation"])
+        self.assertIn("run the release gate first", payload["next_action"]["smallest_executable_action"])
+        self.assertEqual("evals/release-gate/release-gate-report.md", payload["resume"]["progress_anchor"])
+
+    def test_generate_response_pack_cli_writes_json_sidecar_by_default(self) -> None:
+        with make_tempdir() as tmp:
+            output = Path(tmp) / "response-pack.md"
+            proc = subprocess.run(
+                [
+                    sys.executable,
+                    str(GENERATE_RESPONSE_PACK_SCRIPT),
+                    "--text",
+                    "Rewrite this project in Rust, but plan before coding and keep a progress tracker for later sessions.",
+                    "--repo",
+                    str(REPO_ROOT),
+                    "--output",
+                    str(output),
+                ],
+                cwd=str(REPO_ROOT),
+                text=True,
+                capture_output=True,
+                encoding="utf-8",
+            )
+
+            self.assertEqual(0, proc.returncode, proc.stderr)
+            self.assertTrue(output.exists())
+            sidecar = output.with_suffix(".json")
+            written = json.loads(sidecar.read_text(encoding="utf-8"))
+            self.assertEqual("planning", written["template"])
+            self.assertEqual("docs/progress/MASTER.md", written["resume"]["progress_anchor"])
+
     def test_generate_response_pack_renders_bundle_and_anchor(self) -> None:
         result = route_request.route_request(
             "Rewrite this project in Rust, but plan before coding and keep a progress tracker for later sessions.",

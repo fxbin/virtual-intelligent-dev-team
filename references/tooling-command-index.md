@@ -65,6 +65,8 @@ python scripts/git_workflow_guardrail.py
 python scripts/generate_response_pack.py --text "<user request>" --repo . --output .tmp-response-pack.md
 ```
 
+默认会在同目录生成 `.tmp-response-pack.json` 作为 sidecar。
+
 ```bash
 python scripts/generate_response_pack.py --text "<user request>" --repo . --template planning --output .tmp-response-pack.md
 ```
@@ -75,6 +77,10 @@ python scripts/generate_response_pack.py --text "<user request>" --repo . --temp
 
 ```bash
 python scripts/generate_response_pack.py --text "<中文请求>" --repo . --language zh --output .tmp-response-pack.md
+```
+
+```bash
+python scripts/generate_response_pack.py --text "<user request>" --repo . --output .tmp-response-pack.md --json-output .tmp-response-pack.sidecar.json
 ```
 
 - 默认 `--language auto`
@@ -89,6 +95,8 @@ python scripts/generate_response_pack.py --text "<中文请求>" --repo . --lang
   - `Next Action`
   - `Resume`
   - 再进入 `Git Workflow / Governance / Planning Pack / Optimization Loop`
+- `verify_action.py` 现在也会回传 `explanation_card`
+  - 适合在执行前把 `workflow_bundle / source explanation / next action / resume anchor` 直接喂给别的脚本
 
 ## 二、开发前规划资产
 

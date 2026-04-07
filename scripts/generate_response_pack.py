@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import json
 from pathlib import Path
 
 
@@ -143,11 +144,11 @@ def explain_workflow_source(source: str, language: str) -> str:
     return ""
 
 
-def build_response_pack(
+def build_response_pack_payload(
     result: dict[str, object],
     template: str = "auto",
     language: str = "auto",
-) -> str:
+) -> dict[str, object]:
     lead = str(result.get("lead_agent", "unknown"))
     assistants = result.get("assistant_agents", [])
     if not isinstance(assistants, list):
@@ -202,7 +203,6 @@ def build_response_pack(
         [str(item) for item in workflow_steps],
         selected_language,
     )
-
     none_text = "无" if selected_language == "zh" else "none"
     not_required_text = "当前不需要" if selected_language == "zh" else "not required"
     direct_step_text = (
@@ -210,163 +210,229 @@ def build_response_pack(
         if selected_language == "zh"
         else "execute the next direct step under the lead."
     )
-    assistant_contract_line = (
-        f"- Assistant delta contract：必填字段 {', '.join(contract.get('required_fields', []))}。"
+    assistant_contract_summary = (
+        f"必填字段 {', '.join(contract.get('required_fields', []))}"
         if selected_language == "zh" and contract.get("enabled")
-        else "- Assistant delta contract：当前不需要。"
+        else "当前不需要"
         if selected_language == "zh"
-        else f"- Assistant delta contract: required fields {', '.join(contract.get('required_fields', []))}."
+        else f"required fields {', '.join(contract.get('required_fields', []))}"
         if contract.get("enabled")
-        else "- Assistant delta contract: not required."
+        else "not required"
     )
+
+    if selected_language == "zh":
+        if selected_template == "review":
+            execution_result = {
+                "key_conclusion": "先出 review 结论，再进入修复与交付。",
+                "key_decision": f"由 `{lead}` 持有最终审计判断。",
+                "main_risks": f"{', '.join(process_skills) if process_skills else '行为回归与修复顺序失真'}。",
+            }
+        elif selected_template == "planning":
+            execution_result = {
+                "key_conclusion": "在 planning pack 建好之前，不进入实现阶段。",
+                "key_decision": f"由 `{lead}` 负责范围收敛与规划闭环。",
+                "main_risks": f"治理轨道 `{privy.get('selected_track', 'regular track')}`、缺少进度锚点、迁移范围收口不足。",
+            }
+        elif selected_template == "release":
+            execution_result = {
+                "key_conclusion": "先跑正式 release gate，再决定 ship 还是 hold。",
+                "key_decision": f"由 `{lead}` 持有发版判断。",
+                "main_risks": f"{', '.join(process_skills) if process_skills else '潜在 release blocker 还未被显式暴露'}。",
+            }
+        elif selected_template == "iteration":
+            execution_result = {
+                "key_conclusion": "保持在有边界的迭代环里，每轮只改一个变量。",
+                "key_decision": f"由 `{lead}` 持有优化闭环的语义所有权。",
+                "main_risks": f"证据不足、静默回归，以及超过 `{iteration_profile.get('round_cap_online', 0)}` 轮在线迭代后的 loop drift。",
+            }
+        else:
+            execution_result = {
+                "key_conclusion": "按当前主责与工作流 bundle 执行最小下一步。",
+                "key_decision": f"保持 `{lead}` 为当前语义主责。",
+                "main_risks": f"治理轨道 `{privy.get('selected_track', 'regular track')}`，流程技能 `{', '.join(process_skills) if process_skills else none_text}`。",
+            }
+    else:
+        if selected_template == "review":
+            execution_result = {
+                "key_conclusion": "review-first path with remediation after findings are clear.",
+                "key_decision": f"keep `{lead}` as owner of the review verdict.",
+                "main_risks": f"{', '.join(process_skills) if process_skills else 'behavioral regression and missing remediation sequencing'}.",
+            }
+        elif selected_template == "planning":
+            execution_result = {
+                "key_conclusion": "do not jump into implementation before the planning pack exists.",
+                "key_decision": f"keep `{lead}` as owner of scope and planning closure.",
+                "main_risks": f"governance track `{privy.get('selected_track', 'regular track')}`, missing progress anchor, and under-scoped migration risks.",
+            }
+        elif selected_template == "release":
+            execution_result = {
+                "key_conclusion": "run the formal release gate before making a ship decision.",
+                "key_decision": f"keep `{lead}` as release decision owner.",
+                "main_risks": f"{', '.join(process_skills) if process_skills else 'release blockers not yet surfaced'}.",
+            }
+        elif selected_template == "iteration":
+            execution_result = {
+                "key_conclusion": "stay inside the bounded loop and change only one variable per round.",
+                "key_decision": f"keep `{lead}` as the semantic owner of the optimization loop.",
+                "main_risks": f"weak evidence, silent regression, and loop drift beyond `{iteration_profile.get('round_cap_online', 0)}` online rounds.",
+            }
+        else:
+            execution_result = {
+                "key_conclusion": "Follow the selected workflow bundle under the current lead.",
+                "key_decision": f"Keep `{lead}` as semantic owner.",
+                "main_risks": f"governance track `{privy.get('selected_track', 'regular track')}`, process skills `{', '.join(process_skills) if process_skills else none_text}`.",
+            }
+
+    payload: dict[str, object] = {
+        "language": selected_language,
+        "template": selected_template,
+        "team_dispatch": {
+            "lead_agent": lead,
+            "assistant_agents": assistants,
+            "workflow_bundle": workflow_bundle,
+            "bundle_confidence": bundle_confidence,
+            "workflow_bundle_source": workflow_bundle_source,
+            "route_reason": localized_workflow_reason or ("详见路由结果。" if selected_language == "zh" else "See router reasoning."),
+            "workflow_source_explanation": workflow_source_explanation or ("当前没有额外来源解释。" if selected_language == "zh" else "No extra source explanation is available."),
+        },
+        "execution_result": execution_result,
+        "evidence": {
+            "route_evidence": localized_workflow_reason or ("详见路由结果。" if selected_language == "zh" else "See router reasoning."),
+            "workflow_source_explanation": workflow_source_explanation or ("当前没有额外来源解释。" if selected_language == "zh" else "No extra source explanation is available."),
+            "process_skills": process_skills,
+            "assistant_delta_contract": {
+                "enabled": bool(contract.get("enabled")),
+                "summary": assistant_contract_summary,
+            },
+        },
+        "next_action": {
+            "smallest_executable_action": localized_workflow_steps[0] if localized_workflow_steps else direct_step_text,
+            "current_owner": lead,
+        },
+        "resume": {
+            "progress_anchor": progress_anchor or not_required_text,
+            "resume_artifacts": [str(item) for item in resume_artifacts],
+        },
+        "git_workflow": {
+            "using_git_worktrees": format_bool(result.get("needs_worktree"), selected_language),
+            "git_workflow": format_bool(result.get("needs_git_workflow"), selected_language),
+            "suggested_branch": format_missing(templates.get("branch_name", ""), selected_language),
+            "suggested_commit": format_missing(templates.get("commit_message", ""), selected_language),
+            "suggested_pr_title": format_missing(templates.get("pr_title", ""), selected_language),
+        },
+        "governance": {
+            "roundtable_enabled": format_bool(governance.get("roundtable_enabled"), selected_language),
+            "selected_track": privy.get("selected_track", "regular track"),
+            "risk_level": governance.get("risk_level", "unknown"),
+            "dual_sign_required": format_bool(privy.get("dual_sign_required"), selected_language),
+        },
+    }
+    if needs_planning:
+        payload["planning_pack"] = {
+            "recommended_anchor": progress_anchor or "docs/progress/MASTER.md",
+            "workflow_steps": localized_workflow_steps,
+        }
+    if needs_iteration:
+        payload["optimization_loop"] = {
+            "round_cap_online": iteration_profile.get("round_cap_online", 0),
+            "round_cap_offline": iteration_profile.get("round_cap_offline", 0),
+            "allowed_decisions": iteration_profile.get("allowed_decisions", []),
+            "resume_anchor": progress_anchor or ".skill-iterations/current-round-memory.md",
+        }
+    return payload
+
+
+def build_response_pack(
+    result: dict[str, object],
+    template: str = "auto",
+    language: str = "auto",
+) -> str:
+    payload = build_response_pack_payload(result, template=template, language=language)
+    selected_language = str(payload["language"])
+    team_dispatch = payload["team_dispatch"] if isinstance(payload.get("team_dispatch"), dict) else {}
+    execution_result = payload["execution_result"] if isinstance(payload.get("execution_result"), dict) else {}
+    evidence = payload["evidence"] if isinstance(payload.get("evidence"), dict) else {}
+    next_action = payload["next_action"] if isinstance(payload.get("next_action"), dict) else {}
+    resume = payload["resume"] if isinstance(payload.get("resume"), dict) else {}
+    git_workflow = payload["git_workflow"] if isinstance(payload.get("git_workflow"), dict) else {}
+    governance = payload["governance"] if isinstance(payload.get("governance"), dict) else {}
+    planning_pack = payload["planning_pack"] if isinstance(payload.get("planning_pack"), dict) else None
+    optimization_loop = payload["optimization_loop"] if isinstance(payload.get("optimization_loop"), dict) else None
+    none_text = "无" if selected_language == "zh" else "none"
 
     if selected_language == "zh":
         lines = [
             "## 团队派工",
-            f"- 主责智能体：{lead}",
-            f"- 协作智能体：{', '.join(assistants) if assistants else none_text}",
-            f"- 工作流 bundle：{workflow_bundle}",
-            f"- bundle 置信度：{bundle_confidence}（来源：{workflow_bundle_source}）",
-            f"- 路由原因：{localized_workflow_reason or '详见路由结果。'}",
-            f"- 工作流来源解释：{workflow_source_explanation or '当前没有额外来源解释。'}",
+            f"- 主责智能体：{team_dispatch.get('lead_agent', 'unknown')}",
+            f"- 协作智能体：{', '.join(team_dispatch.get('assistant_agents', [])) if isinstance(team_dispatch.get('assistant_agents'), list) and team_dispatch.get('assistant_agents') else none_text}",
+            f"- 工作流 bundle：{team_dispatch.get('workflow_bundle', 'direct-execution')}",
+            f"- bundle 置信度：{team_dispatch.get('bundle_confidence', 0.0)}（来源：{team_dispatch.get('workflow_bundle_source', 'unknown')}）",
+            f"- 路由原因：{team_dispatch.get('route_reason', '详见路由结果。')}",
+            f"- 工作流来源解释：{team_dispatch.get('workflow_source_explanation', '当前没有额外来源解释。')}",
             "",
         ]
     else:
         lines = [
             "## Team Dispatch",
-            f"- Lead agent: {lead}",
-            f"- Assistant agents: {', '.join(assistants) if assistants else none_text}",
-            f"- Workflow bundle: {workflow_bundle}",
-            f"- Bundle confidence: {bundle_confidence} ({workflow_bundle_source})",
-            f"- Why this route: {localized_workflow_reason or 'See router reasoning.'}",
-            f"- Workflow source explanation: {workflow_source_explanation or 'No extra source explanation is available.'}",
+            f"- Lead agent: {team_dispatch.get('lead_agent', 'unknown')}",
+            f"- Assistant agents: {', '.join(team_dispatch.get('assistant_agents', [])) if isinstance(team_dispatch.get('assistant_agents'), list) and team_dispatch.get('assistant_agents') else none_text}",
+            f"- Workflow bundle: {team_dispatch.get('workflow_bundle', 'direct-execution')}",
+            f"- Bundle confidence: {team_dispatch.get('bundle_confidence', 0.0)} ({team_dispatch.get('workflow_bundle_source', 'unknown')})",
+            f"- Why this route: {team_dispatch.get('route_reason', 'See router reasoning.')}",
+            f"- Workflow source explanation: {team_dispatch.get('workflow_source_explanation', 'No extra source explanation is available.')}",
             "",
         ]
 
     if selected_language == "zh":
-        if selected_template == "review":
-            lines.extend(
-                [
-                    "## 执行结论",
-                    "- 关键结论：先出 review 结论，再进入修复与交付。",
-                    f"- 关键决策：由 `{lead}` 持有最终审计判断。",
-                    f"- 主要风险：{', '.join(process_skills) if process_skills else '行为回归与修复顺序失真'}。",
-                ]
-            )
-        elif selected_template == "planning":
-            lines.extend(
-                [
-                    "## 执行结论",
-                    "- 关键结论：在 planning pack 建好之前，不进入实现阶段。",
-                    f"- 关键决策：由 `{lead}` 负责范围收敛与规划闭环。",
-                    f"- 主要风险：治理轨道 `{privy.get('selected_track', 'regular track')}`、缺少进度锚点、迁移范围收口不足。",
-                ]
-            )
-        elif selected_template == "release":
-            lines.extend(
-                [
-                    "## 执行结论",
-                    "- 关键结论：先跑正式 release gate，再决定 ship 还是 hold。",
-                    f"- 关键决策：由 `{lead}` 持有发版判断。",
-                    f"- 主要风险：{', '.join(process_skills) if process_skills else '潜在 release blocker 还未被显式暴露'}。",
-                ]
-            )
-        elif selected_template == "iteration":
-            lines.extend(
-                [
-                    "## 执行结论",
-                    "- 关键结论：保持在有边界的迭代环里，每轮只改一个变量。",
-                    f"- 关键决策：由 `{lead}` 持有优化闭环的语义所有权。",
-                    f"- 主要风险：证据不足、静默回归，以及超过 `{iteration_profile.get('round_cap_online', 0)}` 轮在线迭代后的 loop drift。",
-                ]
-            )
-        else:
-            lines.extend(
-                [
-                    "## 执行结论",
-                    "- 关键结论：按当前主责与工作流 bundle 执行最小下一步。",
-                    f"- 关键决策：保持 `{lead}` 为当前语义主责。",
-                    f"- 主要风险：治理轨道 `{privy.get('selected_track', 'regular track')}`，流程技能 `{', '.join(process_skills) if process_skills else none_text}`。",
-                ]
-            )
+        lines.extend(
+            [
+                "## 执行结论",
+                f"- 关键结论：{execution_result.get('key_conclusion', '')}",
+                f"- 关键决策：{execution_result.get('key_decision', '')}",
+                f"- 主要风险：{execution_result.get('main_risks', '')}",
+            ]
+        )
     else:
-        if selected_template == "review":
-            lines.extend(
-                [
-                    "## Execution Result",
-                    "- Key conclusion: review-first path with remediation after findings are clear.",
-                    f"- Key decision: keep `{lead}` as owner of the review verdict.",
-                    f"- Main risks: {', '.join(process_skills) if process_skills else 'behavioral regression and missing remediation sequencing'}.",
-                ]
-            )
-        elif selected_template == "planning":
-            lines.extend(
-                [
-                    "## Execution Result",
-                    "- Key conclusion: do not jump into implementation before the planning pack exists.",
-                    f"- Key decision: keep `{lead}` as owner of scope and planning closure.",
-                    f"- Main risks: governance track `{privy.get('selected_track', 'regular track')}`, missing progress anchor, and under-scoped migration risks.",
-                ]
-            )
-        elif selected_template == "release":
-            lines.extend(
-                [
-                    "## Execution Result",
-                    "- Key conclusion: run the formal release gate before making a ship decision.",
-                    f"- Key decision: keep `{lead}` as release decision owner.",
-                    f"- Main risks: {', '.join(process_skills) if process_skills else 'release blockers not yet surfaced'}.",
-                ]
-            )
-        elif selected_template == "iteration":
-            lines.extend(
-                [
-                    "## Execution Result",
-                    "- Key conclusion: stay inside the bounded loop and change only one variable per round.",
-                    f"- Key decision: keep `{lead}` as the semantic owner of the optimization loop.",
-                    f"- Main risks: weak evidence, silent regression, and loop drift beyond `{iteration_profile.get('round_cap_online', 0)}` online rounds.",
-                ]
-            )
-        else:
-            lines.extend(
-                [
-                    "## Execution Result",
-                    "- Key conclusion: Follow the selected workflow bundle under the current lead.",
-                    f"- Key decision: Keep `{lead}` as semantic owner.",
-                    f"- Main risks: governance track `{privy.get('selected_track', 'regular track')}`, process skills `{', '.join(process_skills) if process_skills else none_text}`.",
-                ]
-            )
+        lines.extend(
+            [
+                "## Execution Result",
+                f"- Key conclusion: {execution_result.get('key_conclusion', '')}",
+                f"- Key decision: {execution_result.get('key_decision', '')}",
+                f"- Main risks: {execution_result.get('main_risks', '')}",
+            ]
+        )
 
     if selected_language == "zh":
         lines.extend(
             [
                 "",
                 "## 证据与约束",
-                f"- 路由证据：{localized_workflow_reason or '详见路由结果。'}",
-                f"- 工作流来源解释：{workflow_source_explanation or '当前没有额外来源解释。'}",
-                f"- 流程技能：{', '.join(process_skills) if process_skills else none_text}",
-                assistant_contract_line,
+                f"- 路由证据：{evidence.get('route_evidence', '详见路由结果。')}",
+                f"- 工作流来源解释：{evidence.get('workflow_source_explanation', '当前没有额外来源解释。')}",
+                f"- 流程技能：{', '.join(evidence.get('process_skills', [])) if isinstance(evidence.get('process_skills'), list) and evidence.get('process_skills') else none_text}",
+                f"- Assistant delta contract：{((evidence.get('assistant_delta_contract') or {}).get('summary', '当前不需要')) if isinstance(evidence.get('assistant_delta_contract'), dict) else '当前不需要'}",
                 "",
                 "## 下一动作",
-                f"- 最小可执行动作：{localized_workflow_steps[0] if localized_workflow_steps else direct_step_text}",
-                f"- 当前主责：{lead}",
+                f"- 最小可执行动作：{next_action.get('smallest_executable_action', '')}",
+                f"- 当前主责：{next_action.get('current_owner', 'unknown')}",
                 "",
                 "## 恢复信息",
-                f"- 进度锚点：{progress_anchor or not_required_text}",
+                f"- 进度锚点：{resume.get('progress_anchor', '当前不需要')}",
                 "- 恢复工件：",
-                _bullet_list([str(item) for item in resume_artifacts], none_text),
+                _bullet_list([str(item) for item in (resume.get('resume_artifacts', []) if isinstance(resume.get('resume_artifacts'), list) else [])], none_text),
                 "",
                 "## Git 工作流",
-                f"- using-git-worktrees：{format_bool(result.get('needs_worktree'), 'zh')}",
-                f"- git-workflow：{format_bool(result.get('needs_git_workflow'), 'zh')}",
-                f"- 建议分支：{format_missing(templates.get('branch_name', ''), 'zh')}",
-                f"- 建议提交：{format_missing(templates.get('commit_message', ''), 'zh')}",
-                f"- 建议 PR 标题：{format_missing(templates.get('pr_title', ''), 'zh')}",
+                f"- using-git-worktrees：{git_workflow.get('using_git_worktrees', '否')}",
+                f"- git-workflow：{git_workflow.get('git_workflow', '否')}",
+                f"- 建议分支：{git_workflow.get('suggested_branch', '无')}",
+                f"- 建议提交：{git_workflow.get('suggested_commit', '无')}",
+                f"- 建议 PR 标题：{git_workflow.get('suggested_pr_title', '无')}",
                 "",
                 "## 治理信息",
-                f"- 是否开启 roundtable：{format_bool(governance.get('roundtable_enabled'), 'zh')}",
-                f"- 当前治理轨道：{privy.get('selected_track', 'regular track')}",
+                f"- 是否开启 roundtable：{governance.get('roundtable_enabled', '否')}",
+                f"- 当前治理轨道：{governance.get('selected_track', 'regular track')}",
                 f"- 风险等级：{governance.get('risk_level', 'unknown')}",
-                f"- 是否需要双签：{format_bool(privy.get('dual_sign_required'), 'zh')}",
+                f"- 是否需要双签：{governance.get('dual_sign_required', '否')}",
                 "",
             ]
         )
@@ -375,45 +441,45 @@ def build_response_pack(
             [
                 "",
                 "## Evidence",
-                f"- Route evidence: {localized_workflow_reason or 'See router reasoning.'}",
-                f"- Workflow source explanation: {workflow_source_explanation or 'No extra source explanation is available.'}",
-                f"- Process skills: {', '.join(process_skills) if process_skills else none_text}",
-                assistant_contract_line,
+                f"- Route evidence: {evidence.get('route_evidence', 'See router reasoning.')}",
+                f"- Workflow source explanation: {evidence.get('workflow_source_explanation', 'No extra source explanation is available.')}",
+                f"- Process skills: {', '.join(evidence.get('process_skills', [])) if isinstance(evidence.get('process_skills'), list) and evidence.get('process_skills') else none_text}",
+                f"- Assistant delta contract: {((evidence.get('assistant_delta_contract') or {}).get('summary', 'not required')) if isinstance(evidence.get('assistant_delta_contract'), dict) else 'not required'}",
                 "",
                 "## Next Action",
-                f"- Smallest executable action: {localized_workflow_steps[0] if localized_workflow_steps else direct_step_text}",
-                f"- Current owner: {lead}",
+                f"- Smallest executable action: {next_action.get('smallest_executable_action', '')}",
+                f"- Current owner: {next_action.get('current_owner', 'unknown')}",
                 "",
                 "## Resume",
-                f"- Progress anchor: {progress_anchor or not_required_text}",
+                f"- Progress anchor: {resume.get('progress_anchor', 'not required')}",
                 "- Resume artifacts:",
-                _bullet_list([str(item) for item in resume_artifacts], none_text),
+                _bullet_list([str(item) for item in (resume.get('resume_artifacts', []) if isinstance(resume.get('resume_artifacts'), list) else [])], none_text),
                 "",
                 "## Git Workflow",
-                f"- using-git-worktrees: {format_bool(result.get('needs_worktree'), 'en')}",
-                f"- git-workflow: {format_bool(result.get('needs_git_workflow'), 'en')}",
-                f"- Suggested branch: {format_missing(templates.get('branch_name', ''), 'en')}",
-                f"- Suggested commit: {format_missing(templates.get('commit_message', ''), 'en')}",
-                f"- Suggested PR title: {format_missing(templates.get('pr_title', ''), 'en')}",
+                f"- using-git-worktrees: {git_workflow.get('using_git_worktrees', 'no')}",
+                f"- git-workflow: {git_workflow.get('git_workflow', 'no')}",
+                f"- Suggested branch: {git_workflow.get('suggested_branch', 'n/a')}",
+                f"- Suggested commit: {git_workflow.get('suggested_commit', 'n/a')}",
+                f"- Suggested PR title: {git_workflow.get('suggested_pr_title', 'n/a')}",
                 "",
                 "## Governance",
-                f"- Roundtable enabled: {format_bool(governance.get('roundtable_enabled'), 'en')}",
-                f"- Selected governance track: {privy.get('selected_track', 'regular track')}",
+                f"- Roundtable enabled: {governance.get('roundtable_enabled', 'no')}",
+                f"- Selected governance track: {governance.get('selected_track', 'regular track')}",
                 f"- Risk level: {governance.get('risk_level', 'unknown')}",
-                f"- Dual-sign required: {format_bool(privy.get('dual_sign_required'), 'en')}",
+                f"- Dual-sign required: {governance.get('dual_sign_required', 'no')}",
                 "",
             ]
         )
 
-    if needs_planning:
+    if isinstance(planning_pack, dict):
         if selected_language == "zh":
             lines.extend(
                 [
                     "## 规划包",
                     "- 已确认路径：先做轻量开发前规划，再进入实现。",
-                    f"- 推荐锚点：{progress_anchor or 'docs/progress/MASTER.md'}",
+                    f"- 推荐锚点：{planning_pack.get('recommended_anchor', 'docs/progress/MASTER.md')}",
                     "- 工作流步骤：",
-                    _bullet_list(localized_workflow_steps, none_text),
+                    _bullet_list([str(item) for item in (planning_pack.get('workflow_steps', []) if isinstance(planning_pack.get('workflow_steps'), list) else [])], none_text),
                     "",
                 ]
             )
@@ -422,21 +488,21 @@ def build_response_pack(
                 [
                     "## Planning Pack",
                     "- Confirmed path: lightweight pre-development planning before implementation.",
-                    f"- Recommended anchor: {progress_anchor or 'docs/progress/MASTER.md'}",
+                    f"- Recommended anchor: {planning_pack.get('recommended_anchor', 'docs/progress/MASTER.md')}",
                     "- Workflow steps:",
-                    _bullet_list(localized_workflow_steps, none_text),
+                    _bullet_list([str(item) for item in (planning_pack.get('workflow_steps', []) if isinstance(planning_pack.get('workflow_steps'), list) else [])], none_text),
                     "",
                 ]
             )
 
-    if needs_iteration:
+    if isinstance(optimization_loop, dict):
         if selected_language == "zh":
             lines.extend(
                 [
                     "## 优化闭环",
-                    f"- 当前模式：bounded iteration，在线上限 {iteration_profile.get('round_cap_online', 0)} 轮，离线上限 {iteration_profile.get('round_cap_offline', 0)} 轮。",
-                    f"- 允许决策：{', '.join(iteration_profile.get('allowed_decisions', []))}",
-                    f"- 当前恢复锚点：{progress_anchor or '.skill-iterations/current-round-memory.md'}",
+                    f"- 当前模式：bounded iteration，在线上限 {optimization_loop.get('round_cap_online', 0)} 轮，离线上限 {optimization_loop.get('round_cap_offline', 0)} 轮。",
+                    f"- 允许决策：{', '.join(optimization_loop.get('allowed_decisions', [])) if isinstance(optimization_loop.get('allowed_decisions'), list) else ''}",
+                    f"- 当前恢复锚点：{optimization_loop.get('resume_anchor', '.skill-iterations/current-round-memory.md')}",
                     "",
                 ]
             )
@@ -444,9 +510,9 @@ def build_response_pack(
             lines.extend(
                 [
                     "## Optimization Loop",
-                    f"- Objective mode: bounded iteration with online cap {iteration_profile.get('round_cap_online', 0)} and offline cap {iteration_profile.get('round_cap_offline', 0)}.",
-                    f"- Allowed decisions: {', '.join(iteration_profile.get('allowed_decisions', []))}",
-                    f"- Current resume anchor: {progress_anchor or '.skill-iterations/current-round-memory.md'}",
+                    f"- Objective mode: bounded iteration with online cap {optimization_loop.get('round_cap_online', 0)} and offline cap {optimization_loop.get('round_cap_offline', 0)}.",
+                    f"- Allowed decisions: {', '.join(optimization_loop.get('allowed_decisions', [])) if isinstance(optimization_loop.get('allowed_decisions'), list) else ''}",
+                    f"- Current resume anchor: {optimization_loop.get('resume_anchor', '.skill-iterations/current-round-memory.md')}",
                     "",
                 ]
             )
@@ -460,6 +526,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--config", default=str(DEFAULT_CONFIG_PATH), help="Path to routing config JSON.")
     parser.add_argument("--repo", default=".", help="Repository path for strategy detection.")
     parser.add_argument("--output", help="Optional markdown file path.")
+    parser.add_argument("--json-output", help="Optional JSON sidecar path.")
     parser.add_argument(
         "--template",
         choices=["auto", "default", "review", "planning", "release", "iteration"],
@@ -483,11 +550,19 @@ def main() -> None:
         config=config,
         repo_path=Path(args.repo).resolve(),
     )
+    payload = build_response_pack_payload(result, template=args.template, language=args.language)
     markdown = build_response_pack(result, template=args.template, language=args.language)
     if args.output:
         output_path = Path(args.output).resolve()
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(markdown, encoding="utf-8")
+        json_output = Path(args.json_output).resolve() if args.json_output else output_path.with_suffix(".json")
+        json_output.parent.mkdir(parents=True, exist_ok=True)
+        json_output.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    elif args.json_output:
+        json_output = Path(args.json_output).resolve()
+        json_output.parent.mkdir(parents=True, exist_ok=True)
+        json_output.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     print(markdown, end="")
 
 

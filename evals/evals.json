@@ -1010,6 +1010,7 @@
         "resume_artifacts contains evals/release-gate/next-iteration-brief.json",
         "response_pack contains Workflow source explanation: This bundle is activated by an explicit process skill, so it should be treated as the primary execution journey.",
         "response_pack contains ## Evidence",
+        "response_pack contains ## Next Action",
         "response_pack contains ## Resume"
       ]
     },
@@ -1062,6 +1063,7 @@
         "workflow_bundle is plan-first-build",
         "response_pack contains 工作流来源解释：这条 bundle 由显式 process skill 激活，应视为当前任务的主执行旅程。",
         "response_pack contains ## 证据与约束",
+        "response_pack contains ## 下一动作",
         "response_pack contains ## 恢复信息"
       ]
     }
