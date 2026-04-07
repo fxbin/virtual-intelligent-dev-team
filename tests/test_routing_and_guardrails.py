@@ -27,6 +27,7 @@ RUN_OFFLINE_DRILL_SCRIPT = SKILL_DIR / "scripts" / "run_offline_loop_drill.py"
 RUN_RELEASE_GATE_SCRIPT = SKILL_DIR / "scripts" / "run_release_gate.py"
 INIT_PRE_DEVELOPMENT_SCRIPT = SKILL_DIR / "scripts" / "init_pre_development_plan.py"
 INIT_PROJECT_MEMORY_SCRIPT = SKILL_DIR / "scripts" / "init_project_memory.py"
+GENERATE_RESPONSE_PACK_SCRIPT = SKILL_DIR / "scripts" / "generate_response_pack.py"
 VALIDATOR_SCRIPT = SKILL_DIR / "scripts" / "validate_virtual_team.py"
 VERIFY_ACTION_SCRIPT = SKILL_DIR / "scripts" / "verify_action.py"
 CONTRACT_LINT_SCRIPT = SKILL_DIR / "scripts" / "lint_virtual_team_contract.py"
@@ -56,6 +57,7 @@ offline_loop_drill = load_module("virtual_intelligent_dev_team_run_offline_loop_
 release_gate = load_module("virtual_intelligent_dev_team_run_release_gate", RUN_RELEASE_GATE_SCRIPT)
 planning_init = load_module("virtual_intelligent_dev_team_planning_init", INIT_PRE_DEVELOPMENT_SCRIPT)
 project_memory_init = load_module("virtual_intelligent_dev_team_project_memory_init", INIT_PROJECT_MEMORY_SCRIPT)
+response_pack = load_module("virtual_intelligent_dev_team_response_pack", GENERATE_RESPONSE_PACK_SCRIPT)
 verify_action = load_module("virtual_intelligent_dev_team_verify_action", VERIFY_ACTION_SCRIPT)
 contract_lint = load_module("virtual_intelligent_dev_team_contract_lint", CONTRACT_LINT_SCRIPT)
 
@@ -297,6 +299,10 @@ class RoutingTests(unittest.TestCase):
         commands = plan[0]["commands"]
 
         self.assertIn(
+            "python scripts/init_project_memory.py --root . --mode iteration --pretty",
+            commands,
+        )
+        self.assertIn(
             "mkdir -p .skill-iterations",
             commands,
         )
@@ -367,6 +373,22 @@ class RoutingTests(unittest.TestCase):
         )
         self.assertEqual("evals/release-gate/release-gate-report.md", plan[0]["resume_anchor"])
         self.assertIn("evals/release-gate/next-iteration-brief.json", plan[0]["resume_artifacts"])
+
+    def test_pre_development_plan_initializes_project_memory_anchor(self) -> None:
+        plan = route_request.build_process_plan(
+            needs_pre_development_planning=True,
+            needs_iteration=False,
+            needs_worktree=False,
+            needs_release_gate=False,
+            needs_git_workflow=False,
+            repo_strategy={"strategy": "trunk-main", "base_branch": "main"},
+        )
+        commands = plan[0]["commands"]
+
+        self.assertIn(
+            "python scripts/init_project_memory.py --root . --mode planning --pretty",
+            commands,
+        )
 
     def test_rebase_conflict_adds_sentinel_assistant(self) -> None:
         result = route_request.route_request(
@@ -3893,6 +3915,37 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertEqual("custom\n", target.read_text(encoding="utf-8"))
             statuses = {item["target"]: item["status"] for item in result["actions"]}
             self.assertEqual("skipped", statuses[".skill-iterations/current-round-memory.md"])
+
+
+class ResponsePackTests(unittest.TestCase):
+    def test_generate_response_pack_renders_bundle_and_anchor(self) -> None:
+        result = route_request.route_request(
+            "Rewrite this project in Rust, but plan before coding and keep a progress tracker for later sessions.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        markdown = response_pack.build_response_pack(result)
+
+        self.assertIn("## Team Dispatch", markdown)
+        self.assertIn("Workflow bundle: plan-first-build", markdown)
+        self.assertIn("Progress anchor: docs/progress/MASTER.md", markdown)
+        self.assertIn("## Planning Pack", markdown)
+
+    def test_verify_action_assistant_delta_contract(self) -> None:
+        result = verify_action.verify_action(
+            text="This SaaS is not growing. Set the strategy and also land the technical plan.",
+            config=load_config(),
+            repo_path=REPO_ROOT,
+            check="assistant-delta-contract",
+        )
+
+        self.assertTrue(result["allowed"])
+        details = result["details"]["assistant_delta_contract"]
+        self.assertTrue(details["enabled"])
+        self.assertIn("Technical Trinity", details["assistants"])
+        self.assertIn("claim", details["required_fields"])
+        self.assertIn("Technical Trinity", details["by_agent"])
 
 
 if __name__ == "__main__":

@@ -259,6 +259,45 @@ def _verify_workflow_bundle(result: dict[str, object]) -> dict[str, object]:
     }
 
 
+def _verify_assistant_delta_contract(result: dict[str, object]) -> dict[str, object]:
+    contract = result.get("assistant_delta_contract", {})
+    if not isinstance(contract, dict):
+        contract = {}
+    assistants = result.get("assistant_agents", [])
+    if not isinstance(assistants, list):
+        assistants = []
+    by_agent = contract.get("by_agent", {})
+    if not isinstance(by_agent, dict):
+        by_agent = {}
+
+    enabled = bool(contract.get("enabled"))
+    required_fields = contract.get("required_fields", [])
+    if not isinstance(required_fields, list):
+        required_fields = []
+    allowed = (
+        len(assistants) > 0
+        and enabled
+        and all(field in required_fields for field in ["claim", "evidence", "decision"])
+        and all(agent in by_agent for agent in assistants)
+    )
+    if allowed:
+        summary = "Assistant delta contract is active and structurally valid for this request."
+        next_step = "Keep assistant responses compact and require only claim/evidence/decision plus agent-specific delta fields."
+    else:
+        summary = "Assistant delta contract is not active for this request."
+        next_step = "If assistants are introduced, re-run verification so the lead merges structured delta instead of loose role fragments."
+    return {
+        "allowed": allowed,
+        "summary": summary,
+        "details": {
+            "assistant_delta_contract": contract,
+            "assistant_count": len(assistants),
+            "assistants": assistants,
+        },
+        "recommended_next_step": next_step,
+    }
+
+
 def verify_action(
     *,
     text: str,
@@ -291,6 +330,8 @@ def verify_action(
         outcome = _verify_iteration(result)
     elif check == "workflow-bundle":
         outcome = _verify_workflow_bundle(result)
+    elif check == "assistant-delta-contract":
+        outcome = _verify_assistant_delta_contract(result)
     else:
         raise ValueError(f"Unsupported check: {check}")
 
@@ -330,6 +371,7 @@ def parse_args() -> argparse.Namespace:
             "release-gate",
             "iteration",
             "workflow-bundle",
+            "assistant-delta-contract",
         ],
         help="What to verify before taking action.",
     )

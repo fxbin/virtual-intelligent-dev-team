@@ -38,6 +38,10 @@ python scripts/verify_action.py --text "<user request>" --check worktree --prett
 python scripts/verify_action.py --text "<user request>" --check workflow-bundle --pretty
 ```
 
+```bash
+python scripts/verify_action.py --text "<user request>" --check assistant-delta-contract --pretty
+```
+
 - 机械契约 lint
 
 ```bash
@@ -48,6 +52,12 @@ python scripts/lint_virtual_team_contract.py --pretty
 
 ```bash
 python scripts/git_workflow_guardrail.py
+```
+
+- 输出骨架生成
+
+```bash
+python scripts/generate_response_pack.py --text "<user request>" --repo . --output .tmp-response-pack.md
 ```
 
 ## 二、开发前规划资产

@@ -332,6 +332,9 @@ After routing, answer with one unified structure:
 
 The lead agent owns the response structure. Assistants should only add the delta that matters.
 
+When you need a fast user-facing draft from the router result, prefer the response-pack generator from
+`references/tooling-command-index.md` instead of inventing a fresh output shape each time.
+
 ## Built-in references and checks
 
 Do not maintain the long command manual in `SKILL.md`.

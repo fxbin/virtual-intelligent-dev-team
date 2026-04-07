@@ -936,6 +936,7 @@
         "needs_pre_development_planning is true",
         "process_skills contains pre-development-planning",
         "process_plan first commands contain python scripts/init_pre_development_plan.py --root . --task-name \"<task-name>\" --task-description \"<task-description>\" --phase-name foundation --pretty",
+        "process_plan first commands contain python scripts/init_project_memory.py --root . --mode planning --pretty",
         "workflow_bundle is plan-first-build",
         "progress_anchor_recommended is docs/progress/MASTER.md"
       ]
@@ -970,7 +971,8 @@
         "needs_iteration is true",
         "workflow_bundle is root-cause-remediate",
         "progress_anchor_recommended is .skill-iterations/current-round-memory.md",
-        "resume_artifacts contains .skill-iterations/distilled-patterns.md"
+        "resume_artifacts contains .skill-iterations/distilled-patterns.md",
+        "process_plan first commands contain python scripts/init_project_memory.py --root . --mode iteration --pretty"
       ]
     },
     {

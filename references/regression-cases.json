@@ -654,16 +654,17 @@
         "strategy": "trunk-main",
         "base_branch": "main"
       },
-    "expect": {
-      "commands_contains": [
-        "mkdir -p .skill-iterations",
-        "cp assets/iteration-plan-template.json .skill-iterations/iteration-plan.json",
-        "python scripts/register_benchmark_baseline.py --workspace .skill-iterations --label stable --report <baseline-report> --pretty",
-        "python scripts/run_iteration_cycle.py --workspace .skill-iterations --round-id round-01 --objective \"<goal>\" --baseline-label stable --owner \"<lead-owner>\" --candidate \"<candidate-change>\" --candidate-worktree ../wt-round-01 --candidate-output-dir .tmp-iteration-round-01 --pretty",
-        "python scripts/compare_benchmark_results.py --baseline .skill-iterations/baselines/stable/benchmark-results.json --candidate .tmp-iteration-round-01/benchmark-results.json --pretty",
-        "python scripts/promote_iteration_baseline.py --workspace .skill-iterations --round-id round-01 --label accepted-round-01 --pretty",
-        "python scripts/sync_distilled_patterns.py --workspace .skill-iterations --pretty",
-        "python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.json --pretty"
+      "expect": {
+        "commands_contains": [
+          "python scripts/init_project_memory.py --root . --mode iteration --pretty",
+          "mkdir -p .skill-iterations",
+          "cp assets/iteration-plan-template.json .skill-iterations/iteration-plan.json",
+          "python scripts/register_benchmark_baseline.py --workspace .skill-iterations --label stable --report <baseline-report> --pretty",
+          "python scripts/run_iteration_cycle.py --workspace .skill-iterations --round-id round-01 --objective \"<goal>\" --baseline-label stable --owner \"<lead-owner>\" --candidate \"<candidate-change>\" --candidate-worktree ../wt-round-01 --candidate-output-dir .tmp-iteration-round-01 --pretty",
+          "python scripts/compare_benchmark_results.py --baseline .skill-iterations/baselines/stable/benchmark-results.json --candidate .tmp-iteration-round-01/benchmark-results.json --pretty",
+          "python scripts/promote_iteration_baseline.py --workspace .skill-iterations --round-id round-01 --label accepted-round-01 --pretty",
+          "python scripts/sync_distilled_patterns.py --workspace .skill-iterations --pretty",
+          "python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.json --pretty"
         ]
       }
     },
@@ -698,6 +699,7 @@
       },
       "expect": {
         "commands_contains": [
+          "python scripts/init_project_memory.py --root . --mode planning --pretty",
           "python scripts/init_pre_development_plan.py --root . --task-name \"<task-name>\" --task-description \"<task-description>\" --phase-name foundation --pretty"
         ]
       }
@@ -774,6 +776,18 @@
         "detail_equals": {
           "workflow_bundle": "plan-first-build",
           "progress_anchor_recommended": "docs/progress/MASTER.md"
+        }
+      }
+    },
+    {
+      "name": "verify_assistant_delta_contract_allowed",
+      "text": "This SaaS is not growing. Set the strategy and also land the technical plan.",
+      "check": "assistant-delta-contract",
+      "expect": {
+        "allowed": true,
+        "summary_contains": "structurally valid",
+        "detail_equals": {
+          "assistant_count": 1
         }
       }
     },

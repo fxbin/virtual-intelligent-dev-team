@@ -1201,6 +1201,7 @@ def build_process_plan(
                     "规划完成后，再回到正常 lead / assistant / governance / iteration / release 路径",
                 ],
                 "commands": [
+                    "python scripts/init_project_memory.py --root . --mode planning --pretty",
                     "python scripts/init_pre_development_plan.py --root . --task-name \"<task-name>\" --task-description \"<task-description>\" --phase-name foundation --pretty",
                     "python scripts/route_request.py --text \"<rewrite-or-migration-request>\" --config references/routing-rules.json --pretty",
                 ],
@@ -1236,6 +1237,7 @@ def build_process_plan(
                     "按 keep / retry / rollback / stop 做轮次决策",
                 ],
                 "commands": [
+                    "python scripts/init_project_memory.py --root . --mode iteration --pretty",
                     "mkdir -p .skill-iterations",
                     "cp assets/iteration-plan-template.json .skill-iterations/iteration-plan.json",
                     "python scripts/register_benchmark_baseline.py --workspace .skill-iterations --label stable --report <baseline-report> --pretty",
@@ -1579,6 +1581,20 @@ def build_workflow_bundle(
 def build_assistant_delta_contract(
     lead_agent: str, assistants: list[str], workflow_bundle: str | None
 ) -> dict[str, object]:
+    per_agent_fields = {
+        "Code Audit Council": ["claim", "evidence", "severity", "fix"],
+        "Git Workflow Guardian": ["claim", "evidence", "stage", "next_action"],
+        "Technical Trinity": ["claim", "evidence", "decision", "next_action"],
+        "Executive Trinity": ["claim", "evidence", "decision", "tradeoff"],
+        "Omni-Architect": ["claim", "evidence", "decision", "constraint"],
+        "World-Class Product Architect": ["claim", "evidence", "decision", "ux_impact"],
+        "Sentinel Architect (NB)": ["claim", "evidence", "decision", "risk", "next_action"],
+        "Java Virtuoso": ["claim", "evidence", "decision", "jvm_implication"],
+    }
+    by_agent = {
+        agent: per_agent_fields.get(agent, ["claim", "evidence", "decision", "next_action"])
+        for agent in assistants
+    }
     return {
         "enabled": len(assistants) > 0,
         "lead_owner": lead_agent,
@@ -1586,6 +1602,7 @@ def build_assistant_delta_contract(
         "workflow_bundle": workflow_bundle,
         "required_fields": ["claim", "evidence", "decision"],
         "optional_fields": ["risk", "next_action"],
+        "by_agent": by_agent,
         "rule": "Assistants should return only the delta that materially changes the lead decision.",
     }
 
