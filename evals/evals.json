@@ -102,6 +102,8 @@
         "lead_agent is World-Class Product Architect",
         "assistant_agents contains Technical Trinity",
         "workflow_bundle is product-spec-deliver",
+        "workflow_bundle_bootstrap.required is true",
+        "workflow_bundle_bootstrap.commands contains python scripts/init_product_delivery.py --root . --pretty",
         "mode is not single-agent execution"
       ],
       "categories": [
@@ -117,7 +119,9 @@
       "expectations": [
         "lead_agent is Git Workflow Guardian",
         "needs_git_workflow is true",
-        "workflow_bundle is govern-change-safely"
+        "workflow_bundle is govern-change-safely",
+        "workflow_bundle_bootstrap.required is true",
+        "workflow_bundle_bootstrap.commands contains python scripts/init_technical_governance.py --root . --pretty"
       ],
       "categories": [
         "technical-governance",
@@ -1055,7 +1059,8 @@
         "assistant_delta_contract.lead_owner is World-Class Product Architect",
         "assistant_delta_contract.strict_mode is true",
         "assistant_delta_contract.required_fields contains claim",
-        "assistant_delta_contract.required_fields contains evidence"
+        "assistant_delta_contract.required_fields contains evidence",
+        "response_pack_json bundle_bootstrap.resume_anchor is .skill-product/current-slice.md"
       ]
     },
     {

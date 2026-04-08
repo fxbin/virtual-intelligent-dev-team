@@ -130,6 +130,20 @@ def validate_routing_cases(config: dict[str, object], cases: list[dict[str, obje
                     artifact in result.get("resume_artifacts", []),
                     f"{name}: missing resume artifact {artifact}",
                 )
+        if "bundle_bootstrap_commands_contains" in expect:
+            expected_commands = expect["bundle_bootstrap_commands_contains"]
+            commands = (result.get("workflow_bundle_bootstrap") or {}).get("commands", [])
+            check(isinstance(expected_commands, list), f"{name}: bundle_bootstrap_commands_contains must be a list")
+            check(isinstance(commands, list), f"{name}: workflow_bundle_bootstrap.commands must be a list")
+            for command in expected_commands:
+                check(command in commands, f"{name}: missing bootstrap command {command}")
+        if "bundle_bootstrap_artifacts_contains" in expect:
+            expected_artifacts = expect["bundle_bootstrap_artifacts_contains"]
+            artifacts = (result.get("workflow_bundle_bootstrap") or {}).get("artifacts", [])
+            check(isinstance(expected_artifacts, list), f"{name}: bundle_bootstrap_artifacts_contains must be a list")
+            check(isinstance(artifacts, list), f"{name}: workflow_bundle_bootstrap.artifacts must be a list")
+            for artifact in expected_artifacts:
+                check(artifact in artifacts, f"{name}: missing bootstrap artifact {artifact}")
 
         priority_agent = (result["reason"]["priority_routing"] or {}).get("agent")
         check(priority_agent == expect.get("priority_agent"), f"{name}: unexpected priority routing agent")

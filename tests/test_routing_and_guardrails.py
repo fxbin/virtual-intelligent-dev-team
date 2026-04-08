@@ -27,6 +27,8 @@ RUN_OFFLINE_DRILL_SCRIPT = SKILL_DIR / "scripts" / "run_offline_loop_drill.py"
 RUN_RELEASE_GATE_SCRIPT = SKILL_DIR / "scripts" / "run_release_gate.py"
 INIT_PRE_DEVELOPMENT_SCRIPT = SKILL_DIR / "scripts" / "init_pre_development_plan.py"
 INIT_PROJECT_MEMORY_SCRIPT = SKILL_DIR / "scripts" / "init_project_memory.py"
+INIT_PRODUCT_DELIVERY_SCRIPT = SKILL_DIR / "scripts" / "init_product_delivery.py"
+INIT_TECHNICAL_GOVERNANCE_SCRIPT = SKILL_DIR / "scripts" / "init_technical_governance.py"
 GENERATE_RESPONSE_PACK_SCRIPT = SKILL_DIR / "scripts" / "generate_response_pack.py"
 RESPONSE_CONTRACT_SCRIPT = SKILL_DIR / "scripts" / "response_contract.py"
 VALIDATOR_SCRIPT = SKILL_DIR / "scripts" / "validate_virtual_team.py"
@@ -58,6 +60,8 @@ offline_loop_drill = load_module("virtual_intelligent_dev_team_run_offline_loop_
 release_gate = load_module("virtual_intelligent_dev_team_run_release_gate", RUN_RELEASE_GATE_SCRIPT)
 planning_init = load_module("virtual_intelligent_dev_team_planning_init", INIT_PRE_DEVELOPMENT_SCRIPT)
 project_memory_init = load_module("virtual_intelligent_dev_team_project_memory_init", INIT_PROJECT_MEMORY_SCRIPT)
+product_delivery_init = load_module("virtual_intelligent_dev_team_product_delivery_init", INIT_PRODUCT_DELIVERY_SCRIPT)
+technical_governance_init = load_module("virtual_intelligent_dev_team_technical_governance_init", INIT_TECHNICAL_GOVERNANCE_SCRIPT)
 response_pack = load_module("virtual_intelligent_dev_team_response_pack", GENERATE_RESPONSE_PACK_SCRIPT)
 response_contract = load_module("virtual_intelligent_dev_team_response_contract", RESPONSE_CONTRACT_SCRIPT)
 verify_action = load_module("virtual_intelligent_dev_team_verify_action", VERIFY_ACTION_SCRIPT)
@@ -458,6 +462,11 @@ class RoutingTests(unittest.TestCase):
         self.assertIn("Technical Trinity", result["assistant_agents"])
         self.assertNotEqual("模式 A：单点执行", result["mode"])
         self.assertEqual("product-spec-deliver", result["workflow_bundle"])
+        self.assertTrue(result["workflow_bundle_bootstrap"]["required"])
+        self.assertIn(
+            "python scripts/init_product_delivery.py --root . --pretty",
+            result["workflow_bundle_bootstrap"]["commands"],
+        )
 
     def test_governance_request_routes_to_git_guardian_bundle(self) -> None:
         result = route_request.route_request(
@@ -469,6 +478,11 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual("Git Workflow Guardian", result["lead_agent"])
         self.assertTrue(result["needs_git_workflow"])
         self.assertEqual("govern-change-safely", result["workflow_bundle"])
+        self.assertTrue(result["workflow_bundle_bootstrap"]["required"])
+        self.assertIn(
+            "python scripts/init_technical_governance.py --root . --pretty",
+            result["workflow_bundle_bootstrap"]["commands"],
+        )
 
     def test_python_fastapi_routes_to_technical_trinity(self) -> None:
         result = route_request.route_request(
@@ -4347,6 +4361,29 @@ class ProjectMemoryInitTests(unittest.TestCase):
             statuses = {item["target"]: item["status"] for item in result["actions"]}
             self.assertEqual("skipped", statuses[".skill-iterations/current-round-memory.md"])
 
+    def test_init_product_delivery_creates_expected_anchors(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            result = product_delivery_init.init_product_delivery(root=root, overwrite=False)
+
+            self.assertTrue(result["ok"])
+            self.assertTrue((root / ".skill-product" / "current-slice.md").exists())
+            self.assertTrue((root / ".skill-product" / "acceptance-criteria.md").exists())
+            self.assertTrue((root / ".skill-product" / "contract-questions.md").exists())
+            self.assertEqual(".skill-product/current-slice.md", result["resume_anchor"])
+
+    def test_init_technical_governance_creates_expected_anchors(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            result = technical_governance_init.init_technical_governance(
+                root=root, overwrite=False
+            )
+
+            self.assertTrue(result["ok"])
+            self.assertTrue((root / ".skill-governance" / "change-plan.md").exists())
+            self.assertTrue((root / ".skill-governance" / "release-checklist.md").exists())
+            self.assertEqual(".skill-governance/change-plan.md", result["resume_anchor"])
+
 
 class ResponsePackTests(unittest.TestCase):
     def test_generate_response_pack_payload_matches_json_schema(self) -> None:
@@ -4409,6 +4446,25 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("run the release gate first", payload["next_action"]["smallest_executable_action"])
         self.assertEqual("evals/release-gate/release-gate-report.md", payload["resume"]["progress_anchor"])
 
+    def test_generate_response_pack_payload_includes_bundle_bootstrap_for_product_bundle(self) -> None:
+        result = route_request.route_request(
+            "Define the onboarding user flow, acceptance criteria, and backend contract for this signup revamp.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        payload = response_pack.build_response_pack_payload(result)
+
+        self.assertIn("bundle_bootstrap", payload)
+        self.assertEqual(
+            ".skill-product/current-slice.md",
+            payload["bundle_bootstrap"]["resume_anchor"],
+        )
+        self.assertIn(
+            "python scripts/init_product_delivery.py --root . --pretty",
+            payload["bundle_bootstrap"]["commands"],
+        )
+
     def test_generate_response_pack_cli_writes_json_sidecar_by_default(self) -> None:
         with make_tempdir() as tmp:
             output = Path(tmp) / "response-pack.md"
@@ -4457,6 +4513,19 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("Smallest executable action: lock transformation scope, target, and constraints", markdown)
         self.assertIn("Progress anchor: docs/progress/MASTER.md", markdown)
         self.assertIn("## Planning Pack", markdown)
+
+    def test_generate_response_pack_renders_product_bundle_bootstrap(self) -> None:
+        result = route_request.route_request(
+            "Define the onboarding user flow, acceptance criteria, and backend contract for this signup revamp.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        markdown = response_pack.build_response_pack(result)
+
+        self.assertIn("## Bundle Bootstrap", markdown)
+        self.assertIn("python scripts/init_product_delivery.py --root . --pretty", markdown)
+        self.assertIn(".skill-product/current-slice.md", markdown)
 
     def test_generate_response_pack_auto_uses_chinese_scaffold(self) -> None:
         result = route_request.route_request(
@@ -4598,6 +4667,29 @@ class ResponsePackTests(unittest.TestCase):
         self.assertEqual("process-skill", result["details"]["workflow_bundle_source"])
         self.assertIn("primary execution journey", result["details"]["workflow_bundle_source_explanation"])
         self.assertEqual("process-skill", result["router_snapshot"]["workflow_bundle_source"])
+
+    def test_verify_action_workflow_bundle_exposes_product_bootstrap(self) -> None:
+        result = verify_action.verify_action(
+            text="Define the onboarding user flow, acceptance criteria, and backend contract for this signup revamp.",
+            config=load_config(),
+            repo_path=REPO_ROOT,
+            check="workflow-bundle",
+        )
+
+        self.assertTrue(result["allowed"])
+        self.assertTrue(result["details"]["bundle_bootstrap"]["required"])
+        self.assertIn(
+            "python scripts/init_product_delivery.py --root . --pretty",
+            result["details"]["bundle_bootstrap"]["commands"],
+        )
+        self.assertIn(
+            "python scripts/init_product_delivery.py --root . --pretty",
+            result["explanation_card"]["bundle_bootstrap_commands"],
+        )
+        self.assertEqual(
+            ".skill-product/current-slice.md",
+            result["router_snapshot"]["workflow_bundle_bootstrap"]["resume_anchor"],
+        )
 
     def test_verify_action_assistant_delta_contract(self) -> None:
         result = verify_action.verify_action(

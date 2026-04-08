@@ -41,6 +41,7 @@ existing routing, planning, iteration, release, and Git rules.
 - Primary references:
   - `references/product-delivery-playbook.md`
   - `assets/product-delivery-brief-template.md`
+  - `scripts/init_product_delivery.py`
 - Default resume anchors:
   - `.skill-product/current-slice.md`
   - `.skill-product/acceptance-criteria.md`
@@ -75,6 +76,7 @@ existing routing, planning, iteration, release, and Git rules.
 - Primary references:
   - `references/technical-governance-playbook.md`
   - `assets/technical-governance-change-plan-template.md`
+  - `scripts/init_technical_governance.py`
 - Default resume anchors:
   - `.skill-governance/change-plan.md`
   - `.skill-governance/release-checklist.md`

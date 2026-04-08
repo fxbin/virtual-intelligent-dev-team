@@ -1664,6 +1664,43 @@ def build_workflow_bundle(
     }
 
 
+def build_workflow_bundle_bootstrap(bundle_name: str) -> dict[str, object]:
+    if bundle_name == "product-spec-deliver":
+        return {
+            "required": True,
+            "reference": "references/product-delivery-playbook.md",
+            "commands": [
+                "python scripts/init_product_delivery.py --root . --pretty",
+            ],
+            "artifacts": [
+                ".skill-product/current-slice.md",
+                ".skill-product/acceptance-criteria.md",
+                ".skill-product/contract-questions.md",
+            ],
+            "resume_anchor": ".skill-product/current-slice.md",
+        }
+    if bundle_name == "govern-change-safely":
+        return {
+            "required": True,
+            "reference": "references/technical-governance-playbook.md",
+            "commands": [
+                "python scripts/init_technical_governance.py --root . --pretty",
+            ],
+            "artifacts": [
+                ".skill-governance/change-plan.md",
+                ".skill-governance/release-checklist.md",
+            ],
+            "resume_anchor": ".skill-governance/change-plan.md",
+        }
+    return {
+        "required": False,
+        "reference": None,
+        "commands": [],
+        "artifacts": [],
+        "resume_anchor": None,
+    }
+
+
 def build_assistant_delta_contract(
     lead_agent: str, assistants: list[str], workflow_bundle: str | None
 ) -> dict[str, object]:
@@ -1889,6 +1926,9 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         needs_git_workflow=needs_git_workflow,
         sentinel_overlay=sentinel_overlay,
     )
+    workflow_bundle_bootstrap = build_workflow_bundle_bootstrap(
+        str(workflow_bundle.get("name", "direct-execution"))
+    )
     assistant_delta_contract = build_assistant_delta_contract(
         lead_agent=lead_agent,
         assistants=assistants,
@@ -1947,6 +1987,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "workflow_reason": workflow_bundle.get("reason"),
         "progress_anchor_recommended": workflow_bundle.get("progress_anchor_recommended"),
         "resume_artifacts": workflow_bundle.get("resume_artifacts", []),
+        "workflow_bundle_bootstrap": workflow_bundle_bootstrap,
         "assistant_delta_contract": assistant_delta_contract,
         "scores": scores,
         "reason": reason,

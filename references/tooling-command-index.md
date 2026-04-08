@@ -147,14 +147,13 @@ python scripts/init_pre_development_plan.py --root . --task-name "<task-name>" -
 模板：
 
 - `assets/product-delivery-brief-template.md`
+- `assets/product-contract-questions-template.md`
 - `references/product-delivery-playbook.md`
 
 常用初始化命令：
 
 ```bash
-mkdir -p .skill-product
-cp assets/product-delivery-brief-template.md .skill-product/current-slice.md
-cp assets/product-delivery-brief-template.md .skill-product/acceptance-criteria.md
+python scripts/init_product_delivery.py --root . --pretty
 ```
 
 ## 四、技术治理资产
@@ -162,14 +161,13 @@ cp assets/product-delivery-brief-template.md .skill-product/acceptance-criteria.
 模板：
 
 - `assets/technical-governance-change-plan-template.md`
+- `assets/technical-governance-release-checklist-template.md`
 - `references/technical-governance-playbook.md`
 
 常用初始化命令：
 
 ```bash
-mkdir -p .skill-governance
-cp assets/technical-governance-change-plan-template.md .skill-governance/change-plan.md
-cp assets/technical-governance-change-plan-template.md .skill-governance/release-checklist.md
+python scripts/init_technical_governance.py --root . --pretty
 ```
 
 ## 五、bounded iteration 资产

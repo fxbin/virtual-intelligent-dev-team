@@ -126,8 +126,14 @@ def build_explanation_card_from_payload(payload: dict[str, object]) -> dict[str,
     if not isinstance(team_dispatch, dict):
         team_dispatch = {}
     resume_artifacts = resume.get("resume_artifacts", [])
+    bundle_bootstrap = payload.get("bundle_bootstrap", {})
     if not isinstance(resume_artifacts, list):
         resume_artifacts = []
+    if not isinstance(bundle_bootstrap, dict):
+        bundle_bootstrap = {}
+    bootstrap_commands = bundle_bootstrap.get("commands", [])
+    if not isinstance(bootstrap_commands, list):
+        bootstrap_commands = []
     return {
         "workflow_bundle": team_dispatch.get("workflow_bundle"),
         "workflow_bundle_source": team_dispatch.get("workflow_bundle_source"),
@@ -137,6 +143,7 @@ def build_explanation_card_from_payload(payload: dict[str, object]) -> dict[str,
         "current_owner": next_action.get("current_owner"),
         "progress_anchor": resume.get("progress_anchor"),
         "resume_artifacts": [str(item) for item in resume_artifacts],
+        "bundle_bootstrap_commands": [str(item) for item in bootstrap_commands],
     }
 
 

@@ -67,6 +67,12 @@
           "Technical Trinity"
         ],
         "workflow_bundle": "product-spec-deliver",
+        "bundle_bootstrap_commands_contains": [
+          "python scripts/init_product_delivery.py --root . --pretty"
+        ],
+        "bundle_bootstrap_artifacts_contains": [
+          ".skill-product/current-slice.md"
+        ],
         "priority_agent": null
       }
     },
@@ -77,6 +83,12 @@
         "lead_agent": "Git Workflow Guardian",
         "needs_git_workflow": true,
         "workflow_bundle": "govern-change-safely",
+        "bundle_bootstrap_commands_contains": [
+          "python scripts/init_technical_governance.py --root . --pretty"
+        ],
+        "bundle_bootstrap_artifacts_contains": [
+          ".skill-governance/change-plan.md"
+        ],
         "priority_agent": null
       }
     },

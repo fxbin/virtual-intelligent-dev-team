@@ -262,7 +262,8 @@
         "next_action",
         "current_owner",
         "progress_anchor",
-        "resume_artifacts"
+        "resume_artifacts",
+        "bundle_bootstrap_commands"
       ],
       "properties": {
         "workflow_bundle": {
@@ -288,6 +289,9 @@
         },
         "resume_artifacts": {
           "$ref": "#/$defs/string_array"
+        },
+        "bundle_bootstrap_commands": {
+          "$ref": "#/$defs/string_array"
         }
       },
       "additionalProperties": false
@@ -306,7 +310,8 @@
         "bundle_confidence",
         "workflow_bundle_source",
         "progress_anchor_recommended",
-        "resume_artifacts"
+        "resume_artifacts",
+        "workflow_bundle_bootstrap"
       ],
       "properties": {
         "lead_agent": {
@@ -344,6 +349,9 @@
         },
         "resume_artifacts": {
           "$ref": "#/$defs/string_array"
+        },
+        "workflow_bundle_bootstrap": {
+          "$ref": "#/$defs/workflow_bundle_bootstrap"
         }
       },
       "additionalProperties": false
@@ -545,7 +553,8 @@
         "workflow_bundle_source_explanation",
         "progress_anchor_recommended",
         "resume_artifacts",
-        "workflow_steps"
+        "workflow_steps",
+        "bundle_bootstrap"
       ],
       "properties": {
         "workflow_bundle": {
@@ -568,6 +577,37 @@
         },
         "workflow_steps": {
           "$ref": "#/$defs/string_array"
+        },
+        "bundle_bootstrap": {
+          "$ref": "#/$defs/workflow_bundle_bootstrap"
+        }
+      },
+      "additionalProperties": false
+    },
+    "workflow_bundle_bootstrap": {
+      "type": "object",
+      "required": [
+        "required",
+        "reference",
+        "commands",
+        "artifacts",
+        "resume_anchor"
+      ],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "reference": {
+          "$ref": "#/$defs/string_or_null"
+        },
+        "commands": {
+          "$ref": "#/$defs/string_array"
+        },
+        "artifacts": {
+          "$ref": "#/$defs/string_array"
+        },
+        "resume_anchor": {
+          "$ref": "#/$defs/string_or_null"
         }
       },
       "additionalProperties": false

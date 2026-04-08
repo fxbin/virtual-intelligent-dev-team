@@ -18,7 +18,7 @@
 - `language`
   - `en | zh`
 - `template`
-  - `default | review | planning | release | iteration`
+  - `default | review | planning | release | iteration | product | governance`
 - `team_dispatch`
 - `execution_result`
 - `evidence`
@@ -26,6 +26,7 @@
 - `resume`
 - `git_workflow`
 - `governance`
+- 可选：`bundle_bootstrap`
 - 可选：`planning_pack`
 - 可选：`optimization_loop`
 
@@ -81,6 +82,14 @@
 - `selected_track`
 - `risk_level`
 - `dual_sign_required`
+
+## `bundle_bootstrap`
+
+- `required`
+- `reference`
+- `commands`
+- `artifacts`
+- `resume_anchor`
 
 ## 可选块
 

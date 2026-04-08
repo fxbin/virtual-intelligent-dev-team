@@ -42,6 +42,10 @@ def infer_template(result: dict[str, object]) -> str:
         return "planning"
     if bool(result.get("needs_iteration")):
         return "iteration"
+    if str(result.get("workflow_bundle")) == "product-spec-deliver":
+        return "product"
+    if str(result.get("workflow_bundle")) == "govern-change-safely":
+        return "governance"
     if str(result.get("workflow_bundle")) == "audit-fix-deliver":
         return "review"
     return "default"
@@ -76,6 +80,8 @@ def localize_workflow_reason(bundle: str, reason: str, language: str) -> str:
         "plan-first-build": "当前请求属于重写、迁移或先规划后开发，应先产出 planning pack 和持久化进度锚点。",
         "root-cause-remediate": "当前请求需要基于证据做诊断或有边界迭代，应保留验证证据与回滚决策。",
         "audit-fix-deliver": "当前请求以审计或 review 为主，应先给出 findings，再决定修复与交付。",
+        "product-spec-deliver": "当前请求以产品切片交付为主，应先锁定范围、用户流、验收标准和契约问题。",
+        "govern-change-safely": "当前请求以技术治理和交付安全为主，应先明确执行模式、验证方式和回滚条件。",
         "direct-execution": "当前请求没有命中更强的流程旅程，保持轻量直执行即可。",
     }
     return translations.get(bundle, reason)
@@ -108,6 +114,18 @@ def localize_workflow_steps(bundle: str, steps: list[str], language: str) -> lis
             "把 blocker 和后续优化项拆开",
             "定义最小且安全的修复动作",
             "只有在明确要求 commit、push 或 PR 时再进入 Git 交付",
+        ],
+        "product-spec-deliver": [
+            "先锁定目标用户、目标结果和最小可接受范围",
+            "写出核心用户流和关键失败状态",
+            "把需求转成可验证的验收标准",
+            "编码前先显式列出前后端契约问题",
+        ],
+        "govern-change-safely": [
+            "先定义 owner、执行模式和停止条件",
+            "锁定最小安全下一步",
+            "写清验证证据和回滚条件",
+            "确认 guardrail 后再进入 Git 或 release 动作",
         ],
         "direct-execution": [
             "保持路由轻量",
@@ -169,6 +187,9 @@ def build_response_pack_payload(
     resume_artifacts = result.get("resume_artifacts", [])
     if not isinstance(resume_artifacts, list):
         resume_artifacts = []
+    bundle_bootstrap = result.get("workflow_bundle_bootstrap", {})
+    if not isinstance(bundle_bootstrap, dict):
+        bundle_bootstrap = {}
     contract = result.get("assistant_delta_contract", {})
     if not isinstance(contract, dict):
         contract = {}
@@ -247,6 +268,18 @@ def build_response_pack_payload(
                 "key_decision": f"由 `{lead}` 持有优化闭环的语义所有权。",
                 "main_risks": f"证据不足、静默回归，以及超过 `{iteration_profile.get('round_cap_online', 0)}` 轮在线迭代后的 loop drift。",
             }
+        elif selected_template == "product":
+            execution_result = {
+                "key_conclusion": "先把产品切片写实，再进入实现。",
+                "key_decision": f"由 `{lead}` 持有用户流、验收标准和契约问题的收口。",
+                "main_risks": "范围漂移、验收标准失真，以及前后端契约遗漏。",
+            }
+        elif selected_template == "governance":
+            execution_result = {
+                "key_conclusion": "先收紧治理与回滚边界，再进入交付动作。",
+                "key_decision": f"由 `{lead}` 持有执行模式、验证方式和回滚条件。",
+                "main_risks": "跳过 guardrail、回滚条件不清、以及交付顺序失控。",
+            }
         else:
             execution_result = {
                 "key_conclusion": "按当前主责与工作流 bundle 执行最小下一步。",
@@ -277,6 +310,18 @@ def build_response_pack_payload(
                 "key_conclusion": "stay inside the bounded loop and change only one variable per round.",
                 "key_decision": f"keep `{lead}` as the semantic owner of the optimization loop.",
                 "main_risks": f"weak evidence, silent regression, and loop drift beyond `{iteration_profile.get('round_cap_online', 0)}` online rounds.",
+            }
+        elif selected_template == "product":
+            execution_result = {
+                "key_conclusion": "lock the product slice before implementation drifts.",
+                "key_decision": f"keep `{lead}` as owner of user flow, acceptance criteria, and contract closure.",
+                "main_risks": "scope drift, vague acceptance criteria, and missed frontend/backend contract questions.",
+            }
+        elif selected_template == "governance":
+            execution_result = {
+                "key_conclusion": "tighten governance and rollback boundaries before delivery actions begin.",
+                "key_decision": f"keep `{lead}` as owner of execution mode, verification, and rollback conditions.",
+                "main_risks": "skipped guardrails, weak rollback conditions, and unsafe delivery sequencing.",
             }
         else:
             execution_result = {
@@ -330,6 +375,14 @@ def build_response_pack_payload(
             "dual_sign_required": bool(privy.get("dual_sign_required")),
         },
     }
+    if bool(bundle_bootstrap.get("required")):
+        payload["bundle_bootstrap"] = {
+            "required": True,
+            "reference": format_missing(bundle_bootstrap.get("reference", ""), selected_language),
+            "commands": [str(item) for item in bundle_bootstrap.get("commands", []) if str(item).strip()],
+            "artifacts": [str(item) for item in bundle_bootstrap.get("artifacts", []) if str(item).strip()],
+            "resume_anchor": format_missing(bundle_bootstrap.get("resume_anchor", ""), selected_language),
+        }
     if needs_planning:
         payload["planning_pack"] = {
             "recommended_anchor": progress_anchor or "docs/progress/MASTER.md",
@@ -361,6 +414,7 @@ def build_response_pack(
     governance = payload["governance"] if isinstance(payload.get("governance"), dict) else {}
     planning_pack = payload["planning_pack"] if isinstance(payload.get("planning_pack"), dict) else None
     optimization_loop = payload["optimization_loop"] if isinstance(payload.get("optimization_loop"), dict) else None
+    bundle_bootstrap = payload["bundle_bootstrap"] if isinstance(payload.get("bundle_bootstrap"), dict) else None
     none_text = "无" if selected_language == "zh" else "none"
 
     if selected_language == "zh":
@@ -494,6 +548,36 @@ def build_response_pack(
                     f"- Recommended anchor: {planning_pack.get('recommended_anchor', 'docs/progress/MASTER.md')}",
                     "- Workflow steps:",
                     _bullet_list([str(item) for item in (planning_pack.get('workflow_steps', []) if isinstance(planning_pack.get('workflow_steps'), list) else [])], none_text),
+                    "",
+                ]
+            )
+
+    if isinstance(bundle_bootstrap, dict):
+        if selected_language == "zh":
+            lines.extend(
+                [
+                    "## Bundle 起盘",
+                    f"- 是否需要初始化：{format_bool(bundle_bootstrap.get('required'), selected_language)}",
+                    f"- 参考文档：{bundle_bootstrap.get('reference', '无')}",
+                    f"- 恢复锚点：{bundle_bootstrap.get('resume_anchor', '无')}",
+                    "- 初始化命令：",
+                    _bullet_list([str(item) for item in bundle_bootstrap.get("commands", [])], none_text),
+                    "- 初始化工件：",
+                    _bullet_list([str(item) for item in bundle_bootstrap.get("artifacts", [])], none_text),
+                    "",
+                ]
+            )
+        else:
+            lines.extend(
+                [
+                    "## Bundle Bootstrap",
+                    f"- Initialization required: {format_bool(bundle_bootstrap.get('required'), selected_language)}",
+                    f"- Reference: {bundle_bootstrap.get('reference', 'n/a')}",
+                    f"- Resume anchor: {bundle_bootstrap.get('resume_anchor', 'n/a')}",
+                    "- Commands:",
+                    _bullet_list([str(item) for item in bundle_bootstrap.get("commands", [])], none_text),
+                    "- Artifacts:",
+                    _bullet_list([str(item) for item in bundle_bootstrap.get("artifacts", [])], none_text),
                     "",
                 ]
             )

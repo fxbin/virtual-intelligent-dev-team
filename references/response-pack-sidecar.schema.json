@@ -31,7 +31,9 @@
         "review",
         "planning",
         "release",
-        "iteration"
+        "iteration",
+        "product",
+        "governance"
       ]
     },
     "team_dispatch": {
@@ -54,6 +56,9 @@
     },
     "governance": {
       "$ref": "#/$defs/governance"
+    },
+    "bundle_bootstrap": {
+      "$ref": "#/$defs/bundle_bootstrap"
     },
     "planning_pack": {
       "$ref": "#/$defs/planning_pack"
@@ -243,6 +248,34 @@
         },
         "dual_sign_required": {
           "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "bundle_bootstrap": {
+      "type": "object",
+      "required": [
+        "required",
+        "reference",
+        "commands",
+        "artifacts",
+        "resume_anchor"
+      ],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "commands": {
+          "$ref": "#/$defs/string_array"
+        },
+        "artifacts": {
+          "$ref": "#/$defs/string_array"
+        },
+        "resume_anchor": {
+          "type": "string"
         }
       },
       "additionalProperties": false

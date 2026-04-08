@@ -247,6 +247,9 @@ def _verify_workflow_bundle(result: dict[str, object]) -> dict[str, object]:
     workflow_steps = result.get("workflow_steps", [])
     numeric_confidence = float(bundle_confidence) if isinstance(bundle_confidence, (int, float)) else 0.0
     source_text = str(bundle_source) if isinstance(bundle_source, str) else ""
+    bundle_bootstrap = result.get("workflow_bundle_bootstrap", {})
+    if not isinstance(bundle_bootstrap, dict):
+        bundle_bootstrap = {}
     source_explanations = {
         "process-skill": "The workflow bundle is activated by an explicit process skill, so it should be treated as the primary execution journey.",
         "keyword+lead": "The workflow bundle is activated by the combination of task keywords and a high-risk lead, so it is evidence-backed but not purely process-driven.",
@@ -281,6 +284,7 @@ def _verify_workflow_bundle(result: dict[str, object]) -> dict[str, object]:
             "progress_anchor_recommended": progress_anchor,
             "resume_artifacts": resume_artifacts,
             "workflow_steps": workflow_steps,
+            "bundle_bootstrap": bundle_bootstrap,
         },
         "recommended_next_step": next_step,
     }
@@ -407,6 +411,7 @@ def verify_action(
             "workflow_bundle_source": result.get("workflow_bundle_source"),
             "progress_anchor_recommended": result.get("progress_anchor_recommended"),
             "resume_artifacts": result.get("resume_artifacts"),
+            "workflow_bundle_bootstrap": result.get("workflow_bundle_bootstrap"),
         },
     }
     response_contract.validate_verify_action_result(output)
