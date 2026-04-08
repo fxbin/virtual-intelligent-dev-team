@@ -1878,8 +1878,10 @@ def build_beta_validation_plan(text: str, workflow_bundle_name: str) -> dict[str
         "cohort_artifact": ".skill-beta/cohort-matrix.md",
         "simulation_profile_template": "assets/simulated-user-profile-template.json",
         "simulation_profile_dir": ".skill-beta/personas",
+        "simulation_persona_library": "references/simulation-persona-library.json",
         "simulation_config_template": "assets/beta-simulation-config-template.json",
         "simulation_config_dir": ".skill-beta/simulation-configs",
+        "simulation_scenario_packs": "references/simulation-scenario-packs.json",
         "simulation_run_dir": ".skill-beta/simulation-runs",
         "simulation_init_command_template": (
             "python scripts/init_beta_simulation.py --root . --round-id <round-id> "

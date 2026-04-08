@@ -99,8 +99,10 @@
 - `cohort_artifact`
 - `simulation_profile_template`
 - `simulation_profile_dir`
+- `simulation_persona_library`
 - `simulation_config_template`
 - `simulation_config_dir`
+- `simulation_scenario_packs`
 - `simulation_run_dir`
 - `simulation_init_command_template`
 - `simulation_run_command_template`

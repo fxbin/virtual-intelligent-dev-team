@@ -1,0 +1,112 @@
+{
+  "schema_version": "simulation-persona-library/v1",
+  "skill_name": "virtual-intelligent-dev-team",
+  "round_persona_sets": {
+    "round-0": [
+      "first-time-novice",
+      "goal-driven-power-user",
+      "skeptical-evaluator"
+    ],
+    "round-1": [
+      "first-time-novice",
+      "daily-operator",
+      "goal-driven-power-user",
+      "edge-case-breaker"
+    ],
+    "default": [
+      "first-time-novice",
+      "daily-operator",
+      "goal-driven-power-user",
+      "skeptical-evaluator",
+      "edge-case-breaker"
+    ]
+  },
+  "personas": [
+    {
+      "profile_id": "first-time-novice",
+      "display_name": "First-Time Novice",
+      "archetype": "first-time novice",
+      "primary_goal": "Understand the promise quickly and finish the first meaningful task without guidance.",
+      "tool_literacy": "low",
+      "domain_familiarity": "low",
+      "risk_tolerance": "low",
+      "workflow_preference": "step-by-step clarity with visible next actions",
+      "failure_sensitivity": "high",
+      "feedback_style": "balanced",
+      "preferred_tasks": [
+        "first-run journey",
+        "guided onboarding"
+      ],
+      "notes": "Treat confusion as a blocker candidate."
+    },
+    {
+      "profile_id": "daily-operator",
+      "display_name": "Daily Operator",
+      "archetype": "daily operator",
+      "primary_goal": "Finish the core repeated task with minimal friction.",
+      "tool_literacy": "medium",
+      "domain_familiarity": "high",
+      "risk_tolerance": "medium",
+      "workflow_preference": "repeatable routine with low cognitive load",
+      "failure_sensitivity": "medium",
+      "feedback_style": "brief",
+      "preferred_tasks": [
+        "core repeated task",
+        "resume interrupted work"
+      ],
+      "notes": "Surface repetitive friction and state drift."
+    },
+    {
+      "profile_id": "goal-driven-power-user",
+      "display_name": "Goal-Driven Power User",
+      "archetype": "goal-driven power user",
+      "primary_goal": "Reach the target outcome through the fastest path available.",
+      "tool_literacy": "high",
+      "domain_familiarity": "medium",
+      "risk_tolerance": "high",
+      "workflow_preference": "shortcuts, batching, and fast-path actions",
+      "failure_sensitivity": "medium",
+      "feedback_style": "brief",
+      "preferred_tasks": [
+        "fastest happy path",
+        "advanced settings"
+      ],
+      "notes": "Surface efficiency friction, missing shortcuts, and slow defaults."
+    },
+    {
+      "profile_id": "skeptical-evaluator",
+      "display_name": "Skeptical Evaluator",
+      "archetype": "skeptical evaluator",
+      "primary_goal": "Decide whether the product is trustworthy and differentiated enough to keep evaluating.",
+      "tool_literacy": "medium",
+      "domain_familiarity": "low",
+      "risk_tolerance": "low",
+      "workflow_preference": "strong explanations before committing effort",
+      "failure_sensitivity": "high",
+      "feedback_style": "verbose",
+      "preferred_tasks": [
+        "value proposition review",
+        "permission review"
+      ],
+      "notes": "Surface trust, messaging, and credibility issues."
+    },
+    {
+      "profile_id": "edge-case-breaker",
+      "display_name": "Edge-Case Breaker",
+      "archetype": "edge-case breaker",
+      "primary_goal": "Intentionally hit unusual states to discover hidden blockers.",
+      "tool_literacy": "high",
+      "domain_familiarity": "high",
+      "risk_tolerance": "high",
+      "workflow_preference": "boundary pushing and invalid-state exploration",
+      "failure_sensitivity": "low",
+      "feedback_style": "balanced",
+      "preferred_tasks": [
+        "invalid input",
+        "state transitions",
+        "error recovery"
+      ],
+      "notes": "Surface hidden blockers before wider rollout."
+    }
+  ]
+}

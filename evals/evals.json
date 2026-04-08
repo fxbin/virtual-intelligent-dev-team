@@ -1210,6 +1210,7 @@
         "release_gate_json summary.beta_gate_passed is false",
         "release_gate_json summary.beta_gate_decision is hold",
         "release_gate_json beta_gate.round_id is round-02",
+        "release_gate_json beta_gate.blocker_breakdown exists",
         "release_gate_json explanation_card.route_evidence contains beta=FAIL"
       ]
     }

@@ -1,0 +1,67 @@
+{
+  "schema_version": "simulation-scenario-packs/v1",
+  "skill_name": "virtual-intelligent-dev-team",
+  "scenarios": [
+    {
+      "scenario_id": "scenario-1",
+      "title": "first meaningful task",
+      "primary_task": "finish the primary happy-path task",
+      "success_definition": "the user completes the task and can restate the product value",
+      "risk_focus": "onboarding clarity"
+    },
+    {
+      "scenario_id": "scenario-2",
+      "title": "repeat core workflow",
+      "primary_task": "repeat the core task after the first-run context disappears",
+      "success_definition": "the user can re-enter the flow without rebuilding context from scratch",
+      "risk_focus": "workflow friction"
+    },
+    {
+      "scenario_id": "scenario-3",
+      "title": "recover from a rough edge",
+      "primary_task": "handle a confusing or unusual state and still reach a recoverable outcome",
+      "success_definition": "the user can recover without silent failure or dead-end confusion",
+      "risk_focus": "error recovery and edge-case handling"
+    }
+  ],
+  "packs": [
+    {
+      "pack_id": "concept-smoke",
+      "round_ids": [
+        "round-0"
+      ],
+      "objective_keywords": [],
+      "scenario_ids": [
+        "scenario-1",
+        "scenario-2"
+      ]
+    },
+    {
+      "pack_id": "default-beta",
+      "round_ids": [
+        "round-1",
+        "round-2",
+        "round-3"
+      ],
+      "objective_keywords": [],
+      "scenario_ids": [
+        "scenario-1",
+        "scenario-2",
+        "scenario-3"
+      ]
+    },
+    {
+      "pack_id": "operational-stability",
+      "round_ids": [],
+      "objective_keywords": [
+        "operational",
+        "stability"
+      ],
+      "scenario_ids": [
+        "scenario-1",
+        "scenario-2",
+        "scenario-3"
+      ]
+    }
+  ]
+}

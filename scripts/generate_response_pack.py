@@ -416,11 +416,17 @@ def build_response_pack_payload(
                 beta_validation_plan.get("simulation_profile_template", "assets/simulated-user-profile-template.json")
             ),
             "simulation_profile_dir": str(beta_validation_plan.get("simulation_profile_dir", ".skill-beta/personas")),
+            "simulation_persona_library": str(
+                beta_validation_plan.get("simulation_persona_library", "references/simulation-persona-library.json")
+            ),
             "simulation_config_template": str(
                 beta_validation_plan.get("simulation_config_template", "assets/beta-simulation-config-template.json")
             ),
             "simulation_config_dir": str(
                 beta_validation_plan.get("simulation_config_dir", ".skill-beta/simulation-configs")
+            ),
+            "simulation_scenario_packs": str(
+                beta_validation_plan.get("simulation_scenario_packs", "references/simulation-scenario-packs.json")
             ),
             "simulation_run_dir": str(beta_validation_plan.get("simulation_run_dir", ".skill-beta/simulation-runs")),
             "simulation_init_command_template": str(
@@ -677,8 +683,10 @@ def build_response_pack(
                     f"- 反馈台账：{beta_program.get('feedback_anchor', '.skill-beta/feedback-ledger.md')}",
                     f"- 模拟画像模板：{beta_program.get('simulation_profile_template', 'assets/simulated-user-profile-template.json')}",
                     f"- 模拟画像目录：{beta_program.get('simulation_profile_dir', '.skill-beta/personas')}",
+                    f"- 模拟画像库：{beta_program.get('simulation_persona_library', 'references/simulation-persona-library.json')}",
                     f"- 模拟配置模板：{beta_program.get('simulation_config_template', 'assets/beta-simulation-config-template.json')}",
                     f"- 模拟配置目录：{beta_program.get('simulation_config_dir', '.skill-beta/simulation-configs')}",
+                    f"- 模拟场景包：{beta_program.get('simulation_scenario_packs', 'references/simulation-scenario-packs.json')}",
                     f"- 模拟运行目录：{beta_program.get('simulation_run_dir', '.skill-beta/simulation-runs')}",
                     f"- 模拟起盘命令：{beta_program.get('simulation_init_command_template', 'python scripts/init_beta_simulation.py --root . --round-id <round-id> --phase \"<phase>\" --objective \"<objective>\" --pretty')}",
                     f"- 模拟执行命令：{beta_program.get('simulation_run_command_template', 'python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/<round-id>.json --pretty')}",
@@ -708,8 +716,10 @@ def build_response_pack(
                     f"- Feedback anchor: {beta_program.get('feedback_anchor', '.skill-beta/feedback-ledger.md')}",
                     f"- Simulation profile template: {beta_program.get('simulation_profile_template', 'assets/simulated-user-profile-template.json')}",
                     f"- Simulation profile dir: {beta_program.get('simulation_profile_dir', '.skill-beta/personas')}",
+                    f"- Simulation persona library: {beta_program.get('simulation_persona_library', 'references/simulation-persona-library.json')}",
                     f"- Simulation config template: {beta_program.get('simulation_config_template', 'assets/beta-simulation-config-template.json')}",
                     f"- Simulation config dir: {beta_program.get('simulation_config_dir', '.skill-beta/simulation-configs')}",
+                    f"- Simulation scenario packs: {beta_program.get('simulation_scenario_packs', 'references/simulation-scenario-packs.json')}",
                     f"- Simulation run dir: {beta_program.get('simulation_run_dir', '.skill-beta/simulation-runs')}",
                     f"- Simulation init command: {beta_program.get('simulation_init_command_template', 'python scripts/init_beta_simulation.py --root . --round-id <round-id> --phase \"<phase>\" --objective \"<objective>\" --pretty')}",
                     f"- Simulation run command: {beta_program.get('simulation_run_command_template', 'python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/<round-id>.json --pretty')}",

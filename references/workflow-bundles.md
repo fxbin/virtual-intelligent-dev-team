@@ -54,6 +54,8 @@ existing routing, planning, iteration, release, and Git rules.
 - Default sequence:
   1. define the beta objective, exit criteria, and round boundaries
   2. initialize simulated-user profiles and a per-round simulation config
+     - source persona defaults from `references/simulation-persona-library.json`
+     - source scenario defaults from `references/simulation-scenario-packs.json`
   3. start with a small simulated or seed-user cohort
   4. preserve session-level traces before synthesizing the round report
   5. sync generated feedback rows back into the ledger and inspect blocker slices by persona and scenario

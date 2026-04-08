@@ -14,7 +14,7 @@ Use this playbook when the request is about staged beta validation, internal tes
 2. Split the beta into explicit rounds with increasing sample size.
 3. Start with a small simulated or seed-user cohort before broadening exposure.
 4. Define machine-readable simulated-user profiles instead of one generic “user”.
-5. Create a per-round simulation config that locks scenarios, session plan, and summary output path.
+5. Build each round from the shared persona library and scenario packs before freezing the per-round simulation config.
 6. Capture every feedback item with scenario, severity, and proposed action, and keep the raw event trace.
 7. Sync simulation evidence back into the feedback ledger before judging the round.
 8. Expand only when the previous round's exit criteria are explicitly met.
@@ -32,7 +32,12 @@ Use this playbook when the request is about staged beta validation, internal tes
 - per-round exit criteria
 - expand / hold / escalate recommendation
 
-## Default user archetypes
+## Shared libraries
+
+- persona library: `references/simulation-persona-library.json`
+- scenario packs: `references/simulation-scenario-packs.json`
+
+默认 archetype 仍然围绕：
 
 - first-time novice
 - daily operator

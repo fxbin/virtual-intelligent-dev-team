@@ -183,7 +183,7 @@ def beta_gate_snapshot(beta_gate: dict[str, object] | None) -> dict[str, object]
     follow_up = result.get("follow_up", {})
     if not isinstance(follow_up, dict):
         follow_up = {}
-    return {
+    snapshot = {
         "enabled": True,
         "source": str(beta_gate.get("source", "beta-gate-result")),
         "generated_at": result.get("generated_at"),
@@ -196,6 +196,10 @@ def beta_gate_snapshot(beta_gate: dict[str, object] | None) -> dict[str, object]
         "markdown_report": result.get("markdown_report"),
         "release_governance_recommended": bool(follow_up.get("release_governance_recommended")),
     }
+    blocker_breakdown = result.get("blocker_breakdown")
+    if isinstance(blocker_breakdown, dict):
+        snapshot["blocker_breakdown"] = blocker_breakdown
+    return snapshot
 
 
 def benchmark_checks_passed(summary: dict[str, object]) -> bool:
@@ -559,6 +563,9 @@ def blocker_evidence_snapshot(blocker: dict[str, object], brief: dict[str, objec
     if blocker_id == "offline-loop-drill":
         payload = benchmark_context.get("offline_loop_drill", {})
         return payload if isinstance(payload, dict) else {}
+    if blocker_id == "beta-round-gate":
+        payload = brief.get("beta_gate_context", {})
+        return payload if isinstance(payload, dict) else {}
     return {}
 
 
@@ -578,6 +585,19 @@ def blocker_catalog_keywords(blocker: dict[str, object], brief: dict[str, object
         "发版",
     ]
     if isinstance(evidence, dict):
+        blocker_breakdown = evidence.get("blocker_breakdown", {})
+        if isinstance(blocker_breakdown, dict):
+            for key in ("by_persona", "by_scenario"):
+                items = blocker_breakdown.get(key, [])
+                if not isinstance(items, list):
+                    continue
+                for item in items[:4]:
+                    if not isinstance(item, dict):
+                        continue
+                    raw_keywords.append(item.get("label", ""))
+                    themes = item.get("top_feedback_themes", [])
+                    if isinstance(themes, list):
+                        raw_keywords.extend(themes[:3])
         output_excerpt_payload = evidence.get("output_excerpt", [])
         if isinstance(output_excerpt_payload, list):
             raw_keywords.extend(output_excerpt_payload[:3])
@@ -599,6 +619,38 @@ def blocker_catalog_keywords(blocker: dict[str, object], brief: dict[str, object
                 if isinstance(failures, list):
                     raw_keywords.extend(failures[:2])
     return unique_compact_values(raw_keywords, limit=120)
+
+
+def beta_breakdown_lines(beta_context: dict[str, object]) -> list[str]:
+    blocker_breakdown = beta_context.get("blocker_breakdown", {})
+    if not isinstance(blocker_breakdown, dict):
+        return []
+
+    lines: list[str] = []
+    by_persona = blocker_breakdown.get("by_persona", [])
+    if isinstance(by_persona, list) and by_persona:
+        lines.extend(["", "## Beta Blocker Breakdown By Persona", ""])
+        for item in by_persona[:5]:
+            if not isinstance(item, dict):
+                continue
+            themes = item.get("top_feedback_themes", [])
+            theme_text = ", ".join(str(value) for value in themes[:3]) if isinstance(themes, list) else ""
+            lines.append(
+                f"- {item.get('label')}: sessions={item.get('session_count')}, blockers={item.get('blocker_issue_count')}, critical={item.get('critical_issue_count')}, high={item.get('high_severity_issue_count')}, themes={theme_text}"
+            )
+
+    by_scenario = blocker_breakdown.get("by_scenario", [])
+    if isinstance(by_scenario, list) and by_scenario:
+        lines.extend(["", "## Beta Blocker Breakdown By Scenario", ""])
+        for item in by_scenario[:5]:
+            if not isinstance(item, dict):
+                continue
+            themes = item.get("top_feedback_themes", [])
+            theme_text = ", ".join(str(value) for value in themes[:3]) if isinstance(themes, list) else ""
+            lines.append(
+                f"- {item.get('label')}: sessions={item.get('session_count')}, blockers={item.get('blocker_issue_count')}, critical={item.get('critical_issue_count')}, high={item.get('high_severity_issue_count')}, themes={theme_text}"
+            )
+    return lines
 
 
 def render_hold_benchmark_signals(brief: dict[str, object]) -> list[str]:
@@ -652,6 +704,18 @@ def render_hold_benchmark_signals(brief: dict[str, object]) -> list[str]:
         report = str(beta_context.get("json_report", "")).strip()
         if report != "":
             lines.append(f"  - report: `{report}`")
+        blocker_breakdown = beta_context.get("blocker_breakdown", {})
+        if isinstance(blocker_breakdown, dict):
+            by_persona = blocker_breakdown.get("by_persona", [])
+            by_scenario = blocker_breakdown.get("by_scenario", [])
+            if isinstance(by_persona, list) and by_persona and isinstance(by_persona[0], dict):
+                lines.append(
+                    f"  - top persona slice: `{by_persona[0].get('label')}` blockers={by_persona[0].get('blocker_issue_count')}"
+                )
+            if isinstance(by_scenario, list) and by_scenario and isinstance(by_scenario[0], dict):
+                lines.append(
+                    f"  - top scenario slice: `{by_scenario[0].get('label')}` blockers={by_scenario[0].get('blocker_issue_count')}"
+                )
 
     lines.append("")
     return lines
@@ -684,6 +748,9 @@ def render_hold_diagnosis_content(brief: dict[str, object]) -> str:
                 lines.append(f"  - Evidence required: `{evidence}`")
     else:
         lines.append(f"- {brief.get('reason', 'release gate hold')}")
+    beta_context = brief.get("beta_gate_context", {})
+    if isinstance(beta_context, dict):
+        lines.extend(beta_breakdown_lines(beta_context))
     lines.extend(render_hold_benchmark_signals(brief))
     lines.extend(
         [
@@ -740,6 +807,7 @@ def render_hold_targets_content(brief: dict[str, object]) -> str:
             brief.get("required_evidence", []) if isinstance(brief.get("required_evidence"), list) else [],
             limit=200,
         ),
+        "beta_gate_context": brief.get("beta_gate_context", {}) if isinstance(brief.get("beta_gate_context"), dict) else {},
     }
     return json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
 
@@ -790,6 +858,9 @@ def render_blocker_remediation_content(brief: dict[str, object], blocker: dict[s
     if (
         not isinstance(output_excerpt_payload, list) or len(output_excerpt_payload) == 0
     ) and (not isinstance(failed_cases, list) or len(failed_cases) == 0):
+        blocker_breakdown = evidence.get("blocker_breakdown", {}) if isinstance(evidence, dict) else {}
+        if isinstance(blocker_breakdown, dict):
+            lines.extend(beta_breakdown_lines({"blocker_breakdown": blocker_breakdown}))
         report = evidence.get("markdown_report") if isinstance(evidence, dict) else None
         if report:
             lines.append(f"- markdown report: `{report}`")

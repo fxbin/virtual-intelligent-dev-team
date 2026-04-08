@@ -60,7 +60,7 @@
 - Audit and fix
 - Product slice to delivery
 - Beta validation with staged cohorts
-  - simulation profile / config / trace
+  - simulation persona library / scenario packs / config / trace
 - Frontend UX with backend coupling
 - Technical governance hardening
 - High-risk production change

@@ -177,9 +177,11 @@ python scripts/init_product_delivery.py --root . --pretty
 - `assets/beta-round-report-template.json`
 - `references/beta-validation-playbook.md`
 - `references/simulated-user-profile.schema.json`
+- `references/simulation-persona-library.json`
 - `references/beta-simulation-config.schema.json`
 - `references/beta-simulation-event.schema.json`
 - `references/beta-simulation-run.schema.json`
+- `references/simulation-scenario-packs.json`
 - `references/beta-round-report.schema.json`
 - `references/beta-round-gate-result.schema.json`
 

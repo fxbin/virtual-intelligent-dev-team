@@ -50,6 +50,7 @@ The release gate is stricter:
 - it emits a ship-or-hold decision
 - it writes dedicated release gate artifacts
 - it can consume the latest beta round gate result and block ship when beta is still `hold` or `escalate`
+- when beta is blocking ship, the hold brief should preserve persona / scenario blocker slices so remediation is not generic
 - the offline loop drill should also keep exercising the `hold -> bootstrap -> auto-run` path so this closure does not regress silently
 
 ## Outputs
@@ -73,5 +74,5 @@ The release gate is stricter:
 - `hold`
   - any gate failed
   - beta `hold` or `escalate` is a first-class release blocker, even when benchmark evidence is green
-  - the gate should emit a next-iteration brief that states blockers, objective hints, evidence requirements, and the recommended rerun path back into bounded iteration
+  - the gate should emit a next-iteration brief that states blockers, objective hints, evidence requirements, persona / scenario blocker slices when beta evidence exists, and the recommended rerun path back into bounded iteration
   - if an iteration workspace is provided, the gate can bootstrap a runnable iteration plan, a blocker-specific mutation catalog, and a copied candidate repo, then optionally execute it immediately

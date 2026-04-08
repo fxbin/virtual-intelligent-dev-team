@@ -492,6 +492,34 @@ def evaluate_evals(config: dict[str, object]) -> dict[str, object]:
                         "json_report": str(beta_result_path),
                         "markdown_report": str(beta_markdown_path),
                     }
+                    blocker_breakdown = beta_gate_config.get("blocker_breakdown")
+                    if isinstance(blocker_breakdown, dict):
+                        beta_payload["blocker_breakdown"] = blocker_breakdown
+                    elif beta_decision != "advance":
+                        beta_payload["blocker_breakdown"] = {
+                            "by_persona": [
+                                {
+                                    "label": "First-Time Novice",
+                                    "session_count": 4,
+                                    "blocker_issue_count": 1 if beta_decision == "hold" else 0,
+                                    "critical_issue_count": 1 if beta_decision == "escalate" else 0,
+                                    "high_severity_issue_count": 1,
+                                    "session_ids": ["session-01", "session-02"],
+                                    "top_feedback_themes": ["onboarding confusion"],
+                                }
+                            ],
+                            "by_scenario": [
+                                {
+                                    "label": "first meaningful task",
+                                    "session_count": 4,
+                                    "blocker_issue_count": 1 if beta_decision == "hold" else 0,
+                                    "critical_issue_count": 1 if beta_decision == "escalate" else 0,
+                                    "high_severity_issue_count": 1,
+                                    "session_ids": ["session-01", "session-02"],
+                                    "top_feedback_themes": ["onboarding confusion"],
+                                }
+                            ],
+                        }
                     response_contract.validate_beta_round_gate_result(beta_payload)
                     beta_result_path.write_text(json.dumps(beta_payload, ensure_ascii=False, indent=2), encoding="utf-8")
                     beta_gate_result = beta_result_path
