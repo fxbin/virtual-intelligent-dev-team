@@ -52,6 +52,9 @@
     "follow_up": {
       "$ref": "#/$defs/follow_up"
     },
+    "ramp_gate": {
+      "$ref": "#/$defs/ramp_gate"
+    },
     "diff_gate": {
       "$ref": "#/$defs/diff_gate"
     },
@@ -258,6 +261,81 @@
           ]
         },
         "risk_notes": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ramp_gate": {
+      "type": "object",
+      "required": [
+        "status",
+        "required_for_round",
+        "reason",
+        "ramp_plan_json",
+        "expected_sample_size",
+        "observed_planned_sample_size",
+        "expected_participant_mode",
+        "observed_participant_mode",
+        "expected_phase",
+        "observed_phase",
+        "expected_archetypes",
+        "observed_persona_ids"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "not-required",
+            "missing",
+            "missing-round",
+            "passed",
+            "mismatch"
+          ]
+        },
+        "required_for_round": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "ramp_plan_json": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "expected_sample_size": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "observed_planned_sample_size": {
+          "type": "integer"
+        },
+        "expected_participant_mode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "observed_participant_mode": {
+          "type": "string"
+        },
+        "expected_phase": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "observed_phase": {
+          "type": "string"
+        },
+        "expected_archetypes": {
+          "$ref": "#/$defs/string_array"
+        },
+        "observed_persona_ids": {
           "$ref": "#/$defs/string_array"
         }
       },

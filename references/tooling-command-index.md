@@ -172,10 +172,12 @@ python scripts/init_product_delivery.py --root . --pretty
 - `assets/beta-program-overview-template.md`
 - `assets/beta-cohort-matrix-template.md`
 - `assets/beta-feedback-ledger-template.md`
+- `assets/beta-ramp-plan-template.json`
 - `assets/simulated-user-profile-template.json`
 - `assets/beta-simulation-config-template.json`
 - `assets/beta-round-report-template.json`
 - `references/beta-validation-playbook.md`
+- `references/beta-ramp-plan.schema.json`
 - `references/simulated-user-profile.schema.json`
 - `references/simulation-persona-library.schema.json`
 - `references/simulation-persona-library.json`
@@ -230,7 +232,11 @@ python scripts/evaluate_beta_round.py --report .skill-beta/reports/round-1.json 
 - `evaluate_beta_round.py` 现在会消费 round report 里的 fixture diff 证据：
   - `evidence_artifacts.fixture_diff_json`
   - `evidence_artifacts.fixture_diff_markdown`
+- `evaluate_beta_round.py` 现在也会消费 ramp plan 证据：
+  - `evidence_artifacts.ramp_plan_json`
 - 对 `round-1+`：
+  - 缺少 ramp plan 证据会直接阻止 `advance`
+  - ramp plan 和 round report 不一致也会阻止扩量
   - 缺少 diff 证据会直接阻止 `advance`
   - diff 标记 `review_required` 也会阻止扩量
 

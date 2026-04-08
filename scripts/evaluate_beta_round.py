@@ -63,6 +63,24 @@ def load_fixture_diff(diff_path: Path) -> dict[str, object]:
     return payload
 
 
+def load_ramp_plan(plan_path: Path) -> dict[str, object]:
+    with plan_path.open("r", encoding="utf-8") as file:
+        payload = json.load(file)
+    if not isinstance(payload, dict):
+        raise RuntimeError("beta ramp plan must be a JSON object")
+    response_contract.validate_beta_ramp_plan(payload)
+    return payload
+
+
+def load_manifest(manifest_path: Path) -> dict[str, object]:
+    with manifest_path.open("r", encoding="utf-8") as file:
+        payload = json.load(file)
+    if not isinstance(payload, dict):
+        raise RuntimeError("beta simulation manifest must be a JSON object")
+    response_contract.validate_beta_simulation_manifest(payload)
+    return payload
+
+
 def resolve_report_relative_path(report_path: Path, raw_path: str) -> Path:
     path = Path(raw_path)
     if path.is_absolute():
@@ -105,6 +123,103 @@ def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) ->
     max_critical_issue_count = int(thresholds.get("max_critical_issue_count", 0))
     previous_round_id = infer_previous_round_id(round_id)
     diff_required_for_round = previous_round_id is not None
+    ramp_required_for_round = previous_round_id is not None
+    fixture_manifest_json_raw = str(evidence_artifacts.get("fixture_manifest_json", "")).strip()
+    ramp_plan_json_raw = str(evidence_artifacts.get("ramp_plan_json", "")).strip()
+    observed_persona_ids: list[str] = []
+    if fixture_manifest_json_raw != "":
+        manifest_path = resolve_report_relative_path(report_path, fixture_manifest_json_raw)
+        if manifest_path.exists():
+            manifest_payload = load_manifest(manifest_path)
+            sessions = manifest_payload.get("sessions", [])
+            if isinstance(sessions, list):
+                observed_persona_ids = sorted(
+                    {
+                        str(item.get("persona_id", "")).strip()
+                        for item in sessions
+                        if isinstance(item, dict) and str(item.get("persona_id", "")).strip() != ""
+                    }
+                )
+    ramp_gate = {
+        "status": "not-required",
+        "required_for_round": ramp_required_for_round,
+        "reason": "Ramp-plan evidence is not required for the first beta round.",
+        "ramp_plan_json": ramp_plan_json_raw or None,
+        "expected_sample_size": None,
+        "observed_planned_sample_size": planned_sample_size,
+        "expected_participant_mode": None,
+        "observed_participant_mode": str(report.get("participant_mode", "")),
+        "expected_phase": None,
+        "observed_phase": str(report.get("phase", "")),
+        "expected_archetypes": [],
+        "observed_persona_ids": observed_persona_ids,
+    }
+    if ramp_plan_json_raw != "":
+        ramp_payload = load_ramp_plan(resolve_report_relative_path(report_path, ramp_plan_json_raw))
+        rounds = ramp_payload.get("rounds", [])
+        expected_round = None
+        if isinstance(rounds, list):
+            expected_round = next(
+                (
+                    item
+                    for item in rounds
+                    if isinstance(item, dict) and str(item.get("round_id", "")).strip() == round_id
+                ),
+                None,
+            )
+        if expected_round is None:
+            ramp_gate.update(
+                {
+                    "status": "missing-round",
+                    "reason": "Ramp plan does not define the current round.",
+                }
+            )
+        else:
+            expected_sample_size = int(expected_round.get("sample_size", 0))
+            expected_participant_mode = str(expected_round.get("participant_mode", "")).strip()
+            expected_phase = str(expected_round.get("phase", "")).strip()
+            expected_archetypes = [
+                str(item)
+                for item in expected_round.get("archetypes", [])
+                if str(item).strip() != ""
+            ] if isinstance(expected_round.get("archetypes", []), list) else []
+            ramp_gate.update(
+                {
+                    "ramp_plan_json": ramp_plan_json_raw,
+                    "expected_sample_size": expected_sample_size,
+                    "expected_participant_mode": expected_participant_mode,
+                    "expected_phase": expected_phase,
+                    "expected_archetypes": expected_archetypes,
+                }
+            )
+            mismatches: list[str] = []
+            if expected_sample_size != planned_sample_size:
+                mismatches.append("planned sample size")
+            if expected_participant_mode.casefold() != str(report.get("participant_mode", "")).strip().casefold():
+                mismatches.append("participant mode")
+            if expected_phase.casefold() != str(report.get("phase", "")).strip().casefold():
+                mismatches.append("phase")
+            if mismatches:
+                ramp_gate.update(
+                    {
+                        "status": "mismatch",
+                        "reason": "Ramp plan does not match the current round report for " + ", ".join(mismatches) + ".",
+                    }
+                )
+            else:
+                ramp_gate.update(
+                    {
+                        "status": "passed",
+                        "reason": "Ramp plan matches the current round report.",
+                    }
+                )
+    elif ramp_required_for_round:
+        ramp_gate.update(
+            {
+                "status": "missing",
+                "reason": "Round expansion requires a machine-readable ramp plan before the gate can advance.",
+            }
+        )
     fixture_diff_json_raw = str(evidence_artifacts.get("fixture_diff_json", "")).strip()
     fixture_diff_markdown_raw = str(evidence_artifacts.get("fixture_diff_markdown", "")).strip()
     diff_gate = {
@@ -155,6 +270,15 @@ def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) ->
             "continue_beta": False,
             "release_governance_recommended": True,
             "next_round_recommended": None,
+        }
+    elif ramp_required_for_round and ramp_gate["status"] in {"missing", "missing-round", "mismatch"}:
+        decision = "hold"
+        reason = str(ramp_gate["reason"])
+        follow_up = {
+            "next_action": "hold expansion, reconcile the round report with the ramp plan, and rerun the gate",
+            "continue_beta": False,
+            "release_governance_recommended": False,
+            "next_round_recommended": round_id,
         }
     elif diff_required_for_round and diff_gate["status"] in {"missing", "review-required"}:
         decision = "hold"
@@ -217,6 +341,7 @@ def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) ->
             "max_critical_issue_count": max_critical_issue_count,
         },
         "follow_up": follow_up,
+        "ramp_gate": ramp_gate,
         "diff_gate": diff_gate,
         "json_report": "",
         "markdown_report": "",
@@ -244,11 +369,29 @@ def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) ->
         f"- Blocker issues: {blocker_issue_count}",
         f"- Critical issues: {critical_issue_count}",
         f"- High severity issues: {high_severity_issue_count}",
+        f"- Ramp gate: {ramp_gate['status']}",
+        f"- Ramp reason: {ramp_gate['reason']}",
         f"- Diff gate: {diff_gate['status']}",
         f"- Diff reason: {diff_gate['reason']}",
         f"- Next action: {follow_up['next_action']}",
         f"- Next round: {follow_up['next_round_recommended'] or 'n/a'}",
     ]
+    if ramp_gate["status"] != "not-required":
+        lines.extend(
+            [
+                "",
+                "## Ramp Plan Gate",
+                "",
+                f"- Expected sample size: {ramp_gate['expected_sample_size']}",
+                f"- Observed planned sample size: {ramp_gate['observed_planned_sample_size']}",
+                f"- Expected participant mode: {ramp_gate['expected_participant_mode'] or 'n/a'}",
+                f"- Observed participant mode: {ramp_gate['observed_participant_mode']}",
+                f"- Expected phase: {ramp_gate['expected_phase'] or 'n/a'}",
+                f"- Observed phase: {ramp_gate['observed_phase']}",
+                f"- Expected archetypes: {', '.join(ramp_gate['expected_archetypes']) if ramp_gate['expected_archetypes'] else 'n/a'}",
+                f"- Observed persona ids: {', '.join(ramp_gate['observed_persona_ids']) if ramp_gate['observed_persona_ids'] else 'n/a'}",
+            ]
+        )
     if isinstance(diff_gate.get("coverage_shift_summary"), dict):
         coverage_shift = diff_gate["coverage_shift_summary"]
         lines.extend(

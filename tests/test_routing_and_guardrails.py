@@ -582,6 +582,9 @@ class RoutingTests(unittest.TestCase):
         self.assertTrue(beta_plan["enabled"])
         self.assertTrue(beta_plan["simulation_allowed"])
         self.assertEqual(".skill-beta/feedback-ledger.md", beta_plan["feedback_anchor"])
+        self.assertEqual("assets/beta-ramp-plan-template.json", beta_plan["ramp_plan_template"])
+        self.assertEqual("references/beta-ramp-plan.schema.json", beta_plan["ramp_plan_schema"])
+        self.assertEqual(".skill-beta/ramp-plan.json", beta_plan["ramp_plan_path"])
         self.assertEqual("assets/simulated-user-profile-template.json", beta_plan["simulation_profile_template"])
         self.assertEqual(".skill-beta/personas", beta_plan["simulation_profile_dir"])
         self.assertEqual("references/simulation-persona-library.json", beta_plan["simulation_persona_library"])
@@ -4672,6 +4675,9 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertTrue((root / ".skill-beta" / "program-overview.md").exists())
             self.assertTrue((root / ".skill-beta" / "cohort-matrix.md").exists())
             self.assertTrue((root / ".skill-beta" / "feedback-ledger.md").exists())
+            self.assertTrue((root / ".skill-beta" / "ramp-plan.json").exists())
+            ramp_plan = json.loads((root / ".skill-beta" / "ramp-plan.json").read_text(encoding="utf-8"))
+            response_contract.validate_beta_ramp_plan(ramp_plan)
             self.assertEqual(".skill-beta/program-overview.md", result["resume_anchor"])
 
     def test_init_beta_round_report_creates_machine_readable_report(self) -> None:
@@ -4871,6 +4877,7 @@ class ProjectMemoryInitTests(unittest.TestCase):
     def test_summarize_beta_simulation_can_write_round_report(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
+            beta_validation_init.init_beta_validation(root=root, overwrite=False)
             beta_simulation_init.init_beta_simulation(
                 root=root,
                 round_id="round-0",
@@ -4907,6 +4914,7 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertIn("evidence_artifacts", round_report_payload)
             self.assertTrue(round_report_payload["evidence_artifacts"]["fixture_manifest_json"])
             self.assertTrue(round_report_payload["evidence_artifacts"]["fixture_diff_json"])
+            self.assertTrue(round_report_payload["evidence_artifacts"]["ramp_plan_json"])
             ledger_markdown = Path(summary_result["feedback_ledger_out"]).read_text(encoding="utf-8")
             self.assertIn("## Generated Entries", ledger_markdown)
             self.assertIn("| round-1 |", ledger_markdown)
@@ -4918,6 +4926,33 @@ class ProjectMemoryInitTests(unittest.TestCase):
             report.parent.mkdir(parents=True, exist_ok=True)
             diff_dir = root / ".skill-beta" / "fixture-diffs" / "round-0-to-round-1"
             diff_dir.mkdir(parents=True, exist_ok=True)
+            ramp_plan_path = root / ".skill-beta" / "ramp-plan.json"
+            ramp_plan_path.parent.mkdir(parents=True, exist_ok=True)
+            ramp_plan_payload = {
+                "schema_version": "beta-ramp-plan/v1",
+                "skill_name": "virtual-intelligent-dev-team",
+                "rounds": [
+                    {
+                        "round_id": "round-0",
+                        "phase": "pre-build concept smoke",
+                        "sample_size": 5,
+                        "participant_mode": "simulated target users",
+                        "archetypes": ["first-time novice"],
+                        "goal": "validate the promise",
+                        "exit_criteria": "coherent flow",
+                    },
+                    {
+                        "round_id": "round-1",
+                        "phase": "closed beta",
+                        "sample_size": 12,
+                        "participant_mode": "seed users",
+                        "archetypes": ["daily operator", "edge-case breaker"],
+                        "goal": "validate the implemented slice",
+                        "exit_criteria": "no blocker-level failures remain",
+                    }
+                ],
+            }
+            ramp_plan_path.write_text(json.dumps(ramp_plan_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             diff_payload = {
                 "schema_version": "beta-simulation-diff/v1",
                 "generated_at": "2026-04-08T12:00:00Z",
@@ -4987,6 +5022,7 @@ class ProjectMemoryInitTests(unittest.TestCase):
                     "fixture_manifest_markdown": str(root / ".skill-beta" / "fixture-previews" / "round-1" / "beta-simulation-manifest.md"),
                     "fixture_diff_json": str(diff_dir / "beta-simulation-diff.json"),
                     "fixture_diff_markdown": str(diff_dir / "beta-simulation-diff.md"),
+                    "ramp_plan_json": str(ramp_plan_path),
                 },
                 "notes": "",
             }
@@ -4997,6 +5033,7 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertTrue(result["ok"])
             self.assertEqual("advance", result["decision"])
             self.assertEqual("round-2", result["follow_up"]["next_round_recommended"])
+            self.assertEqual("passed", result["ramp_gate"]["status"])
             self.assertEqual("passed", result["diff_gate"]["status"])
             self.assertTrue(Path(result["json_report"]).exists())
             self.assertTrue(Path(result["markdown_report"]).exists())
@@ -5037,10 +5074,11 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertEqual("escalate", result["decision"])
             self.assertTrue(result["follow_up"]["release_governance_recommended"])
             self.assertIsNone(result["follow_up"]["next_round_recommended"])
+            self.assertEqual("missing", result["ramp_gate"]["status"])
             self.assertEqual("missing", result["diff_gate"]["status"])
             response_contract.validate_beta_round_gate_result(result)
 
-    def test_evaluate_beta_round_holds_when_fixture_diff_is_missing(self) -> None:
+    def test_evaluate_beta_round_holds_when_ramp_plan_is_missing(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
             report = root / ".skill-beta" / "reports" / "round-1.json"
@@ -5073,6 +5111,138 @@ class ProjectMemoryInitTests(unittest.TestCase):
 
             self.assertFalse(result["ok"])
             self.assertEqual("hold", result["decision"])
+            self.assertEqual("missing", result["ramp_gate"]["status"])
+            self.assertIn("ramp plan", result["reason"].lower())
+            response_contract.validate_beta_round_gate_result(result)
+
+    def test_evaluate_beta_round_holds_when_ramp_plan_mismatches_round_report(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            report = root / ".skill-beta" / "reports" / "round-1.json"
+            report.parent.mkdir(parents=True, exist_ok=True)
+            ramp_plan_path = root / ".skill-beta" / "ramp-plan.json"
+            ramp_plan_path.parent.mkdir(parents=True, exist_ok=True)
+            ramp_plan_payload = {
+                "schema_version": "beta-ramp-plan/v1",
+                "skill_name": "virtual-intelligent-dev-team",
+                "rounds": [
+                    {
+                        "round_id": "round-1",
+                        "phase": "closed beta",
+                        "sample_size": 20,
+                        "participant_mode": "seed users",
+                        "archetypes": ["daily operator"],
+                        "goal": "validate the implemented slice",
+                        "exit_criteria": "no blocker-level failures remain",
+                    }
+                ],
+            }
+            ramp_plan_path.write_text(json.dumps(ramp_plan_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            payload = {
+                "schema_version": "beta-round-report/v1",
+                "round_id": "round-1",
+                "phase": "closed beta",
+                "goal": "validate the implemented slice",
+                "participant_mode": "seed users",
+                "planned_sample_size": 12,
+                "completed_sessions": 10,
+                "task_success_count": 9,
+                "blocker_issue_count": 0,
+                "critical_issue_count": 0,
+                "high_severity_issue_count": 1,
+                "top_feedback_themes": ["copy clarity"],
+                "exit_criteria": "no blocker-level failures remain",
+                "gate_thresholds": {
+                    "min_completed_sessions": 8,
+                    "min_success_rate": 0.8,
+                    "max_blocker_issue_count": 0,
+                    "max_critical_issue_count": 0,
+                },
+                "evidence_artifacts": {
+                    "simulation_run_json": "",
+                    "simulation_run_markdown": "",
+                    "simulation_summary_json": "",
+                    "feedback_ledger_markdown": "",
+                    "fixture_manifest_json": "",
+                    "fixture_manifest_markdown": "",
+                    "fixture_diff_json": "",
+                    "fixture_diff_markdown": "",
+                    "ramp_plan_json": str(ramp_plan_path),
+                },
+                "notes": "",
+            }
+            report.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+            result = beta_round_evaluator.evaluate_beta_round(report_path=report)
+
+            self.assertFalse(result["ok"])
+            self.assertEqual("hold", result["decision"])
+            self.assertEqual("mismatch", result["ramp_gate"]["status"])
+            self.assertIn("sample size", result["reason"].lower())
+            response_contract.validate_beta_round_gate_result(result)
+
+    def test_evaluate_beta_round_holds_when_fixture_diff_is_missing(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            report = root / ".skill-beta" / "reports" / "round-1.json"
+            report.parent.mkdir(parents=True, exist_ok=True)
+            ramp_plan_path = root / ".skill-beta" / "ramp-plan.json"
+            ramp_plan_path.parent.mkdir(parents=True, exist_ok=True)
+            ramp_plan_payload = {
+                "schema_version": "beta-ramp-plan/v1",
+                "skill_name": "virtual-intelligent-dev-team",
+                "rounds": [
+                    {
+                        "round_id": "round-1",
+                        "phase": "closed beta",
+                        "sample_size": 12,
+                        "participant_mode": "seed users",
+                        "archetypes": ["daily operator"],
+                        "goal": "validate the implemented slice",
+                        "exit_criteria": "no blocker-level failures remain",
+                    }
+                ],
+            }
+            ramp_plan_path.write_text(json.dumps(ramp_plan_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            payload = {
+                "schema_version": "beta-round-report/v1",
+                "round_id": "round-1",
+                "phase": "closed beta",
+                "goal": "validate the implemented slice",
+                "participant_mode": "seed users",
+                "planned_sample_size": 12,
+                "completed_sessions": 10,
+                "task_success_count": 9,
+                "blocker_issue_count": 0,
+                "critical_issue_count": 0,
+                "high_severity_issue_count": 1,
+                "top_feedback_themes": ["copy clarity"],
+                "exit_criteria": "no blocker-level failures remain",
+                "gate_thresholds": {
+                    "min_completed_sessions": 8,
+                    "min_success_rate": 0.8,
+                    "max_blocker_issue_count": 0,
+                    "max_critical_issue_count": 0,
+                },
+                "evidence_artifacts": {
+                    "simulation_run_json": "",
+                    "simulation_run_markdown": "",
+                    "simulation_summary_json": "",
+                    "feedback_ledger_markdown": "",
+                    "fixture_manifest_json": "",
+                    "fixture_manifest_markdown": "",
+                    "fixture_diff_json": "",
+                    "fixture_diff_markdown": "",
+                    "ramp_plan_json": str(ramp_plan_path),
+                },
+                "notes": "",
+            }
+            report.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+            result = beta_round_evaluator.evaluate_beta_round(report_path=report)
+
+            self.assertFalse(result["ok"])
+            self.assertEqual("hold", result["decision"])
             self.assertEqual("missing", result["diff_gate"]["status"])
             self.assertIn("fixture diff", result["reason"].lower())
             response_contract.validate_beta_round_gate_result(result)
@@ -5084,6 +5254,24 @@ class ProjectMemoryInitTests(unittest.TestCase):
             report.parent.mkdir(parents=True, exist_ok=True)
             diff_dir = root / ".skill-beta" / "fixture-diffs" / "round-0-to-round-1"
             diff_dir.mkdir(parents=True, exist_ok=True)
+            ramp_plan_path = root / ".skill-beta" / "ramp-plan.json"
+            ramp_plan_path.parent.mkdir(parents=True, exist_ok=True)
+            ramp_plan_payload = {
+                "schema_version": "beta-ramp-plan/v1",
+                "skill_name": "virtual-intelligent-dev-team",
+                "rounds": [
+                    {
+                        "round_id": "round-1",
+                        "phase": "closed beta",
+                        "sample_size": 6,
+                        "participant_mode": "simulated users",
+                        "archetypes": ["edge-case breaker"],
+                        "goal": "validate the implemented slice",
+                        "exit_criteria": "blocker paths are closed",
+                    }
+                ],
+            }
+            ramp_plan_path.write_text(json.dumps(ramp_plan_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             diff_payload = {
                 "schema_version": "beta-simulation-diff/v1",
                 "generated_at": "2026-04-08T12:00:00Z",
@@ -5152,7 +5340,8 @@ class ProjectMemoryInitTests(unittest.TestCase):
                     "fixture_manifest_json": str(root / ".skill-beta" / "fixture-previews" / "round-1" / "beta-simulation-manifest.json"),
                     "fixture_manifest_markdown": str(root / ".skill-beta" / "fixture-previews" / "round-1" / "beta-simulation-manifest.md"),
                     "fixture_diff_json": str(diff_dir / "beta-simulation-diff.json"),
-                    "fixture_diff_markdown": str(diff_dir / "beta-simulation-diff.md")
+                    "fixture_diff_markdown": str(diff_dir / "beta-simulation-diff.md"),
+                    "ramp_plan_json": str(ramp_plan_path)
                 },
                 "blocker_breakdown": {
                     "by_persona": [
@@ -5186,9 +5375,11 @@ class ProjectMemoryInitTests(unittest.TestCase):
 
             self.assertEqual("hold", result["decision"])
             self.assertIn("blocker_breakdown", result)
+            self.assertEqual("passed", result["ramp_gate"]["status"])
             self.assertEqual("passed", result["diff_gate"]["status"])
             self.assertEqual("Edge-Case Breaker", result["blocker_breakdown"]["by_persona"][0]["label"])
             markdown = Path(result["markdown_report"]).read_text(encoding="utf-8")
+            self.assertIn("## Ramp Plan Gate", markdown)
             self.assertIn("## Fixture Diff Gate", markdown)
             self.assertIn("## Blocker Breakdown By Persona", markdown)
             self.assertIn("## Blocker Breakdown By Scenario", markdown)
@@ -5299,6 +5490,9 @@ class ResponsePackTests(unittest.TestCase):
         self.assertEqual("beta", payload["template"])
         self.assertIn("beta_program", payload)
         self.assertEqual(".skill-beta/feedback-ledger.md", payload["beta_program"]["feedback_anchor"])
+        self.assertEqual("assets/beta-ramp-plan-template.json", payload["beta_program"]["ramp_plan_template"])
+        self.assertEqual("references/beta-ramp-plan.schema.json", payload["beta_program"]["ramp_plan_schema"])
+        self.assertEqual(".skill-beta/ramp-plan.json", payload["beta_program"]["ramp_plan_path"])
         self.assertEqual("assets/simulated-user-profile-template.json", payload["beta_program"]["simulation_profile_template"])
         self.assertEqual(".skill-beta/personas", payload["beta_program"]["simulation_profile_dir"])
         self.assertEqual("references/simulation-persona-library.json", payload["beta_program"]["simulation_persona_library"])
@@ -5396,6 +5590,9 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("round-0 | pre-build concept smoke | 样本 5", markdown)
         self.assertIn(".skill-beta/cohort-matrix.md", markdown)
         self.assertIn(".skill-beta/feedback-ledger.md", markdown)
+        self.assertIn("assets/beta-ramp-plan-template.json", markdown)
+        self.assertIn("references/beta-ramp-plan.schema.json", markdown)
+        self.assertIn(".skill-beta/ramp-plan.json", markdown)
         self.assertIn("assets/simulated-user-profile-template.json", markdown)
         self.assertIn(".skill-beta/personas", markdown)
         self.assertIn("references/simulation-persona-library.json", markdown)

@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:beta-ramp-plan.schema",
+  "title": "Virtual Intelligent Dev Team Beta Ramp Plan",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "skill_name",
+    "rounds"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "beta-ramp-plan/v1"
+    },
+    "skill_name": {
+      "const": "virtual-intelligent-dev-team"
+    },
+    "rounds": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/round"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "round": {
+      "type": "object",
+      "required": [
+        "round_id",
+        "phase",
+        "sample_size",
+        "participant_mode",
+        "archetypes",
+        "goal",
+        "exit_criteria"
+      ],
+      "properties": {
+        "round_id": {
+          "type": "string"
+        },
+        "phase": {
+          "type": "string"
+        },
+        "sample_size": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "participant_mode": {
+          "type": "string"
+        },
+        "archetypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "goal": {
+          "type": "string"
+        },
+        "exit_criteria": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -342,6 +342,9 @@
         "simulation_allowed",
         "feedback_anchor",
         "cohort_artifact",
+        "ramp_plan_template",
+        "ramp_plan_schema",
+        "ramp_plan_path",
         "simulation_profile_template",
         "simulation_profile_dir",
         "simulation_persona_library",
@@ -372,6 +375,15 @@
           "type": "string"
         },
         "cohort_artifact": {
+          "type": "string"
+        },
+        "ramp_plan_template": {
+          "type": "string"
+        },
+        "ramp_plan_schema": {
+          "type": "string"
+        },
+        "ramp_plan_path": {
           "type": "string"
         },
         "simulation_profile_template": {

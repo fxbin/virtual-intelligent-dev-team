@@ -283,6 +283,7 @@ def summarize_beta_simulation(
         round_id = str(run_payload["round_id"])
         manifest_json = repo_root / ".skill-beta" / "fixture-previews" / round_id / "beta-simulation-manifest.json"
         manifest_markdown = repo_root / ".skill-beta" / "fixture-previews" / round_id / "beta-simulation-manifest.md"
+        ramp_plan_json = repo_root / ".skill-beta" / "ramp-plan.json"
         previous_round_id = infer_previous_round_id(round_id)
         fixture_diff_json = None
         fixture_diff_markdown = None
@@ -324,6 +325,7 @@ def summarize_beta_simulation(
                 "fixture_manifest_markdown": str(manifest_markdown) if manifest_markdown.exists() else "",
                 "fixture_diff_json": str(fixture_diff_json) if fixture_diff_json is not None else "",
                 "fixture_diff_markdown": str(fixture_diff_markdown) if fixture_diff_markdown is not None else "",
+                "ramp_plan_json": str(ramp_plan_json) if ramp_plan_json.exists() else "",
             },
             "blocker_breakdown": blocker_breakdown,
             "notes": (

@@ -29,6 +29,7 @@ RELEASE_GATE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "release-gate-result.
 BETA_ROUND_REPORT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-report.schema.json"
 BETA_ROUND_GATE_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-gate-result.schema.json"
 BETA_SIMULATION_DIFF_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-diff.schema.json"
+BETA_RAMP_PLAN_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-ramp-plan.schema.json"
 SIMULATED_USER_PROFILE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "simulated-user-profile.schema.json"
 BETA_SIMULATION_CONFIG_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-config.schema.json"
 BETA_SIMULATION_EVENT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-event.schema.json"
@@ -96,6 +97,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
     beta_round_report_schema_json_path = resolved_skill_dir / "references" / "beta-round-report.schema.json"
     beta_round_gate_result_schema_json_path = resolved_skill_dir / "references" / "beta-round-gate-result.schema.json"
     beta_simulation_diff_schema_json_path = resolved_skill_dir / "references" / "beta-simulation-diff.schema.json"
+    beta_ramp_plan_schema_json_path = resolved_skill_dir / "references" / "beta-ramp-plan.schema.json"
     simulated_user_profile_schema_json_path = resolved_skill_dir / "references" / "simulated-user-profile.schema.json"
     beta_simulation_config_schema_json_path = resolved_skill_dir / "references" / "beta-simulation-config.schema.json"
     beta_simulation_event_schema_json_path = resolved_skill_dir / "references" / "beta-simulation-event.schema.json"
@@ -202,6 +204,11 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
         "Missing references/beta-simulation-diff.schema.json. Restore the beta simulation diff schema before release.",
     )
     _check(
+        beta_ramp_plan_schema_json_path.exists(),
+        errors,
+        "Missing references/beta-ramp-plan.schema.json. Restore the beta ramp plan schema before release.",
+    )
+    _check(
         simulated_user_profile_schema_json_path.exists(),
         errors,
         "Missing references/simulated-user-profile.schema.json. Restore the simulated user profile schema before release.",
@@ -251,6 +258,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 and beta_round_report_schema_json_path.exists()
                 and beta_round_gate_result_schema_json_path.exists()
                 and beta_simulation_diff_schema_json_path.exists()
+                and beta_ramp_plan_schema_json_path.exists()
                 and simulated_user_profile_schema_json_path.exists()
                 and beta_simulation_config_schema_json_path.exists()
                 and beta_simulation_event_schema_json_path.exists()
@@ -341,6 +349,9 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                             "simulation_allowed": True,
                             "feedback_anchor": ".skill-beta/feedback-ledger.md",
                             "cohort_artifact": ".skill-beta/cohort-matrix.md",
+                            "ramp_plan_template": "assets/beta-ramp-plan-template.json",
+                            "ramp_plan_schema": "references/beta-ramp-plan.schema.json",
+                            "ramp_plan_path": ".skill-beta/ramp-plan.json",
                             "simulation_profile_template": "assets/simulated-user-profile-template.json",
                             "simulation_profile_dir": ".skill-beta/personas",
                             "simulation_persona_library": "references/simulation-persona-library.json",
@@ -587,6 +598,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 "fixture_manifest_markdown": ".skill-beta/fixture-previews/round-1/beta-simulation-manifest.md",
                 "fixture_diff_json": ".skill-beta/fixture-diffs/round-0-to-round-1/beta-simulation-diff.json",
                 "fixture_diff_markdown": ".skill-beta/fixture-diffs/round-0-to-round-1/beta-simulation-diff.md",
+                "ramp_plan_json": ".skill-beta/ramp-plan.json",
             },
             "notes": "",
         }
@@ -618,6 +630,20 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 "continue_beta": True,
                 "release_governance_recommended": False,
                 "next_round_recommended": "round-2",
+            },
+            "ramp_gate": {
+                "status": "passed",
+                "required_for_round": True,
+                "reason": "Ramp plan matches the current round report.",
+                "ramp_plan_json": ".skill-beta/ramp-plan.json",
+                "expected_sample_size": 12,
+                "observed_planned_sample_size": 12,
+                "expected_participant_mode": "seed users",
+                "observed_participant_mode": "seed users",
+                "expected_phase": "closed beta",
+                "observed_phase": "closed beta",
+                "expected_archetypes": ["first-time novice", "daily operator"],
+                "observed_persona_ids": ["daily-operator", "edge-case-breaker"],
             },
             "diff_gate": {
                 "status": "passed",
@@ -833,6 +859,30 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             "json_report": ".skill-beta/fixture-diffs/round-0-to-round-1/beta-simulation-diff.json",
             "markdown_report": ".skill-beta/fixture-diffs/round-0-to-round-1/beta-simulation-diff.md",
         }
+        sample_ramp_plan = {
+            "schema_version": "beta-ramp-plan/v1",
+            "skill_name": "virtual-intelligent-dev-team",
+            "rounds": [
+                {
+                    "round_id": "round-0",
+                    "phase": "pre-build concept smoke",
+                    "sample_size": 5,
+                    "participant_mode": "simulated target users",
+                    "archetypes": ["first-time novice"],
+                    "goal": "validate the promise",
+                    "exit_criteria": "coherent flow",
+                },
+                {
+                    "round_id": "round-1",
+                    "phase": "closed beta",
+                    "sample_size": 12,
+                    "participant_mode": "seed users",
+                    "archetypes": ["daily operator"],
+                    "goal": "validate the implemented slice",
+                    "exit_criteria": "no blocker-level failures remain",
+                }
+            ],
+        }
         try:
             local_response_contract.validate_simulated_user_profile(sample_profile)
         except Exception as exc:
@@ -845,6 +895,10 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             local_response_contract.validate_beta_simulation_diff(sample_simulation_diff)
         except Exception as exc:
             beta_round_contract_failures.append(f"simulation-diff: {exc}")
+        try:
+            local_response_contract.validate_beta_ramp_plan(sample_ramp_plan)
+        except Exception as exc:
+            beta_round_contract_failures.append(f"ramp-plan: {exc}")
         sample_persona_library = {
             "schema_version": "simulation-persona-library/v1",
             "skill_name": "virtual-intelligent-dev-team",
@@ -978,6 +1032,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 "gate_schema_json": str(beta_round_gate_result_schema_json_path),
                 "simulation_manifest_schema_json": str(SKILL_DIR / "references" / "beta-simulation-manifest.schema.json"),
                 "simulation_diff_schema_json": str(beta_simulation_diff_schema_json_path),
+                "ramp_plan_schema_json": str(beta_ramp_plan_schema_json_path),
                 "simulation_profile_schema_json": str(simulated_user_profile_schema_json_path),
                 "simulation_persona_library_schema_json": str(SKILL_DIR / "references" / "simulation-persona-library.schema.json"),
                 "simulation_cohort_fixtures_schema_json": str(SKILL_DIR / "references" / "simulation-cohort-fixtures.schema.json"),

@@ -1,0 +1,48 @@
+{
+  "schema_version": "beta-ramp-plan/v1",
+  "skill_name": "virtual-intelligent-dev-team",
+  "rounds": [
+    {
+      "round_id": "round-0",
+      "phase": "pre-build concept smoke",
+      "sample_size": 5,
+      "participant_mode": "simulated target users",
+      "archetypes": [
+        "first-time novice",
+        "goal-driven power user",
+        "skeptical evaluator"
+      ],
+      "goal": "Validate the product promise, user motivation, and major workflow confusion before implementation hardens.",
+      "exit_criteria": "The core value proposition is understandable, the top workflow is coherent, and no blocker-level confusion remains."
+    },
+    {
+      "round_id": "round-1",
+      "phase": "closed beta",
+      "sample_size": 12,
+      "participant_mode": "seed users",
+      "archetypes": [
+        "first-time novice",
+        "daily operator",
+        "power user",
+        "edge-case breaker"
+      ],
+      "goal": "Validate the implemented slice, log usability failures, and confirm that acceptance criteria hold under real tasks.",
+      "exit_criteria": "No P0-P1 workflow blockers remain, the key task succeeds consistently, and top feedback themes are stable enough to cluster."
+    },
+    {
+      "round_id": "round-2",
+      "phase": "expanded internal beta",
+      "sample_size": 30,
+      "participant_mode": "mixed internal and trusted external users",
+      "archetypes": [
+        "new user",
+        "returning user",
+        "power user",
+        "skeptical evaluator",
+        "edge-case breaker"
+      ],
+      "goal": "Pressure-test stability, messaging, and operational readiness before broader rollout.",
+      "exit_criteria": "Feedback severity is trending down, repeated blocker classes are closed, and rollout readiness can be judged with explicit evidence."
+    }
+  ]
+}

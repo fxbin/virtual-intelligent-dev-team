@@ -189,6 +189,9 @@
         },
         "fixture_diff_markdown": {
           "type": "string"
+        },
+        "ramp_plan_json": {
+          "type": "string"
         }
       },
       "additionalProperties": false

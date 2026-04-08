@@ -97,6 +97,9 @@
 - `simulation_allowed`
 - `feedback_anchor`
 - `cohort_artifact`
+- `ramp_plan_template`
+- `ramp_plan_schema`
+- `ramp_plan_path`
 - `simulation_profile_template`
 - `simulation_profile_dir`
 - `simulation_persona_library`

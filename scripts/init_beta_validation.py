@@ -39,6 +39,11 @@ def init_beta_validation(root: Path, overwrite: bool = False) -> dict[str, objec
             root / ".skill-beta" / "feedback-ledger.md",
             "feedback-ledger",
         ),
+        (
+            SKILL_DIR / "assets" / "beta-ramp-plan-template.json",
+            root / ".skill-beta" / "ramp-plan.json",
+            "ramp-plan",
+        ),
     ]
     actions: list[dict[str, str]] = []
     for source, target, kind in specs:
