@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:beta-round-report.schema",
+  "title": "Virtual Intelligent Dev Team Beta Round Report",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "round_id",
+    "phase",
+    "goal",
+    "participant_mode",
+    "planned_sample_size",
+    "completed_sessions",
+    "task_success_count",
+    "blocker_issue_count",
+    "critical_issue_count",
+    "high_severity_issue_count",
+    "top_feedback_themes",
+    "exit_criteria",
+    "gate_thresholds"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "beta-round-report/v1"
+    },
+    "round_id": {
+      "type": "string"
+    },
+    "phase": {
+      "type": "string"
+    },
+    "goal": {
+      "type": "string"
+    },
+    "participant_mode": {
+      "type": "string"
+    },
+    "planned_sample_size": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "completed_sessions": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "task_success_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "blocker_issue_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "critical_issue_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "high_severity_issue_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "top_feedback_themes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "exit_criteria": {
+      "type": "string"
+    },
+    "gate_thresholds": {
+      "type": "object",
+      "required": [
+        "min_completed_sessions",
+        "min_success_rate",
+        "max_blocker_issue_count",
+        "max_critical_issue_count"
+      ],
+      "properties": {
+        "min_completed_sessions": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "min_success_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "max_blocker_issue_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_critical_issue_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

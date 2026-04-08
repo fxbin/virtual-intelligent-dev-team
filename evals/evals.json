@@ -1141,7 +1141,9 @@
         "response_pack_json template is beta",
         "response_pack_json beta_program.simulation_allowed is true",
         "response_pack_json beta_program.rounds length is 3",
-        "response_pack_json beta_program.feedback_anchor is .skill-beta/feedback-ledger.md"
+        "response_pack_json beta_program.feedback_anchor is .skill-beta/feedback-ledger.md",
+        "response_pack_json beta_program.report_template is assets/beta-round-report-template.json",
+        "response_pack_json beta_program.gate_command_template contains python scripts/evaluate_beta_round.py"
       ]
     },
     {

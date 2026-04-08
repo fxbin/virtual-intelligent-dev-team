@@ -412,6 +412,15 @@ def build_response_pack_payload(
             "simulation_allowed": bool(beta_validation_plan.get("simulation_allowed")),
             "feedback_anchor": str(beta_validation_plan.get("feedback_anchor", ".skill-beta/feedback-ledger.md")),
             "cohort_artifact": str(beta_validation_plan.get("cohort_artifact", ".skill-beta/cohort-matrix.md")),
+            "report_template": str(beta_validation_plan.get("report_template", "assets/beta-round-report-template.json")),
+            "report_dir": str(beta_validation_plan.get("report_dir", ".skill-beta/reports")),
+            "decision_dir": str(beta_validation_plan.get("decision_dir", ".skill-beta/round-decisions")),
+            "gate_command_template": str(
+                beta_validation_plan.get(
+                    "gate_command_template",
+                    "python scripts/evaluate_beta_round.py --report .skill-beta/reports/<round-id>.json --pretty",
+                )
+            ),
             "rounds": [
                 {
                     "round_id": str(item.get("round_id", "")),
@@ -637,6 +646,10 @@ def build_response_pack(
                     f"- 是否允许模拟用户：{format_bool(beta_program.get('simulation_allowed'), selected_language)}",
                     f"- cohort 矩阵：{beta_program.get('cohort_artifact', '.skill-beta/cohort-matrix.md')}",
                     f"- 反馈台账：{beta_program.get('feedback_anchor', '.skill-beta/feedback-ledger.md')}",
+                    f"- 轮次报告模板：{beta_program.get('report_template', 'assets/beta-round-report-template.json')}",
+                    f"- 轮次报告目录：{beta_program.get('report_dir', '.skill-beta/reports')}",
+                    f"- Gate 决策目录：{beta_program.get('decision_dir', '.skill-beta/round-decisions')}",
+                    f"- Gate 命令：{beta_program.get('gate_command_template', 'python scripts/evaluate_beta_round.py --report .skill-beta/reports/<round-id>.json --pretty')}",
                     "- 分轮方案：",
                     _bullet_list(
                         [
@@ -656,6 +669,10 @@ def build_response_pack(
                     f"- Simulation allowed: {format_bool(beta_program.get('simulation_allowed'), selected_language)}",
                     f"- Cohort artifact: {beta_program.get('cohort_artifact', '.skill-beta/cohort-matrix.md')}",
                     f"- Feedback anchor: {beta_program.get('feedback_anchor', '.skill-beta/feedback-ledger.md')}",
+                    f"- Round report template: {beta_program.get('report_template', 'assets/beta-round-report-template.json')}",
+                    f"- Round report dir: {beta_program.get('report_dir', '.skill-beta/reports')}",
+                    f"- Gate decision dir: {beta_program.get('decision_dir', '.skill-beta/round-decisions')}",
+                    f"- Gate command: {beta_program.get('gate_command_template', 'python scripts/evaluate_beta_round.py --report .skill-beta/reports/<round-id>.json --pretty')}",
                     "- Rounds:",
                     _bullet_list(
                         [

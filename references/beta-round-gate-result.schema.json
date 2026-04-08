@@ -1,0 +1,202 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:beta-round-gate-result.schema",
+  "title": "Virtual Intelligent Dev Team Beta Round Gate Result",
+  "type": "object",
+  "required": [
+    "generated_at",
+    "skill_name",
+    "ok",
+    "decision",
+    "reason",
+    "round_id",
+    "report_path",
+    "observed",
+    "thresholds",
+    "follow_up",
+    "json_report",
+    "markdown_report"
+  ],
+  "properties": {
+    "generated_at": {
+      "type": "string"
+    },
+    "skill_name": {
+      "const": "virtual-intelligent-dev-team"
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "decision": {
+      "enum": [
+        "advance",
+        "hold",
+        "escalate"
+      ]
+    },
+    "reason": {
+      "type": "string"
+    },
+    "round_id": {
+      "type": "string"
+    },
+    "report_path": {
+      "type": "string"
+    },
+    "observed": {
+      "$ref": "#/$defs/observed"
+    },
+    "thresholds": {
+      "$ref": "#/$defs/thresholds"
+    },
+    "follow_up": {
+      "$ref": "#/$defs/follow_up"
+    },
+    "json_report": {
+      "type": "string"
+    },
+    "markdown_report": {
+      "type": "string"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "const": "advance"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "ok": {
+            "const": true
+          },
+          "follow_up": {
+            "properties": {
+              "continue_beta": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "enum": [
+              "hold",
+              "escalate"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "ok": {
+            "const": false
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "string_array": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "observed": {
+      "type": "object",
+      "required": [
+        "planned_sample_size",
+        "completed_sessions",
+        "success_rate",
+        "blocker_issue_count",
+        "critical_issue_count",
+        "high_severity_issue_count",
+        "top_feedback_themes"
+      ],
+      "properties": {
+        "planned_sample_size": {
+          "type": "integer"
+        },
+        "completed_sessions": {
+          "type": "integer"
+        },
+        "success_rate": {
+          "type": "number"
+        },
+        "blocker_issue_count": {
+          "type": "integer"
+        },
+        "critical_issue_count": {
+          "type": "integer"
+        },
+        "high_severity_issue_count": {
+          "type": "integer"
+        },
+        "top_feedback_themes": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "thresholds": {
+      "type": "object",
+      "required": [
+        "min_completed_sessions",
+        "min_success_rate",
+        "max_blocker_issue_count",
+        "max_critical_issue_count"
+      ],
+      "properties": {
+        "min_completed_sessions": {
+          "type": "integer"
+        },
+        "min_success_rate": {
+          "type": "number"
+        },
+        "max_blocker_issue_count": {
+          "type": "integer"
+        },
+        "max_critical_issue_count": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "follow_up": {
+      "type": "object",
+      "required": [
+        "next_action",
+        "continue_beta",
+        "release_governance_recommended",
+        "next_round_recommended"
+      ],
+      "properties": {
+        "next_action": {
+          "type": "string"
+        },
+        "continue_beta": {
+          "type": "boolean"
+        },
+        "release_governance_recommended": {
+          "type": "boolean"
+        },
+        "next_round_recommended": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

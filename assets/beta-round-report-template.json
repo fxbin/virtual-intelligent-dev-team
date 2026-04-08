@@ -1,0 +1,22 @@
+{
+  "schema_version": "beta-round-report/v1",
+  "round_id": "round-1",
+  "phase": "closed beta",
+  "goal": "Validate the implemented slice with a small seed-user cohort.",
+  "participant_mode": "seed users",
+  "planned_sample_size": 12,
+  "completed_sessions": 0,
+  "task_success_count": 0,
+  "blocker_issue_count": 0,
+  "critical_issue_count": 0,
+  "high_severity_issue_count": 0,
+  "top_feedback_themes": [],
+  "exit_criteria": "No blocker-level workflow failures remain and the core task succeeds consistently.",
+  "gate_thresholds": {
+    "min_completed_sessions": 8,
+    "min_success_rate": 0.8,
+    "max_blocker_issue_count": 0,
+    "max_critical_issue_count": 0
+  },
+  "notes": ""
+}

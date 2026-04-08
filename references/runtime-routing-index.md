@@ -70,6 +70,9 @@
 
 - `workflow-bundles.md`
 - `project-memory-lite.md`
+- beta 分轮验证时再补读：
+  - `beta-validation-playbook.md`
+  - `tooling-command-index.md` 里的 round report / gate 命令
 
 ## 四、开发前规划
 

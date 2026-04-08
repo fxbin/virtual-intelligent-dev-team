@@ -1871,6 +1871,10 @@ def build_beta_validation_plan(text: str, workflow_bundle_name: str) -> dict[str
         "simulation_allowed": True,
         "feedback_anchor": ".skill-beta/feedback-ledger.md",
         "cohort_artifact": ".skill-beta/cohort-matrix.md",
+        "report_template": "assets/beta-round-report-template.json",
+        "report_dir": ".skill-beta/reports",
+        "decision_dir": ".skill-beta/round-decisions",
+        "gate_command_template": "python scripts/evaluate_beta_round.py --report .skill-beta/reports/<round-id>.json --pretty",
         "rounds": rounds,
     }
 

@@ -16,6 +16,8 @@ SKILL_DIR = SCRIPT_DIR.parent
 SIDECAR_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "response-pack-sidecar.schema.json"
 VERIFY_ACTION_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "verify-action-result.schema.json"
 RELEASE_GATE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "release-gate-result.schema.json"
+BETA_ROUND_REPORT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-report.schema.json"
+BETA_ROUND_GATE_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-gate-result.schema.json"
 BENCHMARK_EVALS_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-evals.schema.json"
 BENCHMARK_RUN_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-run-result.schema.json"
 
@@ -71,6 +73,22 @@ def validate_release_gate_result(payload: dict[str, object]) -> None:
         payload,
         schema_path=RELEASE_GATE_SCHEMA_JSON_PATH,
         label="release_gate result",
+    )
+
+
+def validate_beta_round_report(payload: dict[str, object]) -> None:
+    validate_payload_against_schema(
+        payload,
+        schema_path=BETA_ROUND_REPORT_SCHEMA_JSON_PATH,
+        label="beta round report",
+    )
+
+
+def validate_beta_round_gate_result(payload: dict[str, object]) -> None:
+    validate_payload_against_schema(
+        payload,
+        schema_path=BETA_ROUND_GATE_RESULT_SCHEMA_JSON_PATH,
+        label="beta round gate result",
     )
 
 

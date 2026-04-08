@@ -342,6 +342,10 @@
         "simulation_allowed",
         "feedback_anchor",
         "cohort_artifact",
+        "report_template",
+        "report_dir",
+        "decision_dir",
+        "gate_command_template",
         "rounds"
       ],
       "properties": {
@@ -352,6 +356,18 @@
           "type": "string"
         },
         "cohort_artifact": {
+          "type": "string"
+        },
+        "report_template": {
+          "type": "string"
+        },
+        "report_dir": {
+          "type": "string"
+        },
+        "decision_dir": {
+          "type": "string"
+        },
+        "gate_command_template": {
           "type": "string"
         },
         "rounds": {

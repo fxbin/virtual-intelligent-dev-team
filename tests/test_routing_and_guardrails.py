@@ -29,6 +29,8 @@ INIT_PRE_DEVELOPMENT_SCRIPT = SKILL_DIR / "scripts" / "init_pre_development_plan
 INIT_PROJECT_MEMORY_SCRIPT = SKILL_DIR / "scripts" / "init_project_memory.py"
 INIT_PRODUCT_DELIVERY_SCRIPT = SKILL_DIR / "scripts" / "init_product_delivery.py"
 INIT_BETA_VALIDATION_SCRIPT = SKILL_DIR / "scripts" / "init_beta_validation.py"
+INIT_BETA_ROUND_REPORT_SCRIPT = SKILL_DIR / "scripts" / "init_beta_round_report.py"
+EVALUATE_BETA_ROUND_SCRIPT = SKILL_DIR / "scripts" / "evaluate_beta_round.py"
 INIT_TECHNICAL_GOVERNANCE_SCRIPT = SKILL_DIR / "scripts" / "init_technical_governance.py"
 GENERATE_RESPONSE_PACK_SCRIPT = SKILL_DIR / "scripts" / "generate_response_pack.py"
 RESPONSE_CONTRACT_SCRIPT = SKILL_DIR / "scripts" / "response_contract.py"
@@ -63,6 +65,8 @@ planning_init = load_module("virtual_intelligent_dev_team_planning_init", INIT_P
 project_memory_init = load_module("virtual_intelligent_dev_team_project_memory_init", INIT_PROJECT_MEMORY_SCRIPT)
 product_delivery_init = load_module("virtual_intelligent_dev_team_product_delivery_init", INIT_PRODUCT_DELIVERY_SCRIPT)
 beta_validation_init = load_module("virtual_intelligent_dev_team_beta_validation_init", INIT_BETA_VALIDATION_SCRIPT)
+beta_round_report_init = load_module("virtual_intelligent_dev_team_beta_round_report_init", INIT_BETA_ROUND_REPORT_SCRIPT)
+beta_round_evaluator = load_module("virtual_intelligent_dev_team_beta_round_evaluator", EVALUATE_BETA_ROUND_SCRIPT)
 technical_governance_init = load_module("virtual_intelligent_dev_team_technical_governance_init", INIT_TECHNICAL_GOVERNANCE_SCRIPT)
 response_pack = load_module("virtual_intelligent_dev_team_response_pack", GENERATE_RESPONSE_PACK_SCRIPT)
 response_contract = load_module("virtual_intelligent_dev_team_response_contract", RESPONSE_CONTRACT_SCRIPT)
@@ -488,6 +492,10 @@ class RoutingTests(unittest.TestCase):
         self.assertTrue(beta_plan["enabled"])
         self.assertTrue(beta_plan["simulation_allowed"])
         self.assertEqual(".skill-beta/feedback-ledger.md", beta_plan["feedback_anchor"])
+        self.assertEqual("assets/beta-round-report-template.json", beta_plan["report_template"])
+        self.assertEqual(".skill-beta/reports", beta_plan["report_dir"])
+        self.assertEqual(".skill-beta/round-decisions", beta_plan["decision_dir"])
+        self.assertIn("python scripts/evaluate_beta_round.py", beta_plan["gate_command_template"])
         self.assertEqual(3, len(beta_plan["rounds"]))
 
     def test_governance_request_routes_to_git_guardian_bundle(self) -> None:
@@ -4410,6 +4418,103 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertTrue((root / ".skill-beta" / "feedback-ledger.md").exists())
             self.assertEqual(".skill-beta/program-overview.md", result["resume_anchor"])
 
+    def test_init_beta_round_report_creates_machine_readable_report(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            result = beta_round_report_init.init_beta_round_report(
+                root=root,
+                round_id="round-1",
+                phase="closed beta",
+                sample_size=12,
+                participant_mode="seed users",
+                goal="validate the implemented slice",
+                exit_criteria="no blocker-level failures remain",
+                overwrite=False,
+            )
+
+            target = root / ".skill-beta" / "reports" / "round-1.json"
+            self.assertTrue(result["ok"])
+            self.assertEqual(".skill-beta/reports/round-1.json", result["report_path"])
+            self.assertTrue(target.exists())
+            payload = json.loads(target.read_text(encoding="utf-8"))
+            response_contract.validate_beta_round_report(payload)
+            self.assertEqual("round-1", payload["round_id"])
+
+    def test_evaluate_beta_round_emits_advance_decision(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            report = root / ".skill-beta" / "reports" / "round-1.json"
+            report.parent.mkdir(parents=True, exist_ok=True)
+            payload = {
+                "schema_version": "beta-round-report/v1",
+                "round_id": "round-1",
+                "phase": "closed beta",
+                "goal": "validate the implemented slice",
+                "participant_mode": "seed users",
+                "planned_sample_size": 12,
+                "completed_sessions": 10,
+                "task_success_count": 9,
+                "blocker_issue_count": 0,
+                "critical_issue_count": 0,
+                "high_severity_issue_count": 1,
+                "top_feedback_themes": ["copy clarity"],
+                "exit_criteria": "no blocker-level failures remain",
+                "gate_thresholds": {
+                    "min_completed_sessions": 8,
+                    "min_success_rate": 0.8,
+                    "max_blocker_issue_count": 0,
+                    "max_critical_issue_count": 0,
+                },
+                "notes": "",
+            }
+            report.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+            result = beta_round_evaluator.evaluate_beta_round(report_path=report)
+
+            self.assertTrue(result["ok"])
+            self.assertEqual("advance", result["decision"])
+            self.assertEqual("round-2", result["follow_up"]["next_round_recommended"])
+            self.assertTrue(Path(result["json_report"]).exists())
+            self.assertTrue(Path(result["markdown_report"]).exists())
+            response_contract.validate_beta_round_gate_result(result)
+
+    def test_evaluate_beta_round_emits_escalate_for_critical_issues(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            report = root / ".skill-beta" / "reports" / "round-2.json"
+            report.parent.mkdir(parents=True, exist_ok=True)
+            payload = {
+                "schema_version": "beta-round-report/v1",
+                "round_id": "round-2",
+                "phase": "expanded internal beta",
+                "goal": "pressure-test stability",
+                "participant_mode": "mixed internal and trusted external users",
+                "planned_sample_size": 30,
+                "completed_sessions": 24,
+                "task_success_count": 20,
+                "blocker_issue_count": 1,
+                "critical_issue_count": 2,
+                "high_severity_issue_count": 3,
+                "top_feedback_themes": ["data loss", "session corruption"],
+                "exit_criteria": "no new critical failures appear",
+                "gate_thresholds": {
+                    "min_completed_sessions": 20,
+                    "min_success_rate": 0.8,
+                    "max_blocker_issue_count": 1,
+                    "max_critical_issue_count": 0,
+                },
+                "notes": "",
+            }
+            report.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+            result = beta_round_evaluator.evaluate_beta_round(report_path=report)
+
+            self.assertFalse(result["ok"])
+            self.assertEqual("escalate", result["decision"])
+            self.assertTrue(result["follow_up"]["release_governance_recommended"])
+            self.assertIsNone(result["follow_up"]["next_round_recommended"])
+            response_contract.validate_beta_round_gate_result(result)
+
     def test_init_technical_governance_creates_expected_anchors(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
@@ -4516,6 +4621,10 @@ class ResponsePackTests(unittest.TestCase):
         self.assertEqual("beta", payload["template"])
         self.assertIn("beta_program", payload)
         self.assertEqual(".skill-beta/feedback-ledger.md", payload["beta_program"]["feedback_anchor"])
+        self.assertEqual("assets/beta-round-report-template.json", payload["beta_program"]["report_template"])
+        self.assertEqual(".skill-beta/reports", payload["beta_program"]["report_dir"])
+        self.assertEqual(".skill-beta/round-decisions", payload["beta_program"]["decision_dir"])
+        self.assertIn("python scripts/evaluate_beta_round.py", payload["beta_program"]["gate_command_template"])
         self.assertEqual(3, len(payload["beta_program"]["rounds"]))
 
     def test_generate_response_pack_cli_writes_json_sidecar_by_default(self) -> None:
@@ -4593,6 +4702,8 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("round-0 | pre-build concept smoke | 样本 5", markdown)
         self.assertIn(".skill-beta/cohort-matrix.md", markdown)
         self.assertIn(".skill-beta/feedback-ledger.md", markdown)
+        self.assertIn("assets/beta-round-report-template.json", markdown)
+        self.assertIn("python scripts/evaluate_beta_round.py --report .skill-beta/reports/<round-id>.json --pretty", markdown)
 
     def test_generate_response_pack_auto_uses_chinese_scaffold(self) -> None:
         result = route_request.route_request(

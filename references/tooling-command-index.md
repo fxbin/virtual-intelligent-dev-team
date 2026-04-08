@@ -172,12 +172,23 @@ python scripts/init_product_delivery.py --root . --pretty
 - `assets/beta-program-overview-template.md`
 - `assets/beta-cohort-matrix-template.md`
 - `assets/beta-feedback-ledger-template.md`
+- `assets/beta-round-report-template.json`
 - `references/beta-validation-playbook.md`
+- `references/beta-round-report.schema.json`
+- `references/beta-round-gate-result.schema.json`
 
 常用初始化命令：
 
 ```bash
 python scripts/init_beta_validation.py --root . --pretty
+```
+
+```bash
+python scripts/init_beta_round_report.py --root . --round-id round-1 --phase "closed beta" --sample-size 12 --participant-mode "seed users" --goal "<goal>" --exit-criteria "<exit-criteria>" --pretty
+```
+
+```bash
+python scripts/evaluate_beta_round.py --report .skill-beta/reports/round-1.json --pretty
 ```
 
 ## 五、技术治理资产

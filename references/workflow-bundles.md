@@ -60,6 +60,7 @@ existing routing, planning, iteration, release, and Git rules.
   - `references/beta-validation-playbook.md`
   - `assets/beta-cohort-matrix-template.md`
   - `scripts/init_beta_validation.py`
+  - `scripts/evaluate_beta_round.py`
 - Default resume anchors:
   - `.skill-beta/program-overview.md`
   - `.skill-beta/cohort-matrix.md`

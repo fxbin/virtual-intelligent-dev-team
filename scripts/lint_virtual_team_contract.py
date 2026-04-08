@@ -26,6 +26,8 @@ SIDECAR_SCHEMA_PATH = SKILL_DIR / "references" / "response-pack-sidecar-schema.m
 SIDECAR_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "response-pack-sidecar.schema.json"
 VERIFY_ACTION_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "verify-action-result.schema.json"
 RELEASE_GATE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "release-gate-result.schema.json"
+BETA_ROUND_REPORT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-report.schema.json"
+BETA_ROUND_GATE_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-gate-result.schema.json"
 BENCHMARK_EVALS_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-evals.schema.json"
 BENCHMARK_RUN_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-run-result.schema.json"
 MARKDOWN_PATH_RE = re.compile(r"(?<![\w./-])((?:assets|references|scripts)/[A-Za-z0-9_./-]+\.(?:md|json|py))(?![\w./-])")
@@ -86,6 +88,8 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
     sidecar_schema_json_path = resolved_skill_dir / "references" / "response-pack-sidecar.schema.json"
     verify_action_schema_json_path = resolved_skill_dir / "references" / "verify-action-result.schema.json"
     release_gate_schema_json_path = resolved_skill_dir / "references" / "release-gate-result.schema.json"
+    beta_round_report_schema_json_path = resolved_skill_dir / "references" / "beta-round-report.schema.json"
+    beta_round_gate_result_schema_json_path = resolved_skill_dir / "references" / "beta-round-gate-result.schema.json"
     benchmark_evals_schema_json_path = resolved_skill_dir / "references" / "benchmark-evals.schema.json"
     benchmark_run_result_schema_json_path = resolved_skill_dir / "references" / "benchmark-run-result.schema.json"
     route_script = resolved_skill_dir / "scripts" / "route_request.py"
@@ -173,6 +177,16 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
         "Missing references/release-gate-result.schema.json. Restore the release_gate executable schema before release.",
     )
     _check(
+        beta_round_report_schema_json_path.exists(),
+        errors,
+        "Missing references/beta-round-report.schema.json. Restore the beta round report schema before release.",
+    )
+    _check(
+        beta_round_gate_result_schema_json_path.exists(),
+        errors,
+        "Missing references/beta-round-gate-result.schema.json. Restore the beta round gate result schema before release.",
+    )
+    _check(
         benchmark_evals_path.exists(),
         errors,
         "Missing evals/evals.json. Restore the benchmark eval catalog before release.",
@@ -199,6 +213,8 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 and sidecar_schema_json_path.exists()
                 and verify_action_schema_json_path.exists()
                 and release_gate_schema_json_path.exists()
+                and beta_round_report_schema_json_path.exists()
+                and beta_round_gate_result_schema_json_path.exists()
                 and benchmark_evals_path.exists()
                 and benchmark_evals_schema_json_path.exists()
                 and benchmark_run_result_schema_json_path.exists()
@@ -273,6 +289,34 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                             "allowed_decisions": ["keep", "retry", "rollback", "stop"],
                         },
                         "progress_anchor_recommended": ".skill-iterations/current-round-memory.md",
+                    }
+                ),
+                "beta": build_payload(
+                    {
+                        "workflow_bundle": "beta-feedback-ramp",
+                        "request_language": "zh",
+                        "lead_agent": "World-Class Product Architect",
+                        "beta_validation_plan": {
+                            "enabled": True,
+                            "simulation_allowed": True,
+                            "feedback_anchor": ".skill-beta/feedback-ledger.md",
+                            "cohort_artifact": ".skill-beta/cohort-matrix.md",
+                            "report_template": "assets/beta-round-report-template.json",
+                            "report_dir": ".skill-beta/reports",
+                            "decision_dir": ".skill-beta/round-decisions",
+                            "gate_command_template": "python scripts/evaluate_beta_round.py --report .skill-beta/reports/<round-id>.json --pretty",
+                            "rounds": [
+                                {
+                                    "round_id": "round-0",
+                                    "phase": "pre-build concept smoke",
+                                    "sample_size": 5,
+                                    "participant_mode": "simulated target users",
+                                    "archetypes": ["first-time novice"],
+                                    "goal": "validate the promise",
+                                    "exit_criteria": "coherent flow"
+                                }
+                            ],
+                        },
                     }
                 ),
             }
@@ -453,6 +497,88 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             "name": "release-gate-contract",
             "passed": len(release_gate_failures) == 0,
             "details": {"schema_json": str(release_gate_schema_json_path)},
+        }
+    )
+
+    beta_round_contract_failures: list[str] = []
+    if local_response_contract is not None:
+        sample_report = {
+            "schema_version": "beta-round-report/v1",
+            "round_id": "round-1",
+            "phase": "closed beta",
+            "goal": "validate the implemented slice",
+            "participant_mode": "seed users",
+            "planned_sample_size": 12,
+            "completed_sessions": 10,
+            "task_success_count": 9,
+            "blocker_issue_count": 0,
+            "critical_issue_count": 0,
+            "high_severity_issue_count": 1,
+            "top_feedback_themes": ["copy clarity"],
+            "exit_criteria": "no blocker-level failures remain",
+            "gate_thresholds": {
+                "min_completed_sessions": 8,
+                "min_success_rate": 0.8,
+                "max_blocker_issue_count": 0,
+                "max_critical_issue_count": 0,
+            },
+            "notes": "",
+        }
+        sample_gate = {
+            "generated_at": "2026-04-08T12:00:00Z",
+            "skill_name": "virtual-intelligent-dev-team",
+            "ok": True,
+            "decision": "advance",
+            "reason": "sample report clears thresholds",
+            "round_id": "round-1",
+            "report_path": ".skill-beta/reports/round-1.json",
+            "observed": {
+                "planned_sample_size": 12,
+                "completed_sessions": 10,
+                "success_rate": 0.9,
+                "blocker_issue_count": 0,
+                "critical_issue_count": 0,
+                "high_severity_issue_count": 1,
+                "top_feedback_themes": ["copy clarity"],
+            },
+            "thresholds": {
+                "min_completed_sessions": 8,
+                "min_success_rate": 0.8,
+                "max_blocker_issue_count": 0,
+                "max_critical_issue_count": 0,
+            },
+            "follow_up": {
+                "next_action": "promote learnings",
+                "continue_beta": True,
+                "release_governance_recommended": False,
+                "next_round_recommended": "round-2",
+            },
+            "json_report": ".skill-beta/round-decisions/round-1/beta-round-gate-result.json",
+            "markdown_report": ".skill-beta/round-decisions/round-1/beta-round-gate-report.md",
+        }
+        try:
+            local_response_contract.validate_beta_round_report(sample_report)
+        except Exception as exc:
+            beta_round_contract_failures.append(f"report: {exc}")
+        try:
+            local_response_contract.validate_beta_round_gate_result(sample_gate)
+        except Exception as exc:
+            beta_round_contract_failures.append(f"gate: {exc}")
+    else:
+        beta_round_contract_failures.append("beta round schema validator missing")
+    _check(
+        len(beta_round_contract_failures) == 0,
+        errors,
+        "beta round contract validation failed: " + "; ".join(beta_round_contract_failures),
+    )
+    checks.append(
+        {
+            "name": "beta-round-contract",
+            "passed": len(beta_round_contract_failures) == 0,
+            "details": {
+                "report_schema_json": str(beta_round_report_schema_json_path),
+                "gate_schema_json": str(beta_round_gate_result_schema_json_path),
+            },
         }
     )
 

@@ -22,6 +22,7 @@ Use this playbook when the request is about staged beta validation, internal tes
 - beta program overview
 - round-by-round cohort matrix
 - feedback ledger with severity and action
+- machine-readable round report
 - per-round exit criteria
 - expand / hold / escalate recommendation
 
@@ -39,3 +40,4 @@ Use this playbook when the request is about staged beta validation, internal tes
 - Do not skip the pre-build or concept-smoke round when the product promise is still unstable.
 - Do not expand cohort size before blocker-level signals are closed or explicitly accepted.
 - Do not flatten all feedback into one list; keep round, scenario, and severity attached.
+- Do not move to the next round without a machine-readable gate result.

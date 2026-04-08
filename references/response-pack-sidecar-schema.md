@@ -97,6 +97,10 @@
 - `simulation_allowed`
 - `feedback_anchor`
 - `cohort_artifact`
+- `report_template`
+- `report_dir`
+- `decision_dir`
+- `gate_command_template`
 - `rounds`
 
 `rounds[]`:
