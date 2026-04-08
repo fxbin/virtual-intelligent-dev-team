@@ -244,6 +244,21 @@
         "release_governance_recommended": {
           "type": "boolean"
         },
+        "remediation_brief_json": {
+          "type": "string"
+        },
+        "remediation_brief_markdown": {
+          "type": "string"
+        },
+        "remediation_brief": {
+          "type": "object"
+        },
+        "resume_artifacts": {
+          "$ref": "#/$defs/string_array"
+        },
+        "blockers": {
+          "$ref": "#/$defs/string_array"
+        },
         "blocker_breakdown": {
           "$ref": "#/$defs/blocker_breakdown"
         }

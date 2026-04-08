@@ -50,6 +50,7 @@ The release gate is stricter:
 - it emits a ship-or-hold decision
 - it writes dedicated release gate artifacts
 - it can consume the latest beta round gate result and block ship when beta is still `hold` or `escalate`
+- when a beta remediation brief exists, it should carry the same blockers, evidence requirements, rerun commands, and resume artifacts into the release `hold` follow-up
 - when beta is blocking ship, the hold brief should preserve persona / scenario blocker slices so remediation is not generic
 - the offline loop drill should also keep exercising the `hold -> bootstrap -> auto-run` path so this closure does not regress silently
 
@@ -60,6 +61,7 @@ The release gate is stricter:
 - benchmark JSON and markdown artifacts
 - offline drill markdown report
 - latest beta gate JSON and markdown artifacts when beta enforcement is enabled
+- latest beta remediation brief JSON and markdown artifacts when the latest beta gate reopened a loop
 - `next-iteration-brief.json` and markdown when the result is `hold`
 - `release-closure.json` and markdown when the result is `ship`
 - `iteration-plan.release-gate.json`, `open-loops.md`, and `iteration-context-chain.md` when `hold` bootstraps an iteration workspace
@@ -75,4 +77,5 @@ The release gate is stricter:
   - any gate failed
   - beta `hold` or `escalate` is a first-class release blocker, even when benchmark evidence is green
   - the gate should emit a next-iteration brief that states blockers, objective hints, evidence requirements, persona / scenario blocker slices when beta evidence exists, and the recommended rerun path back into bounded iteration
+  - if the latest beta gate already emitted a remediation brief, the release `hold` brief should inherit its required evidence, recommended commands, and resume artifacts instead of recomputing a generic retry path
   - if an iteration workspace is provided, the gate can bootstrap a runnable iteration plan, a blocker-specific mutation catalog, and a copied candidate repo, then optionally execute it immediately

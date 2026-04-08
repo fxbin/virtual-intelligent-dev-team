@@ -1,0 +1,265 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:beta-remediation-brief.schema",
+  "title": "Virtual Intelligent Dev Team Beta Remediation Brief",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "source_gate",
+    "decision",
+    "loop_state",
+    "owner",
+    "round_id",
+    "reason",
+    "objective",
+    "objective_hints",
+    "blockers",
+    "gate_context",
+    "report_context",
+    "recommended_commands",
+    "required_evidence"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "beta-remediation-brief/v1"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "source_gate": {
+      "const": "beta-round-gate"
+    },
+    "decision": {
+      "enum": [
+        "hold",
+        "escalate"
+      ]
+    },
+    "loop_state": {
+      "enum": [
+        "reopened",
+        "escalated"
+      ]
+    },
+    "owner": {
+      "type": "string"
+    },
+    "round_id": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "objective": {
+      "type": "string"
+    },
+    "objective_hints": {
+      "$ref": "#/$defs/string_array"
+    },
+    "blockers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/blocker"
+      }
+    },
+    "gate_context": {
+      "$ref": "#/$defs/gate_context"
+    },
+    "blocker_breakdown": {
+      "$ref": "#/$defs/blocker_breakdown"
+    },
+    "report_context": {
+      "$ref": "#/$defs/report_context"
+    },
+    "recommended_commands": {
+      "$ref": "#/$defs/string_array"
+    },
+    "required_evidence": {
+      "$ref": "#/$defs/string_array"
+    },
+    "resume_artifacts": {
+      "$ref": "#/$defs/string_array"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "string_array": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "blocker": {
+      "type": "object",
+      "required": [
+        "id",
+        "label",
+        "objective_hint",
+        "evidence_required"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "objective_hint": {
+          "type": "string"
+        },
+        "evidence_required": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "gate_context": {
+      "type": "object",
+      "required": [
+        "cohort_gate_status",
+        "ramp_gate_status",
+        "diff_gate_status",
+        "continue_beta",
+        "release_governance_recommended",
+        "next_round_recommended"
+      ],
+      "properties": {
+        "cohort_gate_status": {
+          "type": "string"
+        },
+        "ramp_gate_status": {
+          "type": "string"
+        },
+        "diff_gate_status": {
+          "type": "string"
+        },
+        "continue_beta": {
+          "type": "boolean"
+        },
+        "release_governance_recommended": {
+          "type": "boolean"
+        },
+        "next_round_recommended": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "report_context": {
+      "type": "object",
+      "required": [
+        "report_path",
+        "source_simulation_run",
+        "feedback_ledger_markdown",
+        "fixture_manifest_json",
+        "cohort_plan_json",
+        "ramp_plan_json",
+        "fixture_diff_json"
+      ],
+      "properties": {
+        "report_path": {
+          "type": "string"
+        },
+        "source_simulation_run": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "feedback_ledger_markdown": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fixture_manifest_json": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "cohort_plan_json": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ramp_plan_json": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fixture_diff_json": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "breakdown_item": {
+      "type": "object",
+      "required": [
+        "label",
+        "session_count",
+        "blocker_issue_count",
+        "critical_issue_count",
+        "high_severity_issue_count",
+        "session_ids",
+        "top_feedback_themes"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "session_count": {
+          "type": "integer"
+        },
+        "blocker_issue_count": {
+          "type": "integer"
+        },
+        "critical_issue_count": {
+          "type": "integer"
+        },
+        "high_severity_issue_count": {
+          "type": "integer"
+        },
+        "session_ids": {
+          "$ref": "#/$defs/string_array"
+        },
+        "top_feedback_themes": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "blocker_breakdown": {
+      "type": "object",
+      "required": [
+        "by_persona",
+        "by_scenario"
+      ],
+      "properties": {
+        "by_persona": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/breakdown_item"
+          }
+        },
+        "by_scenario": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/breakdown_item"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

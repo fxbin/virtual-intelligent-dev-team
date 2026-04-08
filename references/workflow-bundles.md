@@ -69,6 +69,7 @@ existing routing, planning, iteration, release, and Git rules.
   9. expand sample size only when the previous round clears its gate
   10. log structured feedback and severity before release or rollout decisions
   11. for `round-1+`, require the gate to consume cohort-plan evidence, ramp-plan evidence, and fixture diff evidence before allowing expansion
+  12. if the beta gate returns `hold` or `escalate`, create the next remediation brief instead of stopping at the verdict
 - Primary references:
   - `references/beta-validation-playbook.md`
   - `assets/beta-cohort-matrix-template.md`
@@ -146,7 +147,7 @@ existing routing, planning, iteration, release, and Git rules.
   1. run the release gate
   2. answer `ship` or `hold`
   3. if staged beta validation exists, enforce the latest beta round gate before `ship`
-  4. if `hold`, create the next remediation brief
+  4. if `hold`, create the next remediation brief, and inherit the latest beta remediation brief when one already exists
   5. resume via iteration or planning artifacts only when needed
 - Primary references:
   - `references/release-gate-playbook.md`

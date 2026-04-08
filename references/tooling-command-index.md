@@ -180,6 +180,7 @@ python scripts/init_product_delivery.py --root . --pretty
 - `references/beta-validation-playbook.md`
 - `references/beta-cohort-plan.schema.json`
 - `references/beta-ramp-plan.schema.json`
+- `references/beta-remediation-brief.schema.json`
 - `references/simulated-user-profile.schema.json`
 - `references/simulation-persona-library.schema.json`
 - `references/simulation-persona-library.json`
@@ -245,6 +246,10 @@ python scripts/evaluate_beta_round.py --report .skill-beta/reports/round-1.json 
   - ramp plan 和 round report 不一致也会阻止扩量
   - 缺少 diff 证据会直接阻止 `advance`
   - diff 标记 `review_required` 也会阻止扩量
+- 当结果是 `hold / escalate`：
+  - 会自动在当前 gate 输出目录生成 `next-round-remediation-brief.json`
+  - 同时生成 `next-round-remediation-brief.md`
+  - brief 会附带 blocker 列表、推荐重跑命令、resume artifacts，以及 persona / scenario blocker breakdown
 
 ## 五、技术治理资产
 
@@ -357,6 +362,11 @@ python scripts/run_release_gate.py --output-dir evals/release-gate --beta-report
 
 - `run_release_gate.py` 的 JSON 结果契约见：
   - `references/release-gate-result.schema.json`
+- 当 `--beta-decision-dir` 指向的最新 beta gate 已经产出 `next-round-remediation-brief.json` 时：
+  - `run_release_gate.py` 会把该 brief 的 blockers 吸收到 release blockers
+  - `next-iteration-brief.json` 会继承 beta brief 的 `required_evidence`
+  - `next-iteration-brief.json` 会继承 beta brief 的 `recommended_commands`
+  - `explanation_card.resume_artifacts` 和 release hold brief 会带上 beta brief 与 writeback artifacts，方便跨阶段恢复
 
 - benchmark eval runner 支持：
   - `route`
@@ -398,5 +408,6 @@ python scripts/materialize_candidate_patch.py --brief .skill-iterations/candidat
 - 开发前规划分支只在大改造、迁移、重写、先规划后开发时启用
 - iteration 深循环时，先开本索引，再补对应 playbook
 - `run_release_gate.py` 优先用于 `ship / hold` 判断，不用 benchmark 结果硬代替
+- beta 已经 `hold / escalate` 时，不要手工重写一份 release remediation；优先复用 beta remediation brief 继续收口
 - `run_iteration_loop.py --resume` 只对同一 plan 文件恢复
 - loop controller 逻辑改动后，优先跑 `offline drill` 再叫它稳定

@@ -18,6 +18,7 @@ VERIFY_ACTION_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "verify-action-resul
 RELEASE_GATE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "release-gate-result.schema.json"
 BETA_ROUND_REPORT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-report.schema.json"
 BETA_ROUND_GATE_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-gate-result.schema.json"
+BETA_REMEDIATION_BRIEF_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-remediation-brief.schema.json"
 BETA_SIMULATION_MANIFEST_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-manifest.schema.json"
 BETA_SIMULATION_DIFF_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-diff.schema.json"
 BETA_RAMP_PLAN_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-ramp-plan.schema.json"
@@ -101,6 +102,14 @@ def validate_beta_round_gate_result(payload: dict[str, object]) -> None:
         payload,
         schema_path=BETA_ROUND_GATE_RESULT_SCHEMA_JSON_PATH,
         label="beta round gate result",
+    )
+
+
+def validate_beta_remediation_brief(payload: dict[str, object]) -> None:
+    validate_payload_against_schema(
+        payload,
+        schema_path=BETA_REMEDIATION_BRIEF_SCHEMA_JSON_PATH,
+        label="beta remediation brief",
     )
 
 
@@ -334,6 +343,16 @@ def build_release_gate_explanation_card(
             value = str(beta_gate.get(key, "")).strip()
             if value:
                 resume_artifacts.append(value)
+        for key in ("remediation_brief_json", "remediation_brief_markdown"):
+            value = str(beta_gate.get(key, "")).strip()
+            if value:
+                resume_artifacts.append(value)
+        beta_resume_artifacts = beta_gate.get("resume_artifacts", [])
+        if isinstance(beta_resume_artifacts, list):
+            for item in beta_resume_artifacts:
+                value = str(item).strip()
+                if value:
+                    resume_artifacts.append(value)
 
     progress_anchor = (
         str(follow_up.get("brief_markdown", "")).strip()

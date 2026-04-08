@@ -92,6 +92,12 @@ def load_beta_gate_result(path: Path) -> dict[str, object]:
     return payload
 
 
+def load_beta_remediation_brief(path: Path) -> dict[str, object]:
+    payload = load_json(path)
+    response_contract.validate_beta_remediation_brief(payload)
+    return payload
+
+
 def find_latest_file(paths: list[Path]) -> Path | None:
     if not paths:
         return None
@@ -196,6 +202,24 @@ def beta_gate_snapshot(beta_gate: dict[str, object] | None) -> dict[str, object]
         "markdown_report": result.get("markdown_report"),
         "release_governance_recommended": bool(follow_up.get("release_governance_recommended")),
     }
+    remediation_brief_json = str(follow_up.get("brief_json", "")).strip()
+    remediation_brief_markdown = str(follow_up.get("brief_markdown", "")).strip()
+    if remediation_brief_json != "":
+        snapshot["remediation_brief_json"] = remediation_brief_json
+    if remediation_brief_markdown != "":
+        snapshot["remediation_brief_markdown"] = remediation_brief_markdown
+    resume_artifacts = follow_up.get("resume_artifacts", [])
+    if isinstance(resume_artifacts, list) and resume_artifacts:
+        snapshot["resume_artifacts"] = [str(item) for item in resume_artifacts if str(item).strip()]
+    blockers = follow_up.get("blockers", [])
+    if isinstance(blockers, list) and blockers:
+        snapshot["blockers"] = [str(item) for item in blockers if str(item).strip()]
+    if remediation_brief_json != "":
+        try:
+            remediation_brief = load_beta_remediation_brief(Path(remediation_brief_json).resolve())
+            snapshot["remediation_brief"] = remediation_brief
+        except Exception:
+            pass
     blocker_breakdown = result.get("blocker_breakdown")
     if isinstance(blocker_breakdown, dict):
         snapshot["blocker_breakdown"] = blocker_breakdown
@@ -292,6 +316,27 @@ def blocker_specs(summary: dict[str, object], beta_gate: dict[str, object] | Non
                 "evidence_required": f"python scripts/evaluate_beta_round.py --report .skill-beta/reports/{round_id}.json --pretty",
             }
         )
+        remediation_brief = beta_snapshot.get("remediation_brief")
+        if isinstance(remediation_brief, dict):
+            beta_blockers = remediation_brief.get("blockers", [])
+            if isinstance(beta_blockers, list):
+                for item in beta_blockers:
+                    if not isinstance(item, dict):
+                        continue
+                    blocker_id = str(item.get("id", "")).strip()
+                    label = str(item.get("label", "")).strip()
+                    objective_hint = str(item.get("objective_hint", "")).strip()
+                    evidence_required = str(item.get("evidence_required", "")).strip()
+                    if label == "":
+                        continue
+                    specs.append(
+                        {
+                            "id": f"beta-{blocker_id or 'remediation'}",
+                            "label": f"beta remediation: {label}",
+                            "objective_hint": objective_hint or "follow the beta remediation brief and rerun the blocked round",
+                            "evidence_required": evidence_required or f"python scripts/evaluate_beta_round.py --report .skill-beta/reports/{round_id}.json --pretty",
+                        }
+                    )
     return specs
 
 
@@ -1253,6 +1298,21 @@ def build_hold_follow_up(
     blocker_labels = [str(item["label"]) for item in blockers]
     objective_hints = [str(item["objective_hint"]) for item in blockers]
     evidence_required = [str(item["evidence_required"]) for item in blockers]
+    beta_resume_artifacts: list[str] = []
+    beta_required_evidence: list[str] = []
+    beta_recommended_commands: list[str] = []
+    if isinstance(beta_snapshot, dict):
+        raw_resume_artifacts = beta_snapshot.get("resume_artifacts", [])
+        if isinstance(raw_resume_artifacts, list):
+            beta_resume_artifacts = [str(item) for item in raw_resume_artifacts if str(item).strip()]
+        remediation_brief = beta_snapshot.get("remediation_brief")
+        if isinstance(remediation_brief, dict):
+            raw_required = remediation_brief.get("required_evidence", [])
+            if isinstance(raw_required, list):
+                beta_required_evidence = [str(item) for item in raw_required if str(item).strip()]
+            raw_commands = remediation_brief.get("recommended_commands", [])
+            if isinstance(raw_commands, list):
+                beta_recommended_commands = [str(item) for item in raw_commands if str(item).strip()]
     objective = (
         "恢复 release gate 就绪状态，清除以下阻塞："
         + ("；".join(blocker_labels) if blocker_labels else reason)
@@ -1283,6 +1343,7 @@ def build_hold_follow_up(
             f"python scripts/run_release_gate.py --output-dir {output_dir} --iteration-workspace {workspace} --pretty",
         ],
         "required_evidence": evidence_required
+        + beta_required_evidence
         + ["重新运行 formal release gate，并得到 ship 决策"],
     }
     if beta_snapshot is not None:
@@ -1290,6 +1351,10 @@ def build_hold_follow_up(
             f"python scripts/run_release_gate.py --output-dir {output_dir} "
             f"--iteration-workspace {workspace} --beta-decision-dir .skill-beta/round-decisions --pretty"
         )
+    if beta_recommended_commands:
+        brief["recommended_commands"] = beta_recommended_commands + brief["recommended_commands"]
+    if beta_resume_artifacts:
+        brief["resume_artifacts"] = beta_resume_artifacts
     json_path = output_dir / "next-iteration-brief.json"
     markdown_path = output_dir / "next-iteration-brief.md"
     write_json(json_path, brief)
@@ -1325,6 +1390,9 @@ def build_hold_follow_up(
         ]
     )
     markdown_lines.extend([f"- `{command}`" for command in brief["recommended_commands"]])
+    if beta_resume_artifacts:
+        markdown_lines.extend(["", "## Beta Resume Artifacts", ""])
+        markdown_lines.extend([f"- `{item}`" for item in beta_resume_artifacts])
     markdown_lines.extend(
         [
             "",
@@ -1334,6 +1402,7 @@ def build_hold_follow_up(
             f"- Benchmark Markdown: `{benchmark_markdown}`",
             f"- Offline drill report: `{offline_drill_report}`",
             f"- Beta gate JSON: `{beta_snapshot.get('json_report') if beta_snapshot else None}`",
+            f"- Beta remediation brief JSON: `{beta_snapshot.get('remediation_brief_json') if isinstance(beta_snapshot, dict) else None}`",
             "",
         ]
     )

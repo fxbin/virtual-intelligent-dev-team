@@ -136,6 +136,7 @@ def write_beta_gate_fixture(
     round_id: str,
     decision: str,
     reason: str,
+    follow_up_extra: dict[str, object] | None = None,
 ) -> Path:
     output_dir = root / "round-decisions" / round_id
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -195,6 +196,8 @@ def write_beta_gate_fixture(
         "json_report": str(output_dir / "beta-round-gate-result.json"),
         "markdown_report": str(output_dir / "beta-round-gate-report.md"),
     }
+    if isinstance(follow_up_extra, dict):
+        payload["follow_up"].update(follow_up_extra)
     fixture_path = output_dir / "beta-round-gate-result.json"
     fixture_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     (output_dir / "beta-round-gate-report.md").write_text("# Beta Gate\n", encoding="utf-8")
@@ -4414,6 +4417,160 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
             self.assertEqual("hold", result["beta_gate"]["decision"])
             self.assertTrue(Path(result["beta_gate"]["json_report"]).exists())
 
+    def test_release_gate_hold_absorbs_beta_remediation_brief(self) -> None:
+        with make_tempdir() as tmp:
+            output_dir = Path(tmp) / "release-gate-output"
+            beta_root = Path(tmp) / ".skill-beta"
+            round_id = "round-02"
+            beta_decision_dir = beta_root / "round-decisions" / round_id
+            beta_decision_dir.mkdir(parents=True, exist_ok=True)
+            beta_brief_json = beta_decision_dir / "next-round-remediation-brief.json"
+            beta_brief_markdown = beta_decision_dir / "next-round-remediation-brief.md"
+            product_writeback = beta_decision_dir / "product-writeback.md"
+            governance_writeback = beta_decision_dir / "governance-writeback.md"
+            beta_brief_payload = {
+                "schema_version": "beta-remediation-brief/v1",
+                "generated_at": "2026-04-08T12:00:00Z",
+                "source_gate": "beta-round-gate",
+                "decision": "hold",
+                "loop_state": "reopened",
+                "owner": "World-Class Product Architect",
+                "round_id": round_id,
+                "reason": "Cohort plan does not match the resolved fixture.",
+                "objective": "repair the beta blockers for round-02",
+                "objective_hints": [
+                    "reconcile the cohort plan with the fixture manifest"
+                ],
+                "blockers": [
+                    {
+                        "id": "cohort-plan-mismatch",
+                        "label": "cohort plan does not match the resolved fixture",
+                        "objective_hint": "update the cohort plan so planned sessions and persona counts align",
+                        "evidence_required": "python scripts/evaluate_beta_round.py --report .skill-beta/reports/round-02.json --pretty"
+                    }
+                ],
+                "gate_context": {
+                    "cohort_gate_status": "mismatch",
+                    "ramp_gate_status": "passed",
+                    "diff_gate_status": "passed",
+                    "continue_beta": False,
+                    "release_governance_recommended": False,
+                    "next_round_recommended": round_id
+                },
+                "blocker_breakdown": {
+                    "by_persona": [
+                        {
+                            "label": "First-Time Novice",
+                            "session_count": 2,
+                            "blocker_issue_count": 1,
+                            "critical_issue_count": 0,
+                            "high_severity_issue_count": 1,
+                            "session_ids": ["session-01", "session-02"],
+                            "top_feedback_themes": ["onboarding confusion"]
+                        }
+                    ],
+                    "by_scenario": [
+                        {
+                            "label": "first meaningful task",
+                            "session_count": 2,
+                            "blocker_issue_count": 1,
+                            "critical_issue_count": 0,
+                            "high_severity_issue_count": 1,
+                            "session_ids": ["session-01", "session-02"],
+                            "top_feedback_themes": ["onboarding confusion"]
+                        }
+                    ]
+                },
+                "report_context": {
+                    "report_path": str(beta_root / "reports" / f"{round_id}.json"),
+                    "source_simulation_run": str(beta_root / "simulation-runs" / round_id / "beta-simulation-run.json"),
+                    "feedback_ledger_markdown": str(beta_root / "feedback-ledger.md"),
+                    "fixture_manifest_json": str(beta_root / "fixture-previews" / round_id / "beta-simulation-manifest.json"),
+                    "cohort_plan_json": str(beta_root / "cohort-plan.json"),
+                    "ramp_plan_json": str(beta_root / "ramp-plan.json"),
+                    "fixture_diff_json": str(beta_root / "fixture-diffs" / f"round-01-to-{round_id}" / "beta-simulation-diff.json")
+                },
+                "recommended_commands": [
+                    "python scripts/preview_beta_simulation_fixture.py --config .skill-beta/simulation-configs/round-02.json --pretty",
+                    "python scripts/evaluate_beta_round.py --report .skill-beta/reports/round-02.json --pretty"
+                ],
+                "required_evidence": [
+                    "python scripts/evaluate_beta_round.py --report .skill-beta/reports/round-02.json --pretty"
+                ],
+                "resume_artifacts": [
+                    str(product_writeback),
+                    str(governance_writeback)
+                ]
+            }
+            response_contract.validate_beta_remediation_brief(beta_brief_payload)
+            beta_brief_json.write_text(json.dumps(beta_brief_payload, ensure_ascii=False, indent=2), encoding="utf-8")
+            beta_brief_markdown.write_text("# Beta Remediation Brief\n", encoding="utf-8")
+            product_writeback.write_text("# Product Writeback\n", encoding="utf-8")
+            governance_writeback.write_text("# Governance Writeback\n", encoding="utf-8")
+            beta_gate_result = write_beta_gate_fixture(
+                beta_root,
+                round_id=round_id,
+                decision="hold",
+                reason="This round has not yet cleared the minimum sample, success-rate, or blocker thresholds.",
+                follow_up_extra={
+                    "loop_state": "reopened",
+                    "blockers": ["cohort plan does not match the resolved fixture"],
+                    "brief_json": str(beta_brief_json),
+                    "brief_markdown": str(beta_brief_markdown),
+                    "resume_artifacts": [str(product_writeback), str(governance_writeback)]
+                },
+            )
+
+            with mock.patch.object(
+                release_gate.benchmark_runner,
+                "run_benchmark_suite",
+                return_value={
+                    "summary": {
+                        "tests_passed": True,
+                        "validator_passed": True,
+                        "evals_passed": True,
+                        "offline_drill_enabled": True,
+                        "offline_drill_passed": True,
+                        "overall_passed": True,
+                    },
+                    "json_report": str(output_dir / "benchmark-results.json"),
+                    "markdown_report": str(output_dir / "benchmark-report.md"),
+                    "offline_drill_run": {
+                        "markdown_report": str(output_dir / "offline-loop-drill-report.md"),
+                    },
+                },
+            ):
+                benchmark_payload = {
+                    "summary": {
+                        "tests_passed": True,
+                        "validator_passed": True,
+                        "evals_passed": True,
+                        "offline_drill_enabled": True,
+                        "offline_drill_passed": True,
+                        "overall_passed": True,
+                    },
+                    "eval_run": {"passed": 56, "total": 56, "cases": [], "category_breakdown": []},
+                }
+                Path(output_dir / "benchmark-results.json").parent.mkdir(parents=True, exist_ok=True)
+                (output_dir / "benchmark-results.json").write_text(
+                    json.dumps(benchmark_payload, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+                (output_dir / "benchmark-report.md").write_text("# Benchmark Report\n", encoding="utf-8")
+                result = release_gate.run_release_gate(
+                    output_dir=output_dir,
+                    beta_gate_result=beta_gate_result,
+                )
+
+            response_contract.validate_release_gate_result(result)
+            brief = baseline_registry.load_json(Path(result["follow_up"]["brief_json"]))
+            self.assertIn("beta remediation: cohort plan does not match the resolved fixture", " ".join(item["label"] for item in brief["blockers"]))
+            self.assertIn(str(beta_brief_json), result["explanation_card"]["resume_artifacts"])
+            self.assertIn(str(product_writeback), result["explanation_card"]["resume_artifacts"])
+            self.assertIn(str(governance_writeback), result["explanation_card"]["resume_artifacts"])
+            self.assertIn(str(product_writeback), brief["resume_artifacts"])
+            self.assertTrue(any("preview_beta_simulation_fixture.py" in item for item in brief["recommended_commands"]))
+
     def test_release_gate_hold_emits_next_iteration_brief(self) -> None:
         with make_tempdir() as tmp:
             output_dir = Path(tmp) / "release-gate-output"
@@ -5208,6 +5365,7 @@ class ProjectMemoryInitTests(unittest.TestCase):
     def test_evaluate_beta_round_emits_escalate_for_critical_issues(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
+            technical_governance_init.init_technical_governance(root=root, overwrite=False)
             report = root / ".skill-beta" / "reports" / "round-2.json"
             report.parent.mkdir(parents=True, exist_ok=True)
             payload = {
@@ -5242,6 +5400,14 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertIsNone(result["follow_up"]["next_round_recommended"])
             self.assertEqual("missing", result["ramp_gate"]["status"])
             self.assertEqual("missing", result["diff_gate"]["status"])
+            self.assertEqual("escalated", result["follow_up"]["loop_state"])
+            self.assertTrue(Path(result["follow_up"]["brief_json"]).exists())
+            brief = json.loads(Path(result["follow_up"]["brief_json"]).read_text(encoding="utf-8"))
+            response_contract.validate_beta_remediation_brief(brief)
+            self.assertEqual("escalate", brief["decision"])
+            self.assertEqual("Sentinel Architect (NB)", brief["owner"])
+            change_plan = (root / ".skill-governance" / "change-plan.md").read_text(encoding="utf-8")
+            self.assertIn("## Beta Gate Escalation Writeback", change_plan)
             response_contract.validate_beta_round_gate_result(result)
 
     def test_evaluate_beta_round_holds_when_ramp_plan_is_missing(self) -> None:
@@ -5345,6 +5511,12 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertEqual("hold", result["decision"])
             self.assertEqual("missing", result["cohort_gate"]["status"])
             self.assertIn("cohort plan", result["reason"].lower())
+            self.assertEqual("reopened", result["follow_up"]["loop_state"])
+            self.assertTrue(Path(result["follow_up"]["brief_json"]).exists())
+            brief = json.loads(Path(result["follow_up"]["brief_json"]).read_text(encoding="utf-8"))
+            response_contract.validate_beta_remediation_brief(brief)
+            self.assertEqual("hold", brief["decision"])
+            self.assertTrue(any("cohort plan" in item["label"].lower() for item in brief["blockers"]))
             response_contract.validate_beta_round_gate_result(result)
 
     def test_evaluate_beta_round_holds_when_cohort_plan_mismatches_manifest(self) -> None:
@@ -5578,6 +5750,7 @@ class ProjectMemoryInitTests(unittest.TestCase):
     def test_evaluate_beta_round_preserves_blocker_breakdown(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
+            product_delivery_init.init_product_delivery(root=root, overwrite=False)
             report = root / ".skill-beta" / "reports" / "round-1.json"
             report.parent.mkdir(parents=True, exist_ok=True)
             manifest_path = write_beta_manifest(
@@ -5761,12 +5934,27 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertEqual("passed", result["ramp_gate"]["status"])
             self.assertEqual("passed", result["diff_gate"]["status"])
             self.assertEqual("Edge-Case Breaker", result["blocker_breakdown"]["by_persona"][0]["label"])
+            self.assertTrue(Path(result["follow_up"]["brief_json"]).exists())
+            brief = json.loads(Path(result["follow_up"]["brief_json"]).read_text(encoding="utf-8"))
+            response_contract.validate_beta_remediation_brief(brief)
+            self.assertIn("blocker_breakdown", brief)
+            self.assertEqual("Edge-Case Breaker", brief["blocker_breakdown"]["by_persona"][0]["label"])
+            current_slice = (root / ".skill-product" / "current-slice.md").read_text(encoding="utf-8")
+            acceptance = (root / ".skill-product" / "acceptance-criteria.md").read_text(encoding="utf-8")
+            contract_questions = (root / ".skill-product" / "contract-questions.md").read_text(encoding="utf-8")
+            self.assertIn("## Beta Gate Writeback", current_slice)
+            self.assertIn("## Beta Gate Writeback", acceptance)
+            self.assertIn("## Beta Gate Writeback", contract_questions)
             markdown = Path(result["markdown_report"]).read_text(encoding="utf-8")
             self.assertIn("## Cohort Plan Gate", markdown)
             self.assertIn("## Ramp Plan Gate", markdown)
             self.assertIn("## Fixture Diff Gate", markdown)
             self.assertIn("## Blocker Breakdown By Persona", markdown)
             self.assertIn("## Blocker Breakdown By Scenario", markdown)
+            brief_markdown = Path(result["follow_up"]["brief_markdown"]).read_text(encoding="utf-8")
+            self.assertIn("## Blocker Breakdown By Persona", brief_markdown)
+            self.assertIn("## Recommended Commands", brief_markdown)
+            self.assertTrue(any(item.endswith("product-writeback.md") for item in result["follow_up"]["resume_artifacts"]))
 
     def test_init_technical_governance_creates_expected_anchors(self) -> None:
         with make_tempdir() as tmp:

@@ -41,6 +41,8 @@ Use this playbook when the request is about staged beta validation, internal tes
 - machine-readable round report
 - blocker breakdown by persona and by scenario
 - diff-gated beta round decision
+- next-round remediation brief when the gate is `hold` or `escalate`
+- release-facing resume artifacts so the downstream release gate can keep the same blockers and rerun path
 - per-round exit criteria
 - expand / hold / escalate recommendation
 
@@ -74,3 +76,5 @@ Use this playbook when the request is about staged beta validation, internal tes
 - Do not flatten all feedback into one list; keep round, scenario, and severity attached.
 - Do not rely on only the synthesized report; preserve the simulation trace that explains why a round is `advance`, `hold`, or `escalate`.
 - Do not move to the next round without a machine-readable gate result.
+- Do not stop at a `hold` verdict; the gate should reopen the next beta loop with a remediation brief and concrete rerun path.
+- Do not discard the remediation brief before release review; the release gate should be able to inherit its blockers, evidence, commands, and resume artifacts.

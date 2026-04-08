@@ -206,6 +206,21 @@
             "string",
             "null"
           ]
+        },
+        "loop_state": {
+          "type": "string"
+        },
+        "blockers": {
+          "$ref": "#/$defs/string_array"
+        },
+        "brief_json": {
+          "type": "string"
+        },
+        "brief_markdown": {
+          "type": "string"
+        },
+        "resume_artifacts": {
+          "$ref": "#/$defs/string_array"
         }
       },
       "additionalProperties": false

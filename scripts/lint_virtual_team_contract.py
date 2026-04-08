@@ -28,6 +28,7 @@ VERIFY_ACTION_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "verify-action-resul
 RELEASE_GATE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "release-gate-result.schema.json"
 BETA_ROUND_REPORT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-report.schema.json"
 BETA_ROUND_GATE_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-gate-result.schema.json"
+BETA_REMEDIATION_BRIEF_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-remediation-brief.schema.json"
 BETA_SIMULATION_DIFF_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-diff.schema.json"
 BETA_RAMP_PLAN_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-ramp-plan.schema.json"
 BETA_COHORT_PLAN_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-cohort-plan.schema.json"
@@ -97,6 +98,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
     release_gate_schema_json_path = resolved_skill_dir / "references" / "release-gate-result.schema.json"
     beta_round_report_schema_json_path = resolved_skill_dir / "references" / "beta-round-report.schema.json"
     beta_round_gate_result_schema_json_path = resolved_skill_dir / "references" / "beta-round-gate-result.schema.json"
+    beta_remediation_brief_schema_json_path = resolved_skill_dir / "references" / "beta-remediation-brief.schema.json"
     beta_simulation_diff_schema_json_path = resolved_skill_dir / "references" / "beta-simulation-diff.schema.json"
     beta_ramp_plan_schema_json_path = resolved_skill_dir / "references" / "beta-ramp-plan.schema.json"
     beta_cohort_plan_schema_json_path = resolved_skill_dir / "references" / "beta-cohort-plan.schema.json"
@@ -201,6 +203,11 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
         "Missing references/beta-round-gate-result.schema.json. Restore the beta round gate result schema before release.",
     )
     _check(
+        beta_remediation_brief_schema_json_path.exists(),
+        errors,
+        "Missing references/beta-remediation-brief.schema.json. Restore the beta remediation brief schema before release.",
+    )
+    _check(
         beta_simulation_diff_schema_json_path.exists(),
         errors,
         "Missing references/beta-simulation-diff.schema.json. Restore the beta simulation diff schema before release.",
@@ -264,6 +271,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 and release_gate_schema_json_path.exists()
                 and beta_round_report_schema_json_path.exists()
                 and beta_round_gate_result_schema_json_path.exists()
+                and beta_remediation_brief_schema_json_path.exists()
                 and beta_simulation_diff_schema_json_path.exists()
                 and beta_ramp_plan_schema_json_path.exists()
                 and beta_cohort_plan_schema_json_path.exists()
@@ -962,6 +970,81 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 }
             ],
         }
+        sample_remediation_brief = {
+            "schema_version": "beta-remediation-brief/v1",
+            "source_gate": "beta-round-gate",
+            "decision": "hold",
+            "loop_state": "reopened",
+            "owner": "World-Class Product Architect",
+            "round_id": "round-1",
+            "reason": "Cohort plan does not match the resolved fixture for persona counts.",
+            "objective": "repair the beta round blockers for round-1 and rerun the beta gate",
+            "objective_hints": [
+                "reconcile the machine-readable cohort plan with the resolved fixture manifest",
+                "rerun the current beta round after repairing blocker themes"
+            ],
+            "blockers": [
+                {
+                    "id": "cohort-plan-mismatch",
+                    "label": "cohort plan does not match the resolved fixture",
+                    "objective_hint": "update the cohort plan so planned sessions, persona counts, and coverage align with the resolved fixture",
+                    "evidence_required": "python scripts/evaluate_beta_round.py --report .skill-beta/reports/round-1.json --pretty"
+                }
+            ],
+            "gate_context": {
+                "cohort_gate_status": "mismatch",
+                "ramp_gate_status": "passed",
+                "diff_gate_status": "passed",
+                "continue_beta": False,
+                "release_governance_recommended": False,
+                "next_round_recommended": "round-1"
+            },
+            "blocker_breakdown": {
+                "by_persona": [
+                    {
+                        "label": "Edge-Case Breaker",
+                        "session_count": 2,
+                        "blocker_issue_count": 1,
+                        "critical_issue_count": 0,
+                        "high_severity_issue_count": 1,
+                        "session_ids": ["session-05", "session-06"],
+                        "top_feedback_themes": ["edge-case handling"]
+                    }
+                ],
+                "by_scenario": [
+                    {
+                        "label": "recover from a rough edge",
+                        "session_count": 2,
+                        "blocker_issue_count": 1,
+                        "critical_issue_count": 0,
+                        "high_severity_issue_count": 1,
+                        "session_ids": ["session-05", "session-06"],
+                        "top_feedback_themes": ["edge-case handling", "efficiency friction"]
+                    }
+                ]
+            },
+            "report_context": {
+                "report_path": ".skill-beta/reports/round-1.json",
+                "source_simulation_run": ".skill-beta/simulation-runs/round-1/beta-simulation-run.json",
+                "feedback_ledger_markdown": ".skill-beta/feedback-ledger.md",
+                "fixture_manifest_json": ".skill-beta/fixture-previews/round-1/beta-simulation-manifest.json",
+                "cohort_plan_json": ".skill-beta/cohort-plan.json",
+                "ramp_plan_json": ".skill-beta/ramp-plan.json",
+                "fixture_diff_json": ".skill-beta/fixture-diffs/round-0-to-round-1/beta-simulation-diff.json"
+            },
+            "recommended_commands": [
+                "python scripts/preview_beta_simulation_fixture.py --config .skill-beta/simulation-configs/round-1.json --pretty",
+                "python scripts/evaluate_beta_round.py --report .skill-beta/reports/round-1.json --pretty"
+            ],
+            "required_evidence": [
+                "python scripts/evaluate_beta_round.py --report .skill-beta/reports/round-1.json --pretty"
+            ],
+            "resume_artifacts": [
+                ".skill-beta/reports/round-1.json",
+                ".skill-beta/cohort-plan.json",
+                ".skill-beta/ramp-plan.json"
+            ]
+        }
         try:
             local_response_contract.validate_simulated_user_profile(sample_profile)
         except Exception as exc:
@@ -982,6 +1065,10 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             local_response_contract.validate_beta_cohort_plan(sample_cohort_plan)
         except Exception as exc:
             beta_round_contract_failures.append(f"cohort-plan: {exc}")
+        try:
+            local_response_contract.validate_beta_remediation_brief(sample_remediation_brief)
+        except Exception as exc:
+            beta_round_contract_failures.append(f"beta-remediation-brief: {exc}")
         sample_persona_library = {
             "schema_version": "simulation-persona-library/v1",
             "skill_name": "virtual-intelligent-dev-team",
@@ -1113,6 +1200,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             "details": {
                 "report_schema_json": str(beta_round_report_schema_json_path),
                 "gate_schema_json": str(beta_round_gate_result_schema_json_path),
+                "remediation_brief_schema_json": str(beta_remediation_brief_schema_json_path),
                 "simulation_manifest_schema_json": str(SKILL_DIR / "references" / "beta-simulation-manifest.schema.json"),
                 "simulation_diff_schema_json": str(beta_simulation_diff_schema_json_path),
                 "ramp_plan_schema_json": str(beta_ramp_plan_schema_json_path),
