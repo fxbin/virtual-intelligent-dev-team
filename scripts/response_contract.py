@@ -18,6 +18,7 @@ VERIFY_ACTION_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "verify-action-resul
 RELEASE_GATE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "release-gate-result.schema.json"
 BETA_ROUND_REPORT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-report.schema.json"
 BETA_ROUND_GATE_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-gate-result.schema.json"
+BETA_SIMULATION_MANIFEST_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-manifest.schema.json"
 SIMULATED_USER_PROFILE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "simulated-user-profile.schema.json"
 BETA_SIMULATION_PERSONA_LIBRARY_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "simulation-persona-library.schema.json"
 BETA_SIMULATION_COHORT_FIXTURES_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "simulation-cohort-fixtures.schema.json"
@@ -97,6 +98,14 @@ def validate_beta_round_gate_result(payload: dict[str, object]) -> None:
         payload,
         schema_path=BETA_ROUND_GATE_RESULT_SCHEMA_JSON_PATH,
         label="beta round gate result",
+    )
+
+
+def validate_beta_simulation_manifest(payload: dict[str, object]) -> None:
+    validate_payload_against_schema(
+        payload,
+        schema_path=BETA_SIMULATION_MANIFEST_SCHEMA_JSON_PATH,
+        label="beta simulation manifest",
     )
 
 

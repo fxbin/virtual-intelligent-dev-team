@@ -341,8 +341,10 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                             "simulation_config_dir": ".skill-beta/simulation-configs",
                             "simulation_scenario_packs": "references/simulation-scenario-packs.json",
                             "simulation_trace_catalog": "references/simulation-trace-catalog.json",
+                            "simulation_preview_dir": ".skill-beta/fixture-previews",
                             "simulation_run_dir": ".skill-beta/simulation-runs",
                             "simulation_init_command_template": "python scripts/init_beta_simulation.py --root . --round-id <round-id> --phase \"<phase>\" --objective \"<objective>\" --pretty",
+                            "simulation_preview_command_template": "python scripts/preview_beta_simulation_fixture.py --config .skill-beta/simulation-configs/<round-id>.json --pretty",
                             "simulation_run_command_template": "python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/<round-id>.json --pretty",
                             "simulation_summary_command_template": "python scripts/summarize_beta_simulation.py --run .skill-beta/simulation-runs/<round-id>/beta-simulation-run.json --feedback-ledger-out .skill-beta/feedback-ledger.md --round-report-out .skill-beta/reports/<round-id>.json --pretty",
                             "report_template": "assets/beta-round-report-template.json",
@@ -713,10 +715,38 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             "json_report": ".skill-beta/simulation-runs/round-0/beta-simulation-run.json",
             "markdown_report": ".skill-beta/simulation-runs/round-0/beta-simulation-run.md",
         }
+        sample_simulation_manifest = {
+            "schema_version": "beta-simulation-manifest/v1",
+            "generated_at": "2026-04-08T12:00:00Z",
+            "skill_name": "virtual-intelligent-dev-team",
+            "round_id": "round-0",
+            "phase": "pre-build concept smoke",
+            "objective": "validate the promise",
+            "config_path": ".skill-beta/simulation-configs/round-0.json",
+            "cohort_fixture_source": "references/simulation-cohort-fixtures.json",
+            "trace_catalog_source": "references/simulation-trace-catalog.json",
+            "sessions": [
+                {
+                    "session_id": "session-01",
+                    "persona_id": "first-time-novice",
+                    "persona_name": "First-Time Novice",
+                    "scenario_id": "scenario-1",
+                    "scenario_title": "first meaningful task",
+                    "trace_id": "novice-cta-hesitation",
+                    "trace_label": "Novice CTA hesitation",
+                }
+            ],
+            "json_report": ".skill-beta/fixture-previews/round-0/beta-simulation-manifest.json",
+            "markdown_report": ".skill-beta/fixture-previews/round-0/beta-simulation-manifest.md",
+        }
         try:
             local_response_contract.validate_simulated_user_profile(sample_profile)
         except Exception as exc:
             beta_round_contract_failures.append(f"profile: {exc}")
+        try:
+            local_response_contract.validate_beta_simulation_manifest(sample_simulation_manifest)
+        except Exception as exc:
+            beta_round_contract_failures.append(f"simulation-manifest: {exc}")
         sample_persona_library = {
             "schema_version": "simulation-persona-library/v1",
             "skill_name": "virtual-intelligent-dev-team",
@@ -848,6 +878,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             "details": {
                 "report_schema_json": str(beta_round_report_schema_json_path),
                 "gate_schema_json": str(beta_round_gate_result_schema_json_path),
+                "simulation_manifest_schema_json": str(SKILL_DIR / "references" / "beta-simulation-manifest.schema.json"),
                 "simulation_profile_schema_json": str(simulated_user_profile_schema_json_path),
                 "simulation_persona_library_schema_json": str(SKILL_DIR / "references" / "simulation-persona-library.schema.json"),
                 "simulation_cohort_fixtures_schema_json": str(SKILL_DIR / "references" / "simulation-cohort-fixtures.schema.json"),

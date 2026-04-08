@@ -1884,10 +1884,15 @@ def build_beta_validation_plan(text: str, workflow_bundle_name: str) -> dict[str
         "simulation_config_dir": ".skill-beta/simulation-configs",
         "simulation_scenario_packs": "references/simulation-scenario-packs.json",
         "simulation_trace_catalog": "references/simulation-trace-catalog.json",
+        "simulation_preview_dir": ".skill-beta/fixture-previews",
         "simulation_run_dir": ".skill-beta/simulation-runs",
         "simulation_init_command_template": (
             "python scripts/init_beta_simulation.py --root . --round-id <round-id> "
             "--phase \"<phase>\" --objective \"<objective>\" --pretty"
+        ),
+        "simulation_preview_command_template": (
+            "python scripts/preview_beta_simulation_fixture.py "
+            "--config .skill-beta/simulation-configs/<round-id>.json --pretty"
         ),
         "simulation_run_command_template": (
             "python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/<round-id>.json --pretty"

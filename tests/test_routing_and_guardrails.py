@@ -31,6 +31,7 @@ INIT_PRODUCT_DELIVERY_SCRIPT = SKILL_DIR / "scripts" / "init_product_delivery.py
 INIT_BETA_VALIDATION_SCRIPT = SKILL_DIR / "scripts" / "init_beta_validation.py"
 INIT_BETA_ROUND_REPORT_SCRIPT = SKILL_DIR / "scripts" / "init_beta_round_report.py"
 INIT_BETA_SIMULATION_SCRIPT = SKILL_DIR / "scripts" / "init_beta_simulation.py"
+PREVIEW_BETA_SIMULATION_FIXTURE_SCRIPT = SKILL_DIR / "scripts" / "preview_beta_simulation_fixture.py"
 RUN_BETA_SIMULATION_SCRIPT = SKILL_DIR / "scripts" / "run_beta_simulation.py"
 SUMMARIZE_BETA_SIMULATION_SCRIPT = SKILL_DIR / "scripts" / "summarize_beta_simulation.py"
 EVALUATE_BETA_ROUND_SCRIPT = SKILL_DIR / "scripts" / "evaluate_beta_round.py"
@@ -70,6 +71,7 @@ product_delivery_init = load_module("virtual_intelligent_dev_team_product_delive
 beta_validation_init = load_module("virtual_intelligent_dev_team_beta_validation_init", INIT_BETA_VALIDATION_SCRIPT)
 beta_round_report_init = load_module("virtual_intelligent_dev_team_beta_round_report_init", INIT_BETA_ROUND_REPORT_SCRIPT)
 beta_simulation_init = load_module("virtual_intelligent_dev_team_beta_simulation_init", INIT_BETA_SIMULATION_SCRIPT)
+beta_simulation_preview = load_module("virtual_intelligent_dev_team_beta_simulation_preview", PREVIEW_BETA_SIMULATION_FIXTURE_SCRIPT)
 beta_simulation_runner = load_module("virtual_intelligent_dev_team_beta_simulation_runner", RUN_BETA_SIMULATION_SCRIPT)
 beta_simulation_summary = load_module("virtual_intelligent_dev_team_beta_simulation_summary", SUMMARIZE_BETA_SIMULATION_SCRIPT)
 beta_round_evaluator = load_module("virtual_intelligent_dev_team_beta_round_evaluator", EVALUATE_BETA_ROUND_SCRIPT)
@@ -586,8 +588,10 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual(".skill-beta/simulation-configs", beta_plan["simulation_config_dir"])
         self.assertEqual("references/simulation-scenario-packs.json", beta_plan["simulation_scenario_packs"])
         self.assertEqual("references/simulation-trace-catalog.json", beta_plan["simulation_trace_catalog"])
+        self.assertEqual(".skill-beta/fixture-previews", beta_plan["simulation_preview_dir"])
         self.assertEqual(".skill-beta/simulation-runs", beta_plan["simulation_run_dir"])
         self.assertIn("python scripts/init_beta_simulation.py", beta_plan["simulation_init_command_template"])
+        self.assertIn("python scripts/preview_beta_simulation_fixture.py", beta_plan["simulation_preview_command_template"])
         self.assertIn("python scripts/run_beta_simulation.py", beta_plan["simulation_run_command_template"])
         self.assertIn("python scripts/summarize_beta_simulation.py", beta_plan["simulation_summary_command_template"])
         self.assertEqual("assets/beta-round-report-template.json", beta_plan["report_template"])
@@ -4710,6 +4714,8 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertEqual("references/simulation-cohort-fixtures.json", config_payload["cohort_fixture_source"])
             self.assertEqual("references/simulation-trace-catalog.json", config_payload["trace_catalog_source"])
             self.assertEqual("round-0-default", result["cohort_fixture_id"])
+            self.assertTrue((root / result["fixture_manifest_json"]).exists())
+            self.assertTrue((root / result["fixture_manifest_markdown"]).exists())
             self.assertTrue((root / ".skill-beta" / "personas" / "first-time-novice.json").exists())
             self.assertTrue((REPO_ROOT / "virtual-intelligent-dev-team" / "references" / "simulation-persona-library.json").exists())
             self.assertTrue((REPO_ROOT / "virtual-intelligent-dev-team" / "references" / "simulation-cohort-fixtures.json").exists())
@@ -4744,6 +4750,27 @@ class ProjectMemoryInitTests(unittest.TestCase):
         response_contract.validate_simulation_cohort_fixtures(cohort_fixtures)
         response_contract.validate_simulation_scenario_packs(scenario_packs)
         response_contract.validate_simulation_trace_catalog(trace_catalog)
+
+    def test_preview_beta_simulation_fixture_emits_manifest(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            init_result = beta_simulation_init.init_beta_simulation(
+                root=root,
+                round_id="round-1",
+                phase="closed beta",
+                objective="validate the implemented slice",
+                overwrite=False,
+            )
+
+            result = beta_simulation_preview.preview_beta_simulation_fixture(
+                config_path=root / init_result["config_path"],
+            )
+
+            self.assertEqual("beta-simulation-manifest/v1", result["schema_version"])
+            response_contract.validate_beta_simulation_manifest(result)
+            self.assertTrue(Path(result["json_report"]).exists())
+            self.assertTrue(Path(result["markdown_report"]).exists())
+            self.assertTrue(all(session["trace_id"] for session in result["sessions"]))
 
     def test_run_beta_simulation_emits_machine_readable_trace(self) -> None:
         with make_tempdir() as tmp:
@@ -5060,8 +5087,10 @@ class ResponsePackTests(unittest.TestCase):
         self.assertEqual(".skill-beta/simulation-configs", payload["beta_program"]["simulation_config_dir"])
         self.assertEqual("references/simulation-scenario-packs.json", payload["beta_program"]["simulation_scenario_packs"])
         self.assertEqual("references/simulation-trace-catalog.json", payload["beta_program"]["simulation_trace_catalog"])
+        self.assertEqual(".skill-beta/fixture-previews", payload["beta_program"]["simulation_preview_dir"])
         self.assertEqual(".skill-beta/simulation-runs", payload["beta_program"]["simulation_run_dir"])
         self.assertIn("python scripts/init_beta_simulation.py", payload["beta_program"]["simulation_init_command_template"])
+        self.assertIn("python scripts/preview_beta_simulation_fixture.py", payload["beta_program"]["simulation_preview_command_template"])
         self.assertIn("python scripts/run_beta_simulation.py", payload["beta_program"]["simulation_run_command_template"])
         self.assertIn("python scripts/summarize_beta_simulation.py", payload["beta_program"]["simulation_summary_command_template"])
         self.assertEqual("assets/beta-round-report-template.json", payload["beta_program"]["report_template"])
@@ -5153,7 +5182,9 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn(".skill-beta/simulation-configs", markdown)
         self.assertIn("references/simulation-scenario-packs.json", markdown)
         self.assertIn("references/simulation-trace-catalog.json", markdown)
+        self.assertIn(".skill-beta/fixture-previews", markdown)
         self.assertIn("python scripts/init_beta_simulation.py", markdown)
+        self.assertIn("python scripts/preview_beta_simulation_fixture.py", markdown)
         self.assertIn("python scripts/run_beta_simulation.py", markdown)
         self.assertIn("python scripts/summarize_beta_simulation.py", markdown)
         self.assertIn("assets/beta-round-report-template.json", markdown)

@@ -105,8 +105,10 @@
 - `simulation_config_dir`
 - `simulation_scenario_packs`
 - `simulation_trace_catalog`
+- `simulation_preview_dir`
 - `simulation_run_dir`
 - `simulation_init_command_template`
+- `simulation_preview_command_template`
 - `simulation_run_command_template`
 - `simulation_summary_command_template`
 - `report_template`

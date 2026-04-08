@@ -17,6 +17,7 @@ COHORT_FIXTURES_PATH = SKILL_DIR / "references" / "simulation-cohort-fixtures.js
 SCENARIO_PACKS_PATH = SKILL_DIR / "references" / "simulation-scenario-packs.json"
 TRACE_CATALOG_PATH = SKILL_DIR / "references" / "simulation-trace-catalog.json"
 RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
+PREVIEW_BETA_SIMULATION_FIXTURE_SCRIPT = SCRIPT_DIR / "preview_beta_simulation_fixture.py"
 
 
 def load_module(name: str, path: Path):
@@ -31,6 +32,10 @@ def load_module(name: str, path: Path):
 
 
 response_contract = load_module("virtual_team_init_beta_simulation_response_contract", RESPONSE_CONTRACT_SCRIPT)
+fixture_preview = load_module(
+    "virtual_team_init_beta_simulation_fixture_preview",
+    PREVIEW_BETA_SIMULATION_FIXTURE_SCRIPT,
+)
 
 
 def load_json(path: Path) -> dict[str, object]:
@@ -293,6 +298,8 @@ def init_beta_simulation(
         write_json(config_path, config_payload)
         status = "updated" if overwrite and config_existed else "created"
 
+    preview_payload = fixture_preview.preview_beta_simulation_fixture(config_path=config_path.resolve())
+
     return {
         "ok": True,
         "status": status,
@@ -305,6 +312,8 @@ def init_beta_simulation(
         "cohort_fixture_source": "references/simulation-cohort-fixtures.json",
         "trace_catalog_source": "references/simulation-trace-catalog.json",
         "cohort_fixture_id": fixture_id,
+        "fixture_manifest_json": str(Path(str(preview_payload["json_report"])).relative_to(root)),
+        "fixture_manifest_markdown": str(Path(str(preview_payload["markdown_report"])).relative_to(root)),
         "created_profiles": created_profiles,
         "scenario_count": len(scenarios),
         "session_count": len(session_plan),

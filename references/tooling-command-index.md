@@ -190,6 +190,7 @@ python scripts/init_product_delivery.py --root . --pretty
 - `references/simulation-trace-catalog.json`
 - `references/beta-round-report.schema.json`
 - `references/beta-round-gate-result.schema.json`
+- `references/beta-simulation-manifest.schema.json`
 
 常用初始化命令：
 
@@ -199,6 +200,10 @@ python scripts/init_beta_validation.py --root . --pretty
 
 ```bash
 python scripts/init_beta_simulation.py --root . --round-id round-0 --phase "pre-build concept smoke" --objective "<objective>" --pretty
+```
+
+```bash
+python scripts/preview_beta_simulation_fixture.py --config .skill-beta/simulation-configs/round-0.json --pretty
 ```
 
 ```bash

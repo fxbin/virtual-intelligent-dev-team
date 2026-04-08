@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:beta-simulation-manifest.schema",
+  "title": "Virtual Intelligent Dev Team Beta Simulation Manifest",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "skill_name",
+    "round_id",
+    "phase",
+    "objective",
+    "config_path",
+    "cohort_fixture_source",
+    "trace_catalog_source",
+    "sessions",
+    "json_report",
+    "markdown_report"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "beta-simulation-manifest/v1"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "skill_name": {
+      "const": "virtual-intelligent-dev-team"
+    },
+    "round_id": {
+      "type": "string"
+    },
+    "phase": {
+      "type": "string"
+    },
+    "objective": {
+      "type": "string"
+    },
+    "config_path": {
+      "type": "string"
+    },
+    "cohort_fixture_source": {
+      "type": "string"
+    },
+    "trace_catalog_source": {
+      "type": "string"
+    },
+    "sessions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/session"
+      }
+    },
+    "json_report": {
+      "type": "string"
+    },
+    "markdown_report": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "session": {
+      "type": "object",
+      "required": [
+        "session_id",
+        "persona_id",
+        "persona_name",
+        "scenario_id",
+        "scenario_title",
+        "trace_id",
+        "trace_label"
+      ],
+      "properties": {
+        "session_id": {
+          "type": "string"
+        },
+        "persona_id": {
+          "type": "string"
+        },
+        "persona_name": {
+          "type": "string"
+        },
+        "scenario_id": {
+          "type": "string"
+        },
+        "scenario_title": {
+          "type": "string"
+        },
+        "trace_id": {
+          "type": "string"
+        },
+        "trace_label": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
