@@ -20,9 +20,11 @@ BETA_ROUND_REPORT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-repo
 BETA_ROUND_GATE_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-gate-result.schema.json"
 SIMULATED_USER_PROFILE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "simulated-user-profile.schema.json"
 BETA_SIMULATION_PERSONA_LIBRARY_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "simulation-persona-library.schema.json"
+BETA_SIMULATION_COHORT_FIXTURES_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "simulation-cohort-fixtures.schema.json"
 BETA_SIMULATION_CONFIG_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-config.schema.json"
 BETA_SIMULATION_EVENT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-event.schema.json"
 BETA_SIMULATION_RUN_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-run.schema.json"
+BETA_SIMULATION_TRACE_CATALOG_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "simulation-trace-catalog.schema.json"
 BETA_SIMULATION_SCENARIO_PACKS_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "simulation-scenario-packs.schema.json"
 BENCHMARK_EVALS_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-evals.schema.json"
 BENCHMARK_RUN_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-run-result.schema.json"
@@ -139,6 +141,14 @@ def validate_beta_simulation_config(payload: dict[str, object]) -> None:
     )
 
 
+def validate_simulation_cohort_fixtures(payload: dict[str, object]) -> None:
+    validate_payload_against_schema(
+        payload,
+        schema_path=BETA_SIMULATION_COHORT_FIXTURES_SCHEMA_JSON_PATH,
+        label="simulation cohort fixtures",
+    )
+
+
 def validate_beta_simulation_event(payload: dict[str, object]) -> None:
     validate_payload_against_schema(
         payload,
@@ -152,6 +162,14 @@ def validate_beta_simulation_run(payload: dict[str, object]) -> None:
         payload,
         schema_path=BETA_SIMULATION_RUN_SCHEMA_JSON_PATH,
         label="beta simulation run",
+    )
+
+
+def validate_simulation_trace_catalog(payload: dict[str, object]) -> None:
+    validate_payload_against_schema(
+        payload,
+        schema_path=BETA_SIMULATION_TRACE_CATALOG_SCHEMA_JSON_PATH,
+        label="simulation trace catalog",
     )
 
 

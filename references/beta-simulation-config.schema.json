@@ -14,6 +14,8 @@
     "feedback_ledger_out",
     "round_report_out",
     "summary_command_template",
+    "cohort_fixture_source",
+    "trace_catalog_source",
     "scenarios",
     "session_plan"
   ],
@@ -46,6 +48,12 @@
       "type": "string"
     },
     "summary_command_template": {
+      "type": "string"
+    },
+    "cohort_fixture_source": {
+      "type": "string"
+    },
+    "trace_catalog_source": {
       "type": "string"
     },
     "scenarios": {
@@ -97,7 +105,8 @@
       "required": [
         "session_id",
         "persona_id",
-        "scenario_id"
+        "scenario_id",
+        "trace_id"
       ],
       "properties": {
         "session_id": {
@@ -107,6 +116,9 @@
           "type": "string"
         },
         "scenario_id": {
+          "type": "string"
+        },
+        "trace_id": {
           "type": "string"
         }
       },

@@ -15,9 +15,10 @@ Use this playbook when the request is about staged beta validation, internal tes
 3. Start with a small simulated or seed-user cohort before broadening exposure.
 4. Define machine-readable simulated-user profiles instead of one generic “user”.
 5. Build each round from the shared persona library and scenario packs before freezing the per-round simulation config.
-6. Capture every feedback item with scenario, severity, and proposed action, and keep the raw event trace.
-7. Sync simulation evidence back into the feedback ledger before judging the round.
-8. Expand only when the previous round's exit criteria are explicitly met.
+6. Materialize each round from an explicit cohort fixture and a reusable trace catalog instead of ad-hoc session defaults.
+7. Capture every feedback item with scenario, severity, and proposed action, and keep the raw event trace.
+8. Sync simulation evidence back into the feedback ledger before judging the round.
+9. Expand only when the previous round's exit criteria are explicitly met.
 
 ## Required outputs
 
@@ -35,7 +36,9 @@ Use this playbook when the request is about staged beta validation, internal tes
 ## Shared libraries
 
 - persona library: `references/simulation-persona-library.json`
+- cohort fixtures: `references/simulation-cohort-fixtures.json`
 - scenario packs: `references/simulation-scenario-packs.json`
+- trace catalog: `references/simulation-trace-catalog.json`
 
 默认 archetype 仍然围绕：
 

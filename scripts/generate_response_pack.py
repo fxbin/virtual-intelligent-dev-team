@@ -419,6 +419,9 @@ def build_response_pack_payload(
             "simulation_persona_library": str(
                 beta_validation_plan.get("simulation_persona_library", "references/simulation-persona-library.json")
             ),
+            "simulation_cohort_fixtures": str(
+                beta_validation_plan.get("simulation_cohort_fixtures", "references/simulation-cohort-fixtures.json")
+            ),
             "simulation_config_template": str(
                 beta_validation_plan.get("simulation_config_template", "assets/beta-simulation-config-template.json")
             ),
@@ -427,6 +430,9 @@ def build_response_pack_payload(
             ),
             "simulation_scenario_packs": str(
                 beta_validation_plan.get("simulation_scenario_packs", "references/simulation-scenario-packs.json")
+            ),
+            "simulation_trace_catalog": str(
+                beta_validation_plan.get("simulation_trace_catalog", "references/simulation-trace-catalog.json")
             ),
             "simulation_run_dir": str(beta_validation_plan.get("simulation_run_dir", ".skill-beta/simulation-runs")),
             "simulation_init_command_template": str(
@@ -684,9 +690,11 @@ def build_response_pack(
                     f"- 模拟画像模板：{beta_program.get('simulation_profile_template', 'assets/simulated-user-profile-template.json')}",
                     f"- 模拟画像目录：{beta_program.get('simulation_profile_dir', '.skill-beta/personas')}",
                     f"- 模拟画像库：{beta_program.get('simulation_persona_library', 'references/simulation-persona-library.json')}",
+                    f"- cohort fixture 库：{beta_program.get('simulation_cohort_fixtures', 'references/simulation-cohort-fixtures.json')}",
                     f"- 模拟配置模板：{beta_program.get('simulation_config_template', 'assets/beta-simulation-config-template.json')}",
                     f"- 模拟配置目录：{beta_program.get('simulation_config_dir', '.skill-beta/simulation-configs')}",
                     f"- 模拟场景包：{beta_program.get('simulation_scenario_packs', 'references/simulation-scenario-packs.json')}",
+                    f"- 模拟轨迹库：{beta_program.get('simulation_trace_catalog', 'references/simulation-trace-catalog.json')}",
                     f"- 模拟运行目录：{beta_program.get('simulation_run_dir', '.skill-beta/simulation-runs')}",
                     f"- 模拟起盘命令：{beta_program.get('simulation_init_command_template', 'python scripts/init_beta_simulation.py --root . --round-id <round-id> --phase \"<phase>\" --objective \"<objective>\" --pretty')}",
                     f"- 模拟执行命令：{beta_program.get('simulation_run_command_template', 'python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/<round-id>.json --pretty')}",
@@ -717,9 +725,11 @@ def build_response_pack(
                     f"- Simulation profile template: {beta_program.get('simulation_profile_template', 'assets/simulated-user-profile-template.json')}",
                     f"- Simulation profile dir: {beta_program.get('simulation_profile_dir', '.skill-beta/personas')}",
                     f"- Simulation persona library: {beta_program.get('simulation_persona_library', 'references/simulation-persona-library.json')}",
+                    f"- Cohort fixture library: {beta_program.get('simulation_cohort_fixtures', 'references/simulation-cohort-fixtures.json')}",
                     f"- Simulation config template: {beta_program.get('simulation_config_template', 'assets/beta-simulation-config-template.json')}",
                     f"- Simulation config dir: {beta_program.get('simulation_config_dir', '.skill-beta/simulation-configs')}",
                     f"- Simulation scenario packs: {beta_program.get('simulation_scenario_packs', 'references/simulation-scenario-packs.json')}",
+                    f"- Simulation trace catalog: {beta_program.get('simulation_trace_catalog', 'references/simulation-trace-catalog.json')}",
                     f"- Simulation run dir: {beta_program.get('simulation_run_dir', '.skill-beta/simulation-runs')}",
                     f"- Simulation init command: {beta_program.get('simulation_init_command_template', 'python scripts/init_beta_simulation.py --root . --round-id <round-id> --phase \"<phase>\" --objective \"<objective>\" --pretty')}",
                     f"- Simulation run command: {beta_program.get('simulation_run_command_template', 'python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/<round-id>.json --pretty')}",

@@ -179,11 +179,15 @@ python scripts/init_product_delivery.py --root . --pretty
 - `references/simulated-user-profile.schema.json`
 - `references/simulation-persona-library.schema.json`
 - `references/simulation-persona-library.json`
+- `references/simulation-cohort-fixtures.schema.json`
+- `references/simulation-cohort-fixtures.json`
 - `references/beta-simulation-config.schema.json`
 - `references/beta-simulation-event.schema.json`
 - `references/beta-simulation-run.schema.json`
 - `references/simulation-scenario-packs.schema.json`
 - `references/simulation-scenario-packs.json`
+- `references/simulation-trace-catalog.schema.json`
+- `references/simulation-trace-catalog.json`
 - `references/beta-round-report.schema.json`
 - `references/beta-round-gate-result.schema.json`
 

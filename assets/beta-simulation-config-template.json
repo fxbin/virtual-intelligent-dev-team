@@ -9,6 +9,8 @@
   "feedback_ledger_out": ".skill-beta/feedback-ledger.md",
   "round_report_out": ".skill-beta/reports/round-0.json",
   "summary_command_template": "python scripts/summarize_beta_simulation.py --run .skill-beta/simulation-runs/<round-id>/beta-simulation-run.json --feedback-ledger-out .skill-beta/feedback-ledger.md --round-report-out .skill-beta/reports/<round-id>.json --pretty",
+  "cohort_fixture_source": "references/simulation-cohort-fixtures.json",
+  "trace_catalog_source": "references/simulation-trace-catalog.json",
   "scenarios": [
     {
       "scenario_id": "scenario-1",
@@ -22,7 +24,8 @@
     {
       "session_id": "session-1",
       "persona_id": "first-time-novice",
-      "scenario_id": "scenario-1"
+      "scenario_id": "scenario-1",
+      "trace_id": "novice-cta-hesitation"
     }
   ]
 }

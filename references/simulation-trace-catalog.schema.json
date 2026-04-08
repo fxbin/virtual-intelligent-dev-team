@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:simulation-trace-catalog.schema",
+  "title": "Virtual Intelligent Dev Team Simulation Trace Catalog",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "skill_name",
+    "traces"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "simulation-trace-catalog/v1"
+    },
+    "skill_name": {
+      "const": "virtual-intelligent-dev-team"
+    },
+    "traces": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/trace"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "string_array": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "event_template": {
+      "type": "object",
+      "required": [
+        "event_type",
+        "action",
+        "outcome",
+        "severity",
+        "observation"
+      ],
+      "properties": {
+        "event_type": {
+          "enum": [
+            "entry",
+            "action",
+            "hesitation",
+            "error",
+            "workaround",
+            "success",
+            "feedback"
+          ]
+        },
+        "action": {
+          "type": "string"
+        },
+        "outcome": {
+          "enum": [
+            "neutral",
+            "success",
+            "warning",
+            "failure"
+          ]
+        },
+        "severity": {
+          "enum": [
+            "info",
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        },
+        "observation": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "trace": {
+      "type": "object",
+      "required": [
+        "trace_id",
+        "label",
+        "task_completed",
+        "blocker_detected",
+        "critical_issue_detected",
+        "high_severity_issue_detected",
+        "top_feedback_themes",
+        "feedback_summary",
+        "events"
+      ],
+      "properties": {
+        "trace_id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "task_completed": {
+          "type": "boolean"
+        },
+        "blocker_detected": {
+          "type": "boolean"
+        },
+        "critical_issue_detected": {
+          "type": "boolean"
+        },
+        "high_severity_issue_detected": {
+          "type": "boolean"
+        },
+        "top_feedback_themes": {
+          "$ref": "#/$defs/string_array"
+        },
+        "feedback_summary": {
+          "type": "string"
+        },
+        "events": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/event_template"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

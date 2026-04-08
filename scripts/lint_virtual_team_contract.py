@@ -336,9 +336,11 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                             "simulation_profile_template": "assets/simulated-user-profile-template.json",
                             "simulation_profile_dir": ".skill-beta/personas",
                             "simulation_persona_library": "references/simulation-persona-library.json",
+                            "simulation_cohort_fixtures": "references/simulation-cohort-fixtures.json",
                             "simulation_config_template": "assets/beta-simulation-config-template.json",
                             "simulation_config_dir": ".skill-beta/simulation-configs",
                             "simulation_scenario_packs": "references/simulation-scenario-packs.json",
+                            "simulation_trace_catalog": "references/simulation-trace-catalog.json",
                             "simulation_run_dir": ".skill-beta/simulation-runs",
                             "simulation_init_command_template": "python scripts/init_beta_simulation.py --root . --round-id <round-id> --phase \"<phase>\" --objective \"<objective>\" --pretty",
                             "simulation_run_command_template": "python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/<round-id>.json --pretty",
@@ -642,6 +644,8 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             "feedback_ledger_out": ".skill-beta/feedback-ledger.md",
             "round_report_out": ".skill-beta/reports/round-0.json",
             "summary_command_template": "python scripts/summarize_beta_simulation.py --run .skill-beta/simulation-runs/<round-id>/beta-simulation-run.json --feedback-ledger-out .skill-beta/feedback-ledger.md --round-report-out .skill-beta/reports/<round-id>.json --pretty",
+            "cohort_fixture_source": "references/simulation-cohort-fixtures.json",
+            "trace_catalog_source": "references/simulation-trace-catalog.json",
             "scenarios": [
                 {
                     "scenario_id": "scenario-1",
@@ -656,6 +660,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                     "session_id": "session-01",
                     "persona_id": "first-time-novice",
                     "scenario_id": "scenario-1",
+                    "trace_id": "novice-cta-hesitation",
                 }
             ],
         }
@@ -667,6 +672,8 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             "phase": "pre-build concept smoke",
             "objective": "validate the promise",
             "config_path": ".skill-beta/simulation-configs/round-0.json",
+            "cohort_fixture_source": "references/simulation-cohort-fixtures.json",
+            "trace_catalog_source": "references/simulation-trace-catalog.json",
             "personas": [
                 {
                     "profile_id": "first-time-novice",
@@ -682,6 +689,8 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                     "persona_name": "First-Time Novice",
                     "scenario_id": "scenario-1",
                     "scenario_title": "first meaningful task",
+                    "trace_id": "novice-cta-hesitation",
+                    "trace_label": "Novice CTA hesitation",
                     "status": "completed",
                     "task_completed": True,
                     "blocker_detected": False,
@@ -753,10 +762,58 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 }
             ],
         }
+        sample_cohort_fixtures = {
+            "schema_version": "simulation-cohort-fixtures/v1",
+            "skill_name": "virtual-intelligent-dev-team",
+            "fixtures": [
+                {
+                    "fixture_id": "round-0-default",
+                    "round_id": "round-0",
+                    "description": "sample fixture",
+                    "sessions": [
+                        {
+                            "session_id": "session-01",
+                            "persona_id": "first-time-novice",
+                            "scenario_id": "scenario-1",
+                            "trace_id": "novice-cta-hesitation",
+                        }
+                    ],
+                }
+            ],
+        }
+        sample_trace_catalog = {
+            "schema_version": "simulation-trace-catalog/v1",
+            "skill_name": "virtual-intelligent-dev-team",
+            "traces": [
+                {
+                    "trace_id": "novice-cta-hesitation",
+                    "label": "Novice CTA hesitation",
+                    "task_completed": True,
+                    "blocker_detected": False,
+                    "critical_issue_detected": False,
+                    "high_severity_issue_detected": False,
+                    "top_feedback_themes": ["onboarding clarity"],
+                    "feedback_summary": "Task completed, but the next safe action was not obvious enough.",
+                    "events": [
+                        {
+                            "event_type": "entry",
+                            "action": "start scenario",
+                            "outcome": "neutral",
+                            "severity": "info",
+                            "observation": "{persona_name} starts `{scenario_title}`.",
+                        }
+                    ],
+                }
+            ],
+        }
         try:
             local_response_contract.validate_simulation_persona_library(sample_persona_library)
         except Exception as exc:
             beta_round_contract_failures.append(f"simulation-persona-library: {exc}")
+        try:
+            local_response_contract.validate_simulation_cohort_fixtures(sample_cohort_fixtures)
+        except Exception as exc:
+            beta_round_contract_failures.append(f"simulation-cohort-fixtures: {exc}")
         try:
             local_response_contract.validate_beta_simulation_event(sample_event)
         except Exception as exc:
@@ -765,6 +822,10 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             local_response_contract.validate_simulation_scenario_packs(sample_scenario_packs)
         except Exception as exc:
             beta_round_contract_failures.append(f"simulation-scenario-packs: {exc}")
+        try:
+            local_response_contract.validate_simulation_trace_catalog(sample_trace_catalog)
+        except Exception as exc:
+            beta_round_contract_failures.append(f"simulation-trace-catalog: {exc}")
         try:
             local_response_contract.validate_beta_simulation_config(sample_simulation_config)
         except Exception as exc:
@@ -789,10 +850,12 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 "gate_schema_json": str(beta_round_gate_result_schema_json_path),
                 "simulation_profile_schema_json": str(simulated_user_profile_schema_json_path),
                 "simulation_persona_library_schema_json": str(SKILL_DIR / "references" / "simulation-persona-library.schema.json"),
+                "simulation_cohort_fixtures_schema_json": str(SKILL_DIR / "references" / "simulation-cohort-fixtures.schema.json"),
                 "simulation_config_schema_json": str(beta_simulation_config_schema_json_path),
                 "simulation_event_schema_json": str(beta_simulation_event_schema_json_path),
                 "simulation_run_schema_json": str(beta_simulation_run_schema_json_path),
                 "simulation_scenario_packs_schema_json": str(SKILL_DIR / "references" / "simulation-scenario-packs.schema.json"),
+                "simulation_trace_catalog_schema_json": str(SKILL_DIR / "references" / "simulation-trace-catalog.schema.json"),
             },
         }
     )

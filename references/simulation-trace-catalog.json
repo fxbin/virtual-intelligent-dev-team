@@ -1,0 +1,218 @@
+{
+  "schema_version": "simulation-trace-catalog/v1",
+  "skill_name": "virtual-intelligent-dev-team",
+  "traces": [
+    {
+      "trace_id": "novice-cta-hesitation",
+      "label": "Novice CTA hesitation",
+      "task_completed": true,
+      "blocker_detected": false,
+      "critical_issue_detected": false,
+      "high_severity_issue_detected": false,
+      "top_feedback_themes": [
+        "onboarding clarity"
+      ],
+      "feedback_summary": "Task completed, but the next safe action was not obvious enough for a new user.",
+      "events": [
+        {
+          "event_type": "entry",
+          "action": "start scenario",
+          "outcome": "neutral",
+          "severity": "info",
+          "observation": "{persona_name} starts `{scenario_title}`."
+        },
+        {
+          "event_type": "hesitation",
+          "action": "interpret primary CTA",
+          "outcome": "warning",
+          "severity": "medium",
+          "observation": "The user pauses to infer which action is safe enough to continue."
+        },
+        {
+          "event_type": "success",
+          "action": "finish the task",
+          "outcome": "success",
+          "severity": "info",
+          "observation": "The user reaches the intended outcome after a short orientation delay."
+        },
+        {
+          "event_type": "feedback",
+          "action": "summarize experience",
+          "outcome": "warning",
+          "severity": "medium",
+          "observation": "The user asks for clearer onboarding copy and a more explicit first next step."
+        }
+      ]
+    },
+    {
+      "trace_id": "operator-reentry-friction",
+      "label": "Operator re-entry friction",
+      "task_completed": true,
+      "blocker_detected": false,
+      "critical_issue_detected": false,
+      "high_severity_issue_detected": true,
+      "top_feedback_themes": [
+        "workflow friction",
+        "state recall"
+      ],
+      "feedback_summary": "The repeat task succeeds, but resuming context takes too much effort for a daily operator.",
+      "events": [
+        {
+          "event_type": "entry",
+          "action": "resume interrupted work",
+          "outcome": "neutral",
+          "severity": "info",
+          "observation": "{persona_name} returns to `{scenario_title}` expecting a low-friction routine."
+        },
+        {
+          "event_type": "action",
+          "action": "reconstruct prior context",
+          "outcome": "warning",
+          "severity": "high",
+          "observation": "The user spends extra effort finding where to continue and what state still holds."
+        },
+        {
+          "event_type": "success",
+          "action": "finish the repeated task",
+          "outcome": "success",
+          "severity": "info",
+          "observation": "The user completes the routine after rebuilding context."
+        },
+        {
+          "event_type": "feedback",
+          "action": "summarize experience",
+          "outcome": "warning",
+          "severity": "medium",
+          "observation": "The user wants stronger resume affordances and more stable state carry-over."
+        }
+      ]
+    },
+    {
+      "trace_id": "power-user-fast-path-friction",
+      "label": "Power-user fast-path friction",
+      "task_completed": true,
+      "blocker_detected": false,
+      "critical_issue_detected": false,
+      "high_severity_issue_detected": true,
+      "top_feedback_themes": [
+        "efficiency friction"
+      ],
+      "feedback_summary": "The fast path works, but it still forces too many slow defaults and manual confirmations.",
+      "events": [
+        {
+          "event_type": "entry",
+          "action": "start scenario",
+          "outcome": "neutral",
+          "severity": "info",
+          "observation": "{persona_name} enters `{scenario_title}` looking for the shortest path."
+        },
+        {
+          "event_type": "action",
+          "action": "optimize the happy path",
+          "outcome": "warning",
+          "severity": "high",
+          "observation": "The user finds batching and shortcut support weaker than expected."
+        },
+        {
+          "event_type": "success",
+          "action": "finish the task",
+          "outcome": "success",
+          "severity": "info",
+          "observation": "The task succeeds, but only after avoidable friction."
+        },
+        {
+          "event_type": "feedback",
+          "action": "summarize experience",
+          "outcome": "warning",
+          "severity": "medium",
+          "observation": "The user requests shortcut affordances and faster defaults before wider rollout."
+        }
+      ]
+    },
+    {
+      "trace_id": "skeptic-trust-check",
+      "label": "Skeptic trust check",
+      "task_completed": true,
+      "blocker_detected": false,
+      "critical_issue_detected": false,
+      "high_severity_issue_detected": false,
+      "top_feedback_themes": [
+        "trust and differentiation"
+      ],
+      "feedback_summary": "The workflow completes, but the product still under-explains why the user should trust it.",
+      "events": [
+        {
+          "event_type": "entry",
+          "action": "start scenario",
+          "outcome": "neutral",
+          "severity": "info",
+          "observation": "{persona_name} enters `{scenario_title}` with a trust-first mindset."
+        },
+        {
+          "event_type": "feedback",
+          "action": "question credibility",
+          "outcome": "warning",
+          "severity": "medium",
+          "observation": "The user asks for clearer proof of value, safety, and differentiation."
+        },
+        {
+          "event_type": "success",
+          "action": "finish the task",
+          "outcome": "success",
+          "severity": "info",
+          "observation": "The task completes, but confidence remains conditional."
+        },
+        {
+          "event_type": "feedback",
+          "action": "summarize experience",
+          "outcome": "warning",
+          "severity": "medium",
+          "observation": "The user wants stronger messaging and evidence before recommending expansion."
+        }
+      ]
+    },
+    {
+      "trace_id": "edge-recovery-break",
+      "label": "Edge recovery break",
+      "task_completed": false,
+      "blocker_detected": true,
+      "critical_issue_detected": false,
+      "high_severity_issue_detected": true,
+      "top_feedback_themes": [
+        "edge-case handling",
+        "error recovery"
+      ],
+      "feedback_summary": "An unusual state breaks recovery and should block further cohort expansion until fixed.",
+      "events": [
+        {
+          "event_type": "entry",
+          "action": "start scenario",
+          "outcome": "neutral",
+          "severity": "info",
+          "observation": "{persona_name} enters `{scenario_title}` specifically to probe rough edges."
+        },
+        {
+          "event_type": "error",
+          "action": "push invalid or unusual state",
+          "outcome": "failure",
+          "severity": "high",
+          "observation": "The user finds a fragile path that breaks recovery or leaves the state unclear."
+        },
+        {
+          "event_type": "workaround",
+          "action": "attempt workaround",
+          "outcome": "warning",
+          "severity": "medium",
+          "observation": "A workaround exists, but it is too hidden to count as safe recovery."
+        },
+        {
+          "event_type": "feedback",
+          "action": "summarize experience",
+          "outcome": "warning",
+          "severity": "high",
+          "observation": "The user recommends blocking expansion until this recovery path is made explicit and resilient."
+        }
+      ]
+    }
+  ]
+}

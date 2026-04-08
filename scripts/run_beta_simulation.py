@@ -51,12 +51,37 @@ def resolve_repo_path(repo_root: Path, raw_path: str) -> Path:
     path = Path(raw_path)
     if path.is_absolute():
         return path
-    return (repo_root / path).resolve()
+    repo_candidate = (repo_root / path).resolve()
+    if repo_candidate.exists():
+        return repo_candidate
+    skill_candidate = (SKILL_DIR / path).resolve()
+    if skill_candidate.exists():
+        return skill_candidate
+    return repo_candidate
 
 
 def validate_event(payload: dict[str, object]) -> dict[str, object]:
     response_contract.validate_beta_simulation_event(payload)
     return payload
+
+
+def load_trace_catalog(path: Path) -> dict[str, dict[str, object]]:
+    payload = load_json(path)
+    response_contract.validate_simulation_trace_catalog(payload)
+    traces = payload.get("traces", [])
+    if not isinstance(traces, list) or not traces:
+        raise RuntimeError(f"{path} must define a non-empty traces array")
+    catalog: dict[str, dict[str, object]] = {}
+    for item in traces:
+        if not isinstance(item, dict):
+            continue
+        trace_id = str(item.get("trace_id", "")).strip()
+        if trace_id == "":
+            continue
+        catalog[trace_id] = dict(item)
+    if not catalog:
+        raise RuntimeError(f"{path} did not contain any valid traces")
+    return catalog
 
 
 def make_event(
@@ -230,6 +255,8 @@ def infer_session_result(profile: dict[str, object], scenario: dict[str, object]
     )
 
     return {
+        "trace_id": "heuristic-fallback",
+        "trace_label": "Heuristic fallback",
         "task_completed": task_completed,
         "blocker_detected": blocker_detected,
         "critical_issue_detected": critical_detected,
@@ -240,11 +267,72 @@ def infer_session_result(profile: dict[str, object], scenario: dict[str, object]
     }
 
 
+def render_trace_observation(template: str, *, persona_name: str, scenario_title: str) -> str:
+    return template.format(
+        persona_name=persona_name,
+        scenario_title=scenario_title,
+    )
+
+
+def simulate_session_from_trace(
+    *,
+    trace: dict[str, object],
+    persona_id: str,
+    persona_name: str,
+    scenario_id: str,
+    scenario_title: str,
+) -> dict[str, object]:
+    raw_events = trace.get("events", [])
+    if not isinstance(raw_events, list) or not raw_events:
+        raise RuntimeError(f"trace `{trace.get('trace_id', '')}` must define at least one event")
+
+    events: list[dict[str, object]] = []
+    for step_index, item in enumerate(raw_events, start=1):
+        if not isinstance(item, dict):
+            continue
+        events.append(
+            make_event(
+                step_index,
+                event_type=str(item.get("event_type", "")).strip(),
+                actor_id=persona_id,
+                scenario_id=scenario_id,
+                action=str(item.get("action", "")).strip(),
+                outcome=str(item.get("outcome", "")).strip(),
+                severity=str(item.get("severity", "")).strip(),
+                observation=render_trace_observation(
+                    str(item.get("observation", "")).strip(),
+                    persona_name=persona_name,
+                    scenario_title=scenario_title,
+                ),
+            )
+        )
+
+    themes = trace.get("top_feedback_themes", [])
+    return {
+        "trace_id": str(trace.get("trace_id", "")).strip(),
+        "trace_label": str(trace.get("label", "")).strip(),
+        "task_completed": bool(trace.get("task_completed")),
+        "blocker_detected": bool(trace.get("blocker_detected")),
+        "critical_issue_detected": bool(trace.get("critical_issue_detected")),
+        "high_severity_issue_detected": bool(trace.get("high_severity_issue_detected")),
+        "top_feedback_themes": [str(item) for item in themes if str(item).strip() != ""]
+        if isinstance(themes, list)
+        else ["workflow confidence"],
+        "feedback_summary": str(trace.get("feedback_summary", "")).strip() or "simulation feedback captured",
+        "events": events,
+    }
+
+
 def run_beta_simulation(*, config_path: Path, output_dir: Path | None = None) -> dict[str, object]:
     config = load_json(config_path)
     response_contract.validate_beta_simulation_config(config)
     repo_root = repo_root_from_config(config_path.resolve())
     persona_dir = resolve_repo_path(repo_root, str(config["persona_dir"]))
+    trace_catalog_path = resolve_repo_path(
+        repo_root,
+        str(config.get("trace_catalog_source", "references/simulation-trace-catalog.json")),
+    )
+    trace_catalog = load_trace_catalog(trace_catalog_path)
     scenarios = config.get("scenarios", [])
     session_plan = config.get("session_plan", [])
     if not isinstance(scenarios, list) or not isinstance(session_plan, list):
@@ -269,7 +357,20 @@ def run_beta_simulation(*, config_path: Path, output_dir: Path | None = None) ->
             persona_cache[persona_id] = profile
         profile = persona_cache[persona_id]
         scenario = scenario_map[scenario_id]
-        simulated = infer_session_result(profile, scenario)
+        trace_id = str(item.get("trace_id", "")).strip()
+        if trace_id:
+            trace = trace_catalog.get(trace_id)
+            if trace is None:
+                raise RuntimeError(f"beta simulation config references unknown trace_id: {trace_id}")
+            simulated = simulate_session_from_trace(
+                trace=trace,
+                persona_id=persona_id,
+                persona_name=str(profile["display_name"]),
+                scenario_id=scenario_id,
+                scenario_title=str(scenario["title"]),
+            )
+        else:
+            simulated = infer_session_result(profile, scenario)
         session_payload = {
             "session_id": str(item["session_id"]),
             "persona_id": persona_id,
@@ -314,6 +415,8 @@ def run_beta_simulation(*, config_path: Path, output_dir: Path | None = None) ->
         "phase": str(config["phase"]),
         "objective": str(config["objective"]),
         "config_path": str(config_path),
+        "cohort_fixture_source": str(config.get("cohort_fixture_source", "")),
+        "trace_catalog_source": str(config.get("trace_catalog_source", "")),
         "personas": [
             {
                 "profile_id": str(profile["profile_id"]),
@@ -357,7 +460,7 @@ def run_beta_simulation(*, config_path: Path, output_dir: Path | None = None) ->
     for session in sessions:
         lines.extend(
             [
-                f"- {session['session_id']} | {session['persona_name']} | {session['scenario_title']} | completed={session['task_completed']} | blocker={session['blocker_detected']} | themes={', '.join(session['top_feedback_themes'])}",
+                f"- {session['session_id']} | {session['persona_name']} | {session['scenario_title']} | trace={session.get('trace_id', 'n/a')} | completed={session['task_completed']} | blocker={session['blocker_detected']} | themes={', '.join(session['top_feedback_themes'])}",
             ]
         )
     lines.append("")

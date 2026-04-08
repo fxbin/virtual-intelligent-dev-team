@@ -581,9 +581,11 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual("assets/simulated-user-profile-template.json", beta_plan["simulation_profile_template"])
         self.assertEqual(".skill-beta/personas", beta_plan["simulation_profile_dir"])
         self.assertEqual("references/simulation-persona-library.json", beta_plan["simulation_persona_library"])
+        self.assertEqual("references/simulation-cohort-fixtures.json", beta_plan["simulation_cohort_fixtures"])
         self.assertEqual("assets/beta-simulation-config-template.json", beta_plan["simulation_config_template"])
         self.assertEqual(".skill-beta/simulation-configs", beta_plan["simulation_config_dir"])
         self.assertEqual("references/simulation-scenario-packs.json", beta_plan["simulation_scenario_packs"])
+        self.assertEqual("references/simulation-trace-catalog.json", beta_plan["simulation_trace_catalog"])
         self.assertEqual(".skill-beta/simulation-runs", beta_plan["simulation_run_dir"])
         self.assertIn("python scripts/init_beta_simulation.py", beta_plan["simulation_init_command_template"])
         self.assertIn("python scripts/run_beta_simulation.py", beta_plan["simulation_run_command_template"])
@@ -4705,9 +4707,15 @@ class ProjectMemoryInitTests(unittest.TestCase):
             response_contract.validate_beta_simulation_config(config_payload)
             self.assertEqual(".skill-beta/feedback-ledger.md", config_payload["feedback_ledger_out"])
             self.assertIn("--feedback-ledger-out .skill-beta/feedback-ledger.md", config_payload["summary_command_template"])
+            self.assertEqual("references/simulation-cohort-fixtures.json", config_payload["cohort_fixture_source"])
+            self.assertEqual("references/simulation-trace-catalog.json", config_payload["trace_catalog_source"])
+            self.assertEqual("round-0-default", result["cohort_fixture_id"])
             self.assertTrue((root / ".skill-beta" / "personas" / "first-time-novice.json").exists())
             self.assertTrue((REPO_ROOT / "virtual-intelligent-dev-team" / "references" / "simulation-persona-library.json").exists())
+            self.assertTrue((REPO_ROOT / "virtual-intelligent-dev-team" / "references" / "simulation-cohort-fixtures.json").exists())
             self.assertTrue((REPO_ROOT / "virtual-intelligent-dev-team" / "references" / "simulation-scenario-packs.json").exists())
+            self.assertTrue((REPO_ROOT / "virtual-intelligent-dev-team" / "references" / "simulation-trace-catalog.json").exists())
+            self.assertTrue(all("trace_id" in item for item in config_payload["session_plan"]))
             self.assertGreaterEqual(result["session_count"], 3)
 
     def test_simulation_reference_schemas_validate_repository_resources(self) -> None:
@@ -4716,14 +4724,26 @@ class ProjectMemoryInitTests(unittest.TestCase):
                 encoding="utf-8"
             )
         )
+        cohort_fixtures = json.loads(
+            (REPO_ROOT / "virtual-intelligent-dev-team" / "references" / "simulation-cohort-fixtures.json").read_text(
+                encoding="utf-8"
+            )
+        )
         scenario_packs = json.loads(
             (REPO_ROOT / "virtual-intelligent-dev-team" / "references" / "simulation-scenario-packs.json").read_text(
                 encoding="utf-8"
             )
         )
+        trace_catalog = json.loads(
+            (REPO_ROOT / "virtual-intelligent-dev-team" / "references" / "simulation-trace-catalog.json").read_text(
+                encoding="utf-8"
+            )
+        )
 
         response_contract.validate_simulation_persona_library(persona_library)
+        response_contract.validate_simulation_cohort_fixtures(cohort_fixtures)
         response_contract.validate_simulation_scenario_packs(scenario_packs)
+        response_contract.validate_simulation_trace_catalog(trace_catalog)
 
     def test_run_beta_simulation_emits_machine_readable_trace(self) -> None:
         with make_tempdir() as tmp:
@@ -4746,6 +4766,8 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertGreaterEqual(len(result["sessions"]), 4)
             self.assertTrue(any(session["blocker_detected"] for session in result["sessions"]))
             self.assertTrue(any(len(session["events"]) >= 2 for session in result["sessions"]))
+            self.assertEqual("references/simulation-trace-catalog.json", result["trace_catalog_source"])
+            self.assertTrue(all(session.get("trace_id") for session in result["sessions"]))
 
     def test_summarize_beta_simulation_can_write_round_report(self) -> None:
         with make_tempdir() as tmp:
@@ -5033,9 +5055,11 @@ class ResponsePackTests(unittest.TestCase):
         self.assertEqual("assets/simulated-user-profile-template.json", payload["beta_program"]["simulation_profile_template"])
         self.assertEqual(".skill-beta/personas", payload["beta_program"]["simulation_profile_dir"])
         self.assertEqual("references/simulation-persona-library.json", payload["beta_program"]["simulation_persona_library"])
+        self.assertEqual("references/simulation-cohort-fixtures.json", payload["beta_program"]["simulation_cohort_fixtures"])
         self.assertEqual("assets/beta-simulation-config-template.json", payload["beta_program"]["simulation_config_template"])
         self.assertEqual(".skill-beta/simulation-configs", payload["beta_program"]["simulation_config_dir"])
         self.assertEqual("references/simulation-scenario-packs.json", payload["beta_program"]["simulation_scenario_packs"])
+        self.assertEqual("references/simulation-trace-catalog.json", payload["beta_program"]["simulation_trace_catalog"])
         self.assertEqual(".skill-beta/simulation-runs", payload["beta_program"]["simulation_run_dir"])
         self.assertIn("python scripts/init_beta_simulation.py", payload["beta_program"]["simulation_init_command_template"])
         self.assertIn("python scripts/run_beta_simulation.py", payload["beta_program"]["simulation_run_command_template"])
@@ -5124,9 +5148,11 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("assets/simulated-user-profile-template.json", markdown)
         self.assertIn(".skill-beta/personas", markdown)
         self.assertIn("references/simulation-persona-library.json", markdown)
+        self.assertIn("references/simulation-cohort-fixtures.json", markdown)
         self.assertIn("assets/beta-simulation-config-template.json", markdown)
         self.assertIn(".skill-beta/simulation-configs", markdown)
         self.assertIn("references/simulation-scenario-packs.json", markdown)
+        self.assertIn("references/simulation-trace-catalog.json", markdown)
         self.assertIn("python scripts/init_beta_simulation.py", markdown)
         self.assertIn("python scripts/run_beta_simulation.py", markdown)
         self.assertIn("python scripts/summarize_beta_simulation.py", markdown)

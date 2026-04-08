@@ -13,7 +13,9 @@ SKILL_DIR = SCRIPT_DIR.parent
 PROFILE_TEMPLATE_PATH = SKILL_DIR / "assets" / "simulated-user-profile-template.json"
 CONFIG_TEMPLATE_PATH = SKILL_DIR / "assets" / "beta-simulation-config-template.json"
 PERSONA_LIBRARY_PATH = SKILL_DIR / "references" / "simulation-persona-library.json"
+COHORT_FIXTURES_PATH = SKILL_DIR / "references" / "simulation-cohort-fixtures.json"
 SCENARIO_PACKS_PATH = SKILL_DIR / "references" / "simulation-scenario-packs.json"
+TRACE_CATALOG_PATH = SKILL_DIR / "references" / "simulation-trace-catalog.json"
 RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
 
 
@@ -120,6 +122,45 @@ def select_scenarios(round_id: str, objective: str) -> list[dict[str, str]]:
     return selected or list(scenario_map.values())
 
 
+def load_cohort_fixtures() -> list[dict[str, object]]:
+    payload = load_json(COHORT_FIXTURES_PATH)
+    response_contract.validate_simulation_cohort_fixtures(payload)
+    fixtures = payload.get("fixtures", [])
+    if not isinstance(fixtures, list) or not fixtures:
+        raise RuntimeError("simulation-cohort-fixtures.json must define a non-empty fixtures array")
+    return [dict(item) for item in fixtures if isinstance(item, dict)]
+
+
+def load_trace_catalog() -> dict[str, dict[str, object]]:
+    payload = load_json(TRACE_CATALOG_PATH)
+    response_contract.validate_simulation_trace_catalog(payload)
+    traces = payload.get("traces", [])
+    if not isinstance(traces, list) or not traces:
+        raise RuntimeError("simulation-trace-catalog.json must define a non-empty traces array")
+    catalog: dict[str, dict[str, object]] = {}
+    for item in traces:
+        if not isinstance(item, dict):
+            continue
+        trace_id = str(item.get("trace_id", "")).strip()
+        if trace_id == "":
+            continue
+        catalog[trace_id] = dict(item)
+    if not catalog:
+        raise RuntimeError("simulation-trace-catalog.json did not contain any valid traces")
+    return catalog
+
+
+def default_trace_id_for_persona(persona_id: str) -> str:
+    mapping = {
+        "first-time-novice": "novice-cta-hesitation",
+        "daily-operator": "operator-reentry-friction",
+        "goal-driven-power-user": "power-user-fast-path-friction",
+        "skeptical-evaluator": "skeptic-trust-check",
+        "edge-case-breaker": "edge-recovery-break",
+    }
+    return mapping.get(persona_id, "novice-cta-hesitation")
+
+
 def build_session_plan(personas: list[dict[str, object]], scenarios: list[dict[str, str]]) -> list[dict[str, str]]:
     plan: list[dict[str, str]] = []
     for index, persona in enumerate(personas, start=1):
@@ -130,6 +171,7 @@ def build_session_plan(personas: list[dict[str, object]], scenarios: list[dict[s
                 "session_id": f"session-{index:02d}",
                 "persona_id": persona_id,
                 "scenario_id": str(primary_scenario["scenario_id"]),
+                "trace_id": default_trace_id_for_persona(persona_id),
             }
         )
         if persona_id in {"edge-case-breaker", "goal-driven-power-user"} and len(scenarios) > 1:
@@ -138,9 +180,53 @@ def build_session_plan(personas: list[dict[str, object]], scenarios: list[dict[s
                     "session_id": f"session-{len(plan)+1:02d}",
                     "persona_id": persona_id,
                     "scenario_id": str(scenarios[-1]["scenario_id"]),
+                    "trace_id": default_trace_id_for_persona(persona_id),
                 }
             )
     return plan
+
+
+def select_session_plan(
+    round_id: str,
+    *,
+    personas: list[dict[str, object]],
+    scenarios: list[dict[str, str]],
+) -> tuple[str | None, list[dict[str, str]]]:
+    fixtures = load_cohort_fixtures()
+    trace_catalog = load_trace_catalog()
+    persona_ids = {str(item.get("profile_id", "")) for item in personas if isinstance(item, dict)}
+    scenario_ids = {str(item.get("scenario_id", "")) for item in scenarios if isinstance(item, dict)}
+
+    selected_fixture = next((item for item in fixtures if str(item.get("round_id", "")).strip() == round_id), None)
+    if selected_fixture is None:
+        return None, build_session_plan(personas, scenarios)
+
+    sessions = selected_fixture.get("sessions", [])
+    if not isinstance(sessions, list) or not sessions:
+        return str(selected_fixture.get("fixture_id", "")).strip() or None, build_session_plan(personas, scenarios)
+
+    plan: list[dict[str, str]] = []
+    for item in sessions:
+        if not isinstance(item, dict):
+            continue
+        persona_id = str(item.get("persona_id", "")).strip()
+        scenario_id = str(item.get("scenario_id", "")).strip()
+        trace_id = str(item.get("trace_id", "")).strip()
+        if persona_id not in persona_ids:
+            raise RuntimeError(f"simulation cohort fixture references unknown persona_id: {persona_id}")
+        if scenario_id not in scenario_ids:
+            raise RuntimeError(f"simulation cohort fixture references unknown scenario_id: {scenario_id}")
+        if trace_id not in trace_catalog:
+            raise RuntimeError(f"simulation cohort fixture references unknown trace_id: {trace_id}")
+        plan.append(
+            {
+                "session_id": str(item.get("session_id", "")).strip() or f"session-{len(plan)+1:02d}",
+                "persona_id": persona_id,
+                "scenario_id": scenario_id,
+                "trace_id": trace_id,
+            }
+        )
+    return str(selected_fixture.get("fixture_id", "")).strip() or None, plan
 
 
 def init_beta_simulation(
@@ -155,7 +241,11 @@ def init_beta_simulation(
     config_template = load_json(CONFIG_TEMPLATE_PATH)
     personas = select_profiles_for_round(round_id)
     scenarios = select_scenarios(round_id, objective)
-    session_plan = build_session_plan(personas, scenarios)
+    fixture_id, session_plan = select_session_plan(
+        round_id,
+        personas=personas,
+        scenarios=scenarios,
+    )
 
     persona_dir = root / ".skill-beta" / "personas"
     config_dir = root / ".skill-beta" / "simulation-configs"
@@ -189,6 +279,8 @@ def init_beta_simulation(
                 "--feedback-ledger-out .skill-beta/feedback-ledger.md "
                 f"--round-report-out .skill-beta/reports/{round_id}.json --pretty"
             ),
+            "cohort_fixture_source": "references/simulation-cohort-fixtures.json",
+            "trace_catalog_source": "references/simulation-trace-catalog.json",
             "scenarios": scenarios,
             "session_plan": session_plan,
         }
@@ -210,6 +302,9 @@ def init_beta_simulation(
         "run_output_dir": str(run_output_dir.relative_to(root)),
         "feedback_ledger_out": ".skill-beta/feedback-ledger.md",
         "round_report_out": str(round_report_out.relative_to(root)),
+        "cohort_fixture_source": "references/simulation-cohort-fixtures.json",
+        "trace_catalog_source": "references/simulation-trace-catalog.json",
+        "cohort_fixture_id": fixture_id,
         "created_profiles": created_profiles,
         "scenario_count": len(scenarios),
         "session_count": len(session_plan),

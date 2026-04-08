@@ -11,6 +11,8 @@
     "phase",
     "objective",
     "config_path",
+    "cohort_fixture_source",
+    "trace_catalog_source",
     "personas",
     "scenarios",
     "sessions",
@@ -38,6 +40,12 @@
       "type": "string"
     },
     "config_path": {
+      "type": "string"
+    },
+    "cohort_fixture_source": {
+      "type": "string"
+    },
+    "trace_catalog_source": {
       "type": "string"
     },
     "personas": {
@@ -190,6 +198,8 @@
         "persona_name",
         "scenario_id",
         "scenario_title",
+        "trace_id",
+        "trace_label",
         "status",
         "task_completed",
         "blocker_detected",
@@ -213,6 +223,12 @@
           "type": "string"
         },
         "scenario_title": {
+          "type": "string"
+        },
+        "trace_id": {
+          "type": "string"
+        },
+        "trace_label": {
           "type": "string"
         },
         "status": {

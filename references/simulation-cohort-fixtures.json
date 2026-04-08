@@ -1,0 +1,99 @@
+{
+  "schema_version": "simulation-cohort-fixtures/v1",
+  "skill_name": "virtual-intelligent-dev-team",
+  "fixtures": [
+    {
+      "fixture_id": "round-0-default",
+      "round_id": "round-0",
+      "description": "Pre-build concept smoke sample that checks value clarity before implementation hardens.",
+      "sessions": [
+        {
+          "session_id": "session-01",
+          "persona_id": "first-time-novice",
+          "scenario_id": "scenario-1",
+          "trace_id": "novice-cta-hesitation"
+        },
+        {
+          "session_id": "session-02",
+          "persona_id": "goal-driven-power-user",
+          "scenario_id": "scenario-1",
+          "trace_id": "power-user-fast-path-friction"
+        },
+        {
+          "session_id": "session-03",
+          "persona_id": "skeptical-evaluator",
+          "scenario_id": "scenario-2",
+          "trace_id": "skeptic-trust-check"
+        }
+      ]
+    },
+    {
+      "fixture_id": "round-1-default",
+      "round_id": "round-1",
+      "description": "Closed beta sample that mixes onboarding, repeat usage, and edge recovery pressure.",
+      "sessions": [
+        {
+          "session_id": "session-01",
+          "persona_id": "first-time-novice",
+          "scenario_id": "scenario-1",
+          "trace_id": "novice-cta-hesitation"
+        },
+        {
+          "session_id": "session-02",
+          "persona_id": "daily-operator",
+          "scenario_id": "scenario-2",
+          "trace_id": "operator-reentry-friction"
+        },
+        {
+          "session_id": "session-03",
+          "persona_id": "goal-driven-power-user",
+          "scenario_id": "scenario-2",
+          "trace_id": "power-user-fast-path-friction"
+        },
+        {
+          "session_id": "session-04",
+          "persona_id": "edge-case-breaker",
+          "scenario_id": "scenario-3",
+          "trace_id": "edge-recovery-break"
+        }
+      ]
+    },
+    {
+      "fixture_id": "round-2-default",
+      "round_id": "round-2",
+      "description": "Expanded internal beta sample that broadens operational and trust coverage before release governance.",
+      "sessions": [
+        {
+          "session_id": "session-01",
+          "persona_id": "first-time-novice",
+          "scenario_id": "scenario-1",
+          "trace_id": "novice-cta-hesitation"
+        },
+        {
+          "session_id": "session-02",
+          "persona_id": "daily-operator",
+          "scenario_id": "scenario-2",
+          "trace_id": "operator-reentry-friction"
+        },
+        {
+          "session_id": "session-03",
+          "persona_id": "goal-driven-power-user",
+          "scenario_id": "scenario-2",
+          "trace_id": "power-user-fast-path-friction"
+        },
+        {
+          "session_id": "session-04",
+          "persona_id": "skeptical-evaluator",
+          "scenario_id": "scenario-1",
+          "trace_id": "skeptic-trust-check"
+        },
+        {
+          "session_id": "session-05",
+          "persona_id": "edge-case-breaker",
+          "scenario_id": "scenario-3",
+          "trace_id": "edge-recovery-break"
+        }
+      ]
+    }
+  ]
+}

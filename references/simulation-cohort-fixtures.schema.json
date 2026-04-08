@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:simulation-cohort-fixtures.schema",
+  "title": "Virtual Intelligent Dev Team Simulation Cohort Fixtures",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "skill_name",
+    "fixtures"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "simulation-cohort-fixtures/v1"
+    },
+    "skill_name": {
+      "const": "virtual-intelligent-dev-team"
+    },
+    "fixtures": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/fixture"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "session_blueprint": {
+      "type": "object",
+      "required": [
+        "session_id",
+        "persona_id",
+        "scenario_id",
+        "trace_id"
+      ],
+      "properties": {
+        "session_id": {
+          "type": "string"
+        },
+        "persona_id": {
+          "type": "string"
+        },
+        "scenario_id": {
+          "type": "string"
+        },
+        "trace_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "fixture": {
+      "type": "object",
+      "required": [
+        "fixture_id",
+        "round_id",
+        "description",
+        "sessions"
+      ],
+      "properties": {
+        "fixture_id": {
+          "type": "string"
+        },
+        "round_id": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "sessions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/session_blueprint"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
