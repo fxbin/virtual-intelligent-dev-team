@@ -114,6 +114,7 @@
             "release-gate",
             "iteration",
             "workflow-bundle",
+            "bundle-bootstrap",
             "assistant-delta-contract"
           ]
         },

@@ -812,6 +812,27 @@
       }
     },
     {
+      "name": "verify_bundle_bootstrap_allowed",
+      "text": "Define the onboarding user flow, acceptance criteria, and backend contract for this signup revamp.",
+      "check": "bundle-bootstrap",
+      "expect": {
+        "allowed": true,
+        "summary_contains": "contract-complete",
+        "detail_equals": {
+          "workflow_bundle": "product-spec-deliver",
+          "bootstrap_required": true,
+          "progress_anchor_recommended": ".skill-product/current-slice.md",
+          "progress_anchor_matches_resume_anchor": true,
+          "resume_anchor_in_artifacts": true,
+          "resume_anchor_in_resume_artifacts": true,
+          "workspace_state": "missing",
+          "workspace_ready": false,
+          "resume_anchor_exists": false,
+          "bootstrap_command_required_now": true
+        }
+      }
+    },
+    {
       "name": "verify_assistant_delta_contract_allowed",
       "text": "Define the onboarding user flow, acceptance criteria, and backend contract for this signup revamp.",
       "check": "assistant-delta-contract",

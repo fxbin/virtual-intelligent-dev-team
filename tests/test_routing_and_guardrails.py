@@ -3440,6 +3440,11 @@ class ValidatorScriptTests(unittest.TestCase):
                 {},
             ),
             (
+                "bundle-bootstrap",
+                "Define the onboarding user flow, acceptance criteria, and backend contract for this signup revamp.",
+                {},
+            ),
+            (
                 "assistant-delta-contract",
                 "Define the onboarding user flow, acceptance criteria, and backend contract for this signup revamp.",
                 {},
@@ -4689,6 +4694,33 @@ class ResponsePackTests(unittest.TestCase):
         self.assertEqual(
             ".skill-product/current-slice.md",
             result["router_snapshot"]["workflow_bundle_bootstrap"]["resume_anchor"],
+        )
+
+    def test_verify_action_bundle_bootstrap_requires_product_init_contract(self) -> None:
+        result = verify_action.verify_action(
+            text="Define the onboarding user flow, acceptance criteria, and backend contract for this signup revamp.",
+            config=load_config(),
+            repo_path=REPO_ROOT,
+            check="bundle-bootstrap",
+        )
+
+        self.assertTrue(result["allowed"])
+        self.assertTrue(result["details"]["bootstrap_required"])
+        self.assertTrue(result["details"]["progress_anchor_matches_resume_anchor"])
+        self.assertEqual([], result["details"]["missing_contract_fields"])
+        self.assertTrue(result["details"]["resume_anchor_in_artifacts"])
+        self.assertTrue(result["details"]["resume_anchor_in_resume_artifacts"])
+        self.assertEqual("missing", result["details"]["workspace_state"])
+        self.assertFalse(result["details"]["workspace_ready"])
+        self.assertTrue(result["details"]["bootstrap_command_required_now"])
+        self.assertIn(
+            ".skill-product/current-slice.md",
+            result["details"]["missing_artifacts_on_disk"],
+        )
+        self.assertFalse(result["details"]["resume_anchor_exists"])
+        self.assertEqual(
+            ".skill-product/current-slice.md",
+            result["details"]["bootstrap"]["resume_anchor"],
         )
 
     def test_verify_action_assistant_delta_contract(self) -> None:

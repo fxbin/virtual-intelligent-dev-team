@@ -38,10 +38,19 @@ python scripts/verify_action.py --text "<user request>" --check worktree --prett
 python scripts/verify_action.py --text "<user request>" --check workflow-bundle --pretty
 ```
 
+```bash
+python scripts/verify_action.py --text "<user request>" --check bundle-bootstrap --pretty
+```
+
 - `workflow-bundle` 校验现在会返回：
   - `workflow_bundle_source`
   - `workflow_bundle_source_explanation`
   - 适合在高风险、多阶段或“为什么是这条流程”容易被误解时先解释再执行
+- `bundle-bootstrap` 校验现在会返回：
+  - 当前 bundle 是否必须先初始化
+  - `progress_anchor_recommended` 是否和 `resume_anchor` 对齐
+  - `resume_anchor` 是否真的落在 bootstrap 产物与恢复清单里
+  - 当前仓库里的 bootstrap 产物是 `missing / partial / ready` 哪种状态
 - `verify_action.py` 的 JSON 结果契约见：
   - `references/verify-action-result.schema.json`
 
@@ -294,6 +303,7 @@ python scripts/materialize_candidate_patch.py --brief .skill-iterations/candidat
 ## 七、使用原则
 
 - 高风险、多阶段、多人协作前，先用 `verify_action.py` 确认 process skill / lead assignment / release gate / iteration 是否真的该开
+- 如果路由返回了 `product-spec-deliver` 或 `govern-change-safely`，再额外跑一次 `bundle-bootstrap`，确认起盘动作和恢复锚点没有漂移
 - 需要跨会话恢复时，优先只推荐一个主锚点，再补最多两个 supporting artifacts
 - 改了路由、索引、playbook、脚本命令后，先跑 `lint_virtual_team_contract.py`，再跑 `validate_virtual_team.py`
 - 开发前规划分支只在大改造、迁移、重写、先规划后开发时启用

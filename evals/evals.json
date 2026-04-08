@@ -1103,6 +1103,28 @@
     },
     {
       "id": 66,
+      "runner": "verify_action",
+      "check": "bundle-bootstrap",
+      "categories": [
+        "product-delivery",
+        "contract-output"
+      ],
+      "prompt": "Define the onboarding user flow, acceptance criteria, and backend contract for this signup revamp.",
+      "expected_output": "verify_action should expose a schema-valid bundle-bootstrap decision when product delivery must initialize its workspace anchors first.",
+      "files": [],
+      "expectations": [
+        "allowed is true",
+        "verify_action_json details.workflow_bundle is product-spec-deliver",
+        "verify_action_json details.bootstrap_required is true",
+        "verify_action_json details.progress_anchor_matches_resume_anchor is true",
+        "verify_action_json details.workspace_state is missing",
+        "verify_action_json details.bootstrap_command_required_now is true",
+        "verify_action_json details.bootstrap.resume_anchor is .skill-product/current-slice.md",
+        "verify_action_json details.bootstrap.commands contains python scripts/init_product_delivery.py --root . --pretty"
+      ]
+    },
+    {
+      "id": 67,
       "runner": "release_gate",
       "categories": [
         "release-gate",

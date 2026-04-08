@@ -273,8 +273,7 @@ When Git workflow is relevant:
 
 Before opening a process lane or forcing a multi-agent execution shape for a high-risk request:
 
-- Use [references/tooling-command-index.md](references/tooling-command-index.md) and run `verify_action.py` first when you need to confirm process-skill legality, lead assignment, release-gate activation, or bounded-iteration activation.
-- Use [references/tooling-command-index.md](references/tooling-command-index.md) and run `verify_action.py` first when you need to confirm process-skill legality, lead assignment, git-workflow activation, worktree isolation, release-gate activation, or bounded-iteration activation.
+- Use [references/tooling-command-index.md](references/tooling-command-index.md) and run `verify_action.py` first when you need to confirm process-skill legality, lead assignment, git-workflow activation, worktree isolation, release-gate activation, bounded-iteration activation, or workflow-bundle bootstrap readiness.
 - Treat `lint_virtual_team_contract.py` as the mechanical drift check for routing indexes, plan references, and script command examples.
 
 Never auto-run dangerous Git commands such as:

@@ -26,6 +26,7 @@
         "release-gate",
         "iteration",
         "workflow-bundle",
+        "bundle-bootstrap",
         "assistant-delta-contract"
       ]
     },
@@ -157,6 +158,22 @@
         "properties": {
           "details": {
             "$ref": "#/$defs/workflow_bundle_details"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "check": {
+            "const": "bundle-bootstrap"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "details": {
+            "$ref": "#/$defs/bundle_bootstrap_details"
           }
         }
       }
@@ -580,6 +597,87 @@
         },
         "bundle_bootstrap": {
           "$ref": "#/$defs/workflow_bundle_bootstrap"
+        }
+      },
+      "additionalProperties": false
+    },
+    "bundle_bootstrap_details": {
+      "type": "object",
+      "required": [
+        "workflow_bundle",
+        "workflow_bundle_source",
+        "bootstrap_required",
+        "progress_anchor_recommended",
+        "progress_anchor_matches_resume_anchor",
+        "resume_artifacts",
+        "workflow_steps",
+        "bootstrap",
+        "missing_contract_fields",
+        "resume_anchor_in_artifacts",
+        "resume_anchor_in_resume_artifacts",
+        "workspace_state",
+        "workspace_ready",
+        "existing_artifacts",
+        "missing_artifacts_on_disk",
+        "resume_anchor_exists",
+        "bootstrap_command_required_now"
+      ],
+      "properties": {
+        "workflow_bundle": {
+          "type": "string"
+        },
+        "workflow_bundle_source": {
+          "type": "string"
+        },
+        "bootstrap_required": {
+          "type": "boolean"
+        },
+        "progress_anchor_recommended": {
+          "$ref": "#/$defs/string_or_null"
+        },
+        "progress_anchor_matches_resume_anchor": {
+          "type": "boolean"
+        },
+        "resume_artifacts": {
+          "$ref": "#/$defs/string_array"
+        },
+        "workflow_steps": {
+          "$ref": "#/$defs/string_array"
+        },
+        "bootstrap": {
+          "$ref": "#/$defs/workflow_bundle_bootstrap"
+        },
+        "missing_contract_fields": {
+          "$ref": "#/$defs/string_array"
+        },
+        "resume_anchor_in_artifacts": {
+          "type": "boolean"
+        },
+        "resume_anchor_in_resume_artifacts": {
+          "type": "boolean"
+        },
+        "workspace_state": {
+          "enum": [
+            "not-required",
+            "missing",
+            "partial",
+            "ready"
+          ]
+        },
+        "workspace_ready": {
+          "type": "boolean"
+        },
+        "existing_artifacts": {
+          "$ref": "#/$defs/string_array"
+        },
+        "missing_artifacts_on_disk": {
+          "$ref": "#/$defs/string_array"
+        },
+        "resume_anchor_exists": {
+          "type": "boolean"
+        },
+        "bootstrap_command_required_now": {
+          "type": "boolean"
         }
       },
       "additionalProperties": false

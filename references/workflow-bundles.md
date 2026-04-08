@@ -126,8 +126,16 @@ Every bundle should expose:
 - `workflow_bundle`
 - `workflow_reason`
 - `workflow_steps`
+- `workflow_bundle_bootstrap`
 - `progress_anchor_recommended`
 - `resume_artifacts`
+
+When a bundle needs workspace initialization before real delivery starts, the
+bootstrap contract should make three things explicit:
+
+- which command initializes the bundle workspace
+- which artifacts must exist after bootstrap
+- which resume anchor should match `progress_anchor_recommended`
 
 The lead owns the journey narrative. Assistants only return the delta needed for
 the current step.

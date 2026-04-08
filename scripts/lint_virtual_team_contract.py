@@ -352,6 +352,11 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 "kwargs": {},
             },
             {
+                "check": "bundle-bootstrap",
+                "text": "Define the onboarding user flow, acceptance criteria, and backend contract for this signup revamp.",
+                "kwargs": {},
+            },
+            {
                 "check": "assistant-delta-contract",
                 "text": "Define the onboarding user flow, acceptance criteria, and backend contract for this signup revamp.",
                 "kwargs": {},

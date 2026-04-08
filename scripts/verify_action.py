@@ -290,6 +290,122 @@ def _verify_workflow_bundle(result: dict[str, object]) -> dict[str, object]:
     }
 
 
+def _verify_bundle_bootstrap(result: dict[str, object], repo_path: Path) -> dict[str, object]:
+    bundle = str(result.get("workflow_bundle", ""))
+    bundle_source = str(result.get("workflow_bundle_source", ""))
+    progress_anchor = result.get("progress_anchor_recommended")
+    resume_artifacts = result.get("resume_artifacts", [])
+    if not isinstance(resume_artifacts, list):
+        resume_artifacts = []
+    workflow_steps = result.get("workflow_steps", [])
+    if not isinstance(workflow_steps, list):
+        workflow_steps = []
+
+    bootstrap = result.get("workflow_bundle_bootstrap", {})
+    if not isinstance(bootstrap, dict):
+        bootstrap = {}
+    bootstrap_required = bool(bootstrap.get("required"))
+    reference = bootstrap.get("reference")
+    if not isinstance(reference, str):
+        reference = None
+    commands = bootstrap.get("commands", [])
+    if not isinstance(commands, list):
+        commands = []
+    artifacts = bootstrap.get("artifacts", [])
+    if not isinstance(artifacts, list):
+        artifacts = []
+    resume_anchor = bootstrap.get("resume_anchor")
+    if not isinstance(resume_anchor, str):
+        resume_anchor = None
+
+    missing_contract_fields: list[str] = []
+    if bootstrap_required:
+        if reference is None:
+            missing_contract_fields.append("reference")
+        if len(commands) == 0:
+            missing_contract_fields.append("commands")
+        if len(artifacts) == 0:
+            missing_contract_fields.append("artifacts")
+        if resume_anchor is None:
+            missing_contract_fields.append("resume_anchor")
+
+    progress_anchor_matches_resume_anchor = (
+        resume_anchor is not None and progress_anchor == resume_anchor
+    )
+    resume_anchor_in_artifacts = resume_anchor in artifacts if resume_anchor else False
+    resume_anchor_in_resume_artifacts = (
+        resume_anchor in resume_artifacts if resume_anchor else False
+    )
+    existing_artifacts = [
+        artifact for artifact in artifacts if (repo_path / artifact).exists()
+    ]
+    missing_artifacts_on_disk = [
+        artifact for artifact in artifacts if artifact not in existing_artifacts
+    ]
+    resume_anchor_exists = (repo_path / resume_anchor).exists() if resume_anchor else False
+    workspace_ready = bootstrap_required and len(missing_artifacts_on_disk) == 0 and resume_anchor_exists
+    if not bootstrap_required:
+        workspace_state = "not-required"
+    elif workspace_ready:
+        workspace_state = "ready"
+    elif len(existing_artifacts) == 0:
+        workspace_state = "missing"
+    else:
+        workspace_state = "partial"
+    bootstrap_command_required_now = bootstrap_required and not workspace_ready
+    allowed = (
+        bootstrap_required
+        and len(missing_contract_fields) == 0
+        and progress_anchor_matches_resume_anchor
+        and resume_anchor_in_artifacts
+        and resume_anchor_in_resume_artifacts
+    )
+
+    if allowed:
+        summary = f"Workflow bundle bootstrap is required and contract-complete for `{bundle}`."
+        if workspace_ready:
+            next_step = "Bootstrap artifacts already exist. Resume directly from the bootstrap resume anchor."
+        else:
+            next_step = "Run the bootstrap command first, create the listed artifacts, then resume from the bootstrap resume anchor."
+    elif bootstrap_required:
+        summary = f"Workflow bundle bootstrap is required for `{bundle}` but the bootstrap contract is incomplete."
+        next_step = "Repair the bootstrap contract so reference, commands, artifacts, and resume anchor all stay executable."
+    else:
+        summary = "Workflow bundle bootstrap is not required for this request."
+        next_step = "Skip bootstrap and follow the active workflow bundle or direct execution path."
+
+    return {
+        "allowed": allowed,
+        "summary": summary,
+        "details": {
+            "workflow_bundle": bundle,
+            "workflow_bundle_source": bundle_source,
+            "bootstrap_required": bootstrap_required,
+            "progress_anchor_recommended": progress_anchor,
+            "progress_anchor_matches_resume_anchor": progress_anchor_matches_resume_anchor,
+            "resume_artifacts": resume_artifacts,
+            "workflow_steps": workflow_steps,
+            "bootstrap": {
+                "required": bootstrap_required,
+                "reference": reference,
+                "commands": commands,
+                "artifacts": artifacts,
+                "resume_anchor": resume_anchor,
+            },
+            "missing_contract_fields": missing_contract_fields,
+            "resume_anchor_in_artifacts": resume_anchor_in_artifacts,
+            "resume_anchor_in_resume_artifacts": resume_anchor_in_resume_artifacts,
+            "workspace_state": workspace_state,
+            "workspace_ready": workspace_ready,
+            "existing_artifacts": existing_artifacts,
+            "missing_artifacts_on_disk": missing_artifacts_on_disk,
+            "resume_anchor_exists": resume_anchor_exists,
+            "bootstrap_command_required_now": bootstrap_command_required_now,
+        },
+        "recommended_next_step": next_step,
+    }
+
+
 def _verify_assistant_delta_contract(result: dict[str, object]) -> dict[str, object]:
     contract = result.get("assistant_delta_contract", {})
     if not isinstance(contract, dict):
@@ -385,6 +501,8 @@ def verify_action(
         outcome = _verify_iteration(result)
     elif check == "workflow-bundle":
         outcome = _verify_workflow_bundle(result)
+    elif check == "bundle-bootstrap":
+        outcome = _verify_bundle_bootstrap(result, repo_path)
     elif check == "assistant-delta-contract":
         outcome = _verify_assistant_delta_contract(result)
     else:
@@ -432,6 +550,7 @@ def parse_args() -> argparse.Namespace:
             "release-gate",
             "iteration",
             "workflow-bundle",
+            "bundle-bootstrap",
             "assistant-delta-contract",
         ],
         help="What to verify before taking action.",
