@@ -708,10 +708,63 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             local_response_contract.validate_simulated_user_profile(sample_profile)
         except Exception as exc:
             beta_round_contract_failures.append(f"profile: {exc}")
+        sample_persona_library = {
+            "schema_version": "simulation-persona-library/v1",
+            "skill_name": "virtual-intelligent-dev-team",
+            "round_persona_sets": {
+                "round-0": ["first-time-novice"],
+                "default": ["first-time-novice"],
+            },
+            "personas": [
+                {
+                    "profile_id": "first-time-novice",
+                    "display_name": "First-Time Novice",
+                    "archetype": "first-time novice",
+                    "primary_goal": "Understand the core promise quickly.",
+                    "tool_literacy": "low",
+                    "domain_familiarity": "low",
+                    "risk_tolerance": "low",
+                    "workflow_preference": "step-by-step clarity",
+                    "failure_sensitivity": "high",
+                    "feedback_style": "balanced",
+                    "preferred_tasks": ["first-run journey"],
+                    "notes": "surface ambiguity early",
+                }
+            ],
+        }
+        sample_scenario_packs = {
+            "schema_version": "simulation-scenario-packs/v1",
+            "skill_name": "virtual-intelligent-dev-team",
+            "scenarios": [
+                {
+                    "scenario_id": "scenario-1",
+                    "title": "first meaningful task",
+                    "primary_task": "finish the primary happy-path task",
+                    "success_definition": "the user completes the task and understands the value",
+                    "risk_focus": "onboarding clarity",
+                }
+            ],
+            "packs": [
+                {
+                    "pack_id": "concept-smoke",
+                    "round_ids": ["round-0"],
+                    "objective_keywords": [],
+                    "scenario_ids": ["scenario-1"],
+                }
+            ],
+        }
+        try:
+            local_response_contract.validate_simulation_persona_library(sample_persona_library)
+        except Exception as exc:
+            beta_round_contract_failures.append(f"simulation-persona-library: {exc}")
         try:
             local_response_contract.validate_beta_simulation_event(sample_event)
         except Exception as exc:
             beta_round_contract_failures.append(f"simulation-event: {exc}")
+        try:
+            local_response_contract.validate_simulation_scenario_packs(sample_scenario_packs)
+        except Exception as exc:
+            beta_round_contract_failures.append(f"simulation-scenario-packs: {exc}")
         try:
             local_response_contract.validate_beta_simulation_config(sample_simulation_config)
         except Exception as exc:
@@ -735,9 +788,11 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 "report_schema_json": str(beta_round_report_schema_json_path),
                 "gate_schema_json": str(beta_round_gate_result_schema_json_path),
                 "simulation_profile_schema_json": str(simulated_user_profile_schema_json_path),
+                "simulation_persona_library_schema_json": str(SKILL_DIR / "references" / "simulation-persona-library.schema.json"),
                 "simulation_config_schema_json": str(beta_simulation_config_schema_json_path),
                 "simulation_event_schema_json": str(beta_simulation_event_schema_json_path),
                 "simulation_run_schema_json": str(beta_simulation_run_schema_json_path),
+                "simulation_scenario_packs_schema_json": str(SKILL_DIR / "references" / "simulation-scenario-packs.schema.json"),
             },
         }
     )

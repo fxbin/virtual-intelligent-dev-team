@@ -19,9 +19,11 @@ RELEASE_GATE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "release-gate-result.
 BETA_ROUND_REPORT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-report.schema.json"
 BETA_ROUND_GATE_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-gate-result.schema.json"
 SIMULATED_USER_PROFILE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "simulated-user-profile.schema.json"
+BETA_SIMULATION_PERSONA_LIBRARY_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "simulation-persona-library.schema.json"
 BETA_SIMULATION_CONFIG_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-config.schema.json"
 BETA_SIMULATION_EVENT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-event.schema.json"
 BETA_SIMULATION_RUN_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-run.schema.json"
+BETA_SIMULATION_SCENARIO_PACKS_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "simulation-scenario-packs.schema.json"
 BENCHMARK_EVALS_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-evals.schema.json"
 BENCHMARK_RUN_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-run-result.schema.json"
 
@@ -104,6 +106,31 @@ def validate_simulated_user_profile(payload: dict[str, object]) -> None:
     )
 
 
+def validate_simulation_persona_library(payload: dict[str, object]) -> None:
+    validate_payload_against_schema(
+        payload,
+        schema_path=BETA_SIMULATION_PERSONA_LIBRARY_SCHEMA_JSON_PATH,
+        label="simulation persona library",
+    )
+    personas = payload.get("personas", [])
+    round_sets = payload.get("round_persona_sets", {})
+    if not isinstance(personas, list):
+        raise ValueError("simulation persona library schema validation failed at personas: expected an array")
+    if not isinstance(round_sets, dict):
+        raise ValueError("simulation persona library schema validation failed at round_persona_sets: expected an object")
+
+    persona_ids = {str(item.get("profile_id", "")).strip() for item in personas if isinstance(item, dict)}
+    for round_id, raw_ids in round_sets.items():
+        if not isinstance(raw_ids, list):
+            continue
+        missing = sorted(str(item) for item in raw_ids if str(item) not in persona_ids)
+        if missing:
+            raise ValueError(
+                "simulation persona library schema validation failed at round_persona_sets."
+                f"{round_id}: unknown persona ids {', '.join(missing)}"
+            )
+
+
 def validate_beta_simulation_config(payload: dict[str, object]) -> None:
     validate_payload_against_schema(
         payload,
@@ -126,6 +153,34 @@ def validate_beta_simulation_run(payload: dict[str, object]) -> None:
         schema_path=BETA_SIMULATION_RUN_SCHEMA_JSON_PATH,
         label="beta simulation run",
     )
+
+
+def validate_simulation_scenario_packs(payload: dict[str, object]) -> None:
+    validate_payload_against_schema(
+        payload,
+        schema_path=BETA_SIMULATION_SCENARIO_PACKS_SCHEMA_JSON_PATH,
+        label="simulation scenario packs",
+    )
+    scenarios = payload.get("scenarios", [])
+    packs = payload.get("packs", [])
+    if not isinstance(scenarios, list):
+        raise ValueError("simulation scenario packs schema validation failed at scenarios: expected an array")
+    if not isinstance(packs, list):
+        raise ValueError("simulation scenario packs schema validation failed at packs: expected an array")
+
+    scenario_ids = {str(item.get("scenario_id", "")).strip() for item in scenarios if isinstance(item, dict)}
+    for index, pack in enumerate(packs):
+        if not isinstance(pack, dict):
+            continue
+        referenced = pack.get("scenario_ids", [])
+        if not isinstance(referenced, list):
+            continue
+        missing = sorted(str(item) for item in referenced if str(item) not in scenario_ids)
+        if missing:
+            raise ValueError(
+                "simulation scenario packs schema validation failed at packs."
+                f"{index}.scenario_ids: unknown scenario ids {', '.join(missing)}"
+            )
 
 
 def validate_benchmark_evals_payload(payload: dict[str, object]) -> None:

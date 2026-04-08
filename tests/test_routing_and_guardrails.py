@@ -4710,6 +4710,21 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertTrue((REPO_ROOT / "virtual-intelligent-dev-team" / "references" / "simulation-scenario-packs.json").exists())
             self.assertGreaterEqual(result["session_count"], 3)
 
+    def test_simulation_reference_schemas_validate_repository_resources(self) -> None:
+        persona_library = json.loads(
+            (REPO_ROOT / "virtual-intelligent-dev-team" / "references" / "simulation-persona-library.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        scenario_packs = json.loads(
+            (REPO_ROOT / "virtual-intelligent-dev-team" / "references" / "simulation-scenario-packs.json").read_text(
+                encoding="utf-8"
+            )
+        )
+
+        response_contract.validate_simulation_persona_library(persona_library)
+        response_contract.validate_simulation_scenario_packs(scenario_packs)
+
     def test_run_beta_simulation_emits_machine_readable_trace(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)

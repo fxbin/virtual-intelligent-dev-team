@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:simulation-scenario-packs.schema",
+  "title": "Virtual Intelligent Dev Team Simulation Scenario Packs",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "skill_name",
+    "scenarios",
+    "packs"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "simulation-scenario-packs/v1"
+    },
+    "skill_name": {
+      "const": "virtual-intelligent-dev-team"
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/scenario"
+      }
+    },
+    "packs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/pack"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "string_array": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "scenario": {
+      "type": "object",
+      "required": [
+        "scenario_id",
+        "title",
+        "primary_task",
+        "success_definition",
+        "risk_focus"
+      ],
+      "properties": {
+        "scenario_id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "primary_task": {
+          "type": "string"
+        },
+        "success_definition": {
+          "type": "string"
+        },
+        "risk_focus": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "pack": {
+      "type": "object",
+      "required": [
+        "pack_id",
+        "round_ids",
+        "objective_keywords",
+        "scenario_ids"
+      ],
+      "properties": {
+        "pack_id": {
+          "type": "string"
+        },
+        "round_ids": {
+          "$ref": "#/$defs/string_array"
+        },
+        "objective_keywords": {
+          "$ref": "#/$defs/string_array"
+        },
+        "scenario_ids": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

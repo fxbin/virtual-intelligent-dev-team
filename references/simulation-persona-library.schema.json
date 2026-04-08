@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:simulation-persona-library.schema",
+  "title": "Virtual Intelligent Dev Team Simulation Persona Library",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "skill_name",
+    "round_persona_sets",
+    "personas"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "simulation-persona-library/v1"
+    },
+    "skill_name": {
+      "const": "virtual-intelligent-dev-team"
+    },
+    "round_persona_sets": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "personas": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/persona"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "string_array": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "persona": {
+      "type": "object",
+      "required": [
+        "profile_id",
+        "display_name",
+        "archetype",
+        "primary_goal",
+        "tool_literacy",
+        "domain_familiarity",
+        "risk_tolerance",
+        "workflow_preference",
+        "failure_sensitivity",
+        "feedback_style",
+        "preferred_tasks",
+        "notes"
+      ],
+      "properties": {
+        "profile_id": {
+          "type": "string"
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "archetype": {
+          "type": "string"
+        },
+        "primary_goal": {
+          "type": "string"
+        },
+        "tool_literacy": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "domain_familiarity": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "risk_tolerance": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "workflow_preference": {
+          "type": "string"
+        },
+        "failure_sensitivity": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "feedback_style": {
+          "enum": [
+            "brief",
+            "balanced",
+            "verbose"
+          ]
+        },
+        "preferred_tasks": {
+          "$ref": "#/$defs/string_array"
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

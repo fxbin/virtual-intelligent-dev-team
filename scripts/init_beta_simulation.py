@@ -46,6 +46,7 @@ def write_json(path: Path, payload: dict[str, object]) -> None:
 
 def load_persona_library() -> tuple[list[dict[str, object]], dict[str, list[str]]]:
     payload = load_json(PERSONA_LIBRARY_PATH)
+    response_contract.validate_simulation_persona_library(payload)
     personas = payload.get("personas", [])
     if not isinstance(personas, list) or not personas:
         raise RuntimeError("simulation-persona-library.json must define a non-empty personas array")
@@ -72,6 +73,7 @@ def select_profiles_for_round(round_id: str) -> list[dict[str, object]]:
 
 def load_scenario_registry() -> tuple[dict[str, dict[str, str]], list[dict[str, object]]]:
     payload = load_json(SCENARIO_PACKS_PATH)
+    response_contract.validate_simulation_scenario_packs(payload)
     scenarios = payload.get("scenarios", [])
     packs = payload.get("packs", [])
     if not isinstance(scenarios, list) or not scenarios:
