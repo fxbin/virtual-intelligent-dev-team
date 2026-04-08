@@ -16,20 +16,24 @@ Use this playbook when the request is about staged beta validation, internal tes
 4. Define machine-readable simulated-user profiles instead of one generic “user”.
 5. Build each round from the shared persona library and scenario packs before freezing the per-round simulation config.
 6. Materialize each round from an explicit cohort fixture and a reusable trace catalog instead of ad-hoc session defaults.
-7. Keep a machine-readable ramp plan so each round has an explicit planned sample size, participant mode, and expected cohort shape.
-8. Preview the resolved fixture before execution so the exact persona / scenario / trace mix is reviewable.
-9. Diff the current round against the previous manifest before execution so cohort expansion or contraction is explicit.
-10. Capture every feedback item with scenario, severity, and proposed action, and keep the raw event trace.
-11. Sync simulation evidence back into the feedback ledger before judging the round.
-12. Expand only when the previous round's exit criteria are explicitly met.
-13. For `round-1+`, block `advance` if the ramp plan is missing, the round report drifts from the plan, the fixture diff is missing, or the diff is still marked `review_required`.
+7. Keep a machine-readable cohort plan so each round has an explicit fixture id, planned session count, persona target mix, required scenario coverage, and required trace coverage.
+8. Keep a machine-readable ramp plan so each round has an explicit planned sample size, participant mode, and expected cohort shape.
+9. Preview the resolved fixture before execution so the exact persona / scenario / trace mix is reviewable.
+10. Diff the current round against the previous manifest before execution so cohort expansion or contraction is explicit.
+11. Reconcile cohort plan, resolved fixture manifest, and ramp plan before allowing expansion so plan-vs-fixture-vs-report drift is explicit.
+12. Capture every feedback item with scenario, severity, and proposed action, and keep the raw event trace.
+13. Sync simulation evidence back into the feedback ledger before judging the round.
+14. Expand only when the previous round's exit criteria are explicitly met.
+15. For `round-1+`, block `advance` if the cohort plan is missing, the resolved fixture drifts from the cohort plan, the ramp plan is missing, the round report drifts from the plan, the fixture diff is missing, or the diff is still marked `review_required`.
 
 ## Required outputs
 
 - beta program overview
 - round-by-round cohort matrix
+- machine-readable cohort plan
 - machine-readable ramp plan
 - simulated-user profile set
+- fixture preview manifest
 - per-round simulation config
 - round-to-round fixture diff
 - machine-readable simulation run with event trace
@@ -48,6 +52,7 @@ Use this playbook when the request is about staged beta validation, internal tes
 - trace catalog: `references/simulation-trace-catalog.json`
 - manifest schema: `references/beta-simulation-manifest.schema.json`
 - diff schema: `references/beta-simulation-diff.schema.json`
+- cohort plan schema: `references/beta-cohort-plan.schema.json`
 - ramp plan schema: `references/beta-ramp-plan.schema.json`
 
 默认 archetype 仍然围绕：
@@ -64,6 +69,7 @@ Use this playbook when the request is about staged beta validation, internal tes
 - Do not skip the pre-build or concept-smoke round when the product promise is still unstable.
 - Do not expand cohort size before blocker-level signals are closed or explicitly accepted.
 - Do not let the report drift away from the planned ramp; sample size and participant mode should be compared against the machine-readable plan.
+- Do not let fixture coverage drift away from the machine-readable cohort plan; persona counts, scenario coverage, and trace coverage should reconcile before expansion.
 - Do not expand or contract fixture coverage silently; compare the manifests and explain any coverage drift.
 - Do not flatten all feedback into one list; keep round, scenario, and severity attached.
 - Do not rely on only the synthesized report; preserve the simulation trace that explains why a round is `advance`, `hold`, or `escalate`.

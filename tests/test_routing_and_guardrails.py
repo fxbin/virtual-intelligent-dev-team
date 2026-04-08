@@ -202,6 +202,120 @@ def write_beta_gate_fixture(
     return fixture_path
 
 
+def write_beta_manifest(
+    root: Path,
+    *,
+    round_id: str,
+    phase: str,
+    objective: str,
+    sessions: list[dict[str, str]],
+) -> Path:
+    output_dir = root / ".skill-beta" / "fixture-previews" / round_id
+    output_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema_version": "beta-simulation-manifest/v1",
+        "generated_at": "2026-04-08T12:00:00Z",
+        "skill_name": "virtual-intelligent-dev-team",
+        "round_id": round_id,
+        "phase": phase,
+        "objective": objective,
+        "config_path": str(root / ".skill-beta" / "simulation-configs" / f"{round_id}.json"),
+        "cohort_fixture_source": "references/simulation-cohort-fixtures.json",
+        "trace_catalog_source": "references/simulation-trace-catalog.json",
+        "sessions": sessions,
+        "json_report": str(output_dir / "beta-simulation-manifest.json"),
+        "markdown_report": str(output_dir / "beta-simulation-manifest.md"),
+    }
+    response_contract.validate_beta_simulation_manifest(payload)
+    manifest_path = output_dir / "beta-simulation-manifest.json"
+    manifest_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    (output_dir / "beta-simulation-manifest.md").write_text("# Fixture Manifest\n", encoding="utf-8")
+    return manifest_path
+
+
+def write_beta_cohort_plan(root: Path, *, rounds: list[dict[str, object]]) -> Path:
+    plan_path = root / ".skill-beta" / "cohort-plan.json"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema_version": "beta-cohort-plan/v1",
+        "skill_name": "virtual-intelligent-dev-team",
+        "rounds": rounds,
+    }
+    response_contract.validate_beta_cohort_plan(payload)
+    plan_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return plan_path
+
+
+def write_beta_ramp_plan(root: Path, *, rounds: list[dict[str, object]]) -> Path:
+    plan_path = root / ".skill-beta" / "ramp-plan.json"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema_version": "beta-ramp-plan/v1",
+        "skill_name": "virtual-intelligent-dev-team",
+        "rounds": rounds,
+    }
+    response_contract.validate_beta_ramp_plan(payload)
+    plan_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return plan_path
+
+
+def write_beta_fixture_diff(
+    root: Path,
+    *,
+    previous_round_id: str,
+    current_round_id: str,
+    previous_session_count: int,
+    current_session_count: int,
+    previous_persona_count: int,
+    current_persona_count: int,
+    previous_scenario_count: int,
+    current_scenario_count: int,
+    previous_trace_count: int,
+    current_trace_count: int,
+) -> Path:
+    diff_dir = root / ".skill-beta" / "fixture-diffs" / f"{previous_round_id}-to-{current_round_id}"
+    diff_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema_version": "beta-simulation-diff/v1",
+        "generated_at": "2026-04-08T12:00:00Z",
+        "skill_name": "virtual-intelligent-dev-team",
+        "previous_round_id": previous_round_id,
+        "current_round_id": current_round_id,
+        "previous_manifest_path": str(root / ".skill-beta" / "fixture-previews" / previous_round_id / "beta-simulation-manifest.json"),
+        "current_manifest_path": str(root / ".skill-beta" / "fixture-previews" / current_round_id / "beta-simulation-manifest.json"),
+        "previous_session_count": previous_session_count,
+        "current_session_count": current_session_count,
+        "session_count_delta": current_session_count - previous_session_count,
+        "added_personas": [],
+        "removed_personas": [],
+        "added_scenarios": [],
+        "removed_scenarios": [],
+        "added_traces": [],
+        "removed_traces": [],
+        "new_session_matrix": [],
+        "coverage_shift_summary": {
+            "previous_persona_count": previous_persona_count,
+            "current_persona_count": current_persona_count,
+            "previous_scenario_count": previous_scenario_count,
+            "current_scenario_count": current_scenario_count,
+            "previous_trace_count": previous_trace_count,
+            "current_trace_count": current_trace_count,
+            "new_session_matrix_count": 0,
+            "expansion_mode": "expanded",
+        },
+        "risk_notes": ["Coverage expanded while preserving the previous baseline."],
+        "expansion_ok": True,
+        "review_required": False,
+        "json_report": str(diff_dir / "beta-simulation-diff.json"),
+        "markdown_report": str(diff_dir / "beta-simulation-diff.md"),
+    }
+    response_contract.validate_beta_simulation_diff(payload)
+    diff_path = diff_dir / "beta-simulation-diff.json"
+    diff_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    (diff_dir / "beta-simulation-diff.md").write_text("# Diff\n", encoding="utf-8")
+    return diff_path
+
+
 class RoutingTests(unittest.TestCase):
     def test_review_java_routes_to_code_audit_with_java_assistant(self) -> None:
         result = route_request.route_request(
@@ -582,6 +696,9 @@ class RoutingTests(unittest.TestCase):
         self.assertTrue(beta_plan["enabled"])
         self.assertTrue(beta_plan["simulation_allowed"])
         self.assertEqual(".skill-beta/feedback-ledger.md", beta_plan["feedback_anchor"])
+        self.assertEqual("assets/beta-cohort-plan-template.json", beta_plan["cohort_plan_template"])
+        self.assertEqual("references/beta-cohort-plan.schema.json", beta_plan["cohort_plan_schema"])
+        self.assertEqual(".skill-beta/cohort-plan.json", beta_plan["cohort_plan_path"])
         self.assertEqual("assets/beta-ramp-plan-template.json", beta_plan["ramp_plan_template"])
         self.assertEqual("references/beta-ramp-plan.schema.json", beta_plan["ramp_plan_schema"])
         self.assertEqual(".skill-beta/ramp-plan.json", beta_plan["ramp_plan_path"])
@@ -4675,7 +4792,10 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertTrue((root / ".skill-beta" / "program-overview.md").exists())
             self.assertTrue((root / ".skill-beta" / "cohort-matrix.md").exists())
             self.assertTrue((root / ".skill-beta" / "feedback-ledger.md").exists())
+            self.assertTrue((root / ".skill-beta" / "cohort-plan.json").exists())
             self.assertTrue((root / ".skill-beta" / "ramp-plan.json").exists())
+            cohort_plan = json.loads((root / ".skill-beta" / "cohort-plan.json").read_text(encoding="utf-8"))
+            response_contract.validate_beta_cohort_plan(cohort_plan)
             ramp_plan = json.loads((root / ".skill-beta" / "ramp-plan.json").read_text(encoding="utf-8"))
             response_contract.validate_beta_ramp_plan(ramp_plan)
             self.assertEqual(".skill-beta/program-overview.md", result["resume_anchor"])
@@ -4914,6 +5034,7 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertIn("evidence_artifacts", round_report_payload)
             self.assertTrue(round_report_payload["evidence_artifacts"]["fixture_manifest_json"])
             self.assertTrue(round_report_payload["evidence_artifacts"]["fixture_diff_json"])
+            self.assertTrue(round_report_payload["evidence_artifacts"]["cohort_plan_json"])
             self.assertTrue(round_report_payload["evidence_artifacts"]["ramp_plan_json"])
             ledger_markdown = Path(summary_result["feedback_ledger_out"]).read_text(encoding="utf-8")
             self.assertIn("## Generated Entries", ledger_markdown)
@@ -4924,14 +5045,85 @@ class ProjectMemoryInitTests(unittest.TestCase):
             root = Path(tmp)
             report = root / ".skill-beta" / "reports" / "round-1.json"
             report.parent.mkdir(parents=True, exist_ok=True)
-            diff_dir = root / ".skill-beta" / "fixture-diffs" / "round-0-to-round-1"
-            diff_dir.mkdir(parents=True, exist_ok=True)
-            ramp_plan_path = root / ".skill-beta" / "ramp-plan.json"
-            ramp_plan_path.parent.mkdir(parents=True, exist_ok=True)
-            ramp_plan_payload = {
-                "schema_version": "beta-ramp-plan/v1",
-                "skill_name": "virtual-intelligent-dev-team",
-                "rounds": [
+            manifest_path = write_beta_manifest(
+                root,
+                round_id="round-1",
+                phase="closed beta",
+                objective="validate the implemented slice",
+                sessions=[
+                    {
+                        "session_id": "session-01",
+                        "persona_id": "first-time-novice",
+                        "persona_name": "First-Time Novice",
+                        "scenario_id": "scenario-1",
+                        "scenario_title": "first meaningful task",
+                        "trace_id": "novice-cta-hesitation",
+                        "trace_label": "Novice CTA hesitation",
+                    },
+                    {
+                        "session_id": "session-02",
+                        "persona_id": "daily-operator",
+                        "persona_name": "Daily Operator",
+                        "scenario_id": "scenario-2",
+                        "scenario_title": "resume a daily workflow",
+                        "trace_id": "operator-reentry-friction",
+                        "trace_label": "Operator re-entry friction",
+                    },
+                    {
+                        "session_id": "session-03",
+                        "persona_id": "goal-driven-power-user",
+                        "persona_name": "Goal-Driven Power User",
+                        "scenario_id": "scenario-2",
+                        "scenario_title": "resume a daily workflow",
+                        "trace_id": "power-user-fast-path-friction",
+                        "trace_label": "Power-user fast-path friction",
+                    },
+                    {
+                        "session_id": "session-04",
+                        "persona_id": "edge-case-breaker",
+                        "persona_name": "Edge-Case Breaker",
+                        "scenario_id": "scenario-3",
+                        "scenario_title": "recover from a rough edge",
+                        "trace_id": "edge-recovery-break",
+                        "trace_label": "Edge recovery break",
+                    },
+                    {
+                        "session_id": "session-05",
+                        "persona_id": "edge-case-breaker",
+                        "persona_name": "Edge-Case Breaker",
+                        "scenario_id": "scenario-3",
+                        "scenario_title": "recover from a rough edge",
+                        "trace_id": "edge-recovery-break",
+                        "trace_label": "Edge recovery break",
+                    },
+                ],
+            )
+            cohort_plan_path = write_beta_cohort_plan(
+                root,
+                rounds=[
+                    {
+                        "round_id": "round-1",
+                        "fixture_id": "round-1-expanded",
+                        "planned_sessions": 5,
+                        "persona_targets": [
+                            {"persona_id": "daily-operator", "session_count": 1},
+                            {"persona_id": "edge-case-breaker", "session_count": 2},
+                            {"persona_id": "first-time-novice", "session_count": 1},
+                            {"persona_id": "goal-driven-power-user", "session_count": 1},
+                        ],
+                        "required_scenario_ids": ["scenario-1", "scenario-2", "scenario-3"],
+                        "required_trace_ids": [
+                            "edge-recovery-break",
+                            "novice-cta-hesitation",
+                            "operator-reentry-friction",
+                            "power-user-fast-path-friction",
+                        ],
+                    }
+                ],
+            )
+            ramp_plan_path = write_beta_ramp_plan(
+                root,
+                rounds=[
                     {
                         "round_id": "round-0",
                         "phase": "pre-build concept smoke",
@@ -4949,50 +5141,22 @@ class ProjectMemoryInitTests(unittest.TestCase):
                         "archetypes": ["daily operator", "edge-case breaker"],
                         "goal": "validate the implemented slice",
                         "exit_criteria": "no blocker-level failures remain",
-                    }
+                    },
                 ],
-            }
-            ramp_plan_path.write_text(json.dumps(ramp_plan_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-            diff_payload = {
-                "schema_version": "beta-simulation-diff/v1",
-                "generated_at": "2026-04-08T12:00:00Z",
-                "skill_name": "virtual-intelligent-dev-team",
-                "previous_round_id": "round-0",
-                "current_round_id": "round-1",
-                "previous_manifest_path": str(root / ".skill-beta" / "fixture-previews" / "round-0" / "beta-simulation-manifest.json"),
-                "current_manifest_path": str(root / ".skill-beta" / "fixture-previews" / "round-1" / "beta-simulation-manifest.json"),
-                "previous_session_count": 3,
-                "current_session_count": 5,
-                "session_count_delta": 2,
-                "added_personas": [],
-                "removed_personas": [],
-                "added_scenarios": [],
-                "removed_scenarios": [],
-                "added_traces": [],
-                "removed_traces": [],
-                "new_session_matrix": [],
-                "coverage_shift_summary": {
-                    "previous_persona_count": 3,
-                    "current_persona_count": 4,
-                    "previous_scenario_count": 3,
-                    "current_scenario_count": 4,
-                    "previous_trace_count": 3,
-                    "current_trace_count": 4,
-                    "new_session_matrix_count": 0,
-                    "expansion_mode": "expanded",
-                },
-                "risk_notes": ["Coverage expanded while preserving the previous baseline."],
-                "expansion_ok": True,
-                "review_required": False,
-                "json_report": str(diff_dir / "beta-simulation-diff.json"),
-                "markdown_report": str(diff_dir / "beta-simulation-diff.md"),
-            }
-            response_contract.validate_beta_simulation_diff(diff_payload)
-            (diff_dir / "beta-simulation-diff.json").write_text(
-                json.dumps(diff_payload, ensure_ascii=False, indent=2) + "\n",
-                encoding="utf-8",
             )
-            (diff_dir / "beta-simulation-diff.md").write_text("# Diff\n", encoding="utf-8")
+            diff_path = write_beta_fixture_diff(
+                root,
+                previous_round_id="round-0",
+                current_round_id="round-1",
+                previous_session_count=3,
+                current_session_count=5,
+                previous_persona_count=3,
+                current_persona_count=4,
+                previous_scenario_count=3,
+                current_scenario_count=4,
+                previous_trace_count=3,
+                current_trace_count=4,
+            )
             payload = {
                 "schema_version": "beta-round-report/v1",
                 "round_id": "round-1",
@@ -5018,10 +5182,11 @@ class ProjectMemoryInitTests(unittest.TestCase):
                     "simulation_run_markdown": str(root / ".skill-beta" / "simulation-runs" / "round-1" / "beta-simulation-run.md"),
                     "simulation_summary_json": str(root / ".skill-beta" / "simulation-runs" / "round-1" / "beta-simulation-summary.json"),
                     "feedback_ledger_markdown": str(root / ".skill-beta" / "feedback-ledger.md"),
-                    "fixture_manifest_json": str(root / ".skill-beta" / "fixture-previews" / "round-1" / "beta-simulation-manifest.json"),
-                    "fixture_manifest_markdown": str(root / ".skill-beta" / "fixture-previews" / "round-1" / "beta-simulation-manifest.md"),
-                    "fixture_diff_json": str(diff_dir / "beta-simulation-diff.json"),
-                    "fixture_diff_markdown": str(diff_dir / "beta-simulation-diff.md"),
+                    "fixture_manifest_json": str(manifest_path),
+                    "fixture_manifest_markdown": str(manifest_path.with_suffix(".md")),
+                    "fixture_diff_json": str(diff_path),
+                    "fixture_diff_markdown": str(diff_path.with_suffix(".md")),
+                    "cohort_plan_json": str(cohort_plan_path),
                     "ramp_plan_json": str(ramp_plan_path),
                 },
                 "notes": "",
@@ -5033,6 +5198,7 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertTrue(result["ok"])
             self.assertEqual("advance", result["decision"])
             self.assertEqual("round-2", result["follow_up"]["next_round_recommended"])
+            self.assertEqual("passed", result["cohort_gate"]["status"])
             self.assertEqual("passed", result["ramp_gate"]["status"])
             self.assertEqual("passed", result["diff_gate"]["status"])
             self.assertTrue(Path(result["json_report"]).exists())
@@ -5113,6 +5279,168 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertEqual("hold", result["decision"])
             self.assertEqual("missing", result["ramp_gate"]["status"])
             self.assertIn("ramp plan", result["reason"].lower())
+            response_contract.validate_beta_round_gate_result(result)
+
+    def test_evaluate_beta_round_holds_when_cohort_plan_is_missing(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            report = root / ".skill-beta" / "reports" / "round-1.json"
+            report.parent.mkdir(parents=True, exist_ok=True)
+            manifest_path = write_beta_manifest(
+                root,
+                round_id="round-1",
+                phase="closed beta",
+                objective="validate the implemented slice",
+                sessions=[
+                    {
+                        "session_id": "session-01",
+                        "persona_id": "first-time-novice",
+                        "persona_name": "First-Time Novice",
+                        "scenario_id": "scenario-1",
+                        "scenario_title": "first meaningful task",
+                        "trace_id": "novice-cta-hesitation",
+                        "trace_label": "Novice CTA hesitation",
+                    }
+                ],
+            )
+            payload = {
+                "schema_version": "beta-round-report/v1",
+                "round_id": "round-1",
+                "phase": "closed beta",
+                "goal": "validate the implemented slice",
+                "participant_mode": "seed users",
+                "planned_sample_size": 12,
+                "completed_sessions": 10,
+                "task_success_count": 9,
+                "blocker_issue_count": 0,
+                "critical_issue_count": 0,
+                "high_severity_issue_count": 1,
+                "top_feedback_themes": ["copy clarity"],
+                "exit_criteria": "no blocker-level failures remain",
+                "gate_thresholds": {
+                    "min_completed_sessions": 8,
+                    "min_success_rate": 0.8,
+                    "max_blocker_issue_count": 0,
+                    "max_critical_issue_count": 0,
+                },
+                "evidence_artifacts": {
+                    "simulation_run_json": "",
+                    "simulation_run_markdown": "",
+                    "simulation_summary_json": "",
+                    "feedback_ledger_markdown": "",
+                    "fixture_manifest_json": str(manifest_path),
+                    "fixture_manifest_markdown": str(manifest_path.with_suffix(".md")),
+                    "fixture_diff_json": "",
+                    "fixture_diff_markdown": "",
+                    "cohort_plan_json": "",
+                    "ramp_plan_json": "",
+                },
+                "notes": "",
+            }
+            report.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+            result = beta_round_evaluator.evaluate_beta_round(report_path=report)
+
+            self.assertFalse(result["ok"])
+            self.assertEqual("hold", result["decision"])
+            self.assertEqual("missing", result["cohort_gate"]["status"])
+            self.assertIn("cohort plan", result["reason"].lower())
+            response_contract.validate_beta_round_gate_result(result)
+
+    def test_evaluate_beta_round_holds_when_cohort_plan_mismatches_manifest(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            report = root / ".skill-beta" / "reports" / "round-1.json"
+            report.parent.mkdir(parents=True, exist_ok=True)
+            manifest_path = write_beta_manifest(
+                root,
+                round_id="round-1",
+                phase="closed beta",
+                objective="validate the implemented slice",
+                sessions=[
+                    {
+                        "session_id": "session-01",
+                        "persona_id": "first-time-novice",
+                        "persona_name": "First-Time Novice",
+                        "scenario_id": "scenario-1",
+                        "scenario_title": "first meaningful task",
+                        "trace_id": "novice-cta-hesitation",
+                        "trace_label": "Novice CTA hesitation",
+                    },
+                    {
+                        "session_id": "session-02",
+                        "persona_id": "daily-operator",
+                        "persona_name": "Daily Operator",
+                        "scenario_id": "scenario-2",
+                        "scenario_title": "resume a daily workflow",
+                        "trace_id": "operator-reentry-friction",
+                        "trace_label": "Operator re-entry friction",
+                    },
+                ],
+            )
+            cohort_plan_path = write_beta_cohort_plan(
+                root,
+                rounds=[
+                    {
+                        "round_id": "round-1",
+                        "fixture_id": "round-1-default",
+                        "planned_sessions": 3,
+                        "persona_targets": [
+                            {"persona_id": "first-time-novice", "session_count": 1},
+                            {"persona_id": "daily-operator", "session_count": 1},
+                            {"persona_id": "goal-driven-power-user", "session_count": 1},
+                        ],
+                        "required_scenario_ids": ["scenario-1", "scenario-2", "scenario-3"],
+                        "required_trace_ids": [
+                            "novice-cta-hesitation",
+                            "operator-reentry-friction",
+                            "power-user-fast-path-friction",
+                        ],
+                    }
+                ],
+            )
+            payload = {
+                "schema_version": "beta-round-report/v1",
+                "round_id": "round-1",
+                "phase": "closed beta",
+                "goal": "validate the implemented slice",
+                "participant_mode": "seed users",
+                "planned_sample_size": 12,
+                "completed_sessions": 10,
+                "task_success_count": 9,
+                "blocker_issue_count": 0,
+                "critical_issue_count": 0,
+                "high_severity_issue_count": 1,
+                "top_feedback_themes": ["copy clarity"],
+                "exit_criteria": "no blocker-level failures remain",
+                "gate_thresholds": {
+                    "min_completed_sessions": 8,
+                    "min_success_rate": 0.8,
+                    "max_blocker_issue_count": 0,
+                    "max_critical_issue_count": 0,
+                },
+                "evidence_artifacts": {
+                    "simulation_run_json": "",
+                    "simulation_run_markdown": "",
+                    "simulation_summary_json": "",
+                    "feedback_ledger_markdown": "",
+                    "fixture_manifest_json": str(manifest_path),
+                    "fixture_manifest_markdown": str(manifest_path.with_suffix(".md")),
+                    "fixture_diff_json": "",
+                    "fixture_diff_markdown": "",
+                    "cohort_plan_json": str(cohort_plan_path),
+                    "ramp_plan_json": "",
+                },
+                "notes": "",
+            }
+            report.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+            result = beta_round_evaluator.evaluate_beta_round(report_path=report)
+
+            self.assertFalse(result["ok"])
+            self.assertEqual("hold", result["decision"])
+            self.assertEqual("mismatch", result["cohort_gate"]["status"])
+            self.assertIn("persona counts", result["reason"].lower())
             response_contract.validate_beta_round_gate_result(result)
 
     def test_evaluate_beta_round_holds_when_ramp_plan_mismatches_round_report(self) -> None:
@@ -5252,14 +5580,94 @@ class ProjectMemoryInitTests(unittest.TestCase):
             root = Path(tmp)
             report = root / ".skill-beta" / "reports" / "round-1.json"
             report.parent.mkdir(parents=True, exist_ok=True)
-            diff_dir = root / ".skill-beta" / "fixture-diffs" / "round-0-to-round-1"
-            diff_dir.mkdir(parents=True, exist_ok=True)
-            ramp_plan_path = root / ".skill-beta" / "ramp-plan.json"
-            ramp_plan_path.parent.mkdir(parents=True, exist_ok=True)
-            ramp_plan_payload = {
-                "schema_version": "beta-ramp-plan/v1",
-                "skill_name": "virtual-intelligent-dev-team",
-                "rounds": [
+            manifest_path = write_beta_manifest(
+                root,
+                round_id="round-1",
+                phase="closed beta",
+                objective="validate the implemented slice",
+                sessions=[
+                    {
+                        "session_id": "session-01",
+                        "persona_id": "first-time-novice",
+                        "persona_name": "First-Time Novice",
+                        "scenario_id": "scenario-1",
+                        "scenario_title": "first meaningful task",
+                        "trace_id": "novice-cta-hesitation",
+                        "trace_label": "Novice CTA hesitation",
+                    },
+                    {
+                        "session_id": "session-02",
+                        "persona_id": "daily-operator",
+                        "persona_name": "Daily Operator",
+                        "scenario_id": "scenario-2",
+                        "scenario_title": "resume a daily workflow",
+                        "trace_id": "operator-reentry-friction",
+                        "trace_label": "Operator re-entry friction",
+                    },
+                    {
+                        "session_id": "session-03",
+                        "persona_id": "goal-driven-power-user",
+                        "persona_name": "Goal-Driven Power User",
+                        "scenario_id": "scenario-2",
+                        "scenario_title": "resume a daily workflow",
+                        "trace_id": "power-user-fast-path-friction",
+                        "trace_label": "Power-user fast-path friction",
+                    },
+                    {
+                        "session_id": "session-04",
+                        "persona_id": "edge-case-breaker",
+                        "persona_name": "Edge-Case Breaker",
+                        "scenario_id": "scenario-3",
+                        "scenario_title": "recover from a rough edge",
+                        "trace_id": "edge-recovery-break",
+                        "trace_label": "Edge recovery break",
+                    },
+                    {
+                        "session_id": "session-05",
+                        "persona_id": "edge-case-breaker",
+                        "persona_name": "Edge-Case Breaker",
+                        "scenario_id": "scenario-3",
+                        "scenario_title": "recover from a rough edge",
+                        "trace_id": "edge-recovery-break",
+                        "trace_label": "Edge recovery break",
+                    },
+                    {
+                        "session_id": "session-06",
+                        "persona_id": "daily-operator",
+                        "persona_name": "Daily Operator",
+                        "scenario_id": "scenario-2",
+                        "scenario_title": "resume a daily workflow",
+                        "trace_id": "operator-reentry-friction",
+                        "trace_label": "Operator re-entry friction",
+                    },
+                ],
+            )
+            cohort_plan_path = write_beta_cohort_plan(
+                root,
+                rounds=[
+                    {
+                        "round_id": "round-1",
+                        "fixture_id": "round-1-expanded",
+                        "planned_sessions": 6,
+                        "persona_targets": [
+                            {"persona_id": "daily-operator", "session_count": 2},
+                            {"persona_id": "edge-case-breaker", "session_count": 2},
+                            {"persona_id": "first-time-novice", "session_count": 1},
+                            {"persona_id": "goal-driven-power-user", "session_count": 1},
+                        ],
+                        "required_scenario_ids": ["scenario-1", "scenario-2", "scenario-3"],
+                        "required_trace_ids": [
+                            "edge-recovery-break",
+                            "novice-cta-hesitation",
+                            "operator-reentry-friction",
+                            "power-user-fast-path-friction",
+                        ],
+                    }
+                ],
+            )
+            ramp_plan_path = write_beta_ramp_plan(
+                root,
+                rounds=[
                     {
                         "round_id": "round-1",
                         "phase": "closed beta",
@@ -5270,47 +5678,20 @@ class ProjectMemoryInitTests(unittest.TestCase):
                         "exit_criteria": "blocker paths are closed",
                     }
                 ],
-            }
-            ramp_plan_path.write_text(json.dumps(ramp_plan_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-            diff_payload = {
-                "schema_version": "beta-simulation-diff/v1",
-                "generated_at": "2026-04-08T12:00:00Z",
-                "skill_name": "virtual-intelligent-dev-team",
-                "previous_round_id": "round-0",
-                "current_round_id": "round-1",
-                "previous_manifest_path": str(root / ".skill-beta" / "fixture-previews" / "round-0" / "beta-simulation-manifest.json"),
-                "current_manifest_path": str(root / ".skill-beta" / "fixture-previews" / "round-1" / "beta-simulation-manifest.json"),
-                "previous_session_count": 4,
-                "current_session_count": 6,
-                "session_count_delta": 2,
-                "added_personas": [],
-                "removed_personas": [],
-                "added_scenarios": [],
-                "removed_scenarios": [],
-                "added_traces": [],
-                "removed_traces": [],
-                "new_session_matrix": [],
-                "coverage_shift_summary": {
-                    "previous_persona_count": 3,
-                    "current_persona_count": 4,
-                    "previous_scenario_count": 3,
-                    "current_scenario_count": 4,
-                    "previous_trace_count": 3,
-                    "current_trace_count": 4,
-                    "new_session_matrix_count": 0,
-                    "expansion_mode": "expanded",
-                },
-                "risk_notes": ["Coverage expanded while preserving the previous baseline."],
-                "expansion_ok": True,
-                "review_required": False,
-                "json_report": str(diff_dir / "beta-simulation-diff.json"),
-                "markdown_report": str(diff_dir / "beta-simulation-diff.md"),
-            }
-            (diff_dir / "beta-simulation-diff.json").write_text(
-                json.dumps(diff_payload, ensure_ascii=False, indent=2) + "\n",
-                encoding="utf-8",
             )
-            (diff_dir / "beta-simulation-diff.md").write_text("# Diff\n", encoding="utf-8")
+            diff_path = write_beta_fixture_diff(
+                root,
+                previous_round_id="round-0",
+                current_round_id="round-1",
+                previous_session_count=4,
+                current_session_count=6,
+                previous_persona_count=3,
+                current_persona_count=4,
+                previous_scenario_count=3,
+                current_scenario_count=4,
+                previous_trace_count=3,
+                current_trace_count=4,
+            )
             payload = {
                 "schema_version": "beta-round-report/v1",
                 "round_id": "round-1",
@@ -5337,10 +5718,11 @@ class ProjectMemoryInitTests(unittest.TestCase):
                     "simulation_run_markdown": str(root / ".skill-beta" / "simulation-runs" / "round-1" / "beta-simulation-run.md"),
                     "simulation_summary_json": str(root / ".skill-beta" / "simulation-runs" / "round-1" / "beta-simulation-summary.json"),
                     "feedback_ledger_markdown": str(root / ".skill-beta" / "feedback-ledger.md"),
-                    "fixture_manifest_json": str(root / ".skill-beta" / "fixture-previews" / "round-1" / "beta-simulation-manifest.json"),
-                    "fixture_manifest_markdown": str(root / ".skill-beta" / "fixture-previews" / "round-1" / "beta-simulation-manifest.md"),
-                    "fixture_diff_json": str(diff_dir / "beta-simulation-diff.json"),
-                    "fixture_diff_markdown": str(diff_dir / "beta-simulation-diff.md"),
+                    "fixture_manifest_json": str(manifest_path),
+                    "fixture_manifest_markdown": str(manifest_path.with_suffix(".md")),
+                    "fixture_diff_json": str(diff_path),
+                    "fixture_diff_markdown": str(diff_path.with_suffix(".md")),
+                    "cohort_plan_json": str(cohort_plan_path),
                     "ramp_plan_json": str(ramp_plan_path)
                 },
                 "blocker_breakdown": {
@@ -5375,10 +5757,12 @@ class ProjectMemoryInitTests(unittest.TestCase):
 
             self.assertEqual("hold", result["decision"])
             self.assertIn("blocker_breakdown", result)
+            self.assertEqual("passed", result["cohort_gate"]["status"])
             self.assertEqual("passed", result["ramp_gate"]["status"])
             self.assertEqual("passed", result["diff_gate"]["status"])
             self.assertEqual("Edge-Case Breaker", result["blocker_breakdown"]["by_persona"][0]["label"])
             markdown = Path(result["markdown_report"]).read_text(encoding="utf-8")
+            self.assertIn("## Cohort Plan Gate", markdown)
             self.assertIn("## Ramp Plan Gate", markdown)
             self.assertIn("## Fixture Diff Gate", markdown)
             self.assertIn("## Blocker Breakdown By Persona", markdown)
@@ -5490,6 +5874,9 @@ class ResponsePackTests(unittest.TestCase):
         self.assertEqual("beta", payload["template"])
         self.assertIn("beta_program", payload)
         self.assertEqual(".skill-beta/feedback-ledger.md", payload["beta_program"]["feedback_anchor"])
+        self.assertEqual("assets/beta-cohort-plan-template.json", payload["beta_program"]["cohort_plan_template"])
+        self.assertEqual("references/beta-cohort-plan.schema.json", payload["beta_program"]["cohort_plan_schema"])
+        self.assertEqual(".skill-beta/cohort-plan.json", payload["beta_program"]["cohort_plan_path"])
         self.assertEqual("assets/beta-ramp-plan-template.json", payload["beta_program"]["ramp_plan_template"])
         self.assertEqual("references/beta-ramp-plan.schema.json", payload["beta_program"]["ramp_plan_schema"])
         self.assertEqual(".skill-beta/ramp-plan.json", payload["beta_program"]["ramp_plan_path"])
@@ -5590,6 +5977,9 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("round-0 | pre-build concept smoke | 样本 5", markdown)
         self.assertIn(".skill-beta/cohort-matrix.md", markdown)
         self.assertIn(".skill-beta/feedback-ledger.md", markdown)
+        self.assertIn("assets/beta-cohort-plan-template.json", markdown)
+        self.assertIn("references/beta-cohort-plan.schema.json", markdown)
+        self.assertIn(".skill-beta/cohort-plan.json", markdown)
         self.assertIn("assets/beta-ramp-plan-template.json", markdown)
         self.assertIn("references/beta-ramp-plan.schema.json", markdown)
         self.assertIn(".skill-beta/ramp-plan.json", markdown)

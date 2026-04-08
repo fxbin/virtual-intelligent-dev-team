@@ -97,6 +97,9 @@
 - `simulation_allowed`
 - `feedback_anchor`
 - `cohort_artifact`
+- `cohort_plan_template`
+- `cohort_plan_schema`
+- `cohort_plan_path`
 - `ramp_plan_template`
 - `ramp_plan_schema`
 - `ramp_plan_path`

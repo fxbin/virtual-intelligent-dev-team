@@ -21,6 +21,7 @@ BETA_ROUND_GATE_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round
 BETA_SIMULATION_MANIFEST_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-manifest.schema.json"
 BETA_SIMULATION_DIFF_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-diff.schema.json"
 BETA_RAMP_PLAN_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-ramp-plan.schema.json"
+BETA_COHORT_PLAN_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-cohort-plan.schema.json"
 SIMULATED_USER_PROFILE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "simulated-user-profile.schema.json"
 BETA_SIMULATION_PERSONA_LIBRARY_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "simulation-persona-library.schema.json"
 BETA_SIMULATION_COHORT_FIXTURES_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "simulation-cohort-fixtures.schema.json"
@@ -124,6 +125,14 @@ def validate_beta_ramp_plan(payload: dict[str, object]) -> None:
         payload,
         schema_path=BETA_RAMP_PLAN_SCHEMA_JSON_PATH,
         label="beta ramp plan",
+    )
+
+
+def validate_beta_cohort_plan(payload: dict[str, object]) -> None:
+    validate_payload_against_schema(
+        payload,
+        schema_path=BETA_COHORT_PLAN_SCHEMA_JSON_PATH,
+        label="beta cohort plan",
     )
 
 

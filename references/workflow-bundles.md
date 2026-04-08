@@ -54,19 +54,21 @@ existing routing, planning, iteration, release, and Git rules.
 - Default sequence:
   1. define the beta objective, exit criteria, and round boundaries
   2. initialize simulated-user profiles and a per-round simulation config
+     - keep a machine-readable cohort plan at `.skill-beta/cohort-plan.json`
      - keep a machine-readable ramp plan at `.skill-beta/ramp-plan.json`
      - source persona defaults from `references/simulation-persona-library.json`
      - source cohort defaults from `references/simulation-cohort-fixtures.json`
      - source scenario defaults from `references/simulation-scenario-packs.json`
      - source trace defaults from `references/simulation-trace-catalog.json`
   3. preview the resolved fixture so the exact persona / scenario / trace mix is inspectable
-  4. diff the current fixture against the previous round before execution so expansion drift is explicit
-  5. start with a small simulated or seed-user cohort
-  6. preserve session-level traces before synthesizing the round report
-  7. sync generated feedback rows back into the ledger and inspect blocker slices by persona and scenario
-  8. expand sample size only when the previous round clears its gate
-  9. log structured feedback and severity before release or rollout decisions
-  10. for `round-1+`, require the gate to consume ramp-plan evidence and fixture diff evidence before allowing expansion
+  4. reconcile cohort plan against the resolved fixture so planned sessions, persona counts, scenario coverage, and trace coverage are explicit
+  5. diff the current fixture against the previous round before execution so expansion drift is explicit
+  6. start with a small simulated or seed-user cohort
+  7. preserve session-level traces before synthesizing the round report
+  8. sync generated feedback rows back into the ledger and inspect blocker slices by persona and scenario
+  9. expand sample size only when the previous round clears its gate
+  10. log structured feedback and severity before release or rollout decisions
+  11. for `round-1+`, require the gate to consume cohort-plan evidence, ramp-plan evidence, and fixture diff evidence before allowing expansion
 - Primary references:
   - `references/beta-validation-playbook.md`
   - `assets/beta-cohort-matrix-template.md`

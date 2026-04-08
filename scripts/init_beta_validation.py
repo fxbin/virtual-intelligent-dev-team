@@ -35,6 +35,11 @@ def init_beta_validation(root: Path, overwrite: bool = False) -> dict[str, objec
             "cohort-matrix",
         ),
         (
+            SKILL_DIR / "assets" / "beta-cohort-plan-template.json",
+            root / ".skill-beta" / "cohort-plan.json",
+            "cohort-plan",
+        ),
+        (
             SKILL_DIR / "assets" / "beta-feedback-ledger-template.md",
             root / ".skill-beta" / "feedback-ledger.md",
             "feedback-ledger",

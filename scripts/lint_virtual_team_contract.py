@@ -30,6 +30,7 @@ BETA_ROUND_REPORT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-repo
 BETA_ROUND_GATE_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-gate-result.schema.json"
 BETA_SIMULATION_DIFF_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-diff.schema.json"
 BETA_RAMP_PLAN_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-ramp-plan.schema.json"
+BETA_COHORT_PLAN_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-cohort-plan.schema.json"
 SIMULATED_USER_PROFILE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "simulated-user-profile.schema.json"
 BETA_SIMULATION_CONFIG_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-config.schema.json"
 BETA_SIMULATION_EVENT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-event.schema.json"
@@ -98,6 +99,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
     beta_round_gate_result_schema_json_path = resolved_skill_dir / "references" / "beta-round-gate-result.schema.json"
     beta_simulation_diff_schema_json_path = resolved_skill_dir / "references" / "beta-simulation-diff.schema.json"
     beta_ramp_plan_schema_json_path = resolved_skill_dir / "references" / "beta-ramp-plan.schema.json"
+    beta_cohort_plan_schema_json_path = resolved_skill_dir / "references" / "beta-cohort-plan.schema.json"
     simulated_user_profile_schema_json_path = resolved_skill_dir / "references" / "simulated-user-profile.schema.json"
     beta_simulation_config_schema_json_path = resolved_skill_dir / "references" / "beta-simulation-config.schema.json"
     beta_simulation_event_schema_json_path = resolved_skill_dir / "references" / "beta-simulation-event.schema.json"
@@ -209,6 +211,11 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
         "Missing references/beta-ramp-plan.schema.json. Restore the beta ramp plan schema before release.",
     )
     _check(
+        beta_cohort_plan_schema_json_path.exists(),
+        errors,
+        "Missing references/beta-cohort-plan.schema.json. Restore the beta cohort plan schema before release.",
+    )
+    _check(
         simulated_user_profile_schema_json_path.exists(),
         errors,
         "Missing references/simulated-user-profile.schema.json. Restore the simulated user profile schema before release.",
@@ -259,6 +266,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 and beta_round_gate_result_schema_json_path.exists()
                 and beta_simulation_diff_schema_json_path.exists()
                 and beta_ramp_plan_schema_json_path.exists()
+                and beta_cohort_plan_schema_json_path.exists()
                 and simulated_user_profile_schema_json_path.exists()
                 and beta_simulation_config_schema_json_path.exists()
                 and beta_simulation_event_schema_json_path.exists()
@@ -349,6 +357,9 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                             "simulation_allowed": True,
                             "feedback_anchor": ".skill-beta/feedback-ledger.md",
                             "cohort_artifact": ".skill-beta/cohort-matrix.md",
+                            "cohort_plan_template": "assets/beta-cohort-plan-template.json",
+                            "cohort_plan_schema": "references/beta-cohort-plan.schema.json",
+                            "cohort_plan_path": ".skill-beta/cohort-plan.json",
                             "ramp_plan_template": "assets/beta-ramp-plan-template.json",
                             "ramp_plan_schema": "references/beta-ramp-plan.schema.json",
                             "ramp_plan_path": ".skill-beta/ramp-plan.json",
@@ -598,6 +609,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 "fixture_manifest_markdown": ".skill-beta/fixture-previews/round-1/beta-simulation-manifest.md",
                 "fixture_diff_json": ".skill-beta/fixture-diffs/round-0-to-round-1/beta-simulation-diff.json",
                 "fixture_diff_markdown": ".skill-beta/fixture-diffs/round-0-to-round-1/beta-simulation-diff.md",
+                "cohort_plan_json": ".skill-beta/cohort-plan.json",
                 "ramp_plan_json": ".skill-beta/ramp-plan.json",
             },
             "notes": "",
@@ -630,6 +642,41 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 "continue_beta": True,
                 "release_governance_recommended": False,
                 "next_round_recommended": "round-2",
+            },
+            "cohort_gate": {
+                "status": "passed",
+                "required_for_round": True,
+                "reason": "Cohort plan matches the resolved fixture manifest.",
+                "cohort_plan_json": ".skill-beta/cohort-plan.json",
+                "expected_fixture_id": "round-1-default",
+                "expected_planned_sessions": 4,
+                "observed_fixture_sessions": 4,
+                "expected_persona_counts": {
+                    "daily-operator": 1,
+                    "edge-case-breaker": 1,
+                    "first-time-novice": 1,
+                    "goal-driven-power-user": 1
+                },
+                "observed_persona_counts": {
+                    "daily-operator": 1,
+                    "edge-case-breaker": 1,
+                    "first-time-novice": 1,
+                    "goal-driven-power-user": 1
+                },
+                "expected_scenario_ids": ["scenario-1", "scenario-2", "scenario-3"],
+                "observed_scenario_ids": ["scenario-1", "scenario-2", "scenario-3"],
+                "expected_trace_ids": [
+                    "edge-recovery-break",
+                    "novice-cta-hesitation",
+                    "operator-reentry-friction",
+                    "power-user-fast-path-friction"
+                ],
+                "observed_trace_ids": [
+                    "edge-recovery-break",
+                    "novice-cta-hesitation",
+                    "operator-reentry-friction",
+                    "power-user-fast-path-friction"
+                ]
             },
             "ramp_gate": {
                 "status": "passed",
@@ -883,6 +930,38 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 }
             ],
         }
+        sample_cohort_plan = {
+            "schema_version": "beta-cohort-plan/v1",
+            "skill_name": "virtual-intelligent-dev-team",
+            "rounds": [
+                {
+                    "round_id": "round-0",
+                    "fixture_id": "round-0-default",
+                    "planned_sessions": 1,
+                    "persona_targets": [
+                        {
+                            "persona_id": "first-time-novice",
+                            "session_count": 1
+                        }
+                    ],
+                    "required_scenario_ids": ["scenario-1"],
+                    "required_trace_ids": ["novice-cta-hesitation"]
+                },
+                {
+                    "round_id": "round-1",
+                    "fixture_id": "round-1-default",
+                    "planned_sessions": 1,
+                    "persona_targets": [
+                        {
+                            "persona_id": "first-time-novice",
+                            "session_count": 1
+                        }
+                    ],
+                    "required_scenario_ids": ["scenario-1"],
+                    "required_trace_ids": ["novice-cta-hesitation"]
+                }
+            ],
+        }
         try:
             local_response_contract.validate_simulated_user_profile(sample_profile)
         except Exception as exc:
@@ -899,6 +978,10 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             local_response_contract.validate_beta_ramp_plan(sample_ramp_plan)
         except Exception as exc:
             beta_round_contract_failures.append(f"ramp-plan: {exc}")
+        try:
+            local_response_contract.validate_beta_cohort_plan(sample_cohort_plan)
+        except Exception as exc:
+            beta_round_contract_failures.append(f"cohort-plan: {exc}")
         sample_persona_library = {
             "schema_version": "simulation-persona-library/v1",
             "skill_name": "virtual-intelligent-dev-team",
@@ -1033,6 +1116,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 "simulation_manifest_schema_json": str(SKILL_DIR / "references" / "beta-simulation-manifest.schema.json"),
                 "simulation_diff_schema_json": str(beta_simulation_diff_schema_json_path),
                 "ramp_plan_schema_json": str(beta_ramp_plan_schema_json_path),
+                "cohort_plan_schema_json": str(beta_cohort_plan_schema_json_path),
                 "simulation_profile_schema_json": str(simulated_user_profile_schema_json_path),
                 "simulation_persona_library_schema_json": str(SKILL_DIR / "references" / "simulation-persona-library.schema.json"),
                 "simulation_cohort_fixtures_schema_json": str(SKILL_DIR / "references" / "simulation-cohort-fixtures.schema.json"),

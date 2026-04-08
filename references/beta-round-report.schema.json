@@ -190,6 +190,9 @@
         "fixture_diff_markdown": {
           "type": "string"
         },
+        "cohort_plan_json": {
+          "type": "string"
+        },
         "ramp_plan_json": {
           "type": "string"
         }

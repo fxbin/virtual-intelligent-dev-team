@@ -52,6 +52,9 @@
     "follow_up": {
       "$ref": "#/$defs/follow_up"
     },
+    "cohort_gate": {
+      "$ref": "#/$defs/cohort_gate"
+    },
     "ramp_gate": {
       "$ref": "#/$defs/ramp_gate"
     },
@@ -203,6 +206,82 @@
             "string",
             "null"
           ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "cohort_gate": {
+      "type": "object",
+      "required": [
+        "status",
+        "required_for_round",
+        "reason",
+        "cohort_plan_json",
+        "expected_fixture_id",
+        "expected_planned_sessions",
+        "observed_fixture_sessions",
+        "expected_persona_counts",
+        "observed_persona_counts",
+        "expected_scenario_ids",
+        "observed_scenario_ids",
+        "expected_trace_ids",
+        "observed_trace_ids"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "not-required",
+            "missing",
+            "missing-round",
+            "passed",
+            "mismatch"
+          ]
+        },
+        "required_for_round": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "cohort_plan_json": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "expected_fixture_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "expected_planned_sessions": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "observed_fixture_sessions": {
+          "type": "integer"
+        },
+        "expected_persona_counts": {
+          "type": "object"
+        },
+        "observed_persona_counts": {
+          "type": "object"
+        },
+        "expected_scenario_ids": {
+          "$ref": "#/$defs/string_array"
+        },
+        "observed_scenario_ids": {
+          "$ref": "#/$defs/string_array"
+        },
+        "expected_trace_ids": {
+          "$ref": "#/$defs/string_array"
+        },
+        "observed_trace_ids": {
+          "$ref": "#/$defs/string_array"
         }
       },
       "additionalProperties": false

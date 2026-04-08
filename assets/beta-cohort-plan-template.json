@@ -1,0 +1,107 @@
+{
+  "schema_version": "beta-cohort-plan/v1",
+  "skill_name": "virtual-intelligent-dev-team",
+  "rounds": [
+    {
+      "round_id": "round-0",
+      "fixture_id": "round-0-default",
+      "planned_sessions": 3,
+      "persona_targets": [
+        {
+          "persona_id": "first-time-novice",
+          "session_count": 1
+        },
+        {
+          "persona_id": "goal-driven-power-user",
+          "session_count": 1
+        },
+        {
+          "persona_id": "skeptical-evaluator",
+          "session_count": 1
+        }
+      ],
+      "required_scenario_ids": [
+        "scenario-1",
+        "scenario-2"
+      ],
+      "required_trace_ids": [
+        "novice-cta-hesitation",
+        "power-user-fast-path-friction",
+        "skeptic-trust-check"
+      ]
+    },
+    {
+      "round_id": "round-1",
+      "fixture_id": "round-1-default",
+      "planned_sessions": 4,
+      "persona_targets": [
+        {
+          "persona_id": "first-time-novice",
+          "session_count": 1
+        },
+        {
+          "persona_id": "daily-operator",
+          "session_count": 1
+        },
+        {
+          "persona_id": "goal-driven-power-user",
+          "session_count": 1
+        },
+        {
+          "persona_id": "edge-case-breaker",
+          "session_count": 1
+        }
+      ],
+      "required_scenario_ids": [
+        "scenario-1",
+        "scenario-2",
+        "scenario-3"
+      ],
+      "required_trace_ids": [
+        "novice-cta-hesitation",
+        "operator-reentry-friction",
+        "power-user-fast-path-friction",
+        "edge-recovery-break"
+      ]
+    },
+    {
+      "round_id": "round-2",
+      "fixture_id": "round-2-default",
+      "planned_sessions": 5,
+      "persona_targets": [
+        {
+          "persona_id": "first-time-novice",
+          "session_count": 1
+        },
+        {
+          "persona_id": "daily-operator",
+          "session_count": 1
+        },
+        {
+          "persona_id": "goal-driven-power-user",
+          "session_count": 1
+        },
+        {
+          "persona_id": "skeptical-evaluator",
+          "session_count": 1
+        },
+        {
+          "persona_id": "edge-case-breaker",
+          "session_count": 1
+        }
+      ],
+      "required_scenario_ids": [
+        "scenario-1",
+        "scenario-2",
+        "scenario-3"
+      ],
+      "required_trace_ids": [
+        "novice-cta-hesitation",
+        "operator-reentry-friction",
+        "power-user-fast-path-friction",
+        "skeptic-trust-check",
+        "edge-recovery-break"
+      ]
+    }
+  ]
+}

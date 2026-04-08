@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 from datetime import UTC, datetime
 import json
 from pathlib import Path
@@ -72,6 +73,15 @@ def load_ramp_plan(plan_path: Path) -> dict[str, object]:
     return payload
 
 
+def load_cohort_plan(plan_path: Path) -> dict[str, object]:
+    with plan_path.open("r", encoding="utf-8") as file:
+        payload = json.load(file)
+    if not isinstance(payload, dict):
+        raise RuntimeError("beta cohort plan must be a JSON object")
+    response_contract.validate_beta_cohort_plan(payload)
+    return payload
+
+
 def load_manifest(manifest_path: Path) -> dict[str, object]:
     with manifest_path.open("r", encoding="utf-8") as file:
         payload = json.load(file)
@@ -125,21 +135,154 @@ def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) ->
     diff_required_for_round = previous_round_id is not None
     ramp_required_for_round = previous_round_id is not None
     fixture_manifest_json_raw = str(evidence_artifacts.get("fixture_manifest_json", "")).strip()
+    fixture_manifest_path = (
+        resolve_report_relative_path(report_path, fixture_manifest_json_raw)
+        if fixture_manifest_json_raw != ""
+        else None
+    )
     ramp_plan_json_raw = str(evidence_artifacts.get("ramp_plan_json", "")).strip()
+    cohort_plan_json_raw = str(evidence_artifacts.get("cohort_plan_json", "")).strip()
+    manifest_sessions: list[dict[str, object]] = []
     observed_persona_ids: list[str] = []
-    if fixture_manifest_json_raw != "":
-        manifest_path = resolve_report_relative_path(report_path, fixture_manifest_json_raw)
-        if manifest_path.exists():
-            manifest_payload = load_manifest(manifest_path)
-            sessions = manifest_payload.get("sessions", [])
-            if isinstance(sessions, list):
-                observed_persona_ids = sorted(
+    if fixture_manifest_path is not None and fixture_manifest_path.exists():
+        manifest_payload = load_manifest(fixture_manifest_path)
+        sessions = manifest_payload.get("sessions", [])
+        if isinstance(sessions, list):
+            manifest_sessions = [dict(item) for item in sessions if isinstance(item, dict)]
+            observed_persona_ids = sorted(
+                {
+                    str(item.get("persona_id", "")).strip()
+                    for item in manifest_sessions
+                    if str(item.get("persona_id", "")).strip() != ""
+                }
+            )
+
+    cohort_required_for_round = fixture_manifest_json_raw != ""
+    observed_persona_counter = Counter(
+        str(item.get("persona_id", "")).strip()
+        for item in manifest_sessions
+        if str(item.get("persona_id", "")).strip() != ""
+    )
+    observed_scenario_ids = sorted(
+        {
+            str(item.get("scenario_id", "")).strip()
+            for item in manifest_sessions
+            if str(item.get("scenario_id", "")).strip() != ""
+        }
+    )
+    observed_trace_ids = sorted(
+        {
+            str(item.get("trace_id", "")).strip()
+            for item in manifest_sessions
+            if str(item.get("trace_id", "")).strip() != ""
+        }
+    )
+    cohort_gate = {
+        "status": "not-required",
+        "required_for_round": cohort_required_for_round,
+        "reason": "Cohort-plan evidence is not required when no fixture manifest is attached to the round report.",
+        "cohort_plan_json": cohort_plan_json_raw or None,
+        "expected_fixture_id": None,
+        "expected_planned_sessions": None,
+        "observed_fixture_sessions": len(manifest_sessions),
+        "expected_persona_counts": {},
+        "observed_persona_counts": dict(sorted(observed_persona_counter.items())),
+        "expected_scenario_ids": [],
+        "observed_scenario_ids": observed_scenario_ids,
+        "expected_trace_ids": [],
+        "observed_trace_ids": observed_trace_ids,
+    }
+    if cohort_required_for_round:
+        if fixture_manifest_path is None or not fixture_manifest_path.exists():
+            cohort_gate.update(
+                {
+                    "status": "missing",
+                    "reason": "Cohort gate requires a readable fixture manifest before the round can advance.",
+                }
+            )
+        elif cohort_plan_json_raw == "":
+            cohort_gate.update(
+                {
+                    "status": "missing",
+                    "reason": "Fixture-backed beta evidence requires a machine-readable cohort plan before the gate can advance.",
+                }
+            )
+        else:
+            cohort_payload = load_cohort_plan(resolve_report_relative_path(report_path, cohort_plan_json_raw))
+            rounds = cohort_payload.get("rounds", [])
+            expected_round = None
+            if isinstance(rounds, list):
+                expected_round = next(
+                    (
+                        item
+                        for item in rounds
+                        if isinstance(item, dict) and str(item.get("round_id", "")).strip() == round_id
+                    ),
+                    None,
+                )
+            if expected_round is None:
+                cohort_gate.update(
                     {
-                        str(item.get("persona_id", "")).strip()
-                        for item in sessions
-                        if isinstance(item, dict) and str(item.get("persona_id", "")).strip() != ""
+                        "status": "missing-round",
+                        "reason": "Cohort plan does not define the current round.",
                     }
                 )
+            else:
+                persona_targets = expected_round.get("persona_targets", [])
+                expected_persona_counts = {
+                    str(item.get("persona_id", "")).strip(): int(item.get("session_count", 0))
+                    for item in persona_targets
+                    if isinstance(item, dict) and str(item.get("persona_id", "")).strip() != ""
+                } if isinstance(persona_targets, list) else {}
+                expected_scenario_ids = sorted(
+                    {
+                        str(item).strip()
+                        for item in expected_round.get("required_scenario_ids", [])
+                        if str(item).strip() != ""
+                    }
+                ) if isinstance(expected_round.get("required_scenario_ids", []), list) else []
+                expected_trace_ids = sorted(
+                    {
+                        str(item).strip()
+                        for item in expected_round.get("required_trace_ids", [])
+                        if str(item).strip() != ""
+                    }
+                ) if isinstance(expected_round.get("required_trace_ids", []), list) else []
+                expected_fixture_id = str(expected_round.get("fixture_id", "")).strip() or None
+                expected_planned_sessions = int(expected_round.get("planned_sessions", 0))
+                cohort_gate.update(
+                    {
+                        "cohort_plan_json": cohort_plan_json_raw,
+                        "expected_fixture_id": expected_fixture_id,
+                        "expected_planned_sessions": expected_planned_sessions,
+                        "expected_persona_counts": dict(sorted(expected_persona_counts.items())),
+                        "expected_scenario_ids": expected_scenario_ids,
+                        "expected_trace_ids": expected_trace_ids,
+                    }
+                )
+                mismatches: list[str] = []
+                if expected_planned_sessions != len(manifest_sessions):
+                    mismatches.append("planned fixture sessions")
+                if dict(sorted(expected_persona_counts.items())) != dict(sorted(observed_persona_counter.items())):
+                    mismatches.append("persona counts")
+                if expected_scenario_ids != observed_scenario_ids:
+                    mismatches.append("scenario coverage")
+                if expected_trace_ids != observed_trace_ids:
+                    mismatches.append("trace coverage")
+                if mismatches:
+                    cohort_gate.update(
+                        {
+                            "status": "mismatch",
+                            "reason": "Cohort plan does not match the resolved fixture for " + ", ".join(mismatches) + ".",
+                        }
+                    )
+                else:
+                    cohort_gate.update(
+                        {
+                            "status": "passed",
+                            "reason": "Cohort plan matches the resolved fixture manifest.",
+                        }
+                    )
     ramp_gate = {
         "status": "not-required",
         "required_for_round": ramp_required_for_round,
@@ -271,6 +414,15 @@ def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) ->
             "release_governance_recommended": True,
             "next_round_recommended": None,
         }
+    elif cohort_required_for_round and cohort_gate["status"] in {"missing", "missing-round", "mismatch"}:
+        decision = "hold"
+        reason = str(cohort_gate["reason"])
+        follow_up = {
+            "next_action": "hold expansion, reconcile the cohort plan with the resolved fixture, and rerun the gate",
+            "continue_beta": False,
+            "release_governance_recommended": False,
+            "next_round_recommended": round_id,
+        }
     elif ramp_required_for_round and ramp_gate["status"] in {"missing", "missing-round", "mismatch"}:
         decision = "hold"
         reason = str(ramp_gate["reason"])
@@ -341,6 +493,7 @@ def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) ->
             "max_critical_issue_count": max_critical_issue_count,
         },
         "follow_up": follow_up,
+        "cohort_gate": cohort_gate,
         "ramp_gate": ramp_gate,
         "diff_gate": diff_gate,
         "json_report": "",
@@ -369,6 +522,8 @@ def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) ->
         f"- Blocker issues: {blocker_issue_count}",
         f"- Critical issues: {critical_issue_count}",
         f"- High severity issues: {high_severity_issue_count}",
+        f"- Cohort gate: {cohort_gate['status']}",
+        f"- Cohort reason: {cohort_gate['reason']}",
         f"- Ramp gate: {ramp_gate['status']}",
         f"- Ramp reason: {ramp_gate['reason']}",
         f"- Diff gate: {diff_gate['status']}",
@@ -376,6 +531,23 @@ def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) ->
         f"- Next action: {follow_up['next_action']}",
         f"- Next round: {follow_up['next_round_recommended'] or 'n/a'}",
     ]
+    if cohort_gate["status"] != "not-required":
+        lines.extend(
+            [
+                "",
+                "## Cohort Plan Gate",
+                "",
+                f"- Expected fixture id: {cohort_gate['expected_fixture_id'] or 'n/a'}",
+                f"- Expected planned sessions: {cohort_gate['expected_planned_sessions']}",
+                f"- Observed fixture sessions: {cohort_gate['observed_fixture_sessions']}",
+                f"- Expected persona counts: {cohort_gate['expected_persona_counts']}",
+                f"- Observed persona counts: {cohort_gate['observed_persona_counts']}",
+                f"- Expected scenario ids: {', '.join(cohort_gate['expected_scenario_ids']) if cohort_gate['expected_scenario_ids'] else 'n/a'}",
+                f"- Observed scenario ids: {', '.join(cohort_gate['observed_scenario_ids']) if cohort_gate['observed_scenario_ids'] else 'n/a'}",
+                f"- Expected trace ids: {', '.join(cohort_gate['expected_trace_ids']) if cohort_gate['expected_trace_ids'] else 'n/a'}",
+                f"- Observed trace ids: {', '.join(cohort_gate['observed_trace_ids']) if cohort_gate['observed_trace_ids'] else 'n/a'}",
+            ]
+        )
     if ramp_gate["status"] != "not-required":
         lines.extend(
             [
