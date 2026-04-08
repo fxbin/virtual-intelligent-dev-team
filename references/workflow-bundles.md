@@ -65,6 +65,7 @@ existing routing, planning, iteration, release, and Git rules.
   7. sync generated feedback rows back into the ledger and inspect blocker slices by persona and scenario
   8. expand sample size only when the previous round clears its gate
   9. log structured feedback and severity before release or rollout decisions
+  10. for `round-1+`, require the gate to consume fixture diff evidence before allowing expansion
 - Primary references:
   - `references/beta-validation-playbook.md`
   - `assets/beta-cohort-matrix-template.md`

@@ -21,6 +21,7 @@ Use this playbook when the request is about staged beta validation, internal tes
 9. Capture every feedback item with scenario, severity, and proposed action, and keep the raw event trace.
 10. Sync simulation evidence back into the feedback ledger before judging the round.
 11. Expand only when the previous round's exit criteria are explicitly met.
+12. For `round-1+`, block `advance` if the fixture diff is missing or still marked `review_required`.
 
 ## Required outputs
 
@@ -33,6 +34,7 @@ Use this playbook when the request is about staged beta validation, internal tes
 - feedback ledger with severity and action
 - machine-readable round report
 - blocker breakdown by persona and by scenario
+- diff-gated beta round decision
 - per-round exit criteria
 - expand / hold / escalate recommendation
 

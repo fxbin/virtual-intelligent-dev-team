@@ -46,6 +46,25 @@ def write_json(path: Path, payload: dict[str, object]) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
+def infer_previous_round_id(round_id: str) -> str | None:
+    prefix = "round-"
+    if not round_id.startswith(prefix):
+        return None
+    suffix = round_id[len(prefix) :]
+    if not suffix.isdigit():
+        return None
+    value = int(suffix)
+    if value <= 0:
+        return None
+    return f"{prefix}{value - 1}"
+
+
+def repo_root_from_run(run_path: Path) -> Path:
+    if run_path.parent.parent.name == "simulation-runs" and run_path.parent.parent.parent.name == ".skill-beta":
+        return run_path.parent.parent.parent.parent
+    return run_path.parent
+
+
 def compact_themes(themes: object) -> list[str]:
     if not isinstance(themes, list):
         return []
@@ -260,9 +279,24 @@ def summarize_beta_simulation(
         )
 
     if round_report_out is not None:
+        repo_root = repo_root_from_run(run_path.resolve())
+        round_id = str(run_payload["round_id"])
+        manifest_json = repo_root / ".skill-beta" / "fixture-previews" / round_id / "beta-simulation-manifest.json"
+        manifest_markdown = repo_root / ".skill-beta" / "fixture-previews" / round_id / "beta-simulation-manifest.md"
+        previous_round_id = infer_previous_round_id(round_id)
+        fixture_diff_json = None
+        fixture_diff_markdown = None
+        if previous_round_id is not None:
+            diff_dir = repo_root / ".skill-beta" / "fixture-diffs" / f"{previous_round_id}-to-{round_id}"
+            diff_json_candidate = diff_dir / "beta-simulation-diff.json"
+            diff_markdown_candidate = diff_dir / "beta-simulation-diff.md"
+            if diff_json_candidate.exists():
+                fixture_diff_json = diff_json_candidate
+            if diff_markdown_candidate.exists():
+                fixture_diff_markdown = diff_markdown_candidate
         round_report = {
             "schema_version": "beta-round-report/v1",
-            "round_id": str(run_payload["round_id"]),
+            "round_id": round_id,
             "phase": str(run_payload["phase"]),
             "goal": str(run_payload["objective"]),
             "participant_mode": "simulated users",
@@ -286,6 +320,10 @@ def summarize_beta_simulation(
                 "simulation_run_markdown": str(run_payload["markdown_report"]),
                 "simulation_summary_json": str(summary_out),
                 "feedback_ledger_markdown": str(feedback_ledger_out) if feedback_ledger_out is not None else "",
+                "fixture_manifest_json": str(manifest_json) if manifest_json.exists() else "",
+                "fixture_manifest_markdown": str(manifest_markdown) if manifest_markdown.exists() else "",
+                "fixture_diff_json": str(fixture_diff_json) if fixture_diff_json is not None else "",
+                "fixture_diff_markdown": str(fixture_diff_markdown) if fixture_diff_markdown is not None else "",
             },
             "blocker_breakdown": blocker_breakdown,
             "notes": (

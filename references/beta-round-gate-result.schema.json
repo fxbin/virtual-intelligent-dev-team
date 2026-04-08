@@ -52,6 +52,9 @@
     "follow_up": {
       "$ref": "#/$defs/follow_up"
     },
+    "diff_gate": {
+      "$ref": "#/$defs/diff_gate"
+    },
     "blocker_breakdown": {
       "$ref": "#/$defs/blocker_breakdown"
     },
@@ -197,6 +200,65 @@
             "string",
             "null"
           ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "diff_gate": {
+      "type": "object",
+      "required": [
+        "status",
+        "required_for_round",
+        "review_required",
+        "expansion_ok",
+        "reason",
+        "fixture_diff_json",
+        "fixture_diff_markdown",
+        "coverage_shift_summary",
+        "risk_notes"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "not-required",
+            "missing",
+            "passed",
+            "review-required"
+          ]
+        },
+        "required_for_round": {
+          "type": "boolean"
+        },
+        "review_required": {
+          "type": "boolean"
+        },
+        "expansion_ok": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "fixture_diff_json": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fixture_diff_markdown": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "coverage_shift_summary": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "risk_notes": {
+          "$ref": "#/$defs/string_array"
         }
       },
       "additionalProperties": false

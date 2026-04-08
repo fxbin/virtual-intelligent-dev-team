@@ -227,6 +227,13 @@ python scripts/init_beta_round_report.py --root . --round-id round-1 --phase "cl
 python scripts/evaluate_beta_round.py --report .skill-beta/reports/round-1.json --pretty
 ```
 
+- `evaluate_beta_round.py` 现在会消费 round report 里的 fixture diff 证据：
+  - `evidence_artifacts.fixture_diff_json`
+  - `evidence_artifacts.fixture_diff_markdown`
+- 对 `round-1+`：
+  - 缺少 diff 证据会直接阻止 `advance`
+  - diff 标记 `review_required` 也会阻止扩量
+
 ## 五、技术治理资产
 
 模板：

@@ -177,6 +177,18 @@
         },
         "feedback_ledger_markdown": {
           "type": "string"
+        },
+        "fixture_manifest_json": {
+          "type": "string"
+        },
+        "fixture_manifest_markdown": {
+          "type": "string"
+        },
+        "fixture_diff_json": {
+          "type": "string"
+        },
+        "fixture_diff_markdown": {
+          "type": "string"
         }
       },
       "additionalProperties": false

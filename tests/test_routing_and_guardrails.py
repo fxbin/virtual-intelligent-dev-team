@@ -4871,6 +4871,13 @@ class ProjectMemoryInitTests(unittest.TestCase):
     def test_summarize_beta_simulation_can_write_round_report(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
+            beta_simulation_init.init_beta_simulation(
+                root=root,
+                round_id="round-0",
+                phase="pre-build concept smoke",
+                objective="validate the promise before implementation hardens",
+                overwrite=False,
+            )
             init_result = beta_simulation_init.init_beta_simulation(
                 root=root,
                 round_id="round-1",
@@ -4897,6 +4904,9 @@ class ProjectMemoryInitTests(unittest.TestCase):
             response_contract.validate_beta_round_report(round_report_payload)
             self.assertEqual("round-1", round_report_payload["round_id"])
             self.assertIn("blocker_breakdown", round_report_payload)
+            self.assertIn("evidence_artifacts", round_report_payload)
+            self.assertTrue(round_report_payload["evidence_artifacts"]["fixture_manifest_json"])
+            self.assertTrue(round_report_payload["evidence_artifacts"]["fixture_diff_json"])
             ledger_markdown = Path(summary_result["feedback_ledger_out"]).read_text(encoding="utf-8")
             self.assertIn("## Generated Entries", ledger_markdown)
             self.assertIn("| round-1 |", ledger_markdown)
@@ -4906,6 +4916,48 @@ class ProjectMemoryInitTests(unittest.TestCase):
             root = Path(tmp)
             report = root / ".skill-beta" / "reports" / "round-1.json"
             report.parent.mkdir(parents=True, exist_ok=True)
+            diff_dir = root / ".skill-beta" / "fixture-diffs" / "round-0-to-round-1"
+            diff_dir.mkdir(parents=True, exist_ok=True)
+            diff_payload = {
+                "schema_version": "beta-simulation-diff/v1",
+                "generated_at": "2026-04-08T12:00:00Z",
+                "skill_name": "virtual-intelligent-dev-team",
+                "previous_round_id": "round-0",
+                "current_round_id": "round-1",
+                "previous_manifest_path": str(root / ".skill-beta" / "fixture-previews" / "round-0" / "beta-simulation-manifest.json"),
+                "current_manifest_path": str(root / ".skill-beta" / "fixture-previews" / "round-1" / "beta-simulation-manifest.json"),
+                "previous_session_count": 3,
+                "current_session_count": 5,
+                "session_count_delta": 2,
+                "added_personas": [],
+                "removed_personas": [],
+                "added_scenarios": [],
+                "removed_scenarios": [],
+                "added_traces": [],
+                "removed_traces": [],
+                "new_session_matrix": [],
+                "coverage_shift_summary": {
+                    "previous_persona_count": 3,
+                    "current_persona_count": 4,
+                    "previous_scenario_count": 3,
+                    "current_scenario_count": 4,
+                    "previous_trace_count": 3,
+                    "current_trace_count": 4,
+                    "new_session_matrix_count": 0,
+                    "expansion_mode": "expanded",
+                },
+                "risk_notes": ["Coverage expanded while preserving the previous baseline."],
+                "expansion_ok": True,
+                "review_required": False,
+                "json_report": str(diff_dir / "beta-simulation-diff.json"),
+                "markdown_report": str(diff_dir / "beta-simulation-diff.md"),
+            }
+            response_contract.validate_beta_simulation_diff(diff_payload)
+            (diff_dir / "beta-simulation-diff.json").write_text(
+                json.dumps(diff_payload, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
+            (diff_dir / "beta-simulation-diff.md").write_text("# Diff\n", encoding="utf-8")
             payload = {
                 "schema_version": "beta-round-report/v1",
                 "round_id": "round-1",
@@ -4926,6 +4978,16 @@ class ProjectMemoryInitTests(unittest.TestCase):
                     "max_blocker_issue_count": 0,
                     "max_critical_issue_count": 0,
                 },
+                "evidence_artifacts": {
+                    "simulation_run_json": str(root / ".skill-beta" / "simulation-runs" / "round-1" / "beta-simulation-run.json"),
+                    "simulation_run_markdown": str(root / ".skill-beta" / "simulation-runs" / "round-1" / "beta-simulation-run.md"),
+                    "simulation_summary_json": str(root / ".skill-beta" / "simulation-runs" / "round-1" / "beta-simulation-summary.json"),
+                    "feedback_ledger_markdown": str(root / ".skill-beta" / "feedback-ledger.md"),
+                    "fixture_manifest_json": str(root / ".skill-beta" / "fixture-previews" / "round-1" / "beta-simulation-manifest.json"),
+                    "fixture_manifest_markdown": str(root / ".skill-beta" / "fixture-previews" / "round-1" / "beta-simulation-manifest.md"),
+                    "fixture_diff_json": str(diff_dir / "beta-simulation-diff.json"),
+                    "fixture_diff_markdown": str(diff_dir / "beta-simulation-diff.md"),
+                },
                 "notes": "",
             }
             report.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -4935,6 +4997,7 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertTrue(result["ok"])
             self.assertEqual("advance", result["decision"])
             self.assertEqual("round-2", result["follow_up"]["next_round_recommended"])
+            self.assertEqual("passed", result["diff_gate"]["status"])
             self.assertTrue(Path(result["json_report"]).exists())
             self.assertTrue(Path(result["markdown_report"]).exists())
             response_contract.validate_beta_round_gate_result(result)
@@ -4974,6 +5037,44 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertEqual("escalate", result["decision"])
             self.assertTrue(result["follow_up"]["release_governance_recommended"])
             self.assertIsNone(result["follow_up"]["next_round_recommended"])
+            self.assertEqual("missing", result["diff_gate"]["status"])
+            response_contract.validate_beta_round_gate_result(result)
+
+    def test_evaluate_beta_round_holds_when_fixture_diff_is_missing(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            report = root / ".skill-beta" / "reports" / "round-1.json"
+            report.parent.mkdir(parents=True, exist_ok=True)
+            payload = {
+                "schema_version": "beta-round-report/v1",
+                "round_id": "round-1",
+                "phase": "closed beta",
+                "goal": "validate the implemented slice",
+                "participant_mode": "seed users",
+                "planned_sample_size": 12,
+                "completed_sessions": 10,
+                "task_success_count": 9,
+                "blocker_issue_count": 0,
+                "critical_issue_count": 0,
+                "high_severity_issue_count": 1,
+                "top_feedback_themes": ["copy clarity"],
+                "exit_criteria": "no blocker-level failures remain",
+                "gate_thresholds": {
+                    "min_completed_sessions": 8,
+                    "min_success_rate": 0.8,
+                    "max_blocker_issue_count": 0,
+                    "max_critical_issue_count": 0,
+                },
+                "notes": "",
+            }
+            report.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+            result = beta_round_evaluator.evaluate_beta_round(report_path=report)
+
+            self.assertFalse(result["ok"])
+            self.assertEqual("hold", result["decision"])
+            self.assertEqual("missing", result["diff_gate"]["status"])
+            self.assertIn("fixture diff", result["reason"].lower())
             response_contract.validate_beta_round_gate_result(result)
 
     def test_evaluate_beta_round_preserves_blocker_breakdown(self) -> None:
@@ -4981,6 +5082,47 @@ class ProjectMemoryInitTests(unittest.TestCase):
             root = Path(tmp)
             report = root / ".skill-beta" / "reports" / "round-1.json"
             report.parent.mkdir(parents=True, exist_ok=True)
+            diff_dir = root / ".skill-beta" / "fixture-diffs" / "round-0-to-round-1"
+            diff_dir.mkdir(parents=True, exist_ok=True)
+            diff_payload = {
+                "schema_version": "beta-simulation-diff/v1",
+                "generated_at": "2026-04-08T12:00:00Z",
+                "skill_name": "virtual-intelligent-dev-team",
+                "previous_round_id": "round-0",
+                "current_round_id": "round-1",
+                "previous_manifest_path": str(root / ".skill-beta" / "fixture-previews" / "round-0" / "beta-simulation-manifest.json"),
+                "current_manifest_path": str(root / ".skill-beta" / "fixture-previews" / "round-1" / "beta-simulation-manifest.json"),
+                "previous_session_count": 4,
+                "current_session_count": 6,
+                "session_count_delta": 2,
+                "added_personas": [],
+                "removed_personas": [],
+                "added_scenarios": [],
+                "removed_scenarios": [],
+                "added_traces": [],
+                "removed_traces": [],
+                "new_session_matrix": [],
+                "coverage_shift_summary": {
+                    "previous_persona_count": 3,
+                    "current_persona_count": 4,
+                    "previous_scenario_count": 3,
+                    "current_scenario_count": 4,
+                    "previous_trace_count": 3,
+                    "current_trace_count": 4,
+                    "new_session_matrix_count": 0,
+                    "expansion_mode": "expanded",
+                },
+                "risk_notes": ["Coverage expanded while preserving the previous baseline."],
+                "expansion_ok": True,
+                "review_required": False,
+                "json_report": str(diff_dir / "beta-simulation-diff.json"),
+                "markdown_report": str(diff_dir / "beta-simulation-diff.md"),
+            }
+            (diff_dir / "beta-simulation-diff.json").write_text(
+                json.dumps(diff_payload, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
+            (diff_dir / "beta-simulation-diff.md").write_text("# Diff\n", encoding="utf-8")
             payload = {
                 "schema_version": "beta-round-report/v1",
                 "round_id": "round-1",
@@ -5003,10 +5145,14 @@ class ProjectMemoryInitTests(unittest.TestCase):
                 },
                 "source_simulation_run": ".skill-beta/simulation-runs/round-1/beta-simulation-run.json",
                 "evidence_artifacts": {
-                    "simulation_run_json": ".skill-beta/simulation-runs/round-1/beta-simulation-run.json",
-                    "simulation_run_markdown": ".skill-beta/simulation-runs/round-1/beta-simulation-run.md",
-                    "simulation_summary_json": ".skill-beta/simulation-runs/round-1/beta-simulation-summary.json",
-                    "feedback_ledger_markdown": ".skill-beta/feedback-ledger.md"
+                    "simulation_run_json": str(root / ".skill-beta" / "simulation-runs" / "round-1" / "beta-simulation-run.json"),
+                    "simulation_run_markdown": str(root / ".skill-beta" / "simulation-runs" / "round-1" / "beta-simulation-run.md"),
+                    "simulation_summary_json": str(root / ".skill-beta" / "simulation-runs" / "round-1" / "beta-simulation-summary.json"),
+                    "feedback_ledger_markdown": str(root / ".skill-beta" / "feedback-ledger.md"),
+                    "fixture_manifest_json": str(root / ".skill-beta" / "fixture-previews" / "round-1" / "beta-simulation-manifest.json"),
+                    "fixture_manifest_markdown": str(root / ".skill-beta" / "fixture-previews" / "round-1" / "beta-simulation-manifest.md"),
+                    "fixture_diff_json": str(diff_dir / "beta-simulation-diff.json"),
+                    "fixture_diff_markdown": str(diff_dir / "beta-simulation-diff.md")
                 },
                 "blocker_breakdown": {
                     "by_persona": [
@@ -5040,8 +5186,10 @@ class ProjectMemoryInitTests(unittest.TestCase):
 
             self.assertEqual("hold", result["decision"])
             self.assertIn("blocker_breakdown", result)
+            self.assertEqual("passed", result["diff_gate"]["status"])
             self.assertEqual("Edge-Case Breaker", result["blocker_breakdown"]["by_persona"][0]["label"])
             markdown = Path(result["markdown_report"]).read_text(encoding="utf-8")
+            self.assertIn("## Fixture Diff Gate", markdown)
             self.assertIn("## Blocker Breakdown By Persona", markdown)
             self.assertIn("## Blocker Breakdown By Scenario", markdown)
 

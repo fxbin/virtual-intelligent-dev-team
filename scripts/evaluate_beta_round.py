@@ -41,6 +41,38 @@ def now_iso() -> str:
     return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
+def infer_previous_round_id(round_id: str) -> str | None:
+    prefix = "round-"
+    if not round_id.startswith(prefix):
+        return None
+    suffix = round_id[len(prefix) :]
+    if not suffix.isdigit():
+        return None
+    value = int(suffix)
+    if value <= 0:
+        return None
+    return f"{prefix}{value - 1}"
+
+
+def load_fixture_diff(diff_path: Path) -> dict[str, object]:
+    with diff_path.open("r", encoding="utf-8") as file:
+        payload = json.load(file)
+    if not isinstance(payload, dict):
+        raise RuntimeError("beta simulation diff must be a JSON object")
+    response_contract.validate_beta_simulation_diff(payload)
+    return payload
+
+
+def resolve_report_relative_path(report_path: Path, raw_path: str) -> Path:
+    path = Path(raw_path)
+    if path.is_absolute():
+        return path
+    report_relative = (report_path.parent / path).resolve()
+    if report_relative.exists():
+        return report_relative
+    return path.resolve()
+
+
 def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) -> dict[str, object]:
     report = load_report(report_path)
     round_id = str(report["round_id"])
@@ -60,6 +92,9 @@ def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) ->
     blocker_breakdown = report.get("blocker_breakdown")
     if not isinstance(blocker_breakdown, dict):
         blocker_breakdown = None
+    evidence_artifacts = report.get("evidence_artifacts")
+    if not isinstance(evidence_artifacts, dict):
+        evidence_artifacts = {}
     success_rate = (
         float(task_success_count) / float(completed_sessions) if completed_sessions > 0 else 0.0
     )
@@ -68,6 +103,49 @@ def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) ->
     min_success_rate = float(thresholds.get("min_success_rate", 0.8))
     max_blocker_issue_count = int(thresholds.get("max_blocker_issue_count", 0))
     max_critical_issue_count = int(thresholds.get("max_critical_issue_count", 0))
+    previous_round_id = infer_previous_round_id(round_id)
+    diff_required_for_round = previous_round_id is not None
+    fixture_diff_json_raw = str(evidence_artifacts.get("fixture_diff_json", "")).strip()
+    fixture_diff_markdown_raw = str(evidence_artifacts.get("fixture_diff_markdown", "")).strip()
+    diff_gate = {
+        "status": "not-required",
+        "required_for_round": diff_required_for_round,
+        "review_required": False,
+        "expansion_ok": True,
+        "reason": "Diff evidence is not required for the first beta round.",
+        "fixture_diff_json": fixture_diff_json_raw or None,
+        "fixture_diff_markdown": fixture_diff_markdown_raw or None,
+        "coverage_shift_summary": None,
+        "risk_notes": [],
+    }
+    if diff_required_for_round:
+        if fixture_diff_json_raw == "":
+            diff_gate.update(
+                {
+                    "status": "missing",
+                    "expansion_ok": False,
+                    "reason": "Round expansion requires a round-to-round fixture diff before the gate can advance.",
+                }
+            )
+        else:
+            diff_payload = load_fixture_diff(resolve_report_relative_path(report_path, fixture_diff_json_raw))
+            diff_review_required = bool(diff_payload.get("review_required"))
+            diff_expansion_ok = bool(diff_payload.get("expansion_ok"))
+            diff_gate.update(
+                {
+                    "status": "review-required" if diff_review_required or not diff_expansion_ok else "passed",
+                    "review_required": diff_review_required,
+                    "expansion_ok": diff_expansion_ok,
+                    "reason": (
+                        "Fixture drift requires explicit review before expansion."
+                        if diff_review_required or not diff_expansion_ok
+                        else "Fixture diff cleared expansion review."
+                    ),
+                    "fixture_diff_markdown": str(diff_payload.get("markdown_report") or fixture_diff_markdown_raw or "") or None,
+                    "coverage_shift_summary": diff_payload.get("coverage_shift_summary"),
+                    "risk_notes": [str(item) for item in diff_payload.get("risk_notes", []) if str(item).strip()],
+                }
+            )
 
     if critical_issue_count > max_critical_issue_count:
         decision = "escalate"
@@ -77,6 +155,15 @@ def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) ->
             "continue_beta": False,
             "release_governance_recommended": True,
             "next_round_recommended": None,
+        }
+    elif diff_required_for_round and diff_gate["status"] in {"missing", "review-required"}:
+        decision = "hold"
+        reason = str(diff_gate["reason"])
+        follow_up = {
+            "next_action": "hold expansion, review the fixture diff, and resolve coverage drift before another beta round",
+            "continue_beta": False,
+            "release_governance_recommended": False,
+            "next_round_recommended": round_id,
         }
     elif (
         completed_sessions < min_completed_sessions
@@ -130,6 +217,7 @@ def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) ->
             "max_critical_issue_count": max_critical_issue_count,
         },
         "follow_up": follow_up,
+        "diff_gate": diff_gate,
         "json_report": "",
         "markdown_report": "",
     }
@@ -156,9 +244,29 @@ def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) ->
         f"- Blocker issues: {blocker_issue_count}",
         f"- Critical issues: {critical_issue_count}",
         f"- High severity issues: {high_severity_issue_count}",
+        f"- Diff gate: {diff_gate['status']}",
+        f"- Diff reason: {diff_gate['reason']}",
         f"- Next action: {follow_up['next_action']}",
         f"- Next round: {follow_up['next_round_recommended'] or 'n/a'}",
     ]
+    if isinstance(diff_gate.get("coverage_shift_summary"), dict):
+        coverage_shift = diff_gate["coverage_shift_summary"]
+        lines.extend(
+            [
+                "",
+                "## Fixture Diff Gate",
+                "",
+                f"- Expansion mode: {coverage_shift.get('expansion_mode')}",
+                f"- New session matrix count: {coverage_shift.get('new_session_matrix_count')}",
+            ]
+        )
+        risk_notes = diff_gate.get("risk_notes", [])
+        if isinstance(risk_notes, list) and risk_notes:
+            lines.append("")
+            lines.append("### Diff Risk Notes")
+            lines.append("")
+            for item in risk_notes:
+                lines.append(f"- {item}")
     if blocker_breakdown is not None:
         by_persona = blocker_breakdown.get("by_persona", [])
         by_scenario = blocker_breakdown.get("by_scenario", [])
