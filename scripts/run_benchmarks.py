@@ -414,6 +414,9 @@ def evaluate_evals(config: dict[str, object]) -> dict[str, object]:
             summary = item.get("release_gate_summary", {})
             if not isinstance(summary, dict):
                 raise RuntimeError(f"release_gate eval {item.get('id')} must provide release_gate_summary object")
+            beta_gate_config = item.get("release_gate_beta")
+            if beta_gate_config is not None and not isinstance(beta_gate_config, dict):
+                raise RuntimeError(f"release_gate eval {item.get('id')} must provide release_gate_beta object when present")
             release_gate_module = load_module(
                 f"virtual_team_release_gate_benchmark_eval_{item.get('id')}",
                 RELEASE_GATE_SCRIPT,
@@ -445,9 +448,57 @@ def evaluate_evals(config: dict[str, object]) -> dict[str, object]:
                     fixture_payload["offline_drill_run"] = {"markdown_report": str(offline_report)}
                 fixture_path = temp_root / "benchmark-fixture.json"
                 fixture_path.write_text(json.dumps(fixture_payload, ensure_ascii=False, indent=2), encoding="utf-8")
+                beta_gate_result = None
+                if isinstance(beta_gate_config, dict):
+                    beta_decision = str(beta_gate_config.get("decision", "")).strip() or "hold"
+                    beta_round_id = str(beta_gate_config.get("round_id", "")).strip() or "round-02"
+                    beta_result_dir = temp_root / "beta-round-decisions" / beta_round_id
+                    beta_result_dir.mkdir(parents=True, exist_ok=True)
+                    beta_result_path = beta_result_dir / "beta-round-gate-result.json"
+                    beta_report_path = temp_root / "beta-reports" / f"{beta_round_id}.json"
+                    beta_report_path.parent.mkdir(parents=True, exist_ok=True)
+                    beta_report_path.write_text("{}", encoding="utf-8")
+                    beta_markdown_path = beta_result_dir / "beta-round-gate-report.md"
+                    beta_markdown_path.write_text("# Beta Gate Report\n", encoding="utf-8")
+                    beta_payload = {
+                        "generated_at": "2026-04-08T12:00:00Z",
+                        "skill_name": "virtual-intelligent-dev-team",
+                        "ok": beta_decision == "advance",
+                        "decision": beta_decision,
+                        "reason": str(beta_gate_config.get("reason", "beta gate fixture")),
+                        "round_id": beta_round_id,
+                        "report_path": str(beta_report_path),
+                        "observed": {
+                            "planned_sample_size": 12,
+                            "completed_sessions": 12,
+                            "success_rate": float(beta_gate_config.get("success_rate", 0.75 if beta_decision != "advance" else 0.92)),
+                            "blocker_issue_count": int(beta_gate_config.get("blocker_issue_count", 1 if beta_decision == "hold" else 0)),
+                            "critical_issue_count": int(beta_gate_config.get("critical_issue_count", 1 if beta_decision == "escalate" else 0)),
+                            "high_severity_issue_count": int(beta_gate_config.get("high_severity_issue_count", 1 if beta_decision != "advance" else 0)),
+                            "top_feedback_themes": beta_gate_config.get("top_feedback_themes", ["beta regression"]),
+                        },
+                        "thresholds": {
+                            "min_completed_sessions": 10,
+                            "min_success_rate": 0.8,
+                            "max_blocker_issue_count": 0,
+                            "max_critical_issue_count": 0,
+                        },
+                        "follow_up": {
+                            "next_action": str(beta_gate_config.get("next_action", "hold expansion and resolve beta blockers")),
+                            "continue_beta": beta_decision == "advance",
+                            "release_governance_recommended": bool(beta_gate_config.get("release_governance_recommended", beta_decision == "escalate")),
+                            "next_round_recommended": beta_gate_config.get("next_round_recommended", None if beta_decision == "escalate" else beta_round_id),
+                        },
+                        "json_report": str(beta_result_path),
+                        "markdown_report": str(beta_markdown_path),
+                    }
+                    response_contract.validate_beta_round_gate_result(beta_payload)
+                    beta_result_path.write_text(json.dumps(beta_payload, ensure_ascii=False, indent=2), encoding="utf-8")
+                    beta_gate_result = beta_result_path
                 result = release_gate_module.run_release_gate(
                     output_dir=temp_root / "release-gate-output",
                     benchmark_fixture=fixture_path,
+                    beta_gate_result=beta_gate_result,
                 )
             extra_payloads["release_gate_json"] = result
         else:

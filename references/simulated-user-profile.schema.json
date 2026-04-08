@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:simulated-user-profile.schema",
+  "title": "Virtual Intelligent Dev Team Simulated User Profile",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "profile_id",
+    "display_name",
+    "archetype",
+    "primary_goal",
+    "tool_literacy",
+    "domain_familiarity",
+    "risk_tolerance",
+    "workflow_preference",
+    "failure_sensitivity",
+    "feedback_style",
+    "preferred_tasks",
+    "notes"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "simulated-user-profile/v1"
+    },
+    "profile_id": {
+      "type": "string"
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "archetype": {
+      "type": "string"
+    },
+    "primary_goal": {
+      "type": "string"
+    },
+    "tool_literacy": {
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "domain_familiarity": {
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "risk_tolerance": {
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "workflow_preference": {
+      "type": "string"
+    },
+    "failure_sensitivity": {
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "feedback_style": {
+      "enum": [
+        "brief",
+        "balanced",
+        "verbose"
+      ]
+    },
+    "preferred_tasks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

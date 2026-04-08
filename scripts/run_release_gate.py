@@ -19,9 +19,11 @@ BASELINE_SCRIPT = SCRIPT_DIR / "register_benchmark_baseline.py"
 ITERATION_LOOP_SCRIPT = SCRIPT_DIR / "run_iteration_loop.py"
 SYNC_PATTERNS_SCRIPT = SCRIPT_DIR / "sync_distilled_patterns.py"
 RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
+EVALUATE_BETA_ROUND_SCRIPT = SCRIPT_DIR / "evaluate_beta_round.py"
 DEFAULT_OUTPUT_DIR = SKILL_DIR / "evals" / "release-gate"
 DEFAULT_ITERATION_WORKSPACE = SKILL_DIR / ".skill-iterations"
 LABEL_SAFE_CHARS = re.compile(r"[^A-Za-z0-9._-]+")
+BETA_GATE_RESULT_FILENAME = "beta-round-gate-result.json"
 
 
 def load_module(name: str, path: Path):
@@ -38,6 +40,10 @@ baseline_registry = load_module("virtual_team_release_gate_baseline_registry", B
 iteration_loop = load_module("virtual_team_release_gate_iteration_loop", ITERATION_LOOP_SCRIPT)
 pattern_sync = load_module("virtual_team_release_gate_pattern_sync", SYNC_PATTERNS_SCRIPT)
 response_contract = load_module("virtual_team_release_gate_response_contract", RESPONSE_CONTRACT_SCRIPT)
+beta_round_evaluator = load_module(
+    "virtual_team_release_gate_beta_round_evaluator",
+    EVALUATE_BETA_ROUND_SCRIPT,
+)
 
 
 def load_json(path: Path) -> dict[str, object]:
@@ -80,7 +86,153 @@ def load_benchmark_fixture(path: Path) -> dict[str, object]:
     return payload
 
 
-def blocker_specs(summary: dict[str, object]) -> list[dict[str, object]]:
+def load_beta_gate_result(path: Path) -> dict[str, object]:
+    payload = load_json(path)
+    response_contract.validate_beta_round_gate_result(payload)
+    return payload
+
+
+def find_latest_file(paths: list[Path]) -> Path | None:
+    if not paths:
+        return None
+    return max(paths, key=lambda item: (item.stat().st_mtime, str(item)))
+
+
+def resolve_beta_gate(
+    *,
+    beta_gate_result: Path | None,
+    beta_decision_dir: Path | None,
+    beta_report_dir: Path | None,
+) -> dict[str, object] | None:
+    if beta_gate_result is not None:
+        resolved = beta_gate_result.resolve()
+        if not resolved.exists():
+            raise RuntimeError(f"beta gate result does not exist: {resolved}")
+        payload = load_beta_gate_result(resolved)
+        return {
+            "source": "beta-gate-result",
+            "result": payload,
+        }
+
+    if beta_decision_dir is not None:
+        resolved_dir = beta_decision_dir.resolve()
+        if not resolved_dir.exists():
+            raise RuntimeError(f"beta decision directory does not exist: {resolved_dir}")
+        latest_result = find_latest_file(list(resolved_dir.rglob(BETA_GATE_RESULT_FILENAME)))
+        if latest_result is None:
+            raise RuntimeError(f"no beta gate results found under: {resolved_dir}")
+        payload = load_beta_gate_result(latest_result)
+        return {
+            "source": "beta-decision-dir",
+            "result": payload,
+        }
+
+    if beta_report_dir is not None:
+        resolved_dir = beta_report_dir.resolve()
+        if not resolved_dir.exists():
+            raise RuntimeError(f"beta report directory does not exist: {resolved_dir}")
+
+        latest_report: Path | None = None
+        for candidate in resolved_dir.rglob("*.json"):
+            if candidate.name == BETA_GATE_RESULT_FILENAME:
+                continue
+            try:
+                payload = load_json(candidate)
+                response_contract.validate_beta_round_report(payload)
+            except Exception:
+                continue
+            latest_report = candidate if latest_report is None else find_latest_file([latest_report, candidate])
+        if latest_report is None:
+            raise RuntimeError(f"no beta round reports found under: {resolved_dir}")
+
+        payload = beta_round_evaluator.evaluate_beta_round(report_path=latest_report.resolve())
+        return {
+            "source": "beta-report-dir",
+            "result": payload,
+        }
+
+    return None
+
+
+def build_beta_gate_summary(beta_gate: dict[str, object] | None) -> dict[str, object]:
+    if beta_gate is None:
+        return {
+            "beta_gate_enabled": False,
+            "beta_gate_passed": None,
+            "beta_gate_decision": None,
+            "beta_gate_round_id": None,
+        }
+
+    result = beta_gate.get("result", {})
+    if not isinstance(result, dict):
+        result = {}
+    return {
+        "beta_gate_enabled": True,
+        "beta_gate_passed": bool(result.get("ok")),
+        "beta_gate_decision": str(result.get("decision", "")).strip() or None,
+        "beta_gate_round_id": str(result.get("round_id", "")).strip() or None,
+    }
+
+
+def beta_gate_snapshot(beta_gate: dict[str, object] | None) -> dict[str, object] | None:
+    if beta_gate is None:
+        return None
+    result = beta_gate.get("result", {})
+    if not isinstance(result, dict):
+        result = {}
+    follow_up = result.get("follow_up", {})
+    if not isinstance(follow_up, dict):
+        follow_up = {}
+    return {
+        "enabled": True,
+        "source": str(beta_gate.get("source", "beta-gate-result")),
+        "generated_at": result.get("generated_at"),
+        "ok": bool(result.get("ok")),
+        "decision": result.get("decision"),
+        "round_id": result.get("round_id"),
+        "reason": result.get("reason"),
+        "report_path": result.get("report_path"),
+        "json_report": result.get("json_report"),
+        "markdown_report": result.get("markdown_report"),
+        "release_governance_recommended": bool(follow_up.get("release_governance_recommended")),
+    }
+
+
+def benchmark_checks_passed(summary: dict[str, object]) -> bool:
+    return bool(summary.get("tests_passed")) and bool(summary.get("validator_passed")) and bool(
+        summary.get("evals_passed")
+    ) and (not bool(summary.get("offline_drill_enabled")) or bool(summary.get("offline_drill_passed")))
+
+
+def derive_release_gate_reason(
+    *,
+    summary: dict[str, object],
+    beta_gate: dict[str, object] | None,
+) -> str:
+    beta_snapshot = beta_gate_snapshot(beta_gate)
+    benchmark_ok = benchmark_checks_passed(summary)
+    if beta_snapshot is not None and not bool(beta_snapshot.get("ok")) and benchmark_ok:
+        return (
+            f"latest beta round gate is `{beta_snapshot.get('decision')}`"
+            f" for `{beta_snapshot.get('round_id')}`"
+        )
+    if not summary.get("tests_passed"):
+        return "unit tests failed"
+    if not summary.get("validator_passed"):
+        return "semantic regression validator failed"
+    if not summary.get("evals_passed"):
+        return "eval prompts regressed"
+    if summary.get("offline_drill_enabled") and not summary.get("offline_drill_passed"):
+        return "offline loop drill failed"
+    if beta_snapshot is not None and not bool(beta_snapshot.get("ok")):
+        return (
+            f"latest beta round gate is `{beta_snapshot.get('decision')}`"
+            f" for `{beta_snapshot.get('round_id')}`"
+        )
+    return "all benchmark, offline drill, and beta gates passed"
+
+
+def blocker_specs(summary: dict[str, object], beta_gate: dict[str, object] | None = None) -> list[dict[str, object]]:
     specs: list[dict[str, object]] = []
     if not bool(summary.get("tests_passed")):
         specs.append(
@@ -116,6 +268,24 @@ def blocker_specs(summary: dict[str, object]) -> list[dict[str, object]]:
                 "label": "offline loop drill failed",
                 "objective_hint": "修复 rollback / pivot / resume 闭环问题，再重新验收",
                 "evidence_required": "python scripts/run_offline_loop_drill.py --workspace .tmp-offline-loop-drill --pretty",
+            }
+        )
+    beta_snapshot = beta_gate_snapshot(beta_gate)
+    if beta_snapshot is not None and not bool(beta_snapshot.get("ok")):
+        decision = str(beta_snapshot.get("decision", "hold")).strip() or "hold"
+        round_id = str(beta_snapshot.get("round_id", "latest-round")).strip() or "latest-round"
+        if decision == "escalate":
+            label = f"beta round {round_id} escalated"
+            objective_hint = "冻结发布扩张，进入技术治理处理 critical issue，直到 beta gate 回到 advance 再重新验收"
+        else:
+            label = f"beta round {round_id} is still on hold"
+            objective_hint = "修复 beta blocker 主题并重跑当前轮次，拿到 advance 后再进入 release gate"
+        specs.append(
+            {
+                "id": "beta-round-gate",
+                "label": label,
+                "objective_hint": objective_hint,
+                "evidence_required": f"python scripts/evaluate_beta_round.py --report .skill-beta/reports/{round_id}.json --pretty",
             }
         )
     return specs
@@ -288,6 +458,21 @@ def blocker_profile(blocker_id: str) -> dict[str, object]:
                 "python scripts/run_release_gate.py --output-dir evals/release-gate --pretty",
             ],
         },
+        "beta-round-gate": {
+            "focus": "repair staged beta blockers and round evidence so release expansion can resume only after the latest beta round advances",
+            "target_files": [
+                "references/beta-validation-playbook.md",
+                "references/release-gate-playbook.md",
+                "scripts/init_beta_round_report.py",
+                "scripts/evaluate_beta_round.py",
+                "tests/test_routing_and_guardrails.py",
+            ],
+            "preferred_mutation_ops": ["write_file", "replace_text", "json_set"],
+            "acceptance_commands": [
+                "python scripts/evaluate_beta_round.py --report .skill-beta/reports/<round-id>.json --pretty",
+                "python scripts/run_release_gate.py --output-dir evals/release-gate --beta-decision-dir .skill-beta/round-decisions --pretty",
+            ],
+        },
     }
     return profiles.get(
         blocker_id,
@@ -418,7 +603,10 @@ def blocker_catalog_keywords(blocker: dict[str, object], brief: dict[str, object
 
 def render_hold_benchmark_signals(brief: dict[str, object]) -> list[str]:
     benchmark_context = brief.get("benchmark_context", {})
-    if not isinstance(benchmark_context, dict) or len(benchmark_context) == 0:
+    beta_context = brief.get("beta_gate_context", {})
+    if not isinstance(beta_context, dict):
+        beta_context = {}
+    if (not isinstance(benchmark_context, dict) or len(benchmark_context) == 0) and len(beta_context) == 0:
         return []
 
     lines = [
@@ -454,6 +642,14 @@ def render_hold_benchmark_signals(brief: dict[str, object]) -> list[str]:
     if isinstance(offline_loop_drill, dict) and offline_loop_drill.get("enabled") is not None:
         lines.append(f"- Offline loop drill passed: `{offline_loop_drill.get('passed')}`")
         report = str(offline_loop_drill.get("markdown_report", "")).strip()
+        if report != "":
+            lines.append(f"  - report: `{report}`")
+
+    if beta_context:
+        lines.append(f"- Beta gate decision: `{beta_context.get('decision')}`")
+        lines.append(f"  - round: `{beta_context.get('round_id')}`")
+        lines.append(f"  - source: `{beta_context.get('source')}`")
+        report = str(beta_context.get("json_report", "")).strip()
         if report != "":
             lines.append(f"  - report: `{report}`")
 
@@ -975,12 +1171,14 @@ def build_hold_follow_up(
     benchmark_json: str,
     benchmark_markdown: str,
     offline_drill_report: str | None,
+    beta_gate: dict[str, object] | None,
     iteration_workspace: Path | None,
     auto_run_next_iteration_on_hold: bool,
     hold_loop_max_rounds: int,
 ) -> dict[str, object]:
-    blockers = blocker_specs(summary)
+    blockers = blocker_specs(summary, beta_gate)
     workspace = iteration_workspace or DEFAULT_ITERATION_WORKSPACE
+    beta_snapshot = beta_gate_snapshot(beta_gate)
     blocker_labels = [str(item["label"]) for item in blockers]
     objective_hints = [str(item["objective_hint"]) for item in blockers]
     evidence_required = [str(item["evidence_required"]) for item in blockers]
@@ -999,6 +1197,7 @@ def build_hold_follow_up(
         "objective_hints": objective_hints or ["按失败门禁逐项修复后再重新验收"],
         "blockers": blockers,
         "benchmark_context": build_benchmark_context(benchmark_result),
+        "beta_gate_context": beta_gate_snapshot(beta_gate),
         "hold_benchmark_command_template": (
             str(benchmark_result.get("hold_benchmark_command_template", "")).strip() or None
         ),
@@ -1015,6 +1214,11 @@ def build_hold_follow_up(
         "required_evidence": evidence_required
         + ["重新运行 formal release gate，并得到 ship 决策"],
     }
+    if beta_snapshot is not None:
+        brief["recommended_commands"][-1] = (
+            f"python scripts/run_release_gate.py --output-dir {output_dir} "
+            f"--iteration-workspace {workspace} --beta-decision-dir .skill-beta/round-decisions --pretty"
+        )
     json_path = output_dir / "next-iteration-brief.json"
     markdown_path = output_dir / "next-iteration-brief.md"
     write_json(json_path, brief)
@@ -1058,6 +1262,7 @@ def build_hold_follow_up(
             f"- Benchmark JSON: `{benchmark_json}`",
             f"- Benchmark Markdown: `{benchmark_markdown}`",
             f"- Offline drill report: `{offline_drill_report}`",
+            f"- Beta gate JSON: `{beta_snapshot.get('json_report') if beta_snapshot else None}`",
             "",
         ]
     )
@@ -1087,9 +1292,11 @@ def build_ship_follow_up(
     output_dir: Path,
     benchmark_json: Path,
     benchmark_markdown: str,
+    beta_gate: dict[str, object] | None,
     release_label: str,
     iteration_workspace: Path | None,
 ) -> dict[str, object]:
+    beta_snapshot = beta_gate_snapshot(beta_gate)
     closure: dict[str, object] = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "source_gate": "release-gate",
@@ -1099,6 +1306,7 @@ def build_ship_follow_up(
         "release_label": release_label,
         "benchmark_report": str(benchmark_json),
         "benchmark_markdown": benchmark_markdown,
+        "beta_gate_report": beta_snapshot["json_report"] if beta_snapshot else None,
     }
     if iteration_workspace is not None:
         iteration_workspace.mkdir(parents=True, exist_ok=True)
@@ -1136,6 +1344,7 @@ def build_ship_follow_up(
         f"- Release label: `{closure['release_label']}`",
         f"- Benchmark JSON: `{closure['benchmark_report']}`",
         f"- Benchmark Markdown: `{closure['benchmark_markdown']}`",
+        f"- Beta gate JSON: `{closure.get('beta_gate_report')}`",
         "",
         "## Archive Actions",
         "",
@@ -1186,12 +1395,15 @@ def render_markdown(result: dict[str, object]) -> str:
         f"- Semantic regression: `{'PASS' if result['summary'].get('validator_passed') else 'FAIL'}`",
         f"- Eval prompts: `{'PASS' if result['summary'].get('evals_passed') else 'FAIL'}`",
         f"- Offline loop drill: `{'PASS' if result['summary'].get('offline_drill_passed') else 'FAIL'}`",
+        f"- Beta gate: `{'PASS' if result['summary'].get('beta_gate_passed') else 'SKIP' if result['summary'].get('beta_gate_passed') is None else 'FAIL'}`",
         "",
         "## Artifacts",
         "",
         f"- Benchmark JSON: `{result['benchmark_json']}`",
         f"- Benchmark Markdown: `{result['benchmark_markdown']}`",
         f"- Offline drill report: `{result.get('offline_drill_report')}`",
+        f"- Beta gate JSON: `{result.get('beta_gate', {}).get('json_report') if isinstance(result.get('beta_gate'), dict) else None}`",
+        f"- Beta gate Markdown: `{result.get('beta_gate', {}).get('markdown_report') if isinstance(result.get('beta_gate'), dict) else None}`",
         "",
         "## Decision",
         "",
@@ -1205,7 +1417,7 @@ def render_markdown(result: dict[str, object]) -> str:
             "",
             f"- Route evidence: {explanation_card.get('route_evidence', result['reason'])}",
             f"- Workflow source explanation: {explanation_card.get('workflow_source_explanation', 'Release gate is the active acceptance lane for this decision.')}",
-            f"- Gate status summary: tests=`{'PASS' if result['summary'].get('tests_passed') else 'FAIL'}`, validator=`{'PASS' if result['summary'].get('validator_passed') else 'FAIL'}`, evals=`{'PASS' if result['summary'].get('evals_passed') else 'FAIL'}`, offline-drill=`{'PASS' if result['summary'].get('offline_drill_passed') else 'FAIL'}`",
+            f"- Gate status summary: tests=`{'PASS' if result['summary'].get('tests_passed') else 'FAIL'}`, validator=`{'PASS' if result['summary'].get('validator_passed') else 'FAIL'}`, evals=`{'PASS' if result['summary'].get('evals_passed') else 'FAIL'}`, offline-drill=`{'PASS' if result['summary'].get('offline_drill_passed') else 'FAIL'}`, beta=`{'PASS' if result['summary'].get('beta_gate_passed') else 'SKIP' if result['summary'].get('beta_gate_passed') is None else 'FAIL'}`",
             "",
             "## Next Action",
             "",
@@ -1258,6 +1470,9 @@ def run_release_gate(
     auto_run_next_iteration_on_hold: bool = False,
     hold_loop_max_rounds: int = 3,
     benchmark_fixture: Path | None = None,
+    beta_gate_result: Path | None = None,
+    beta_decision_dir: Path | None = None,
+    beta_report_dir: Path | None = None,
 ) -> dict[str, object]:
     output_dir.mkdir(parents=True, exist_ok=True)
     benchmark_result = (
@@ -1270,25 +1485,26 @@ def run_release_gate(
             offline_drill_workspace=offline_drill_workspace,
         )
     )
-    summary = benchmark_result["summary"]
+    summary = dict(benchmark_result["summary"])
+    beta_gate = resolve_beta_gate(
+        beta_gate_result=beta_gate_result,
+        beta_decision_dir=beta_decision_dir,
+        beta_report_dir=beta_report_dir,
+    )
+    summary.update(build_beta_gate_summary(beta_gate))
+    summary["overall_passed"] = bool(summary.get("overall_passed")) and (
+        summary.get("beta_gate_passed") is not False
+    )
     ok = bool(summary.get("overall_passed"))
     decision = "ship" if ok else "hold"
-    if not summary.get("tests_passed"):
-        reason = "unit tests failed"
-    elif not summary.get("validator_passed"):
-        reason = "semantic regression validator failed"
-    elif not summary.get("evals_passed"):
-        reason = "eval prompts regressed"
-    elif not summary.get("offline_drill_passed"):
-        reason = "offline loop drill failed"
-    else:
-        reason = "all benchmark and offline drill gates passed"
+    reason = derive_release_gate_reason(summary=summary, beta_gate=beta_gate)
     resolved_release_label = normalize_label(release_label, "release-ready")
     follow_up = (
         build_ship_follow_up(
             output_dir=output_dir,
             benchmark_json=Path(benchmark_result["json_report"]).resolve(),
             benchmark_markdown=benchmark_result["markdown_report"],
+            beta_gate=beta_gate,
             release_label=resolved_release_label,
             iteration_workspace=iteration_workspace.resolve() if iteration_workspace else None,
         )
@@ -1301,6 +1517,7 @@ def run_release_gate(
             benchmark_json=benchmark_result["json_report"],
             benchmark_markdown=benchmark_result["markdown_report"],
             offline_drill_report=benchmark_result.get("offline_drill_run", {}).get("markdown_report"),
+            beta_gate=beta_gate,
             iteration_workspace=iteration_workspace.resolve() if iteration_workspace else None,
             auto_run_next_iteration_on_hold=auto_run_next_iteration_on_hold,
             hold_loop_max_rounds=hold_loop_max_rounds,
@@ -1319,12 +1536,14 @@ def run_release_gate(
         "benchmark_json": benchmark_result["json_report"],
         "benchmark_markdown": benchmark_result["markdown_report"],
         "offline_drill_report": benchmark_result.get("offline_drill_run", {}).get("markdown_report"),
+        "beta_gate": beta_gate_snapshot(beta_gate),
     }
     result["explanation_card"] = response_contract.build_release_gate_explanation_card(
         decision=decision,
         reason=reason,
         summary=summary,
         follow_up=follow_up if isinstance(follow_up, dict) else {},
+        beta_gate=result["beta_gate"] if isinstance(result.get("beta_gate"), dict) else None,
     )
     json_path = output_dir / "release-gate-results.json"
     markdown_path = output_dir / "release-gate-report.md"
@@ -1360,6 +1579,15 @@ def parse_args() -> argparse.Namespace:
         "--benchmark-fixture",
         help="Use a precomputed benchmark result JSON instead of running the benchmark suite (for drills/tests)",
     )
+    parser.add_argument("--beta-gate-result", help="Path to a beta round gate result JSON to enforce before ship.")
+    parser.add_argument(
+        "--beta-decision-dir",
+        help="Directory containing beta round gate results; the latest result by mtime is enforced before ship.",
+    )
+    parser.add_argument(
+        "--beta-report-dir",
+        help="Directory containing beta round reports; the latest valid report is evaluated and enforced before ship.",
+    )
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON summary to stdout")
     return parser.parse_args()
 
@@ -1375,6 +1603,9 @@ def main() -> None:
         auto_run_next_iteration_on_hold=args.auto_run_next_iteration_on_hold,
         hold_loop_max_rounds=args.hold_loop_max_rounds,
         benchmark_fixture=Path(args.benchmark_fixture).resolve() if args.benchmark_fixture else None,
+        beta_gate_result=Path(args.beta_gate_result).resolve() if args.beta_gate_result else None,
+        beta_decision_dir=Path(args.beta_decision_dir).resolve() if args.beta_decision_dir else None,
+        beta_report_dir=Path(args.beta_report_dir).resolve() if args.beta_report_dir else None,
     )
     stdout_payload = {
         "ok": result["ok"],
@@ -1387,6 +1618,7 @@ def main() -> None:
         "benchmark_json": result["benchmark_json"],
         "benchmark_markdown": result["benchmark_markdown"],
         "offline_drill_report": result["offline_drill_report"],
+        "beta_gate": result["beta_gate"],
     }
     if args.pretty:
         print(json.dumps(stdout_payload, ensure_ascii=False, indent=2))

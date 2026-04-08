@@ -52,6 +52,9 @@
     "follow_up": {
       "$ref": "#/$defs/follow_up"
     },
+    "blocker_breakdown": {
+      "$ref": "#/$defs/blocker_breakdown"
+    },
     "json_report": {
       "type": "string"
     },
@@ -194,6 +197,64 @@
             "string",
             "null"
           ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "breakdown_item": {
+      "type": "object",
+      "required": [
+        "label",
+        "session_count",
+        "blocker_issue_count",
+        "critical_issue_count",
+        "high_severity_issue_count",
+        "session_ids",
+        "top_feedback_themes"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "session_count": {
+          "type": "integer"
+        },
+        "blocker_issue_count": {
+          "type": "integer"
+        },
+        "critical_issue_count": {
+          "type": "integer"
+        },
+        "high_severity_issue_count": {
+          "type": "integer"
+        },
+        "session_ids": {
+          "$ref": "#/$defs/string_array"
+        },
+        "top_feedback_themes": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "blocker_breakdown": {
+      "type": "object",
+      "required": [
+        "by_persona",
+        "by_scenario"
+      ],
+      "properties": {
+        "by_persona": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/breakdown_item"
+          }
+        },
+        "by_scenario": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/breakdown_item"
+          }
         }
       },
       "additionalProperties": false

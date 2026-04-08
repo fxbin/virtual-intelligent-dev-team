@@ -30,6 +30,9 @@ INIT_PROJECT_MEMORY_SCRIPT = SKILL_DIR / "scripts" / "init_project_memory.py"
 INIT_PRODUCT_DELIVERY_SCRIPT = SKILL_DIR / "scripts" / "init_product_delivery.py"
 INIT_BETA_VALIDATION_SCRIPT = SKILL_DIR / "scripts" / "init_beta_validation.py"
 INIT_BETA_ROUND_REPORT_SCRIPT = SKILL_DIR / "scripts" / "init_beta_round_report.py"
+INIT_BETA_SIMULATION_SCRIPT = SKILL_DIR / "scripts" / "init_beta_simulation.py"
+RUN_BETA_SIMULATION_SCRIPT = SKILL_DIR / "scripts" / "run_beta_simulation.py"
+SUMMARIZE_BETA_SIMULATION_SCRIPT = SKILL_DIR / "scripts" / "summarize_beta_simulation.py"
 EVALUATE_BETA_ROUND_SCRIPT = SKILL_DIR / "scripts" / "evaluate_beta_round.py"
 INIT_TECHNICAL_GOVERNANCE_SCRIPT = SKILL_DIR / "scripts" / "init_technical_governance.py"
 GENERATE_RESPONSE_PACK_SCRIPT = SKILL_DIR / "scripts" / "generate_response_pack.py"
@@ -66,6 +69,9 @@ project_memory_init = load_module("virtual_intelligent_dev_team_project_memory_i
 product_delivery_init = load_module("virtual_intelligent_dev_team_product_delivery_init", INIT_PRODUCT_DELIVERY_SCRIPT)
 beta_validation_init = load_module("virtual_intelligent_dev_team_beta_validation_init", INIT_BETA_VALIDATION_SCRIPT)
 beta_round_report_init = load_module("virtual_intelligent_dev_team_beta_round_report_init", INIT_BETA_ROUND_REPORT_SCRIPT)
+beta_simulation_init = load_module("virtual_intelligent_dev_team_beta_simulation_init", INIT_BETA_SIMULATION_SCRIPT)
+beta_simulation_runner = load_module("virtual_intelligent_dev_team_beta_simulation_runner", RUN_BETA_SIMULATION_SCRIPT)
+beta_simulation_summary = load_module("virtual_intelligent_dev_team_beta_simulation_summary", SUMMARIZE_BETA_SIMULATION_SCRIPT)
 beta_round_evaluator = load_module("virtual_intelligent_dev_team_beta_round_evaluator", EVALUATE_BETA_ROUND_SCRIPT)
 technical_governance_init = load_module("virtual_intelligent_dev_team_technical_governance_init", INIT_TECHNICAL_GOVERNANCE_SCRIPT)
 response_pack = load_module("virtual_intelligent_dev_team_response_pack", GENERATE_RESPONSE_PACK_SCRIPT)
@@ -118,6 +124,54 @@ def make_tempdir():
     path = TMP_ROOT / f"tmp-{uuid4().hex}"
     path.mkdir(parents=True, exist_ok=False)
     yield str(path)
+
+
+def write_beta_gate_fixture(
+    root: Path,
+    *,
+    round_id: str,
+    decision: str,
+    reason: str,
+) -> Path:
+    output_dir = root / "round-decisions" / round_id
+    output_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "generated_at": "2026-04-08T12:00:00Z",
+        "skill_name": "virtual-intelligent-dev-team",
+        "ok": decision == "advance",
+        "decision": decision,
+        "reason": reason,
+        "round_id": round_id,
+        "report_path": str(root / "reports" / f"{round_id}.json"),
+        "observed": {
+            "planned_sample_size": 12,
+            "completed_sessions": 12,
+            "success_rate": 0.75 if decision != "advance" else 0.92,
+            "blocker_issue_count": 1 if decision == "hold" else 0,
+            "critical_issue_count": 1 if decision == "escalate" else 0,
+            "high_severity_issue_count": 1 if decision != "advance" else 0,
+            "top_feedback_themes": ["onboarding confusion"],
+        },
+        "thresholds": {
+            "min_completed_sessions": 10,
+            "min_success_rate": 0.8,
+            "max_blocker_issue_count": 0,
+            "max_critical_issue_count": 0,
+        },
+        "follow_up": {
+            "next_action": "hold expansion and resolve beta blockers" if decision != "advance" else "expand to next cohort",
+            "continue_beta": decision == "advance",
+            "release_governance_recommended": decision == "escalate",
+            "next_round_recommended": None if decision == "escalate" else ("round-03" if decision == "advance" else round_id),
+        },
+        "json_report": str(output_dir / "beta-round-gate-result.json"),
+        "markdown_report": str(output_dir / "beta-round-gate-report.md"),
+    }
+    fixture_path = output_dir / "beta-round-gate-result.json"
+    fixture_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    (output_dir / "beta-round-gate-report.md").write_text("# Beta Gate\n", encoding="utf-8")
+    response_contract.validate_beta_round_gate_result(payload)
+    return fixture_path
 
 
 class RoutingTests(unittest.TestCase):
@@ -488,10 +542,26 @@ class RoutingTests(unittest.TestCase):
             "python scripts/init_beta_validation.py --root . --pretty",
             result["workflow_bundle_bootstrap"]["commands"],
         )
+        self.assertIn(
+            "python scripts/init_beta_simulation.py --root . --round-id round-0 --phase \"pre-build concept smoke\" --objective \"<objective>\" --pretty",
+            result["workflow_bundle_bootstrap"]["commands"],
+        )
+        self.assertIn(
+            ".skill-beta/simulation-configs/round-0.json",
+            result["workflow_bundle_bootstrap"]["artifacts"],
+        )
         beta_plan = result["beta_validation_plan"]
         self.assertTrue(beta_plan["enabled"])
         self.assertTrue(beta_plan["simulation_allowed"])
         self.assertEqual(".skill-beta/feedback-ledger.md", beta_plan["feedback_anchor"])
+        self.assertEqual("assets/simulated-user-profile-template.json", beta_plan["simulation_profile_template"])
+        self.assertEqual(".skill-beta/personas", beta_plan["simulation_profile_dir"])
+        self.assertEqual("assets/beta-simulation-config-template.json", beta_plan["simulation_config_template"])
+        self.assertEqual(".skill-beta/simulation-configs", beta_plan["simulation_config_dir"])
+        self.assertEqual(".skill-beta/simulation-runs", beta_plan["simulation_run_dir"])
+        self.assertIn("python scripts/init_beta_simulation.py", beta_plan["simulation_init_command_template"])
+        self.assertIn("python scripts/run_beta_simulation.py", beta_plan["simulation_run_command_template"])
+        self.assertIn("python scripts/summarize_beta_simulation.py", beta_plan["simulation_summary_command_template"])
         self.assertEqual("assets/beta-round-report-template.json", beta_plan["report_template"])
         self.assertEqual(".skill-beta/reports", beta_plan["report_dir"])
         self.assertEqual(".skill-beta/round-decisions", beta_plan["decision_dir"])
@@ -4038,6 +4108,151 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
             self.assertIn("## Evidence", markdown)
             self.assertIn("## Resume", markdown)
 
+    def test_release_gate_holds_when_beta_gate_is_not_advanced(self) -> None:
+        with make_tempdir() as tmp:
+            output_dir = Path(tmp) / "release-gate-output"
+            beta_root = Path(tmp) / ".skill-beta"
+            beta_gate_result = write_beta_gate_fixture(
+                beta_root,
+                round_id="round-02",
+                decision="hold",
+                reason="This round has not yet cleared the minimum sample, success-rate, or blocker thresholds.",
+            )
+
+            with mock.patch.object(
+                release_gate.benchmark_runner,
+                "run_benchmark_suite",
+                return_value={
+                    "summary": {
+                        "tests_passed": True,
+                        "validator_passed": True,
+                        "evals_passed": True,
+                        "offline_drill_enabled": True,
+                        "offline_drill_passed": True,
+                        "overall_passed": True,
+                    },
+                    "json_report": str(output_dir / "benchmark-results.json"),
+                    "markdown_report": str(output_dir / "benchmark-report.md"),
+                    "offline_drill_run": {
+                        "markdown_report": str(output_dir / "offline-loop-drill-report.md"),
+                    },
+                },
+            ):
+                benchmark_payload = {
+                    "summary": {
+                        "tests_passed": True,
+                        "validator_passed": True,
+                        "evals_passed": True,
+                        "offline_drill_enabled": True,
+                        "offline_drill_passed": True,
+                        "overall_passed": True,
+                    },
+                    "eval_run": {"passed": 56, "total": 56, "cases": [], "category_breakdown": []},
+                }
+                Path(output_dir / "benchmark-results.json").parent.mkdir(parents=True, exist_ok=True)
+                (output_dir / "benchmark-results.json").write_text(
+                    json.dumps(benchmark_payload, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+                (output_dir / "benchmark-report.md").write_text("# Benchmark Report\n", encoding="utf-8")
+                result = release_gate.run_release_gate(
+                    output_dir=output_dir,
+                    beta_gate_result=beta_gate_result,
+                )
+
+            response_contract.validate_release_gate_result(result)
+            self.assertFalse(result["ok"])
+            self.assertEqual("hold", result["decision"])
+            self.assertIn("latest beta round gate is `hold`", result["reason"])
+            self.assertTrue(result["summary"]["beta_gate_enabled"])
+            self.assertFalse(result["summary"]["beta_gate_passed"])
+            self.assertEqual("hold", result["summary"]["beta_gate_decision"])
+            self.assertEqual("round-02", result["summary"]["beta_gate_round_id"])
+            self.assertEqual("hold", result["beta_gate"]["decision"])
+            self.assertEqual("round-02", result["beta_gate"]["round_id"])
+            self.assertEqual(str(beta_gate_result), result["beta_gate"]["json_report"])
+            brief = baseline_registry.load_json(Path(result["follow_up"]["brief_json"]))
+            self.assertIn("beta_gate_context", brief)
+            self.assertEqual("hold", brief["beta_gate_context"]["decision"])
+            self.assertTrue(any("beta round round-02" in item for item in result["follow_up"]["blockers"]))
+            self.assertIn(str(beta_gate_result), result["explanation_card"]["resume_artifacts"])
+
+    def test_release_gate_can_resolve_latest_beta_report_from_report_dir(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            output_dir = root / "release-gate-output"
+            beta_round_report_init.init_beta_round_report(
+                root=root,
+                round_id="round-01",
+                phase="closed beta",
+                sample_size=8,
+                participant_mode="seed users",
+                goal="Validate onboarding basics.",
+                exit_criteria="Advance only when the flow is stable.",
+            )
+            beta_round_report_init.init_beta_round_report(
+                root=root,
+                round_id="round-02",
+                phase="expanded internal beta",
+                sample_size=16,
+                participant_mode="internal beta users",
+                goal="Validate cross-role onboarding.",
+                exit_criteria="Advance only when blocker count is zero.",
+            )
+
+            report_path = root / ".skill-beta" / "reports" / "round-02.json"
+            report_payload = baseline_registry.load_json(report_path)
+            report_payload["completed_sessions"] = 16
+            report_payload["task_success_count"] = 12
+            report_payload["blocker_issue_count"] = 1
+            report_payload["critical_issue_count"] = 0
+            report_payload["high_severity_issue_count"] = 1
+            report_payload["top_feedback_themes"] = ["permission confusion"]
+            report_path.write_text(json.dumps(report_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+            benchmark_payload = {
+                "summary": {
+                    "tests_passed": True,
+                    "validator_passed": True,
+                    "evals_passed": True,
+                    "offline_drill_enabled": True,
+                    "offline_drill_passed": True,
+                    "overall_passed": True,
+                },
+                "eval_run": {"passed": 56, "total": 56, "cases": [], "category_breakdown": []},
+            }
+            Path(output_dir / "benchmark-results.json").parent.mkdir(parents=True, exist_ok=True)
+            (output_dir / "benchmark-results.json").write_text(
+                json.dumps(benchmark_payload, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            (output_dir / "benchmark-report.md").write_text("# Benchmark Report\n", encoding="utf-8")
+            (output_dir / "offline-loop-drill-report.md").write_text("# Offline Loop Drill Report\n", encoding="utf-8")
+
+            with mock.patch.object(
+                release_gate.benchmark_runner,
+                "run_benchmark_suite",
+                return_value={
+                    "summary": benchmark_payload["summary"],
+                    "json_report": str(output_dir / "benchmark-results.json"),
+                    "markdown_report": str(output_dir / "benchmark-report.md"),
+                    "offline_drill_run": {
+                        "markdown_report": str(output_dir / "offline-loop-drill-report.md"),
+                    },
+                },
+            ):
+                result = release_gate.run_release_gate(
+                    output_dir=output_dir,
+                    beta_report_dir=root / ".skill-beta" / "reports",
+                )
+
+            response_contract.validate_release_gate_result(result)
+            self.assertEqual("hold", result["decision"])
+            self.assertEqual("beta-report-dir", result["beta_gate"]["source"])
+            self.assertEqual("round-02", result["beta_gate"]["round_id"])
+            self.assertEqual("hold", result["beta_gate"]["decision"])
+            self.assertTrue(Path(result["beta_gate"]["json_report"]).exists())
+
     def test_release_gate_hold_emits_next_iteration_brief(self) -> None:
         with make_tempdir() as tmp:
             output_dir = Path(tmp) / "release-gate-output"
@@ -4440,6 +4655,83 @@ class ProjectMemoryInitTests(unittest.TestCase):
             response_contract.validate_beta_round_report(payload)
             self.assertEqual("round-1", payload["round_id"])
 
+    def test_init_beta_simulation_creates_profiles_and_config(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            result = beta_simulation_init.init_beta_simulation(
+                root=root,
+                round_id="round-0",
+                phase="pre-build concept smoke",
+                objective="validate the promise before implementation hardens",
+                overwrite=False,
+            )
+
+            config_path = root / ".skill-beta" / "simulation-configs" / "round-0.json"
+            self.assertTrue(result["ok"])
+            self.assertEqual(".skill-beta/simulation-configs/round-0.json", result["config_path"])
+            self.assertTrue(config_path.exists())
+            config_payload = json.loads(config_path.read_text(encoding="utf-8"))
+            response_contract.validate_beta_simulation_config(config_payload)
+            self.assertEqual(".skill-beta/feedback-ledger.md", config_payload["feedback_ledger_out"])
+            self.assertIn("--feedback-ledger-out .skill-beta/feedback-ledger.md", config_payload["summary_command_template"])
+            self.assertTrue((root / ".skill-beta" / "personas" / "first-time-novice.json").exists())
+            self.assertGreaterEqual(result["session_count"], 3)
+
+    def test_run_beta_simulation_emits_machine_readable_trace(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            init_result = beta_simulation_init.init_beta_simulation(
+                root=root,
+                round_id="round-1",
+                phase="closed beta",
+                objective="validate the implemented slice",
+                overwrite=False,
+            )
+            config_path = root / init_result["config_path"]
+
+            result = beta_simulation_runner.run_beta_simulation(config_path=config_path)
+
+            self.assertEqual("beta-simulation-run/v1", result["schema_version"])
+            self.assertTrue(Path(result["json_report"]).exists())
+            self.assertTrue(Path(result["markdown_report"]).exists())
+            response_contract.validate_beta_simulation_run(result)
+            self.assertGreaterEqual(len(result["sessions"]), 4)
+            self.assertTrue(any(session["blocker_detected"] for session in result["sessions"]))
+            self.assertTrue(any(len(session["events"]) >= 2 for session in result["sessions"]))
+
+    def test_summarize_beta_simulation_can_write_round_report(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            init_result = beta_simulation_init.init_beta_simulation(
+                root=root,
+                round_id="round-1",
+                phase="closed beta",
+                objective="validate the implemented slice",
+                overwrite=False,
+            )
+            run_result = beta_simulation_runner.run_beta_simulation(
+                config_path=root / init_result["config_path"],
+            )
+
+            summary_result = beta_simulation_summary.summarize_beta_simulation(
+                run_path=Path(run_result["json_report"]),
+                feedback_ledger_out=root / ".skill-beta" / "feedback-ledger.md",
+                round_report_out=root / ".skill-beta" / "reports" / "round-1.json",
+            )
+
+            self.assertTrue(summary_result["ok"])
+            self.assertTrue(Path(summary_result["summary_json"]).exists())
+            self.assertTrue(Path(summary_result["feedback_ledger_out"]).exists())
+            self.assertTrue(Path(summary_result["round_report_out"]).exists())
+            self.assertIn("by_persona", summary_result["blocker_breakdown"])
+            round_report_payload = json.loads(Path(summary_result["round_report_out"]).read_text(encoding="utf-8"))
+            response_contract.validate_beta_round_report(round_report_payload)
+            self.assertEqual("round-1", round_report_payload["round_id"])
+            self.assertIn("blocker_breakdown", round_report_payload)
+            ledger_markdown = Path(summary_result["feedback_ledger_out"]).read_text(encoding="utf-8")
+            self.assertIn("## Generated Entries", ledger_markdown)
+            self.assertIn("| round-1 |", ledger_markdown)
+
     def test_evaluate_beta_round_emits_advance_decision(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
@@ -4514,6 +4806,75 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertTrue(result["follow_up"]["release_governance_recommended"])
             self.assertIsNone(result["follow_up"]["next_round_recommended"])
             response_contract.validate_beta_round_gate_result(result)
+
+    def test_evaluate_beta_round_preserves_blocker_breakdown(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            report = root / ".skill-beta" / "reports" / "round-1.json"
+            report.parent.mkdir(parents=True, exist_ok=True)
+            payload = {
+                "schema_version": "beta-round-report/v1",
+                "round_id": "round-1",
+                "phase": "closed beta",
+                "goal": "validate the implemented slice",
+                "participant_mode": "simulated users",
+                "planned_sample_size": 6,
+                "completed_sessions": 6,
+                "task_success_count": 4,
+                "blocker_issue_count": 1,
+                "critical_issue_count": 0,
+                "high_severity_issue_count": 2,
+                "top_feedback_themes": ["edge-case handling", "efficiency friction"],
+                "exit_criteria": "blocker paths are closed",
+                "gate_thresholds": {
+                    "min_completed_sessions": 5,
+                    "min_success_rate": 0.8,
+                    "max_blocker_issue_count": 0,
+                    "max_critical_issue_count": 0,
+                },
+                "source_simulation_run": ".skill-beta/simulation-runs/round-1/beta-simulation-run.json",
+                "evidence_artifacts": {
+                    "simulation_run_json": ".skill-beta/simulation-runs/round-1/beta-simulation-run.json",
+                    "simulation_run_markdown": ".skill-beta/simulation-runs/round-1/beta-simulation-run.md",
+                    "simulation_summary_json": ".skill-beta/simulation-runs/round-1/beta-simulation-summary.json",
+                    "feedback_ledger_markdown": ".skill-beta/feedback-ledger.md"
+                },
+                "blocker_breakdown": {
+                    "by_persona": [
+                        {
+                            "label": "Edge-Case Breaker",
+                            "session_count": 2,
+                            "blocker_issue_count": 1,
+                            "critical_issue_count": 0,
+                            "high_severity_issue_count": 1,
+                            "session_ids": ["session-01", "session-05"],
+                            "top_feedback_themes": ["edge-case handling"]
+                        }
+                    ],
+                    "by_scenario": [
+                        {
+                            "label": "recover from a rough edge",
+                            "session_count": 2,
+                            "blocker_issue_count": 1,
+                            "critical_issue_count": 0,
+                            "high_severity_issue_count": 1,
+                            "session_ids": ["session-05", "session-06"],
+                            "top_feedback_themes": ["edge-case handling", "efficiency friction"]
+                        }
+                    ]
+                },
+                "notes": "Derived from simulation evidence."
+            }
+            report.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+            result = beta_round_evaluator.evaluate_beta_round(report_path=report)
+
+            self.assertEqual("hold", result["decision"])
+            self.assertIn("blocker_breakdown", result)
+            self.assertEqual("Edge-Case Breaker", result["blocker_breakdown"]["by_persona"][0]["label"])
+            markdown = Path(result["markdown_report"]).read_text(encoding="utf-8")
+            self.assertIn("## Blocker Breakdown By Persona", markdown)
+            self.assertIn("## Blocker Breakdown By Scenario", markdown)
 
     def test_init_technical_governance_creates_expected_anchors(self) -> None:
         with make_tempdir() as tmp:
@@ -4621,6 +4982,14 @@ class ResponsePackTests(unittest.TestCase):
         self.assertEqual("beta", payload["template"])
         self.assertIn("beta_program", payload)
         self.assertEqual(".skill-beta/feedback-ledger.md", payload["beta_program"]["feedback_anchor"])
+        self.assertEqual("assets/simulated-user-profile-template.json", payload["beta_program"]["simulation_profile_template"])
+        self.assertEqual(".skill-beta/personas", payload["beta_program"]["simulation_profile_dir"])
+        self.assertEqual("assets/beta-simulation-config-template.json", payload["beta_program"]["simulation_config_template"])
+        self.assertEqual(".skill-beta/simulation-configs", payload["beta_program"]["simulation_config_dir"])
+        self.assertEqual(".skill-beta/simulation-runs", payload["beta_program"]["simulation_run_dir"])
+        self.assertIn("python scripts/init_beta_simulation.py", payload["beta_program"]["simulation_init_command_template"])
+        self.assertIn("python scripts/run_beta_simulation.py", payload["beta_program"]["simulation_run_command_template"])
+        self.assertIn("python scripts/summarize_beta_simulation.py", payload["beta_program"]["simulation_summary_command_template"])
         self.assertEqual("assets/beta-round-report-template.json", payload["beta_program"]["report_template"])
         self.assertEqual(".skill-beta/reports", payload["beta_program"]["report_dir"])
         self.assertEqual(".skill-beta/round-decisions", payload["beta_program"]["decision_dir"])
@@ -4702,6 +5071,13 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("round-0 | pre-build concept smoke | 样本 5", markdown)
         self.assertIn(".skill-beta/cohort-matrix.md", markdown)
         self.assertIn(".skill-beta/feedback-ledger.md", markdown)
+        self.assertIn("assets/simulated-user-profile-template.json", markdown)
+        self.assertIn(".skill-beta/personas", markdown)
+        self.assertIn("assets/beta-simulation-config-template.json", markdown)
+        self.assertIn(".skill-beta/simulation-configs", markdown)
+        self.assertIn("python scripts/init_beta_simulation.py", markdown)
+        self.assertIn("python scripts/run_beta_simulation.py", markdown)
+        self.assertIn("python scripts/summarize_beta_simulation.py", markdown)
         self.assertIn("assets/beta-round-report-template.json", markdown)
         self.assertIn("python scripts/evaluate_beta_round.py --report .skill-beta/reports/<round-id>.json --pretty", markdown)
 

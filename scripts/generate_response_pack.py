@@ -412,6 +412,35 @@ def build_response_pack_payload(
             "simulation_allowed": bool(beta_validation_plan.get("simulation_allowed")),
             "feedback_anchor": str(beta_validation_plan.get("feedback_anchor", ".skill-beta/feedback-ledger.md")),
             "cohort_artifact": str(beta_validation_plan.get("cohort_artifact", ".skill-beta/cohort-matrix.md")),
+            "simulation_profile_template": str(
+                beta_validation_plan.get("simulation_profile_template", "assets/simulated-user-profile-template.json")
+            ),
+            "simulation_profile_dir": str(beta_validation_plan.get("simulation_profile_dir", ".skill-beta/personas")),
+            "simulation_config_template": str(
+                beta_validation_plan.get("simulation_config_template", "assets/beta-simulation-config-template.json")
+            ),
+            "simulation_config_dir": str(
+                beta_validation_plan.get("simulation_config_dir", ".skill-beta/simulation-configs")
+            ),
+            "simulation_run_dir": str(beta_validation_plan.get("simulation_run_dir", ".skill-beta/simulation-runs")),
+            "simulation_init_command_template": str(
+                beta_validation_plan.get(
+                    "simulation_init_command_template",
+                    "python scripts/init_beta_simulation.py --root . --round-id <round-id> --phase \"<phase>\" --objective \"<objective>\" --pretty",
+                )
+            ),
+            "simulation_run_command_template": str(
+                beta_validation_plan.get(
+                    "simulation_run_command_template",
+                    "python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/<round-id>.json --pretty",
+                )
+            ),
+            "simulation_summary_command_template": str(
+                beta_validation_plan.get(
+                    "simulation_summary_command_template",
+                    "python scripts/summarize_beta_simulation.py --run .skill-beta/simulation-runs/<round-id>/beta-simulation-run.json --feedback-ledger-out .skill-beta/feedback-ledger.md --round-report-out .skill-beta/reports/<round-id>.json --pretty",
+                )
+            ),
             "report_template": str(beta_validation_plan.get("report_template", "assets/beta-round-report-template.json")),
             "report_dir": str(beta_validation_plan.get("report_dir", ".skill-beta/reports")),
             "decision_dir": str(beta_validation_plan.get("decision_dir", ".skill-beta/round-decisions")),
@@ -646,6 +675,14 @@ def build_response_pack(
                     f"- 是否允许模拟用户：{format_bool(beta_program.get('simulation_allowed'), selected_language)}",
                     f"- cohort 矩阵：{beta_program.get('cohort_artifact', '.skill-beta/cohort-matrix.md')}",
                     f"- 反馈台账：{beta_program.get('feedback_anchor', '.skill-beta/feedback-ledger.md')}",
+                    f"- 模拟画像模板：{beta_program.get('simulation_profile_template', 'assets/simulated-user-profile-template.json')}",
+                    f"- 模拟画像目录：{beta_program.get('simulation_profile_dir', '.skill-beta/personas')}",
+                    f"- 模拟配置模板：{beta_program.get('simulation_config_template', 'assets/beta-simulation-config-template.json')}",
+                    f"- 模拟配置目录：{beta_program.get('simulation_config_dir', '.skill-beta/simulation-configs')}",
+                    f"- 模拟运行目录：{beta_program.get('simulation_run_dir', '.skill-beta/simulation-runs')}",
+                    f"- 模拟起盘命令：{beta_program.get('simulation_init_command_template', 'python scripts/init_beta_simulation.py --root . --round-id <round-id> --phase \"<phase>\" --objective \"<objective>\" --pretty')}",
+                    f"- 模拟执行命令：{beta_program.get('simulation_run_command_template', 'python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/<round-id>.json --pretty')}",
+                    f"- 模拟汇总命令：{beta_program.get('simulation_summary_command_template', 'python scripts/summarize_beta_simulation.py --run .skill-beta/simulation-runs/<round-id>/beta-simulation-run.json --feedback-ledger-out .skill-beta/feedback-ledger.md --round-report-out .skill-beta/reports/<round-id>.json --pretty')}",
                     f"- 轮次报告模板：{beta_program.get('report_template', 'assets/beta-round-report-template.json')}",
                     f"- 轮次报告目录：{beta_program.get('report_dir', '.skill-beta/reports')}",
                     f"- Gate 决策目录：{beta_program.get('decision_dir', '.skill-beta/round-decisions')}",
@@ -669,6 +706,14 @@ def build_response_pack(
                     f"- Simulation allowed: {format_bool(beta_program.get('simulation_allowed'), selected_language)}",
                     f"- Cohort artifact: {beta_program.get('cohort_artifact', '.skill-beta/cohort-matrix.md')}",
                     f"- Feedback anchor: {beta_program.get('feedback_anchor', '.skill-beta/feedback-ledger.md')}",
+                    f"- Simulation profile template: {beta_program.get('simulation_profile_template', 'assets/simulated-user-profile-template.json')}",
+                    f"- Simulation profile dir: {beta_program.get('simulation_profile_dir', '.skill-beta/personas')}",
+                    f"- Simulation config template: {beta_program.get('simulation_config_template', 'assets/beta-simulation-config-template.json')}",
+                    f"- Simulation config dir: {beta_program.get('simulation_config_dir', '.skill-beta/simulation-configs')}",
+                    f"- Simulation run dir: {beta_program.get('simulation_run_dir', '.skill-beta/simulation-runs')}",
+                    f"- Simulation init command: {beta_program.get('simulation_init_command_template', 'python scripts/init_beta_simulation.py --root . --round-id <round-id> --phase \"<phase>\" --objective \"<objective>\" --pretty')}",
+                    f"- Simulation run command: {beta_program.get('simulation_run_command_template', 'python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/<round-id>.json --pretty')}",
+                    f"- Simulation summary command: {beta_program.get('simulation_summary_command_template', 'python scripts/summarize_beta_simulation.py --run .skill-beta/simulation-runs/<round-id>/beta-simulation-run.json --feedback-ledger-out .skill-beta/feedback-ledger.md --round-report-out .skill-beta/reports/<round-id>.json --pretty')}",
                     f"- Round report template: {beta_program.get('report_template', 'assets/beta-round-report-template.json')}",
                     f"- Round report dir: {beta_program.get('report_dir', '.skill-beta/reports')}",
                     f"- Gate decision dir: {beta_program.get('decision_dir', '.skill-beta/round-decisions')}",

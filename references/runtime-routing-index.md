@@ -60,6 +60,7 @@
 - Audit and fix
 - Product slice to delivery
 - Beta validation with staged cohorts
+  - simulation profile / config / trace
 - Frontend UX with backend coupling
 - Technical governance hardening
 - High-risk production change
@@ -113,6 +114,7 @@
 - release gate / offline acceptance
   - `offline-loop-drill-playbook.md`
   - `release-gate-playbook.md`
+  - 如果发布前还存在 staged beta，再补读 `beta-validation-playbook.md`
 - Git / worktree
   - `git-workflow-playbook.md`
   - `using-git-worktrees-playbook.md`

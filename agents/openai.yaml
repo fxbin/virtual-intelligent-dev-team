@@ -1,4 +1,4 @@
 interface:
   display_name: "Virtual Intelligent Dev Team"
-  short_description: "Route R&D, product, and technical-governance work with bounded execution loops."
-  default_prompt: "Use $virtual-intelligent-dev-team to auto-route this request across engineering, product delivery, and technical governance, return the smallest matching workflow bundle and resume anchor, enter a lightweight pre-development planning branch for large rewrites or migrations, preserve the semantic lead, and run bounded self-optimization with baseline registration, round memory, self-feedback, rollback decisions, and distilled-pattern sync when optimization loops are needed."
+  short_description: "Route R&D, product, and governance work with bounded loops."
+  default_prompt: "Use $virtual-intelligent-dev-team to auto-route this request across engineering, product delivery, staged beta validation, and technical governance, return the smallest matching workflow bundle and resume anchor, enter a lightweight pre-development planning branch for large rewrites or migrations, preserve the semantic lead, and run bounded self-optimization with baseline registration, round memory, self-feedback, rollback decisions, and distilled-pattern sync when optimization loops are needed."

@@ -1306,13 +1306,15 @@ def build_process_plan(
                 "reference": "references/release-gate-playbook.md",
                 "steps": [
                     "先运行正式 release gate，而不是只看一次 benchmark 摘要",
-                    "让 gate 自动汇总 tests / semantic validator / evals / offline drill",
+                    "让 gate 自动汇总 tests / semantic validator / evals / offline drill，必要时并入最近一轮 beta gate",
                     "读取 ship 或 hold 决策、失败原因、以及产物路径",
                     "若结论为 hold，则把阻塞项回写到 iteration ledger 或发布清单，再进入下一轮",
                 ],
                 "commands": [
                     "python scripts/run_release_gate.py --output-dir evals/release-gate --pretty",
                     "python scripts/run_release_gate.py --output-dir evals/release-gate --previous-output evals/benchmark-results/benchmark-results.json --pretty",
+                    "python scripts/run_release_gate.py --output-dir evals/release-gate --beta-decision-dir .skill-beta/round-decisions --pretty",
+                    "python scripts/run_release_gate.py --output-dir evals/release-gate --beta-report-dir .skill-beta/reports --pretty",
                     "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --release-label release-ready --pretty",
                     "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --auto-run-next-iteration-on-hold --hold-loop-max-rounds 3 --pretty",
                 ],
@@ -1708,11 +1710,14 @@ def build_workflow_bundle_bootstrap(bundle_name: str) -> dict[str, object]:
             "reference": "references/beta-validation-playbook.md",
             "commands": [
                 "python scripts/init_beta_validation.py --root . --pretty",
+                "python scripts/init_beta_simulation.py --root . --round-id round-0 --phase \"pre-build concept smoke\" --objective \"<objective>\" --pretty",
             ],
             "artifacts": [
                 ".skill-beta/program-overview.md",
                 ".skill-beta/cohort-matrix.md",
                 ".skill-beta/feedback-ledger.md",
+                ".skill-beta/personas",
+                ".skill-beta/simulation-configs/round-0.json",
             ],
             "resume_anchor": ".skill-beta/program-overview.md",
         }
@@ -1871,6 +1876,22 @@ def build_beta_validation_plan(text: str, workflow_bundle_name: str) -> dict[str
         "simulation_allowed": True,
         "feedback_anchor": ".skill-beta/feedback-ledger.md",
         "cohort_artifact": ".skill-beta/cohort-matrix.md",
+        "simulation_profile_template": "assets/simulated-user-profile-template.json",
+        "simulation_profile_dir": ".skill-beta/personas",
+        "simulation_config_template": "assets/beta-simulation-config-template.json",
+        "simulation_config_dir": ".skill-beta/simulation-configs",
+        "simulation_run_dir": ".skill-beta/simulation-runs",
+        "simulation_init_command_template": (
+            "python scripts/init_beta_simulation.py --root . --round-id <round-id> "
+            "--phase \"<phase>\" --objective \"<objective>\" --pretty"
+        ),
+        "simulation_run_command_template": (
+            "python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/<round-id>.json --pretty"
+        ),
+        "simulation_summary_command_template": (
+            "python scripts/summarize_beta_simulation.py --run .skill-beta/simulation-runs/<round-id>/beta-simulation-run.json "
+            "--feedback-ledger-out .skill-beta/feedback-ledger.md --round-report-out .skill-beta/reports/<round-id>.json --pretty"
+        ),
         "report_template": "assets/beta-round-report-template.json",
         "report_dir": ".skill-beta/reports",
         "decision_dir": ".skill-beta/round-decisions",

@@ -28,6 +28,10 @@ VERIFY_ACTION_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "verify-action-resul
 RELEASE_GATE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "release-gate-result.schema.json"
 BETA_ROUND_REPORT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-report.schema.json"
 BETA_ROUND_GATE_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-gate-result.schema.json"
+SIMULATED_USER_PROFILE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "simulated-user-profile.schema.json"
+BETA_SIMULATION_CONFIG_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-config.schema.json"
+BETA_SIMULATION_EVENT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-event.schema.json"
+BETA_SIMULATION_RUN_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-run.schema.json"
 BENCHMARK_EVALS_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-evals.schema.json"
 BENCHMARK_RUN_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-run-result.schema.json"
 MARKDOWN_PATH_RE = re.compile(r"(?<![\w./-])((?:assets|references|scripts)/[A-Za-z0-9_./-]+\.(?:md|json|py))(?![\w./-])")
@@ -90,6 +94,10 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
     release_gate_schema_json_path = resolved_skill_dir / "references" / "release-gate-result.schema.json"
     beta_round_report_schema_json_path = resolved_skill_dir / "references" / "beta-round-report.schema.json"
     beta_round_gate_result_schema_json_path = resolved_skill_dir / "references" / "beta-round-gate-result.schema.json"
+    simulated_user_profile_schema_json_path = resolved_skill_dir / "references" / "simulated-user-profile.schema.json"
+    beta_simulation_config_schema_json_path = resolved_skill_dir / "references" / "beta-simulation-config.schema.json"
+    beta_simulation_event_schema_json_path = resolved_skill_dir / "references" / "beta-simulation-event.schema.json"
+    beta_simulation_run_schema_json_path = resolved_skill_dir / "references" / "beta-simulation-run.schema.json"
     benchmark_evals_schema_json_path = resolved_skill_dir / "references" / "benchmark-evals.schema.json"
     benchmark_run_result_schema_json_path = resolved_skill_dir / "references" / "benchmark-run-result.schema.json"
     route_script = resolved_skill_dir / "scripts" / "route_request.py"
@@ -187,6 +195,26 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
         "Missing references/beta-round-gate-result.schema.json. Restore the beta round gate result schema before release.",
     )
     _check(
+        simulated_user_profile_schema_json_path.exists(),
+        errors,
+        "Missing references/simulated-user-profile.schema.json. Restore the simulated user profile schema before release.",
+    )
+    _check(
+        beta_simulation_config_schema_json_path.exists(),
+        errors,
+        "Missing references/beta-simulation-config.schema.json. Restore the beta simulation config schema before release.",
+    )
+    _check(
+        beta_simulation_event_schema_json_path.exists(),
+        errors,
+        "Missing references/beta-simulation-event.schema.json. Restore the beta simulation event schema before release.",
+    )
+    _check(
+        beta_simulation_run_schema_json_path.exists(),
+        errors,
+        "Missing references/beta-simulation-run.schema.json. Restore the beta simulation run schema before release.",
+    )
+    _check(
         benchmark_evals_path.exists(),
         errors,
         "Missing evals/evals.json. Restore the benchmark eval catalog before release.",
@@ -215,6 +243,10 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 and release_gate_schema_json_path.exists()
                 and beta_round_report_schema_json_path.exists()
                 and beta_round_gate_result_schema_json_path.exists()
+                and simulated_user_profile_schema_json_path.exists()
+                and beta_simulation_config_schema_json_path.exists()
+                and beta_simulation_event_schema_json_path.exists()
+                and beta_simulation_run_schema_json_path.exists()
                 and benchmark_evals_path.exists()
                 and benchmark_evals_schema_json_path.exists()
                 and benchmark_run_result_schema_json_path.exists()
@@ -301,6 +333,14 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                             "simulation_allowed": True,
                             "feedback_anchor": ".skill-beta/feedback-ledger.md",
                             "cohort_artifact": ".skill-beta/cohort-matrix.md",
+                            "simulation_profile_template": "assets/simulated-user-profile-template.json",
+                            "simulation_profile_dir": ".skill-beta/personas",
+                            "simulation_config_template": "assets/beta-simulation-config-template.json",
+                            "simulation_config_dir": ".skill-beta/simulation-configs",
+                            "simulation_run_dir": ".skill-beta/simulation-runs",
+                            "simulation_init_command_template": "python scripts/init_beta_simulation.py --root . --round-id <round-id> --phase \"<phase>\" --objective \"<objective>\" --pretty",
+                            "simulation_run_command_template": "python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/<round-id>.json --pretty",
+                            "simulation_summary_command_template": "python scripts/summarize_beta_simulation.py --run .skill-beta/simulation-runs/<round-id>/beta-simulation-run.json --feedback-ledger-out .skill-beta/feedback-ledger.md --round-report-out .skill-beta/reports/<round-id>.json --pretty",
                             "report_template": "assets/beta-round-report-template.json",
                             "report_dir": ".skill-beta/reports",
                             "decision_dir": ".skill-beta/round-decisions",
@@ -564,6 +604,120 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             local_response_contract.validate_beta_round_gate_result(sample_gate)
         except Exception as exc:
             beta_round_contract_failures.append(f"gate: {exc}")
+        sample_profile = {
+            "schema_version": "simulated-user-profile/v1",
+            "profile_id": "first-time-novice",
+            "display_name": "First-Time Novice",
+            "archetype": "first-time novice",
+            "primary_goal": "Understand the core promise quickly.",
+            "tool_literacy": "low",
+            "domain_familiarity": "low",
+            "risk_tolerance": "low",
+            "workflow_preference": "step-by-step clarity",
+            "failure_sensitivity": "high",
+            "feedback_style": "balanced",
+            "preferred_tasks": ["first-run journey"],
+            "notes": "surface ambiguity early",
+        }
+        sample_event = {
+            "step_index": 1,
+            "event_type": "entry",
+            "actor_id": "first-time-novice",
+            "scenario_id": "scenario-1",
+            "action": "start scenario",
+            "outcome": "neutral",
+            "severity": "info",
+            "observation": "The simulated user starts the scenario.",
+        }
+        sample_simulation_config = {
+            "schema_version": "beta-simulation-config/v1",
+            "skill_name": "virtual-intelligent-dev-team",
+            "round_id": "round-0",
+            "phase": "pre-build concept smoke",
+            "objective": "validate the promise",
+            "persona_dir": ".skill-beta/personas",
+            "run_output_dir": ".skill-beta/simulation-runs/round-0",
+            "feedback_ledger_out": ".skill-beta/feedback-ledger.md",
+            "round_report_out": ".skill-beta/reports/round-0.json",
+            "summary_command_template": "python scripts/summarize_beta_simulation.py --run .skill-beta/simulation-runs/<round-id>/beta-simulation-run.json --feedback-ledger-out .skill-beta/feedback-ledger.md --round-report-out .skill-beta/reports/<round-id>.json --pretty",
+            "scenarios": [
+                {
+                    "scenario_id": "scenario-1",
+                    "title": "first meaningful task",
+                    "primary_task": "finish the primary happy-path task",
+                    "success_definition": "the user completes the task and understands the value",
+                    "risk_focus": "onboarding clarity",
+                }
+            ],
+            "session_plan": [
+                {
+                    "session_id": "session-01",
+                    "persona_id": "first-time-novice",
+                    "scenario_id": "scenario-1",
+                }
+            ],
+        }
+        sample_simulation_run = {
+            "schema_version": "beta-simulation-run/v1",
+            "generated_at": "2026-04-08T12:00:00Z",
+            "skill_name": "virtual-intelligent-dev-team",
+            "round_id": "round-0",
+            "phase": "pre-build concept smoke",
+            "objective": "validate the promise",
+            "config_path": ".skill-beta/simulation-configs/round-0.json",
+            "personas": [
+                {
+                    "profile_id": "first-time-novice",
+                    "display_name": "First-Time Novice",
+                    "archetype": "first-time novice",
+                }
+            ],
+            "scenarios": sample_simulation_config["scenarios"],
+            "sessions": [
+                {
+                    "session_id": "session-01",
+                    "persona_id": "first-time-novice",
+                    "persona_name": "First-Time Novice",
+                    "scenario_id": "scenario-1",
+                    "scenario_title": "first meaningful task",
+                    "status": "completed",
+                    "task_completed": True,
+                    "blocker_detected": False,
+                    "critical_issue_detected": False,
+                    "high_severity_issue_detected": False,
+                    "top_feedback_themes": ["onboarding clarity"],
+                    "feedback_summary": "Task completed with minor friction.",
+                    "events": [sample_event],
+                }
+            ],
+            "summary": {
+                "planned_sessions": 1,
+                "completed_sessions": 1,
+                "task_success_count": 1,
+                "blocker_issue_count": 0,
+                "critical_issue_count": 0,
+                "high_severity_issue_count": 0,
+                "top_feedback_themes": ["onboarding clarity"],
+            },
+            "json_report": ".skill-beta/simulation-runs/round-0/beta-simulation-run.json",
+            "markdown_report": ".skill-beta/simulation-runs/round-0/beta-simulation-run.md",
+        }
+        try:
+            local_response_contract.validate_simulated_user_profile(sample_profile)
+        except Exception as exc:
+            beta_round_contract_failures.append(f"profile: {exc}")
+        try:
+            local_response_contract.validate_beta_simulation_event(sample_event)
+        except Exception as exc:
+            beta_round_contract_failures.append(f"simulation-event: {exc}")
+        try:
+            local_response_contract.validate_beta_simulation_config(sample_simulation_config)
+        except Exception as exc:
+            beta_round_contract_failures.append(f"simulation-config: {exc}")
+        try:
+            local_response_contract.validate_beta_simulation_run(sample_simulation_run)
+        except Exception as exc:
+            beta_round_contract_failures.append(f"simulation-run: {exc}")
     else:
         beta_round_contract_failures.append("beta round schema validator missing")
     _check(
@@ -578,6 +732,10 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             "details": {
                 "report_schema_json": str(beta_round_report_schema_json_path),
                 "gate_schema_json": str(beta_round_gate_result_schema_json_path),
+                "simulation_profile_schema_json": str(simulated_user_profile_schema_json_path),
+                "simulation_config_schema_json": str(beta_simulation_config_schema_json_path),
+                "simulation_event_schema_json": str(beta_simulation_event_schema_json_path),
+                "simulation_run_schema_json": str(beta_simulation_run_schema_json_path),
             },
         }
     )

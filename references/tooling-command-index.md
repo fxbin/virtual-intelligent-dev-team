@@ -172,8 +172,14 @@ python scripts/init_product_delivery.py --root . --pretty
 - `assets/beta-program-overview-template.md`
 - `assets/beta-cohort-matrix-template.md`
 - `assets/beta-feedback-ledger-template.md`
+- `assets/simulated-user-profile-template.json`
+- `assets/beta-simulation-config-template.json`
 - `assets/beta-round-report-template.json`
 - `references/beta-validation-playbook.md`
+- `references/simulated-user-profile.schema.json`
+- `references/beta-simulation-config.schema.json`
+- `references/beta-simulation-event.schema.json`
+- `references/beta-simulation-run.schema.json`
 - `references/beta-round-report.schema.json`
 - `references/beta-round-gate-result.schema.json`
 
@@ -181,6 +187,18 @@ python scripts/init_product_delivery.py --root . --pretty
 
 ```bash
 python scripts/init_beta_validation.py --root . --pretty
+```
+
+```bash
+python scripts/init_beta_simulation.py --root . --round-id round-0 --phase "pre-build concept smoke" --objective "<objective>" --pretty
+```
+
+```bash
+python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/round-0.json --pretty
+```
+
+```bash
+python scripts/summarize_beta_simulation.py --run .skill-beta/simulation-runs/round-0/beta-simulation-run.json --feedback-ledger-out .skill-beta/feedback-ledger.md --round-report-out .skill-beta/reports/round-0.json --pretty
 ```
 
 ```bash
@@ -290,6 +308,14 @@ python scripts/run_offline_loop_drill.py --workspace .tmp-offline-loop-drill --p
 
 ```bash
 python scripts/run_release_gate.py --output-dir evals/release-gate --pretty
+```
+
+```bash
+python scripts/run_release_gate.py --output-dir evals/release-gate --beta-decision-dir .skill-beta/round-decisions --pretty
+```
+
+```bash
+python scripts/run_release_gate.py --output-dir evals/release-gate --beta-report-dir .skill-beta/reports --pretty
 ```
 
 - `run_release_gate.py` 的 JSON 结果契约见：

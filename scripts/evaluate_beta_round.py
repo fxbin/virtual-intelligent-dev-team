@@ -57,6 +57,9 @@ def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) ->
     top_feedback_themes = report.get("top_feedback_themes", [])
     if not isinstance(top_feedback_themes, list):
         top_feedback_themes = []
+    blocker_breakdown = report.get("blocker_breakdown")
+    if not isinstance(blocker_breakdown, dict):
+        blocker_breakdown = None
     success_rate = (
         float(task_success_count) / float(completed_sessions) if completed_sessions > 0 else 0.0
     )
@@ -130,6 +133,8 @@ def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) ->
         "json_report": "",
         "markdown_report": "",
     }
+    if blocker_breakdown is not None:
+        result["blocker_breakdown"] = blocker_breakdown
 
     if output_dir is None:
         output_dir = report_path.parent.parent / "round-decisions" / round_id
@@ -141,21 +146,39 @@ def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) ->
     response_contract.validate_beta_round_gate_result(result)
 
     json_report.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    markdown = "\n".join(
-        [
-            f"# Beta Round Gate: {round_id}",
-            "",
-            f"- Decision: {decision}",
-            f"- Reason: {reason}",
-            f"- Completed sessions: {completed_sessions}/{planned_sample_size}",
-            f"- Success rate: {round(success_rate, 4)}",
-            f"- Blocker issues: {blocker_issue_count}",
-            f"- Critical issues: {critical_issue_count}",
-            f"- High severity issues: {high_severity_issue_count}",
-            f"- Next action: {follow_up['next_action']}",
-            f"- Next round: {follow_up['next_round_recommended'] or 'n/a'}",
-        ]
-    ) + "\n"
+    lines = [
+        f"# Beta Round Gate: {round_id}",
+        "",
+        f"- Decision: {decision}",
+        f"- Reason: {reason}",
+        f"- Completed sessions: {completed_sessions}/{planned_sample_size}",
+        f"- Success rate: {round(success_rate, 4)}",
+        f"- Blocker issues: {blocker_issue_count}",
+        f"- Critical issues: {critical_issue_count}",
+        f"- High severity issues: {high_severity_issue_count}",
+        f"- Next action: {follow_up['next_action']}",
+        f"- Next round: {follow_up['next_round_recommended'] or 'n/a'}",
+    ]
+    if blocker_breakdown is not None:
+        by_persona = blocker_breakdown.get("by_persona", [])
+        by_scenario = blocker_breakdown.get("by_scenario", [])
+        if isinstance(by_persona, list) and by_persona:
+            lines.extend(["", "## Blocker Breakdown By Persona", ""])
+            for item in by_persona[:5]:
+                if not isinstance(item, dict):
+                    continue
+                lines.append(
+                    f"- {item.get('label')}: sessions={item.get('session_count')}, blockers={item.get('blocker_issue_count')}, critical={item.get('critical_issue_count')}, high={item.get('high_severity_issue_count')}, themes={', '.join(item.get('top_feedback_themes', []))}"
+                )
+        if isinstance(by_scenario, list) and by_scenario:
+            lines.extend(["", "## Blocker Breakdown By Scenario", ""])
+            for item in by_scenario[:5]:
+                if not isinstance(item, dict):
+                    continue
+                lines.append(
+                    f"- {item.get('label')}: sessions={item.get('session_count')}, blockers={item.get('blocker_issue_count')}, critical={item.get('critical_issue_count')}, high={item.get('high_severity_issue_count')}, themes={', '.join(item.get('top_feedback_themes', []))}"
+                )
+    markdown = "\n".join(lines) + "\n"
     markdown_report.write_text(markdown, encoding="utf-8")
     return result
 

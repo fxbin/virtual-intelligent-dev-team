@@ -1138,8 +1138,15 @@
         "workflow_bundle is beta-feedback-ramp",
         "workflow_bundle_bootstrap.required is true",
         "workflow_bundle_bootstrap.commands contains python scripts/init_beta_validation.py --root . --pretty",
+        "workflow_bundle_bootstrap.commands contains python scripts/init_beta_simulation.py --root . --round-id round-0 --phase \"pre-build concept smoke\" --objective \"<objective>\" --pretty",
         "response_pack_json template is beta",
         "response_pack_json beta_program.simulation_allowed is true",
+        "response_pack_json beta_program.simulation_profile_template is assets/simulated-user-profile-template.json",
+        "response_pack_json beta_program.simulation_config_template is assets/beta-simulation-config-template.json",
+        "response_pack_json beta_program.simulation_run_dir is .skill-beta/simulation-runs",
+        "response_pack_json beta_program.simulation_init_command_template contains python scripts/init_beta_simulation.py",
+        "response_pack_json beta_program.simulation_run_command_template contains python scripts/run_beta_simulation.py",
+        "response_pack_json beta_program.simulation_summary_command_template contains python scripts/summarize_beta_simulation.py",
         "response_pack_json beta_program.rounds length is 3",
         "response_pack_json beta_program.feedback_anchor is .skill-beta/feedback-ledger.md",
         "response_pack_json beta_program.report_template is assets/beta-round-report-template.json",
@@ -1170,6 +1177,40 @@
         "release_gate_json follow_up.loop_state is reopened",
         "release_gate_json explanation_card.workflow_bundle is ship-hold-remediate",
         "release_gate_json explanation_card.resume_artifacts length is 2"
+      ]
+    },
+    {
+      "id": 69,
+      "runner": "release_gate",
+      "categories": [
+        "release-gate",
+        "beta-validation",
+        "contract-output"
+      ],
+      "prompt": "Release gate fixture: benchmark is green, but the latest beta round is still on hold.",
+      "expected_output": "release_gate should refuse ship when the latest beta round has not advanced, and expose the beta gate evidence in the contract output.",
+      "files": [],
+      "release_gate_summary": {
+        "tests_passed": true,
+        "validator_passed": true,
+        "evals_passed": true,
+        "offline_drill_enabled": true,
+        "offline_drill_passed": true,
+        "overall_passed": true
+      },
+      "release_gate_beta": {
+        "decision": "hold",
+        "round_id": "round-02",
+        "reason": "This round has not yet cleared the minimum sample, success-rate, or blocker thresholds."
+      },
+      "expectations": [
+        "decision is hold",
+        "release_gate_json ok is false",
+        "release_gate_json summary.beta_gate_enabled is true",
+        "release_gate_json summary.beta_gate_passed is false",
+        "release_gate_json summary.beta_gate_decision is hold",
+        "release_gate_json beta_gate.round_id is round-02",
+        "release_gate_json explanation_card.route_evidence contains beta=FAIL"
       ]
     }
   ]

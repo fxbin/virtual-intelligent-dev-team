@@ -18,6 +18,10 @@ VERIFY_ACTION_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "verify-action-resul
 RELEASE_GATE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "release-gate-result.schema.json"
 BETA_ROUND_REPORT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-report.schema.json"
 BETA_ROUND_GATE_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-gate-result.schema.json"
+SIMULATED_USER_PROFILE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "simulated-user-profile.schema.json"
+BETA_SIMULATION_CONFIG_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-config.schema.json"
+BETA_SIMULATION_EVENT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-event.schema.json"
+BETA_SIMULATION_RUN_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-run.schema.json"
 BENCHMARK_EVALS_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-evals.schema.json"
 BENCHMARK_RUN_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-run-result.schema.json"
 
@@ -89,6 +93,38 @@ def validate_beta_round_gate_result(payload: dict[str, object]) -> None:
         payload,
         schema_path=BETA_ROUND_GATE_RESULT_SCHEMA_JSON_PATH,
         label="beta round gate result",
+    )
+
+
+def validate_simulated_user_profile(payload: dict[str, object]) -> None:
+    validate_payload_against_schema(
+        payload,
+        schema_path=SIMULATED_USER_PROFILE_SCHEMA_JSON_PATH,
+        label="simulated user profile",
+    )
+
+
+def validate_beta_simulation_config(payload: dict[str, object]) -> None:
+    validate_payload_against_schema(
+        payload,
+        schema_path=BETA_SIMULATION_CONFIG_SCHEMA_JSON_PATH,
+        label="beta simulation config",
+    )
+
+
+def validate_beta_simulation_event(payload: dict[str, object]) -> None:
+    validate_payload_against_schema(
+        payload,
+        schema_path=BETA_SIMULATION_EVENT_SCHEMA_JSON_PATH,
+        label="beta simulation event",
+    )
+
+
+def validate_beta_simulation_run(payload: dict[str, object]) -> None:
+    validate_payload_against_schema(
+        payload,
+        schema_path=BETA_SIMULATION_RUN_SCHEMA_JSON_PATH,
+        label="beta simulation run",
     )
 
 
@@ -171,6 +207,7 @@ def build_release_gate_explanation_card(
     reason: str,
     summary: dict[str, object],
     follow_up: dict[str, object],
+    beta_gate: dict[str, object] | None = None,
 ) -> dict[str, object]:
     resume_artifacts: list[str] = []
     for key in ("brief_json", "brief_markdown", "closure_json", "closure_markdown"):
@@ -183,18 +220,30 @@ def build_release_gate_explanation_card(
             value = str(bootstrap.get(key, "")).strip()
             if value:
                 resume_artifacts.append(value)
+    if isinstance(beta_gate, dict):
+        for key in ("json_report", "markdown_report"):
+            value = str(beta_gate.get(key, "")).strip()
+            if value:
+                resume_artifacts.append(value)
 
     progress_anchor = (
         str(follow_up.get("brief_markdown", "")).strip()
         or str(follow_up.get("closure_markdown", "")).strip()
         or "not required"
     )
+    beta_summary = "beta=SKIP"
+    if isinstance(beta_gate, dict):
+        beta_summary = (
+            f"beta={'PASS' if beta_gate.get('ok') else 'FAIL'}"
+            f" ({beta_gate.get('decision')} / {beta_gate.get('round_id')})"
+        )
     route_evidence = (
         f"Release gate decision is `{decision}` because {reason}. "
         f"tests={'PASS' if summary.get('tests_passed') else 'FAIL'}, "
         f"validator={'PASS' if summary.get('validator_passed') else 'FAIL'}, "
         f"evals={'PASS' if summary.get('evals_passed') else 'FAIL'}, "
-        f"offline-drill={'PASS' if summary.get('offline_drill_passed') else 'FAIL'}."
+        f"offline-drill={'PASS' if summary.get('offline_drill_passed') else 'FAIL'}, "
+        f"{beta_summary}."
     )
     next_action = str(follow_up.get("next_action", "")).strip()
     if next_action == "":

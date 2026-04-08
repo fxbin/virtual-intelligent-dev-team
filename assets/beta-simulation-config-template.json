@@ -1,0 +1,28 @@
+{
+  "schema_version": "beta-simulation-config/v1",
+  "skill_name": "virtual-intelligent-dev-team",
+  "round_id": "round-0",
+  "phase": "pre-build concept smoke",
+  "objective": "Validate the core product promise and the first meaningful task with heterogeneous simulated users.",
+  "persona_dir": ".skill-beta/personas",
+  "run_output_dir": ".skill-beta/simulation-runs/round-0",
+  "feedback_ledger_out": ".skill-beta/feedback-ledger.md",
+  "round_report_out": ".skill-beta/reports/round-0.json",
+  "summary_command_template": "python scripts/summarize_beta_simulation.py --run .skill-beta/simulation-runs/<round-id>/beta-simulation-run.json --feedback-ledger-out .skill-beta/feedback-ledger.md --round-report-out .skill-beta/reports/<round-id>.json --pretty",
+  "scenarios": [
+    {
+      "scenario_id": "scenario-1",
+      "title": "first meaningful task",
+      "primary_task": "finish the primary happy-path task",
+      "success_definition": "the user can complete the task and explain the value they received",
+      "risk_focus": "onboarding clarity"
+    }
+  ],
+  "session_plan": [
+    {
+      "session_id": "session-1",
+      "persona_id": "first-time-novice",
+      "scenario_id": "scenario-1"
+    }
+  ]
+}

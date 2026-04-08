@@ -53,12 +53,17 @@ existing routing, planning, iteration, release, and Git rules.
   - the team needs feedback before locking release confidence, not just a static PRD
 - Default sequence:
   1. define the beta objective, exit criteria, and round boundaries
-  2. start with a small simulated or seed-user cohort
-  3. expand sample size only when the previous round clears its gate
-  4. log structured feedback and severity before release or rollout decisions
+  2. initialize simulated-user profiles and a per-round simulation config
+  3. start with a small simulated or seed-user cohort
+  4. preserve session-level traces before synthesizing the round report
+  5. sync generated feedback rows back into the ledger and inspect blocker slices by persona and scenario
+  6. expand sample size only when the previous round clears its gate
+  7. log structured feedback and severity before release or rollout decisions
 - Primary references:
   - `references/beta-validation-playbook.md`
   - `assets/beta-cohort-matrix-template.md`
+  - `assets/simulated-user-profile-template.json`
+  - `assets/beta-simulation-config-template.json`
   - `scripts/init_beta_validation.py`
   - `scripts/evaluate_beta_round.py`
 - Default resume anchors:
@@ -130,11 +135,13 @@ existing routing, planning, iteration, release, and Git rules.
 - Default sequence:
   1. run the release gate
   2. answer `ship` or `hold`
-  3. if `hold`, create the next remediation brief
-  4. resume via iteration or planning artifacts only when needed
+  3. if staged beta validation exists, enforce the latest beta round gate before `ship`
+  4. if `hold`, create the next remediation brief
+  5. resume via iteration or planning artifacts only when needed
 - Primary references:
   - `references/release-gate-playbook.md`
   - `references/offline-loop-drill-playbook.md`
+  - `references/beta-validation-playbook.md`
 - Default resume anchors:
   - `evals/release-gate/release-gate-report.md`
   - `evals/release-gate/next-iteration-brief.json`

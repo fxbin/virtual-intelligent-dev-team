@@ -97,6 +97,14 @@
 - `simulation_allowed`
 - `feedback_anchor`
 - `cohort_artifact`
+- `simulation_profile_template`
+- `simulation_profile_dir`
+- `simulation_config_template`
+- `simulation_config_dir`
+- `simulation_run_dir`
+- `simulation_init_command_template`
+- `simulation_run_command_template`
+- `simulation_summary_command_template`
 - `report_template`
 - `report_dir`
 - `decision_dir`

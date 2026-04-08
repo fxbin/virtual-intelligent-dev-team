@@ -15,6 +15,7 @@
     "benchmark_json",
     "benchmark_markdown",
     "offline_drill_report",
+    "beta_gate",
     "explanation_card",
     "json_report",
     "markdown_report"
@@ -57,6 +58,16 @@
       "type": [
         "string",
         "null"
+      ]
+    },
+    "beta_gate": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/beta_gate"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "explanation_card": {
@@ -125,7 +136,11 @@
         "evals_passed",
         "offline_drill_enabled",
         "offline_drill_passed",
-        "overall_passed"
+        "overall_passed",
+        "beta_gate_enabled",
+        "beta_gate_passed",
+        "beta_gate_decision",
+        "beta_gate_round_id"
       ],
       "properties": {
         "tests_passed": {
@@ -148,9 +163,89 @@
         },
         "overall_passed": {
           "type": "boolean"
+        },
+        "beta_gate_enabled": {
+          "type": "boolean"
+        },
+        "beta_gate_passed": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "beta_gate_decision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "beta_gate_round_id": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
       "additionalProperties": true
+    },
+    "beta_gate": {
+      "type": "object",
+      "required": [
+        "enabled",
+        "source",
+        "generated_at",
+        "ok",
+        "decision",
+        "round_id",
+        "reason",
+        "report_path",
+        "json_report",
+        "markdown_report",
+        "release_governance_recommended"
+      ],
+      "properties": {
+        "enabled": {
+          "const": true
+        },
+        "source": {
+          "type": "string"
+        },
+        "generated_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "decision": {
+          "enum": [
+            "advance",
+            "hold",
+            "escalate"
+          ]
+        },
+        "round_id": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "report_path": {
+          "type": "string"
+        },
+        "json_report": {
+          "type": "string"
+        },
+        "markdown_report": {
+          "type": "string"
+        },
+        "release_governance_recommended": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
     },
     "explanation_card": {
       "type": "object",

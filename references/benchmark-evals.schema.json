@@ -63,6 +63,55 @@
       },
       "additionalProperties": false
     },
+    "release_gate_beta": {
+      "type": "object",
+      "required": [
+        "decision"
+      ],
+      "properties": {
+        "decision": {
+          "enum": [
+            "advance",
+            "hold",
+            "escalate"
+          ]
+        },
+        "round_id": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "success_rate": {
+          "type": "number"
+        },
+        "blocker_issue_count": {
+          "type": "integer"
+        },
+        "critical_issue_count": {
+          "type": "integer"
+        },
+        "high_severity_issue_count": {
+          "type": "integer"
+        },
+        "top_feedback_themes": {
+          "$ref": "#/$defs/string_array"
+        },
+        "next_action": {
+          "type": "string"
+        },
+        "release_governance_recommended": {
+          "type": "boolean"
+        },
+        "next_round_recommended": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
     "eval_case": {
       "type": "object",
       "required": [
@@ -131,6 +180,9 @@
         },
         "release_gate_summary": {
           "$ref": "#/$defs/release_gate_summary"
+        },
+        "release_gate_beta": {
+          "$ref": "#/$defs/release_gate_beta"
         }
       },
       "allOf": [

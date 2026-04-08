@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:beta-simulation-event.schema",
+  "title": "Virtual Intelligent Dev Team Beta Simulation Event",
+  "type": "object",
+  "required": [
+    "step_index",
+    "event_type",
+    "actor_id",
+    "scenario_id",
+    "action",
+    "outcome",
+    "severity",
+    "observation"
+  ],
+  "properties": {
+    "step_index": {
+      "type": "integer"
+    },
+    "event_type": {
+      "enum": [
+        "entry",
+        "action",
+        "hesitation",
+        "error",
+        "workaround",
+        "success",
+        "feedback"
+      ]
+    },
+    "actor_id": {
+      "type": "string"
+    },
+    "scenario_id": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string"
+    },
+    "outcome": {
+      "enum": [
+        "neutral",
+        "success",
+        "warning",
+        "failure"
+      ]
+    },
+    "severity": {
+      "enum": [
+        "info",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "observation": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}
