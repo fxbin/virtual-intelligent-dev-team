@@ -46,7 +46,26 @@ existing routing, planning, iteration, release, and Git rules.
   - `.skill-product/current-slice.md`
   - `.skill-product/acceptance-criteria.md`
 
-## 3. `audit-fix-deliver`
+## 3. `beta-feedback-ramp`
+
+- Use when:
+  - the request is about internal beta, staged user validation, or a round-by-round cohort ramp
+  - the team needs feedback before locking release confidence, not just a static PRD
+- Default sequence:
+  1. define the beta objective, exit criteria, and round boundaries
+  2. start with a small simulated or seed-user cohort
+  3. expand sample size only when the previous round clears its gate
+  4. log structured feedback and severity before release or rollout decisions
+- Primary references:
+  - `references/beta-validation-playbook.md`
+  - `assets/beta-cohort-matrix-template.md`
+  - `scripts/init_beta_validation.py`
+- Default resume anchors:
+  - `.skill-beta/program-overview.md`
+  - `.skill-beta/cohort-matrix.md`
+  - `.skill-beta/feedback-ledger.md`
+
+## 4. `audit-fix-deliver`
 
 - Use when:
   - the request combines review or audit with remediation
@@ -63,7 +82,7 @@ existing routing, planning, iteration, release, and Git rules.
   - `.skill-iterations/current-round-memory.md`
   - `.skill-iterations/distilled-patterns.md`
 
-## 4. `govern-change-safely`
+## 5. `govern-change-safely`
 
 - Use when:
   - the request is primarily about staged execution, rollback, release hygiene, branch policy, or workflow safety
@@ -81,7 +100,7 @@ existing routing, planning, iteration, release, and Git rules.
   - `.skill-governance/change-plan.md`
   - `.skill-governance/release-checklist.md`
 
-## 5. `root-cause-remediate`
+## 6. `root-cause-remediate`
 
 - Use when:
   - the user says previous fixes failed
@@ -102,7 +121,7 @@ existing routing, planning, iteration, release, and Git rules.
   - `.skill-iterations/current-round-memory.md`
   - `.skill-iterations/distilled-patterns.md`
 
-## 6. `ship-hold-remediate`
+## 7. `ship-hold-remediate`
 
 - Use when:
   - the user asks whether the current version can ship

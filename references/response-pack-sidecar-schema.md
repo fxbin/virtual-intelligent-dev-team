@@ -18,7 +18,7 @@
 - `language`
   - `en | zh`
 - `template`
-  - `default | review | planning | release | iteration | product | governance`
+  - `default | review | planning | release | iteration | beta | product | governance`
 - `team_dispatch`
 - `execution_result`
 - `evidence`
@@ -26,6 +26,7 @@
 - `resume`
 - `git_workflow`
 - `governance`
+- 可选：`beta_program`
 - 可选：`bundle_bootstrap`
 - 可选：`planning_pack`
 - 可选：`optimization_loop`
@@ -90,6 +91,23 @@
 - `commands`
 - `artifacts`
 - `resume_anchor`
+
+## `beta_program`
+
+- `simulation_allowed`
+- `feedback_anchor`
+- `cohort_artifact`
+- `rounds`
+
+`rounds[]`:
+
+- `round_id`
+- `phase`
+- `sample_size`
+- `participant_mode`
+- `archetypes`
+- `goal`
+- `exit_criteria`
 
 ## 可选块
 

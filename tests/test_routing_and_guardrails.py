@@ -28,6 +28,7 @@ RUN_RELEASE_GATE_SCRIPT = SKILL_DIR / "scripts" / "run_release_gate.py"
 INIT_PRE_DEVELOPMENT_SCRIPT = SKILL_DIR / "scripts" / "init_pre_development_plan.py"
 INIT_PROJECT_MEMORY_SCRIPT = SKILL_DIR / "scripts" / "init_project_memory.py"
 INIT_PRODUCT_DELIVERY_SCRIPT = SKILL_DIR / "scripts" / "init_product_delivery.py"
+INIT_BETA_VALIDATION_SCRIPT = SKILL_DIR / "scripts" / "init_beta_validation.py"
 INIT_TECHNICAL_GOVERNANCE_SCRIPT = SKILL_DIR / "scripts" / "init_technical_governance.py"
 GENERATE_RESPONSE_PACK_SCRIPT = SKILL_DIR / "scripts" / "generate_response_pack.py"
 RESPONSE_CONTRACT_SCRIPT = SKILL_DIR / "scripts" / "response_contract.py"
@@ -61,6 +62,7 @@ release_gate = load_module("virtual_intelligent_dev_team_run_release_gate", RUN_
 planning_init = load_module("virtual_intelligent_dev_team_planning_init", INIT_PRE_DEVELOPMENT_SCRIPT)
 project_memory_init = load_module("virtual_intelligent_dev_team_project_memory_init", INIT_PROJECT_MEMORY_SCRIPT)
 product_delivery_init = load_module("virtual_intelligent_dev_team_product_delivery_init", INIT_PRODUCT_DELIVERY_SCRIPT)
+beta_validation_init = load_module("virtual_intelligent_dev_team_beta_validation_init", INIT_BETA_VALIDATION_SCRIPT)
 technical_governance_init = load_module("virtual_intelligent_dev_team_technical_governance_init", INIT_TECHNICAL_GOVERNANCE_SCRIPT)
 response_pack = load_module("virtual_intelligent_dev_team_response_pack", GENERATE_RESPONSE_PACK_SCRIPT)
 response_contract = load_module("virtual_intelligent_dev_team_response_contract", RESPONSE_CONTRACT_SCRIPT)
@@ -467,6 +469,26 @@ class RoutingTests(unittest.TestCase):
             "python scripts/init_product_delivery.py --root . --pretty",
             result["workflow_bundle_bootstrap"]["commands"],
         )
+
+    def test_beta_validation_request_routes_to_product_beta_bundle(self) -> None:
+        result = route_request.route_request(
+            "这个产品开发前后都要做内测，分三轮递增用户，并模拟不同类型的内测用户来收集反馈。",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertEqual("World-Class Product Architect", result["lead_agent"])
+        self.assertEqual("beta-feedback-ramp", result["workflow_bundle"])
+        self.assertTrue(result["workflow_bundle_bootstrap"]["required"])
+        self.assertIn(
+            "python scripts/init_beta_validation.py --root . --pretty",
+            result["workflow_bundle_bootstrap"]["commands"],
+        )
+        beta_plan = result["beta_validation_plan"]
+        self.assertTrue(beta_plan["enabled"])
+        self.assertTrue(beta_plan["simulation_allowed"])
+        self.assertEqual(".skill-beta/feedback-ledger.md", beta_plan["feedback_anchor"])
+        self.assertEqual(3, len(beta_plan["rounds"]))
 
     def test_governance_request_routes_to_git_guardian_bundle(self) -> None:
         result = route_request.route_request(
@@ -4377,6 +4399,17 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertTrue((root / ".skill-product" / "contract-questions.md").exists())
             self.assertEqual(".skill-product/current-slice.md", result["resume_anchor"])
 
+    def test_init_beta_validation_creates_expected_anchors(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            result = beta_validation_init.init_beta_validation(root=root, overwrite=False)
+
+            self.assertTrue(result["ok"])
+            self.assertTrue((root / ".skill-beta" / "program-overview.md").exists())
+            self.assertTrue((root / ".skill-beta" / "cohort-matrix.md").exists())
+            self.assertTrue((root / ".skill-beta" / "feedback-ledger.md").exists())
+            self.assertEqual(".skill-beta/program-overview.md", result["resume_anchor"])
+
     def test_init_technical_governance_creates_expected_anchors(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
@@ -4396,6 +4429,7 @@ class ResponsePackTests(unittest.TestCase):
             "Rewrite this project in Rust, but plan before coding and keep a progress tracker for later sessions.",
             "Is this version ready to ship? Do not answer from benchmark alone. Run the formal release gate.",
             "Iterate on the React dashboard UX, benchmark the variants, and keep improving until stable.",
+            "这个产品开发前后都要做内测，分三轮递增用户，并模拟不同类型的内测用户来收集反馈。",
         ]
 
         for prompt in prompts:
@@ -4470,6 +4504,20 @@ class ResponsePackTests(unittest.TestCase):
             payload["bundle_bootstrap"]["commands"],
         )
 
+    def test_generate_response_pack_payload_includes_beta_program(self) -> None:
+        result = route_request.route_request(
+            "这个产品开发前后都要做内测，分三轮递增用户，并模拟不同类型的内测用户来收集反馈。",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        payload = response_pack.build_response_pack_payload(result)
+
+        self.assertEqual("beta", payload["template"])
+        self.assertIn("beta_program", payload)
+        self.assertEqual(".skill-beta/feedback-ledger.md", payload["beta_program"]["feedback_anchor"])
+        self.assertEqual(3, len(payload["beta_program"]["rounds"]))
+
     def test_generate_response_pack_cli_writes_json_sidecar_by_default(self) -> None:
         with make_tempdir() as tmp:
             output = Path(tmp) / "response-pack.md"
@@ -4531,6 +4579,20 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("## Bundle Bootstrap", markdown)
         self.assertIn("python scripts/init_product_delivery.py --root . --pretty", markdown)
         self.assertIn(".skill-product/current-slice.md", markdown)
+
+    def test_generate_response_pack_renders_beta_program(self) -> None:
+        result = route_request.route_request(
+            "这个产品开发前后都要做内测，分三轮递增用户，并模拟不同类型的内测用户来收集反馈。",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        markdown = response_pack.build_response_pack(result)
+
+        self.assertIn("## 内测计划", markdown)
+        self.assertIn("round-0 | pre-build concept smoke | 样本 5", markdown)
+        self.assertIn(".skill-beta/cohort-matrix.md", markdown)
+        self.assertIn(".skill-beta/feedback-ledger.md", markdown)
 
     def test_generate_response_pack_auto_uses_chinese_scaffold(self) -> None:
         result = route_request.route_request(

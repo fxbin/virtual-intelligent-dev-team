@@ -93,6 +93,21 @@
       }
     },
     {
+      "name": "beta_validation_with_staged_cohorts",
+      "text": "这个产品开发前后都要做内测，分三轮递增用户，并模拟不同类型的内测用户来收集反馈。",
+      "expect": {
+        "lead_agent": "World-Class Product Architect",
+        "workflow_bundle": "beta-feedback-ramp",
+        "bundle_bootstrap_commands_contains": [
+          "python scripts/init_beta_validation.py --root . --pretty"
+        ],
+        "bundle_bootstrap_artifacts_contains": [
+          ".skill-beta/program-overview.md"
+        ],
+        "priority_agent": null
+      }
+    },
+    {
       "name": "python_fastapi_design",
       "text": "Use Python and FastAPI to build a backend service.",
       "expect": {

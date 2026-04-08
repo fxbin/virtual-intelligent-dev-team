@@ -42,6 +42,8 @@ def infer_template(result: dict[str, object]) -> str:
         return "planning"
     if bool(result.get("needs_iteration")):
         return "iteration"
+    if str(result.get("workflow_bundle")) == "beta-feedback-ramp":
+        return "beta"
     if str(result.get("workflow_bundle")) == "product-spec-deliver":
         return "product"
     if str(result.get("workflow_bundle")) == "govern-change-safely":
@@ -80,6 +82,7 @@ def localize_workflow_reason(bundle: str, reason: str, language: str) -> str:
         "plan-first-build": "当前请求属于重写、迁移或先规划后开发，应先产出 planning pack 和持久化进度锚点。",
         "root-cause-remediate": "当前请求需要基于证据做诊断或有边界迭代，应保留验证证据与回滚决策。",
         "audit-fix-deliver": "当前请求以审计或 review 为主，应先给出 findings，再决定修复与交付。",
+        "beta-feedback-ramp": "当前请求以内测验证和分轮反馈收敛为主，应先明确轮次目标、用户梯度和反馈门禁。",
         "product-spec-deliver": "当前请求以产品切片交付为主，应先锁定范围、用户流、验收标准和契约问题。",
         "govern-change-safely": "当前请求以技术治理和交付安全为主，应先明确执行模式、验证方式和回滚条件。",
         "direct-execution": "当前请求没有命中更强的流程旅程，保持轻量直执行即可。",
@@ -114,6 +117,12 @@ def localize_workflow_steps(bundle: str, steps: list[str], language: str) -> lis
             "把 blocker 和后续优化项拆开",
             "定义最小且安全的修复动作",
             "只有在明确要求 commit、push 或 PR 时再进入 Git 交付",
+        ],
+        "beta-feedback-ramp": [
+            "先定义每轮内测的目标、样本量和退出条件",
+            "先用小规模模拟用户或种子用户验证产品承诺",
+            "前一轮过门后再扩到更大的内测用户批次",
+            "逐轮记录反馈、严重度和 ship/hold 判断",
         ],
         "product-spec-deliver": [
             "先锁定目标用户、目标结果和最小可接受范围",
@@ -190,6 +199,9 @@ def build_response_pack_payload(
     bundle_bootstrap = result.get("workflow_bundle_bootstrap", {})
     if not isinstance(bundle_bootstrap, dict):
         bundle_bootstrap = {}
+    beta_validation_plan = result.get("beta_validation_plan", {})
+    if not isinstance(beta_validation_plan, dict):
+        beta_validation_plan = {}
     contract = result.get("assistant_delta_contract", {})
     if not isinstance(contract, dict):
         contract = {}
@@ -268,6 +280,12 @@ def build_response_pack_payload(
                 "key_decision": f"由 `{lead}` 持有优化闭环的语义所有权。",
                 "main_risks": f"证据不足、静默回归，以及超过 `{iteration_profile.get('round_cap_online', 0)}` 轮在线迭代后的 loop drift。",
             }
+        elif selected_template == "beta":
+            execution_result = {
+                "key_conclusion": "先跑分轮内测闭环，再决定是否扩大样本或进入发布判断。",
+                "key_decision": f"由 `{lead}` 持有内测目标、用户梯度和反馈门禁的收口。",
+                "main_risks": "样本结构失真、过早放量，以及反馈记录与严重度分级不完整。",
+            }
         elif selected_template == "product":
             execution_result = {
                 "key_conclusion": "先把产品切片写实，再进入实现。",
@@ -310,6 +328,12 @@ def build_response_pack_payload(
                 "key_conclusion": "stay inside the bounded loop and change only one variable per round.",
                 "key_decision": f"keep `{lead}` as the semantic owner of the optimization loop.",
                 "main_risks": f"weak evidence, silent regression, and loop drift beyond `{iteration_profile.get('round_cap_online', 0)}` online rounds.",
+            }
+        elif selected_template == "beta":
+            execution_result = {
+                "key_conclusion": "run the staged beta loop before expanding the cohort or turning this into a release decision.",
+                "key_decision": f"keep `{lead}` as owner of beta objectives, cohort ramp, and feedback gates.",
+                "main_risks": "biased cohorts, scaling too early, and incomplete feedback severity tracking.",
             }
         elif selected_template == "product":
             execution_result = {
@@ -383,6 +407,25 @@ def build_response_pack_payload(
             "artifacts": [str(item) for item in bundle_bootstrap.get("artifacts", []) if str(item).strip()],
             "resume_anchor": format_missing(bundle_bootstrap.get("resume_anchor", ""), selected_language),
         }
+    if bool(beta_validation_plan.get("enabled")):
+        payload["beta_program"] = {
+            "simulation_allowed": bool(beta_validation_plan.get("simulation_allowed")),
+            "feedback_anchor": str(beta_validation_plan.get("feedback_anchor", ".skill-beta/feedback-ledger.md")),
+            "cohort_artifact": str(beta_validation_plan.get("cohort_artifact", ".skill-beta/cohort-matrix.md")),
+            "rounds": [
+                {
+                    "round_id": str(item.get("round_id", "")),
+                    "phase": str(item.get("phase", "")),
+                    "sample_size": int(item.get("sample_size", 0)),
+                    "participant_mode": str(item.get("participant_mode", "")),
+                    "archetypes": [str(value) for value in item.get("archetypes", []) if str(value).strip()],
+                    "goal": str(item.get("goal", "")),
+                    "exit_criteria": str(item.get("exit_criteria", "")),
+                }
+                for item in beta_validation_plan.get("rounds", [])
+                if isinstance(item, dict)
+            ],
+        }
     if needs_planning:
         payload["planning_pack"] = {
             "recommended_anchor": progress_anchor or "docs/progress/MASTER.md",
@@ -415,6 +458,7 @@ def build_response_pack(
     planning_pack = payload["planning_pack"] if isinstance(payload.get("planning_pack"), dict) else None
     optimization_loop = payload["optimization_loop"] if isinstance(payload.get("optimization_loop"), dict) else None
     bundle_bootstrap = payload["bundle_bootstrap"] if isinstance(payload.get("bundle_bootstrap"), dict) else None
+    beta_program = payload["beta_program"] if isinstance(payload.get("beta_program"), dict) else None
     none_text = "无" if selected_language == "zh" else "none"
 
     if selected_language == "zh":
@@ -582,6 +626,49 @@ def build_response_pack(
                 ]
             )
 
+    if isinstance(beta_program, dict):
+        rounds = beta_program.get("rounds", [])
+        if not isinstance(rounds, list):
+            rounds = []
+        if selected_language == "zh":
+            lines.extend(
+                [
+                    "## 内测计划",
+                    f"- 是否允许模拟用户：{format_bool(beta_program.get('simulation_allowed'), selected_language)}",
+                    f"- cohort 矩阵：{beta_program.get('cohort_artifact', '.skill-beta/cohort-matrix.md')}",
+                    f"- 反馈台账：{beta_program.get('feedback_anchor', '.skill-beta/feedback-ledger.md')}",
+                    "- 分轮方案：",
+                    _bullet_list(
+                        [
+                            f"{item.get('round_id', '')} | {item.get('phase', '')} | 样本 {item.get('sample_size', 0)} | {item.get('participant_mode', '')} | archetypes: {', '.join(item.get('archetypes', []))} | 目标: {item.get('goal', '')} | 退出条件: {item.get('exit_criteria', '')}"
+                            for item in rounds
+                            if isinstance(item, dict)
+                        ],
+                        none_text,
+                    ),
+                    "",
+                ]
+            )
+        else:
+            lines.extend(
+                [
+                    "## Beta Program",
+                    f"- Simulation allowed: {format_bool(beta_program.get('simulation_allowed'), selected_language)}",
+                    f"- Cohort artifact: {beta_program.get('cohort_artifact', '.skill-beta/cohort-matrix.md')}",
+                    f"- Feedback anchor: {beta_program.get('feedback_anchor', '.skill-beta/feedback-ledger.md')}",
+                    "- Rounds:",
+                    _bullet_list(
+                        [
+                            f"{item.get('round_id', '')} | {item.get('phase', '')} | sample {item.get('sample_size', 0)} | {item.get('participant_mode', '')} | archetypes: {', '.join(item.get('archetypes', []))} | goal: {item.get('goal', '')} | exit: {item.get('exit_criteria', '')}"
+                            for item in rounds
+                            if isinstance(item, dict)
+                        ],
+                        none_text,
+                    ),
+                    "",
+                ]
+            )
+
     if isinstance(optimization_loop, dict):
         if selected_language == "zh":
             lines.extend(
@@ -616,7 +703,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--json-output", help="Optional JSON sidecar path.")
     parser.add_argument(
         "--template",
-        choices=["auto", "default", "review", "planning", "release", "iteration"],
+        choices=["auto", "default", "review", "planning", "release", "iteration", "product", "governance", "beta"],
         default="auto",
         help="Response pack template to use.",
     )

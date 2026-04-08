@@ -31,3 +31,4 @@ Use this playbook when the request is primarily about product definition, user f
 - Do not confuse a visual mockup with an executable requirement.
 - Do not emit vague acceptance criteria such as "better UX" or "more intuitive".
 - If backend/API coupling is material, attach `Technical Trinity`.
+- If staged beta validation or cohort ramp is the center of gravity, switch to `beta-validation-playbook.md` instead of forcing everything into a plain product brief.

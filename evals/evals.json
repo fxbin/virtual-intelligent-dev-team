@@ -1125,6 +1125,27 @@
     },
     {
       "id": 67,
+      "categories": [
+        "product-delivery",
+        "workflow-bundle",
+        "chinese"
+      ],
+      "prompt": "这个产品开发前后都要做内测，分三轮递增用户，并模拟不同类型的内测用户来收集反馈。",
+      "expected_output": "Beta-validation requests should route to the product lead, activate the beta bundle, and expose a staged cohort plan with simulated users.",
+      "files": [],
+      "expectations": [
+        "lead_agent is World-Class Product Architect",
+        "workflow_bundle is beta-feedback-ramp",
+        "workflow_bundle_bootstrap.required is true",
+        "workflow_bundle_bootstrap.commands contains python scripts/init_beta_validation.py --root . --pretty",
+        "response_pack_json template is beta",
+        "response_pack_json beta_program.simulation_allowed is true",
+        "response_pack_json beta_program.rounds length is 3",
+        "response_pack_json beta_program.feedback_anchor is .skill-beta/feedback-ledger.md"
+      ]
+    },
+    {
+      "id": 68,
       "runner": "release_gate",
       "categories": [
         "release-gate",

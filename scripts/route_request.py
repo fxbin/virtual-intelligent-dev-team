@@ -1509,6 +1509,23 @@ def build_workflow_bundle(
         "范围",
         "需求文档",
     ]
+    beta_keywords = [
+        "beta",
+        "closed beta",
+        "internal beta",
+        "dogfood",
+        "pilot users",
+        "user testing",
+        "usability test",
+        "feedback cohort",
+        "cohort",
+        "内测",
+        "灰度用户",
+        "试用用户",
+        "用户反馈",
+        "可用性测试",
+        "种子用户",
+    ]
     governance_keywords = [
         "governance",
         "review bar",
@@ -1607,6 +1624,26 @@ def build_workflow_bundle(
             ],
         }
 
+    if lead_agent == "World-Class Product Architect" and text_has_any_keyword(text, beta_keywords):
+        return {
+            "name": "beta-feedback-ramp",
+            "confidence": 0.9,
+            "source": "lead+keyword",
+            "reason": "The request is beta-validation shaped, so product promise, cohort design, round-by-round sample growth, and structured feedback gates should be explicit before broader rollout.",
+            "steps": [
+                "define the validation objective, release boundary, and exit criteria for each beta round",
+                "start with a small simulated or seed-user cohort before implementation or broad exposure",
+                "expand to larger internal-beta cohorts only when the previous round clears its gate",
+                "log feedback, severity, and ship-or-hold decisions round by round",
+            ],
+            "progress_anchor_recommended": ".skill-beta/program-overview.md",
+            "resume_artifacts": [
+                ".skill-beta/program-overview.md",
+                ".skill-beta/cohort-matrix.md",
+                ".skill-beta/feedback-ledger.md",
+            ],
+        }
+
     if lead_agent == "World-Class Product Architect" or text_has_any_keyword(text, product_keywords):
         return {
             "name": "product-spec-deliver",
@@ -1665,6 +1702,20 @@ def build_workflow_bundle(
 
 
 def build_workflow_bundle_bootstrap(bundle_name: str) -> dict[str, object]:
+    if bundle_name == "beta-feedback-ramp":
+        return {
+            "required": True,
+            "reference": "references/beta-validation-playbook.md",
+            "commands": [
+                "python scripts/init_beta_validation.py --root . --pretty",
+            ],
+            "artifacts": [
+                ".skill-beta/program-overview.md",
+                ".skill-beta/cohort-matrix.md",
+                ".skill-beta/feedback-ledger.md",
+            ],
+            "resume_anchor": ".skill-beta/program-overview.md",
+        }
     if bundle_name == "product-spec-deliver":
         return {
             "required": True,
@@ -1732,6 +1783,95 @@ def build_assistant_delta_contract(
         "by_agent": by_agent,
         "strict_mode": True,
         "rule": "Assistants should return only the delta that materially changes the lead decision.",
+    }
+
+
+def build_beta_validation_plan(text: str, workflow_bundle_name: str) -> dict[str, object]:
+    if workflow_bundle_name != "beta-feedback-ramp":
+        return {}
+
+    wants_wider_rollout = text_has_any_keyword(
+        text,
+        [
+            "scale up",
+            "wider beta",
+            "public beta",
+            "launch",
+            "rollout",
+            "逐步放量",
+            "扩大内测",
+            "发布前",
+            "上线前",
+        ],
+    )
+    rounds = [
+        {
+            "round_id": "round-0",
+            "phase": "pre-build concept smoke",
+            "sample_size": 5,
+            "participant_mode": "simulated target users",
+            "archetypes": [
+                "first-time novice",
+                "goal-driven power user",
+                "skeptical evaluator",
+            ],
+            "goal": "Validate the product promise, user motivation, and major workflow confusion before implementation hardens.",
+            "exit_criteria": "The core value proposition is understandable, the top workflow is coherent, and no blocker-level confusion remains.",
+        },
+        {
+            "round_id": "round-1",
+            "phase": "closed beta",
+            "sample_size": 12,
+            "participant_mode": "seed users",
+            "archetypes": [
+                "first-time novice",
+                "daily operator",
+                "power user",
+                "edge-case breaker",
+            ],
+            "goal": "Validate the implemented slice, log usability failures, and confirm that acceptance criteria hold under real tasks.",
+            "exit_criteria": "No P0-P1 workflow blockers remain, the key task succeeds consistently, and top feedback themes are stable enough to cluster.",
+        },
+        {
+            "round_id": "round-2",
+            "phase": "expanded internal beta",
+            "sample_size": 30,
+            "participant_mode": "mixed internal and trusted external users",
+            "archetypes": [
+                "new user",
+                "returning user",
+                "power user",
+                "skeptical evaluator",
+                "edge-case breaker",
+            ],
+            "goal": "Pressure-test stability, messaging, and operational readiness before broader rollout.",
+            "exit_criteria": "Feedback severity is trending down, repeated blocker classes are closed, and rollout readiness can be judged with explicit evidence.",
+        },
+    ]
+    if wants_wider_rollout:
+        rounds.append(
+            {
+                "round_id": "round-3",
+                "phase": "risk-gated wider beta",
+                "sample_size": 80,
+                "participant_mode": "broader invited users",
+                "archetypes": [
+                    "new user",
+                    "habitual user",
+                    "power user",
+                    "skeptical evaluator",
+                    "long-tail edge-case user",
+                ],
+                "goal": "Confirm that the product still holds when the cohort broadens and variance increases.",
+                "exit_criteria": "No new severe cohort-specific failures appear and the rollout decision can move from internal beta to release governance.",
+            }
+        )
+    return {
+        "enabled": True,
+        "simulation_allowed": True,
+        "feedback_anchor": ".skill-beta/feedback-ledger.md",
+        "cohort_artifact": ".skill-beta/cohort-matrix.md",
+        "rounds": rounds,
     }
 
 
@@ -1934,6 +2074,10 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         assistants=assistants,
         workflow_bundle=str(workflow_bundle.get("name")),
     )
+    beta_validation_plan = build_beta_validation_plan(
+        text=text,
+        workflow_bundle_name=str(workflow_bundle.get("name")),
+    )
 
     reason = {
         "lead_positive_hits": reasons.get(lead_agent, {}).get("positive", []),
@@ -1988,6 +2132,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "progress_anchor_recommended": workflow_bundle.get("progress_anchor_recommended"),
         "resume_artifacts": workflow_bundle.get("resume_artifacts", []),
         "workflow_bundle_bootstrap": workflow_bundle_bootstrap,
+        "beta_validation_plan": beta_validation_plan,
         "assistant_delta_contract": assistant_delta_contract,
         "scores": scores,
         "reason": reason,

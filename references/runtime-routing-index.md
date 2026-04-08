@@ -15,6 +15,8 @@
   - 中文流程 walkthrough
 - `product-delivery-playbook.md`
   - 产品定义到实现切片的默认打法
+- `beta-validation-playbook.md`
+  - 开发前后分轮内测、用户递增与反馈门禁的默认打法
 - `technical-governance-playbook.md`
   - 风险控制、发布控制、Git 治理的默认打法
 
@@ -57,6 +59,7 @@
 - Large-scale transformation planning
 - Audit and fix
 - Product slice to delivery
+- Beta validation with staged cohorts
 - Frontend UX with backend coupling
 - Technical governance hardening
 - High-risk production change

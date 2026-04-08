@@ -1,7 +1,7 @@
 {
   "meta": {
     "author": "fxbin",
-    "version": "v4.31.0",
+    "version": "v4.32.0",
     "updated": "2026-04-08"
   },
   "thresholds": {
@@ -1070,6 +1070,34 @@
         },
         {
           "keyword": "onboarding",
+          "score": 5
+        },
+        {
+          "keyword": "beta",
+          "score": 6
+        },
+        {
+          "keyword": "internal beta",
+          "score": 6
+        },
+        {
+          "keyword": "user testing",
+          "score": 5
+        },
+        {
+          "keyword": "cohort",
+          "score": 5
+        },
+        {
+          "keyword": "内测",
+          "score": 6
+        },
+        {
+          "keyword": "用户反馈",
+          "score": 5
+        },
+        {
+          "keyword": "可用性测试",
           "score": 5
         },
         {

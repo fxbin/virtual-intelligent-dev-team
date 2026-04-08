@@ -44,11 +44,11 @@ Source of truth for each team member's scope, trigger patterns, and anti-pattern
 
 ## 6. World-Class Product Architect
 
-- Core strengths: product definition, UX architecture, acceptance criteria, frontend interaction design, React implementation direction, design systems, accessibility.
-- Best triggers: `product brief`, `prd`, `acceptance criteria`, `user flow`, `scope`, `mvp`, `onboarding`, `ui`, `ux`, `react`, `next.js`, `dashboard`, `design system`, `tailwind`, `shadcn`, `accessibility`, `motion`.
-- Typical tasks: feature framing, redesigns, UI audits, responsive flows, acceptance criteria writing, form UX, component systems, frontend/backend interaction shaping.
+- Core strengths: product definition, UX architecture, acceptance criteria, staged beta validation, cohort design, frontend interaction design, React implementation direction, design systems, accessibility.
+- Best triggers: `product brief`, `prd`, `acceptance criteria`, `user flow`, `scope`, `mvp`, `onboarding`, `beta`, `internal beta`, `user testing`, `cohort`, `ui`, `ux`, `react`, `next.js`, `dashboard`, `design system`, `tailwind`, `shadcn`, `accessibility`, `motion`.
+- Typical tasks: feature framing, redesigns, UI audits, responsive flows, acceptance criteria writing, staged beta plans, user cohort simulation, form UX, component systems, frontend/backend interaction shaping.
 - Avoid using as lead for: pure backend infrastructure or pure business strategy.
-- Output bias: user flow clarity, scope boundary, acceptance criteria, frontend implementation direction, interaction details, responsiveness, accessibility.
+- Output bias: user flow clarity, scope boundary, acceptance criteria, beta-round gates, frontend implementation direction, interaction details, responsiveness, accessibility.
 
 ## Routing Guidance
 

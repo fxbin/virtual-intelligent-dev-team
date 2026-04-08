@@ -32,6 +32,7 @@
         "planning",
         "release",
         "iteration",
+        "beta",
         "product",
         "governance"
       ]
@@ -59,6 +60,9 @@
     },
     "bundle_bootstrap": {
       "$ref": "#/$defs/bundle_bootstrap"
+    },
+    "beta_program": {
+      "$ref": "#/$defs/beta_program"
     },
     "planning_pack": {
       "$ref": "#/$defs/planning_pack"
@@ -292,6 +296,69 @@
         },
         "workflow_steps": {
           "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "beta_round": {
+      "type": "object",
+      "required": [
+        "round_id",
+        "phase",
+        "sample_size",
+        "participant_mode",
+        "archetypes",
+        "goal",
+        "exit_criteria"
+      ],
+      "properties": {
+        "round_id": {
+          "type": "string"
+        },
+        "phase": {
+          "type": "string"
+        },
+        "sample_size": {
+          "type": "integer"
+        },
+        "participant_mode": {
+          "type": "string"
+        },
+        "archetypes": {
+          "$ref": "#/$defs/string_array"
+        },
+        "goal": {
+          "type": "string"
+        },
+        "exit_criteria": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "beta_program": {
+      "type": "object",
+      "required": [
+        "simulation_allowed",
+        "feedback_anchor",
+        "cohort_artifact",
+        "rounds"
+      ],
+      "properties": {
+        "simulation_allowed": {
+          "type": "boolean"
+        },
+        "feedback_anchor": {
+          "type": "string"
+        },
+        "cohort_artifact": {
+          "type": "string"
+        },
+        "rounds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/beta_round"
+          }
         }
       },
       "additionalProperties": false

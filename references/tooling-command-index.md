@@ -114,7 +114,7 @@ python scripts/generate_response_pack.py --text "<user request>" --repo . --outp
   - `Evidence`
   - `Next Action`
   - `Resume`
-  - 再进入 `Git Workflow / Governance / Planning Pack / Optimization Loop`
+  - 再进入 `Git Workflow / Governance / Bundle Bootstrap / Beta Program / Planning Pack / Optimization Loop`
 - `verify_action.py` 现在也会回传 `explanation_card`
   - 适合在执行前把 `workflow_bundle / source explanation / next action / resume anchor` 直接喂给别的脚本
 - JSON sidecar 的稳定字段说明见：
@@ -165,7 +165,22 @@ python scripts/init_pre_development_plan.py --root . --task-name "<task-name>" -
 python scripts/init_product_delivery.py --root . --pretty
 ```
 
-## 四、技术治理资产
+## 四、内测验证资产
+
+模板：
+
+- `assets/beta-program-overview-template.md`
+- `assets/beta-cohort-matrix-template.md`
+- `assets/beta-feedback-ledger-template.md`
+- `references/beta-validation-playbook.md`
+
+常用初始化命令：
+
+```bash
+python scripts/init_beta_validation.py --root . --pretty
+```
+
+## 五、技术治理资产
 
 模板：
 
@@ -179,7 +194,7 @@ python scripts/init_product_delivery.py --root . --pretty
 python scripts/init_technical_governance.py --root . --pretty
 ```
 
-## 五、bounded iteration 资产
+## 六、bounded iteration 资产
 
 模板：
 
@@ -191,7 +206,7 @@ python scripts/init_technical_governance.py --root . --pretty
 - `assets/iteration-plan-template.json`
 - `references/project-memory-lite.md`
 
-## 五点五、project memory lite
+## 六点五、project memory lite
 
 推荐锚点：
 
@@ -220,7 +235,7 @@ cp assets/round-memory-template.md .skill-iterations/current-round-memory.md
 cp assets/distilled-patterns-template.md .skill-iterations/distilled-patterns.md
 ```
 
-## 六、iteration 命令
+## 七、iteration 命令
 
 - 初始化 round
 
@@ -303,7 +318,7 @@ python scripts/materialize_candidate_patch.py --brief .skill-iterations/candidat
 ## 七、使用原则
 
 - 高风险、多阶段、多人协作前，先用 `verify_action.py` 确认 process skill / lead assignment / release gate / iteration 是否真的该开
-- 如果路由返回了 `product-spec-deliver` 或 `govern-change-safely`，再额外跑一次 `bundle-bootstrap`，确认起盘动作和恢复锚点没有漂移
+- 如果路由返回了 `product-spec-deliver`、`beta-feedback-ramp` 或 `govern-change-safely`，再额外跑一次 `bundle-bootstrap`，确认起盘动作和恢复锚点没有漂移
 - 需要跨会话恢复时，优先只推荐一个主锚点，再补最多两个 supporting artifacts
 - 改了路由、索引、playbook、脚本命令后，先跑 `lint_virtual_team_contract.py`，再跑 `validate_virtual_team.py`
 - 开发前规划分支只在大改造、迁移、重写、先规划后开发时启用

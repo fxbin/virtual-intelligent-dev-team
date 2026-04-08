@@ -1,6 +1,6 @@
 ---
 name: virtual-intelligent-dev-team
-description: R&D / product / technical-governance router and bounded-iteration orchestrator for complex software work. Dispatch the best lead agent from Java Virtuoso, Sentinel Architect (NB), Technical Trinity, Code Audit Council, Git Workflow Guardian, and World-Class Product Architect, attach the right copilot agents when work crosses code, product definition, frontend UX, security, release, or git workflow, enter a lightweight pre-development planning branch for large rewrites, migrations, and project-wide transformations before coding, enable evidence-driven iteration when the user asks for optimization loops, repeated retries, benchmark comparison, or candidate evaluation, and trigger the formal release gate when the user asks whether a version is ready to ship or submit.
+description: R&D / product / staged-beta / technical-governance router and bounded-iteration orchestrator for complex software work. Dispatch the best lead agent from Java Virtuoso, Sentinel Architect (NB), Technical Trinity, Code Audit Council, Git Workflow Guardian, and World-Class Product Architect, attach the right copilot agents when work crosses code, product definition, staged user validation, frontend UX, security, release, or git workflow, enter a lightweight pre-development planning branch for large rewrites, migrations, and project-wide transformations before coding, enable evidence-driven iteration when the user asks for optimization loops, repeated retries, benchmark comparison, or candidate evaluation, and trigger the formal release gate when the user asks whether a version is ready to ship or submit.
 ---
 
 # Virtual Intelligent Dev Team
@@ -46,6 +46,8 @@ One more runtime rule:
   - Route into bounded iteration with evidence, baseline comparison, and next-round decisions.
 - `先别写代码，先把这个单体拆分迁移项目规划清楚`
   - Enter pre-development planning, generate the transformation brief and progress anchor, then hand back to execution.
+- `这个功能开发前后都要做内测，按轮次逐步加用户`
+  - Route into staged beta validation, define cohort ramp, and keep feedback evidence before release expansion.
 - `继续下一轮，直到结果稳定`
   - Keep the same semantic owner, persist round memory, and use `keep / retry / rollback / stop` instead of vague retries.
 - `这个版本现在能发布吗`
@@ -125,7 +127,7 @@ Use pre-development planning only when the request benefits from it:
 - `Git Workflow Guardian`
   - Git workflow, branch policy, commit policy, push and PR guardrails, conflict handling.
 - `World-Class Product Architect`
-  - Product definition, user flow, acceptance criteria, frontend UX, React UI, and frontend/backend contract shaping.
+  - Product definition, staged beta validation, user flow, acceptance criteria, frontend UX, React UI, and frontend/backend contract shaping.
 
 ## Routing model
 
@@ -174,7 +176,7 @@ This skill is intentionally strongest in three lanes:
 - `研发`
   - architecture, implementation, review, refactor, migration, iteration, release readiness
 - `产品`
-  - product brief, user flow, acceptance criteria, UI/UX, frontend/backend contract
+  - product brief, user flow, acceptance criteria, staged beta validation, UI/UX, frontend/backend contract
 - `技术治理`
   - risk gates, Git workflow, staged delivery, rollback, release gate, process guardrails
 
