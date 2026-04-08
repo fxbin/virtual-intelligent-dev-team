@@ -255,14 +255,14 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual(["bounded-iteration"], result["process_skills"])
         self.assertEqual("root-cause-remediate", result["workflow_bundle"])
 
-    def test_strategy_iteration_keeps_semantic_lead(self) -> None:
+    def test_product_iteration_keeps_semantic_lead(self) -> None:
         result = route_request.route_request(
-            "Iterate on the pricing strategy options, benchmark them, and stop if the new round regresses.",
+            "Iterate on the onboarding flow and acceptance criteria, benchmark the variants, and stop if the new round regresses.",
             load_config(),
             repo_path=REPO_ROOT,
         )
 
-        self.assertEqual("Executive Trinity", result["lead_agent"])
+        self.assertEqual("World-Class Product Architect", result["lead_agent"])
         self.assertTrue(result["needs_iteration"])
 
     def test_unknown_request_low_confidence_keeps_no_assistants(self) -> None:
@@ -312,13 +312,13 @@ class RoutingTests(unittest.TestCase):
 
     def test_assistant_delta_contract_is_enabled_when_assistants_exist(self) -> None:
         result = route_request.route_request(
-            "This SaaS is not growing. Set the strategy and also land the technical plan.",
+            "Define the onboarding user flow, acceptance criteria, and backend contract for this signup revamp.",
             load_config(),
             repo_path=REPO_ROOT,
         )
 
         self.assertTrue(result["assistant_delta_contract"]["enabled"])
-        self.assertEqual("Executive Trinity", result["assistant_delta_contract"]["lead_owner"])
+        self.assertEqual("World-Class Product Architect", result["assistant_delta_contract"]["lead_owner"])
         self.assertIn("Technical Trinity", result["assistant_delta_contract"]["assistants"])
         self.assertIn("claim", result["assistant_delta_contract"]["required_fields"])
         self.assertIn("evidence", result["assistant_delta_contract"]["required_fields"])
@@ -447,26 +447,28 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual("Git Workflow Guardian", result["lead_agent"])
         self.assertIn("Sentinel Architect (NB)", result["assistant_agents"])
 
-    def test_strategy_request_adds_technical_trinity_copilot(self) -> None:
+    def test_product_scope_request_adds_technical_trinity_copilot(self) -> None:
         result = route_request.route_request(
-            "This SaaS is not growing. Set the strategy and also land the technical plan.",
+            "Define the onboarding user flow, acceptance criteria, and backend contract for this signup revamp.",
             load_config(),
             repo_path=REPO_ROOT,
         )
 
-        self.assertEqual("Executive Trinity", result["lead_agent"])
+        self.assertEqual("World-Class Product Architect", result["lead_agent"])
         self.assertIn("Technical Trinity", result["assistant_agents"])
         self.assertNotEqual("模式 A：单点执行", result["mode"])
+        self.assertEqual("product-spec-deliver", result["workflow_bundle"])
 
-    def test_omni_request_adds_technical_trinity_copilot(self) -> None:
+    def test_governance_request_routes_to_git_guardian_bundle(self) -> None:
         result = route_request.route_request(
-            "Design a system for an unfamiliar industry, including compliance and technical landing.",
+            "Define the rollback plan and branch delivery flow for this core refactor.",
             load_config(),
             repo_path=REPO_ROOT,
         )
 
-        self.assertEqual("Omni-Architect", result["lead_agent"])
-        self.assertIn("Technical Trinity", result["assistant_agents"])
+        self.assertEqual("Git Workflow Guardian", result["lead_agent"])
+        self.assertTrue(result["needs_git_workflow"])
+        self.assertEqual("govern-change-safely", result["workflow_bundle"])
 
     def test_python_fastapi_routes_to_technical_trinity(self) -> None:
         result = route_request.route_request(
@@ -723,14 +725,14 @@ class RoutingTests(unittest.TestCase):
         self.assertIn("Git Workflow Guardian", result["assistant_agents"])
         self.assertTrue(result["needs_git_workflow"])
 
-    def test_strategy_colloquial_tech_plan_adds_technical_trinity(self) -> None:
+    def test_product_colloquial_contract_request_adds_technical_trinity(self) -> None:
         result = route_request.route_request(
-            "做个 saas 增长方案，然后把 tech plan 也落一下。",
+            "把这个注册流程需求拆一下，验收标准和接口契约也一起落一下。",
             load_config(),
             repo_path=REPO_ROOT,
         )
 
-        self.assertEqual("Executive Trinity", result["lead_agent"])
+        self.assertEqual("World-Class Product Architect", result["lead_agent"])
         self.assertIn("Technical Trinity", result["assistant_agents"])
         self.assertFalse(result["needs_git_workflow"])
 
@@ -3425,7 +3427,7 @@ class ValidatorScriptTests(unittest.TestCase):
             ),
             (
                 "assistant-delta-contract",
-                "This SaaS is not growing. Set the strategy and also land the technical plan.",
+                "Define the onboarding user flow, acceptance criteria, and backend contract for this signup revamp.",
                 {},
             ),
         ]
@@ -3760,7 +3762,7 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
 
         assert_field_expectation(
             self,
-            "progress_anchor_recommended is null",
+            "progress_anchor_recommended is .skill-governance/change-plan.md",
             result["router_snapshot"],
             label="router_snapshot",
         )
@@ -4599,7 +4601,7 @@ class ResponsePackTests(unittest.TestCase):
 
     def test_verify_action_assistant_delta_contract(self) -> None:
         result = verify_action.verify_action(
-            text="This SaaS is not growing. Set the strategy and also land the technical plan.",
+            text="Define the onboarding user flow, acceptance criteria, and backend contract for this signup revamp.",
             config=load_config(),
             repo_path=REPO_ROOT,
             check="assistant-delta-contract",

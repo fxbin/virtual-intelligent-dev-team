@@ -95,8 +95,34 @@ def classify_prompt(text: str) -> list[str]:
         tags.append("git-workflow")
     if any(route_request.keyword_matches(lowered, token) for token in ["review", "audit", "security review", "ux review", "code review"]):
         tags.append("review")
-    if any(route_request.keyword_matches(lowered, token) for token in ["strategy", "growth", "saas", "industry", "compliance"]):
-        tags.append("strategy-domain")
+    if any(
+        route_request.keyword_matches(lowered, token)
+        for token in [
+            "product brief",
+            "prd",
+            "acceptance criteria",
+            "user flow",
+            "onboarding",
+            "mvp",
+            "需求拆解",
+            "验收标准",
+        ]
+    ):
+        tags.append("product-delivery")
+    if any(
+        route_request.keyword_matches(lowered, token)
+        for token in [
+            "release gate",
+            "rollback",
+            "branch policy",
+            "review bar",
+            "治理",
+            "回滚",
+            "发布门禁",
+            "分支策略",
+        ]
+    ):
+        tags.append("technical-governance")
     if any(route_request.keyword_matches(lowered, token) for token in ["backend", "api contract", "auth", "implementation", "technical plan", "tech plan"]):
         tags.append("cross-domain")
     if any(

@@ -7,7 +7,7 @@ This reference distills the useful iteration patterns learned from `agency-agent
 - Pick the domain lead first.
 - Do not let the loop controller erase the real owner.
 - A frontend optimization loop should still belong to `World-Class Product Architect`.
-- A strategy optimization loop should still belong to `Executive Trinity`.
+- A product-scope optimization loop should still belong to `World-Class Product Architect`.
 
 ## 2. Run A Dev↔QA Evidence Loop
 

@@ -13,6 +13,10 @@
   - 对外定位、中文术语、常见误解
 - `workflow-sequences.md`
   - 中文流程 walkthrough
+- `product-delivery-playbook.md`
+  - 产品定义到实现切片的默认打法
+- `technical-governance-playbook.md`
+  - 风险控制、发布控制、Git 治理的默认打法
 
 ## 二、路由与协作
 
@@ -36,9 +40,7 @@
 - review / audit / security -> `Code Audit Council`
 - Git / branch / PR / rebase -> `Git Workflow Guardian`
 - Java / Spring / JVM -> `Java Virtuoso`
-- UI / React / redesign -> `World-Class Product Architect`
-- business / growth / pricing -> `Executive Trinity`
-- unfamiliar domain / compliance -> `Omni-Architect`
+- 产品需求 / 用户流 / 验收标准 / UI / React / redesign -> `World-Class Product Architect`
 - general engineering -> `Technical Trinity`
 - high-risk / research-first / conflict-heavy -> `Sentinel Architect (NB)`
 
@@ -53,11 +55,10 @@
 典型场景：
 
 - Large-scale transformation planning
-- Startup MVP
 - Audit and fix
-- Strategy with technical landing
-- Regulated or unfamiliar domain build
+- Product slice to delivery
 - Frontend UX with backend coupling
+- Technical governance hardening
 - High-risk production change
 - Repeated-failure or root-cause debugging
 - Evidence-driven iteration

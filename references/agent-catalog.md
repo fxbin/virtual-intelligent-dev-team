@@ -23,7 +23,7 @@ Source of truth for each team member's scope, trigger patterns, and anti-pattern
 - Core strengths: general backend engineering, system design, implementation tradeoffs, reliability, DevSecOps-aware delivery.
 - Best triggers: `system design`, `backend`, `api`, `service`, `python`, `go`, `node`, `rust`, `architecture`, `reliability`.
 - Typical tasks: service design, module refactors, platform engineering, implementation planning, technical landing.
-- Avoid using as lead for: pure market strategy or purely visual frontend redesign.
+- Avoid using as lead for: pure market strategy, pricing, financing, or purely visual frontend redesign.
 - Output bias: architecture choices, implementation slices, risk tradeoffs, operational concerns.
 
 ## 4. Code Audit Council
@@ -42,37 +42,19 @@ Source of truth for each team member's scope, trigger patterns, and anti-pattern
 - Avoid using as lead for: pure code review or non-Git business discussions.
 - Output bias: safest next Git step, stage status, guardrails, branch/commit/PR recommendations.
 
-## 6. Omni-Architect
+## 6. World-Class Product Architect
 
-- Core strengths: unfamiliar industries, domain constraints, compliance-heavy systems, cross-industry solutioning.
-- Best triggers: `healthcare`, `fintech`, `government`, `compliance`, `domain constraints`, `industry architecture`, `0-1 blueprint`.
-- Typical tasks: regulated architecture, domain modeling, cross-functional system planning, solution framing for unknown domains.
-- Avoid using as lead for: narrow implementation tickets or isolated UI tasks.
-- Output bias: domain assumptions, constraints, target architecture, compliance boundaries, delivery plan.
-
-## 7. Executive Trinity
-
-- Core strengths: business strategy, growth, pricing, monetization, positioning, operating model decisions.
-- Best triggers: `growth`, `pricing`, `monetization`, `go-to-market`, `competition`, `market strategy`, `saas strategy`.
-- Typical tasks: go/no-go decisions, growth diagnosis, pricing choices, strategic reframing, operating-model tradeoffs.
-- Avoid using as lead for: pure code implementation or low-level technical debugging.
-- Output bias: business decision, rationale, tradeoffs, execution implications, measurable next moves.
-
-## 8. World-Class Product Architect
-
-- Core strengths: UX architecture, frontend interaction design, React implementation direction, design systems, accessibility.
-- Best triggers: `ui`, `ux`, `react`, `next.js`, `dashboard`, `design system`, `tailwind`, `shadcn`, `accessibility`, `motion`.
-- Typical tasks: redesigns, UI audits, responsive flows, form UX, component systems, frontend/backend interaction shaping.
+- Core strengths: product definition, UX architecture, acceptance criteria, frontend interaction design, React implementation direction, design systems, accessibility.
+- Best triggers: `product brief`, `prd`, `acceptance criteria`, `user flow`, `scope`, `mvp`, `onboarding`, `ui`, `ux`, `react`, `next.js`, `dashboard`, `design system`, `tailwind`, `shadcn`, `accessibility`, `motion`.
+- Typical tasks: feature framing, redesigns, UI audits, responsive flows, acceptance criteria writing, form UX, component systems, frontend/backend interaction shaping.
 - Avoid using as lead for: pure backend infrastructure or pure business strategy.
-- Output bias: user flow clarity, frontend implementation direction, interaction details, responsiveness, accessibility.
+- Output bias: user flow clarity, scope boundary, acceptance criteria, frontend implementation direction, interaction details, responsiveness, accessibility.
 
 ## Routing Guidance
 
 1. Reviews and audits should prefer `Code Audit Council`, unless the request is clearly UI/UX review.
 2. Git flow and commit/push/PR execution should prefer `Git Workflow Guardian`.
 3. Java and Spring requests should prefer `Java Virtuoso`.
-4. UI/UX and frontend-heavy work should prefer `World-Class Product Architect`.
-5. Strategy and market decisions should prefer `Executive Trinity`.
-6. Regulated or unfamiliar industry architecture should prefer `Omni-Architect`.
-7. General implementation and backend design should prefer `Technical Trinity`.
-8. Add or elevate `Sentinel Architect (NB)` for high-risk or research-first work.
+4. Product definition, acceptance criteria, UI/UX, and frontend-heavy work should prefer `World-Class Product Architect`.
+5. General implementation and backend design should prefer `Technical Trinity`.
+6. Add or elevate `Sentinel Architect (NB)` for high-risk or research-first work.

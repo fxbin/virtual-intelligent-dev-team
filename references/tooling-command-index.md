@@ -142,7 +142,37 @@ python scripts/generate_response_pack.py --text "<user request>" --repo . --outp
 python scripts/init_pre_development_plan.py --root . --task-name "<task-name>" --task-description "<task-description>" --phase-name foundation --pretty
 ```
 
-## 三、bounded iteration 资产
+## 三、产品交付资产
+
+模板：
+
+- `assets/product-delivery-brief-template.md`
+- `references/product-delivery-playbook.md`
+
+常用初始化命令：
+
+```bash
+mkdir -p .skill-product
+cp assets/product-delivery-brief-template.md .skill-product/current-slice.md
+cp assets/product-delivery-brief-template.md .skill-product/acceptance-criteria.md
+```
+
+## 四、技术治理资产
+
+模板：
+
+- `assets/technical-governance-change-plan-template.md`
+- `references/technical-governance-playbook.md`
+
+常用初始化命令：
+
+```bash
+mkdir -p .skill-governance
+cp assets/technical-governance-change-plan-template.md .skill-governance/change-plan.md
+cp assets/technical-governance-change-plan-template.md .skill-governance/release-checklist.md
+```
+
+## 五、bounded iteration 资产
 
 模板：
 
@@ -154,7 +184,7 @@ python scripts/init_pre_development_plan.py --root . --task-name "<task-name>" -
 - `assets/iteration-plan-template.json`
 - `references/project-memory-lite.md`
 
-## 三点五、project memory lite
+## 五点五、project memory lite
 
 推荐锚点：
 
@@ -183,7 +213,7 @@ cp assets/round-memory-template.md .skill-iterations/current-round-memory.md
 cp assets/distilled-patterns-template.md .skill-iterations/distilled-patterns.md
 ```
 
-## 四、iteration 命令
+## 六、iteration 命令
 
 - 初始化 round
 
@@ -215,7 +245,7 @@ python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill
 python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.json --resume --pretty
 ```
 
-## 五、release / drill / compare
+## 七、release / drill / compare
 
 - offline drill
 

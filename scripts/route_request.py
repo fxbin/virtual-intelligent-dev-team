@@ -954,7 +954,7 @@ def pick_ministry_owner(
     if ministry == "礼部":
         if scores.get("World-Class Product Architect", 0) > 0:
             return "World-Class Product Architect"
-        return "Executive Trinity" if scores.get("Executive Trinity", 0) > 0 else lead_agent
+        return lead_agent
     if ministry == "兵部":
         if sentinel_overlay:
             return "Sentinel Architect (NB)"
@@ -1399,8 +1399,7 @@ def rebalance_git_lead_for_semantic_owner(
     semantic_owners = [
         "Code Audit Council",
         "World-Class Product Architect",
-        "Omni-Architect",
-        "Executive Trinity",
+        "Technical Trinity",
     ]
     git_score = scores.get("Git Workflow Guardian", 0)
     for agent in semantic_owners:
@@ -1493,6 +1492,38 @@ def build_workflow_bundle(
         "漏洞",
         "refactor advice",
     ]
+    product_keywords = [
+        "product brief",
+        "prd",
+        "acceptance criteria",
+        "user flow",
+        "scope",
+        "mvp",
+        "onboarding",
+        "signup",
+        "feature brief",
+        "需求拆解",
+        "验收标准",
+        "用户流",
+        "用户旅程",
+        "范围",
+        "需求文档",
+    ]
+    governance_keywords = [
+        "governance",
+        "review bar",
+        "release checklist",
+        "rollback",
+        "stop condition",
+        "branch policy",
+        "release hygiene",
+        "风险门禁",
+        "回滚",
+        "停止条件",
+        "发布门禁",
+        "提交流程",
+        "分支策略",
+    ]
 
     if needs_release_gate:
         return {
@@ -1576,6 +1607,49 @@ def build_workflow_bundle(
             ],
         }
 
+    if lead_agent == "World-Class Product Architect" or text_has_any_keyword(text, product_keywords):
+        return {
+            "name": "product-spec-deliver",
+            "confidence": 0.86 if lead_agent == "World-Class Product Architect" else 0.74,
+            "source": "lead-default" if lead_agent == "World-Class Product Architect" else "keyword",
+            "reason": "The request is product-definition or UX-delivery shaped, so the journey should lock scope, user flow, acceptance criteria, and frontend/backend contract questions before implementation drifts.",
+            "steps": [
+                "define the target user, outcome, and smallest acceptable scope",
+                "write the core user flow and key failure states",
+                "turn the request into acceptance criteria the team can verify",
+                "surface frontend/backend contract questions before coding",
+            ],
+            "progress_anchor_recommended": ".skill-product/current-slice.md",
+            "resume_artifacts": [
+                ".skill-product/current-slice.md",
+                ".skill-product/acceptance-criteria.md",
+                ".skill-product/contract-questions.md",
+            ],
+        }
+
+    if lead_agent in {"Git Workflow Guardian", "Sentinel Architect (NB)"} or text_has_any_keyword(
+        text, governance_keywords
+    ):
+        return {
+            "name": "govern-change-safely",
+            "confidence": 0.82 if lead_agent in {"Git Workflow Guardian", "Sentinel Architect (NB)"} else 0.7,
+            "source": "lead-default"
+            if lead_agent in {"Git Workflow Guardian", "Sentinel Architect (NB)"}
+            else "keyword",
+            "reason": "The request is workflow- or risk-governance shaped, so execution mode, verification, rollback, and delivery sequencing should be explicit before commands or release actions begin.",
+            "steps": [
+                "define the owner, execution mode, and stop conditions",
+                "lock the smallest safe next action",
+                "state verification evidence and rollback conditions",
+                "enter git or release actions only after the guardrails are explicit",
+            ],
+            "progress_anchor_recommended": ".skill-governance/change-plan.md",
+            "resume_artifacts": [
+                ".skill-governance/change-plan.md",
+                ".skill-governance/release-checklist.md",
+            ],
+        }
+
     return {
         "name": "direct-execution",
         "confidence": 0.35,
@@ -1597,9 +1671,13 @@ def build_assistant_delta_contract(
         "Code Audit Council": ["claim", "evidence", "severity", "fix"],
         "Git Workflow Guardian": ["claim", "evidence", "stage", "next_action"],
         "Technical Trinity": ["claim", "evidence", "decision", "next_action"],
-        "Executive Trinity": ["claim", "evidence", "decision", "tradeoff"],
-        "Omni-Architect": ["claim", "evidence", "decision", "constraint"],
-        "World-Class Product Architect": ["claim", "evidence", "decision", "ux_impact"],
+        "World-Class Product Architect": [
+            "claim",
+            "evidence",
+            "decision",
+            "acceptance_criteria",
+            "ux_impact",
+        ],
         "Sentinel Architect (NB)": ["claim", "evidence", "decision", "risk", "next_action"],
         "Java Virtuoso": ["claim", "evidence", "decision", "jvm_implication"],
     }

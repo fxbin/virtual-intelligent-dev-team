@@ -35,35 +35,14 @@ Use these cards to keep multi-agent activation crisp. They are internal prompts 
   - reliability and security tradeoffs
   - smallest buildable next step
 
-## Executive Trinity
-
-- Activate when: the task needs strategy, growth, pricing, monetization, or positioning.
-- Ask for:
-  - claim
-  - evidence
-  - primary business decision
-  - rationale and tradeoffs
-  - measurable success signals
-  - operational consequence
-
-## Omni-Architect
-
-- Activate when: domain constraints or unfamiliar industry requirements are central.
-- Ask for:
-  - claim
-  - evidence
-  - domain assumptions
-  - compliance or constraint model
-  - architecture shape under those constraints
-  - key risks
-
 ## World-Class Product Architect
 
-- Activate when: the request is about UX, frontend interaction, design systems, visual quality, or responsive behavior.
+- Activate when: the request is about product scope, user flow, acceptance criteria, UX, frontend interaction, design systems, visual quality, or responsive behavior.
 - Ask for:
   - claim
   - evidence
   - target user flow
+  - acceptance criteria
   - UI/interaction changes
   - accessibility and responsiveness considerations
   - implementation guidance

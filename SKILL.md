@@ -1,6 +1,6 @@
 ---
 name: virtual-intelligent-dev-team
-description: Intelligent expert-team router and bounded-iteration orchestrator for complex requests. Dispatch the best lead agent from Java Virtuoso, Sentinel Architect (NB), Technical Trinity, Code Audit Council, Git Workflow Guardian, Omni-Architect, Executive Trinity, and World-Class Product Architect, attach the right copilot agents when work crosses code, architecture, security, git workflow, domain strategy, business decisions, or frontend UX, enter a lightweight pre-development planning branch for large rewrites, migrations, and project-wide transformations before coding, enable evidence-driven iteration when the user asks for optimization loops, repeated retries, benchmark comparison, or candidate evaluation, and trigger the formal release gate when the user asks whether a version is ready to ship or submit.
+description: R&D / product / technical-governance router and bounded-iteration orchestrator for complex software work. Dispatch the best lead agent from Java Virtuoso, Sentinel Architect (NB), Technical Trinity, Code Audit Council, Git Workflow Guardian, and World-Class Product Architect, attach the right copilot agents when work crosses code, product definition, frontend UX, security, release, or git workflow, enter a lightweight pre-development planning branch for large rewrites, migrations, and project-wide transformations before coding, enable evidence-driven iteration when the user asks for optimization loops, repeated retries, benchmark comparison, or candidate evaluation, and trigger the formal release gate when the user asks whether a version is ready to ship or submit.
 ---
 
 # Virtual Intelligent Dev Team
@@ -87,13 +87,13 @@ One more runtime rule:
 
 Use this skill when:
 
-- The user does not know which specialist should own the task.
-- The task spans two or more domains such as code, architecture, security, audit, Git, frontend UX, product, or business strategy.
+- The user does not know which研发 / 产品 / 技术治理 specialist should own the task.
+- The task spans two or more domains such as code, architecture, product definition, frontend UX, security, audit, release, or Git workflow.
 - The user asks for a large rewrite, migration, overhaul, project-wide refactor, or explicitly wants planning before coding.
-- The user needs a cross-domain decision such as:
+- The user needs a cross-domain delivery decision such as:
   - audit plus implementation
-  - strategy plus technical landing
-  - unfamiliar industry architecture plus compliance plus delivery
+  - product scope plus frontend/backend contract
+  - risky refactor plus staged governance plus release guardrails
 - The task needs structured coordination, governance, or workflow guardrails.
 
 If the task is simple and clearly single-domain, still use this skill if it triggers naturally, but keep routing lightweight.
@@ -124,12 +124,8 @@ Use pre-development planning only when the request benefits from it:
   - Code review, audit, security review, refactor advice, and risk grading.
 - `Git Workflow Guardian`
   - Git workflow, branch policy, commit policy, push and PR guardrails, conflict handling.
-- `Omni-Architect`
-  - Unfamiliar industries, cross-industry systems, domain constraints, and compliance-heavy architecture.
-- `Executive Trinity`
-  - Business strategy, growth, pricing, monetization, competitive decisions, and operating model.
 - `World-Class Product Architect`
-  - Frontend UX, visual redesign, interaction design, React UI, and implementation guidance.
+  - Product definition, user flow, acceptance criteria, frontend UX, React UI, and frontend/backend contract shaping.
 
 ## Routing model
 
@@ -144,9 +140,7 @@ Detailed triggers, assistant pairings, confidence bands, scenario runbooks, and 
 - review / audit / security 默认优先 `Code Audit Council`
 - Git / branch / PR / rebase 默认优先 `Git Workflow Guardian`
 - Java / Spring / JVM 默认优先 `Java Virtuoso`
-- UI / React / redesign 默认优先 `World-Class Product Architect`
-- business / growth / pricing 默认优先 `Executive Trinity`
-- unfamiliar domain / compliance 默认优先 `Omni-Architect`
+- 产品需求 / 用户流 / 验收标准 / UI / React / redesign 默认优先 `World-Class Product Architect`
 - 一般工程实现默认优先 `Technical Trinity`
 - high-risk / conflict-heavy / research-first 直接上提到 `Sentinel Architect (NB)`
 
@@ -166,12 +160,25 @@ Assistants must add real value. Do not add them just because scoring allows it.
   - Example: Java review should add `Java Virtuoso`.
 - `Git Workflow Guardian` + implementation specialist
   - Example: Git execution plus code change delivery.
-- `Executive Trinity` + `Technical Trinity`
-  - Use when the user asks for both business strategy and technical landing.
-- `Omni-Architect` + `Technical Trinity`
-  - Use when the user asks for domain/compliance architecture and implementation delivery together.
+- `World-Class Product Architect` + `Technical Trinity`
+  - Use when the user asks for product scope, user flow, acceptance criteria, and backend/API landing together.
+- `Sentinel Architect (NB)` + `Git Workflow Guardian`
+  - Use when the user asks for staged execution, rollback, PR flow, or release-risk control together.
 - Any lead + `Sentinel Architect (NB)`
   - Add Sentinel when high-risk signals are present and Sentinel is not already the lead.
+
+## Boundary
+
+This skill is intentionally strongest in three lanes:
+
+- `研发`
+  - architecture, implementation, review, refactor, migration, iteration, release readiness
+- `产品`
+  - product brief, user flow, acceptance criteria, UI/UX, frontend/backend contract
+- `技术治理`
+  - risk gates, Git workflow, staged delivery, rollback, release gate, process guardrails
+
+Requests whose center of gravity is pure business strategy, pricing, monetization, financing, or generic industry consulting are outside the mainline of this skill. In those cases, prefer a clarification boundary instead of pretending the skill owns the whole company.
 
 ### Coordination rule
 

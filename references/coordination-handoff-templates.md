@@ -77,23 +77,23 @@ Use when `Git Workflow Guardian` needs to control sequencing while another agent
   - Next action:
 ```
 
-## 4. Strategy-to-Execution Handoff
+## 4. Product-to-Execution Handoff
 
-Use when `Executive Trinity` or `Omni-Architect` needs `Technical Trinity` to land the plan.
+Use when `World-Class Product Architect` needs `Technical Trinity` to land a product slice.
 
 ```markdown
-## Strategy to Execution
-- Strategy owner: [Executive Trinity / Omni-Architect]
+## Product to Execution
+- Product owner: [World-Class Product Architect]
 - Execution owner: Technical Trinity
-- Business or domain decision:
-  - [Chosen direction]
+- Product decision:
+  - [Chosen scope, flow, or acceptance criteria]
 - Technical landing requested:
   - [Architecture or implementation slice]
 - Non-negotiable constraints:
-  - [Budget, compliance, delivery, product]
+  - [Delivery, contract, performance, UX, policy]
 - Expected output:
   - System shape
-  - Delivery phases
+  - Implementation slice
   - Main risks
   - Claim
   - Evidence

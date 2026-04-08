@@ -20,21 +20,24 @@ Use these runbooks when the user request implies a recurring multi-role pattern.
 - Preferred bundle:
   - `plan-first-build`
 
-## 2. Startup MVP
+## 2. Product Slice To Delivery
 
-- Lead: `Technical Trinity` or `World-Class Product Architect`
-- Common assistants: `Executive Trinity`, `Git Workflow Guardian`
-- Use when: the user wants a 0-1 product, fast MVP delivery, or launch planning.
+- Lead: `World-Class Product Architect`
+- Common assistants: `Technical Trinity`, `Git Workflow Guardian`
+- Use when: the user wants a feature brief, MVP slice, onboarding flow, acceptance criteria, or product definition that engineering can build.
 - Flow:
   1. Confirm product outcome, target user, and scope boundary.
-  2. Define MVP system shape and frontend/user-flow priorities.
-  3. Attach strategy support if monetization, growth, or positioning are in scope.
-  4. Attach Git guardrails if the user also wants branch/PR delivery.
+  2. Define the primary user flow and failure states.
+  3. Write implementation-ready acceptance criteria.
+  4. Attach Technical Trinity if backend/API coupling is real.
+  5. Attach Git guardrails if the user also wants branch/PR delivery.
 - Success markers:
   - smallest buildable scope
   - clear user flow
-  - technical landing plan
-  - explicit launch or validation risk
+  - acceptance criteria engineering can verify
+  - explicit frontend/backend contract gaps
+- Preferred bundle:
+  - `product-spec-deliver`
 
 ## 3. Audit and Fix
 
@@ -53,35 +56,7 @@ Use these runbooks when the user request implies a recurring multi-role pattern.
 - Preferred bundle:
   - `audit-fix-deliver`
 
-## 4. Strategy with Technical Landing
-
-- Lead: `Executive Trinity`
-- Common assistants: `Technical Trinity`, `Sentinel Architect (NB)`
-- Use when: the user wants growth, monetization, or operating-model decisions plus implementation consequences.
-- Flow:
-  1. State the business decision first.
-  2. Translate it into system, data, or delivery implications.
-  3. Add Sentinel only if risk, irreversibility, or production impact is high.
-- Success markers:
-  - one clear decision
-  - measurable business rationale
-  - realistic technical landing path
-
-## 5. Regulated or Unfamiliar Domain Build
-
-- Lead: `Omni-Architect`
-- Common assistants: `Technical Trinity`, `Code Audit Council`
-- Use when: the request involves healthcare, finance, government, enterprise compliance, or an unfamiliar industry.
-- Flow:
-  1. Surface domain assumptions and compliance boundaries.
-  2. Design the system around constraints before implementation detail.
-  3. Attach audit support if security/compliance verification is part of the ask.
-- Success markers:
-  - domain assumptions called out
-  - constraints explicitly tied to architecture
-  - risk boundaries made visible
-
-## 6. Frontend UX with Backend Coupling
+## 4. Frontend UX with Backend Coupling
 
 - Lead: `World-Class Product Architect`
 - Common assistants: `Technical Trinity`, `Git Workflow Guardian`
@@ -95,8 +70,28 @@ Use these runbooks when the user request implies a recurring multi-role pattern.
   - improved UX path
   - clear interaction and state model
   - backend contract or implementation coupling called out
+- Preferred bundle:
+  - `product-spec-deliver`
 
-## 7. High-Risk Production Change
+## 5. Technical Governance Hardening
+
+- Lead: `Git Workflow Guardian` or `Sentinel Architect (NB)`
+- Common assistants: `Technical Trinity`, `Code Audit Council`
+- Use when: the user wants branch policy, review bar, release control, rollback rules, or staged delivery guardrails for a real change program.
+- Flow:
+  1. Define the owner, risk boundary, and stop conditions.
+  2. Lock the smallest safe next action.
+  3. State the verification and rollback plan before command execution.
+  4. Attach audit support if quality/security gate is part of the ask.
+- Success markers:
+- explicit execution mode
+- verification before release or merge
+- rollback conditions written down
+- Git or release sequence is justified, not assumed
+- Preferred bundle:
+  - `govern-change-safely`
+
+## 6. High-Risk Production Change
 
 - Lead: `Sentinel Architect (NB)`
 - Common assistants: owning specialist, `Git Workflow Guardian`, `Code Audit Council`
@@ -114,7 +109,7 @@ Use these runbooks when the user request implies a recurring multi-role pattern.
 - Preferred bundle:
   - `ship-hold-remediate` when release judgment is central
 
-## 8. Repeated Failure and Root-Cause Debugging
+## 7. Repeated Failure and Root-Cause Debugging
 
 - Lead: `Sentinel Architect (NB)`
 - Common assistants: `Technical Trinity`, `Code Audit Council`
@@ -133,7 +128,7 @@ Use these runbooks when the user request implies a recurring multi-role pattern.
 - Preferred bundle:
   - `root-cause-remediate`
 
-## 9. Evidence-Driven Iteration
+## 8. Evidence-Driven Iteration
 
 - Lead: semantic owner for the task
 - Common assistants: `Sentinel Architect (NB)` for high-risk rounds, `Code Audit Council` for verification-heavy loops, `Git Workflow Guardian` when delivery sequencing is part of the ask

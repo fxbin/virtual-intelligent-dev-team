@@ -1,8 +1,8 @@
 {
   "meta": {
     "author": "fxbin",
-    "version": "v4.28.5",
-    "updated": "2026-04-07"
+    "version": "v4.29.0",
+    "updated": "2026-04-08"
   },
   "thresholds": {
     "max_agent_score": 20,
@@ -123,53 +123,15 @@
   },
   "assistant_routing_rules": [
     {
-      "lead_agent": "Executive Trinity",
-      "when_any_keywords": [
-        "technical plan",
-        "tech plan",
-        "tech",
-        "technical landing",
-        "implementation",
-        "implement",
-        "engineering",
-        "architecture",
-        "技术方案",
-        "技术落地",
-        "落地",
-        "实施",
-        "工程实现",
-        "架构落地"
-      ],
-      "add_assistants": [
-        "Technical Trinity"
-      ]
-    },
-    {
-      "lead_agent": "Omni-Architect",
-      "when_any_keywords": [
-        "technical landing",
-        "implementation",
-        "implement",
-        "engineering",
-        "delivery",
-        "build",
-        "技术落地",
-        "实施",
-        "工程实现",
-        "交付",
-        "建设",
-        "落地"
-      ],
-      "add_assistants": [
-        "Technical Trinity"
-      ]
-    },
-    {
       "lead_agent": "World-Class Product Architect",
       "when_any_keywords": [
         "backend",
         "api",
         "api contract",
+        "implementation plan",
+        "technical plan",
+        "tech plan",
+        "delivery plan",
         "integration",
         "technical implementation",
         "frontend-backend",
@@ -179,8 +141,10 @@
         "后端",
         "接口",
         "接口契约",
+        "技术方案",
         "联调",
         "技术实现",
+        "落地方案",
         "鉴权",
         "登录",
         "错误提示",
@@ -244,21 +208,6 @@
         "rollback",
         "branch",
         "git workflow"
-      ],
-      "add_assistants": [
-        "Git Workflow Guardian"
-      ]
-    },
-    {
-      "lead_agent": "Omni-Architect",
-      "when_any_keywords": [
-        "pr",
-        "pull request",
-        "merge request",
-        "rollback",
-        "commit",
-        "push",
-        "branch"
       ],
       "add_assistants": [
         "Git Workflow Guardian"
@@ -365,8 +314,6 @@
     "Technical Trinity",
     "Code Audit Council",
     "Git Workflow Guardian",
-    "Omni-Architect",
-    "Executive Trinity",
     "World-Class Product Architect"
   ],
   "agent_rules": {
@@ -655,7 +602,44 @@
           "score": 6
         }
       ],
-      "negative": []
+      "negative": [
+        {
+          "keyword": "商业模式",
+          "score": 5
+        },
+        {
+          "keyword": "融资",
+          "score": 5
+        },
+        {
+          "keyword": "定价",
+          "score": 5
+        },
+        {
+          "keyword": "pricing",
+          "score": 5
+        },
+        {
+          "keyword": "monetization",
+          "score": 5
+        },
+        {
+          "keyword": "growth",
+          "score": 5
+        },
+        {
+          "keyword": "go-to-market",
+          "score": 5
+        },
+        {
+          "keyword": "strategy",
+          "score": 4
+        },
+        {
+          "keyword": "saas strategy",
+          "score": 5
+        }
+      ]
     },
     "Technical Trinity": {
       "positive": [
@@ -1054,240 +1038,64 @@
         }
       ]
     },
-    "Omni-Architect": {
-      "positive": [
-        {
-          "keyword": "陌生行业",
-          "score": 6
-        },
-        {
-          "keyword": "跨行业",
-          "score": 6
-        },
-        {
-          "keyword": "领域约束",
-          "score": 6
-        },
-        {
-          "keyword": "行业约束",
-          "score": 6
-        },
-        {
-          "keyword": "行业方案",
-          "score": 5
-        },
-        {
-          "keyword": "unfamiliar industry",
-          "score": 6
-        },
-        {
-          "keyword": "cross-industry",
-          "score": 6
-        },
-        {
-          "keyword": "compliance",
-          "score": 5
-        },
-        {
-          "keyword": "industry constraints",
-          "score": 5
-        },
-        {
-          "keyword": "医疗",
-          "score": 5
-        },
-        {
-          "keyword": "金融",
-          "score": 5
-        },
-        {
-          "keyword": "交通",
-          "score": 5
-        },
-        {
-          "keyword": "农业",
-          "score": 5
-        },
-        {
-          "keyword": "工业",
-          "score": 5
-        },
-        {
-          "keyword": "合规",
-          "score": 5
-        },
-        {
-          "keyword": "hipaa",
-          "score": 5
-        },
-        {
-          "keyword": "gdpr",
-          "score": 5
-        },
-        {
-          "keyword": "basel",
-          "score": 5
-        },
-        {
-          "keyword": "0-1",
-          "score": 5
-        },
-        {
-          "keyword": "售前方案",
-          "score": 5
-        },
-        {
-          "keyword": "蓝图",
-          "score": 5
-        },
-        {
-          "keyword": "healthcare",
-          "score": 6
-        },
-        {
-          "keyword": "regulated domain",
-          "score": 6
-        },
-        {
-          "keyword": "regulated industry",
-          "score": 6
-        },
-        {
-          "keyword": "fintech",
-          "score": 6
-        },
-        {
-          "keyword": "government",
-          "score": 6
-        },
-        {
-          "keyword": "medical",
-          "score": 5
-        }
-      ],
-      "negative": [
-        {
-          "keyword": "hello world",
-          "score": 4
-        },
-        {
-          "keyword": "简单脚本",
-          "score": 3
-        }
-      ]
-    },
-    "Executive Trinity": {
-      "positive": [
-        {
-          "keyword": "商业模式",
-          "score": 6
-        },
-        {
-          "keyword": "战略",
-          "score": 6
-        },
-        {
-          "keyword": "增长",
-          "score": 6
-        },
-        {
-          "keyword": "增长策略",
-          "score": 6
-        },
-        {
-          "keyword": "经营策略",
-          "score": 5
-        },
-        {
-          "keyword": "市场策略",
-          "score": 5
-        },
-        {
-          "keyword": "SaaS",
-          "score": 5
-        },
-        {
-          "keyword": "strategy",
-          "score": 6
-        },
-        {
-          "keyword": "growth",
-          "score": 6
-        },
-        {
-          "keyword": "saas",
-          "score": 5
-        },
-        {
-          "keyword": "融资",
-          "score": 6
-        },
-        {
-          "keyword": "tam",
-          "score": 5
-        },
-        {
-          "keyword": "moat",
-          "score": 5
-        },
-        {
-          "keyword": "ltv",
-          "score": 5
-        },
-        {
-          "keyword": "cac",
-          "score": 5
-        },
-        {
-          "keyword": "churn",
-          "score": 5
-        },
-        {
-          "keyword": "定价",
-          "score": 5
-        },
-        {
-          "keyword": "竞争策略",
-          "score": 5
-        },
-        {
-          "keyword": "go no-go",
-          "score": 5
-        },
-        {
-          "keyword": "运营效率",
-          "score": 4
-        },
-        {
-          "keyword": "单位经济模型",
-          "score": 4
-        }
-      ],
-      "negative": [
-        {
-          "keyword": "java",
-          "score": 3
-        },
-        {
-          "keyword": "spring",
-          "score": 3
-        },
-        {
-          "keyword": "jvm",
-          "score": 4
-        },
-        {
-          "keyword": "gc",
-          "score": 4
-        },
-        {
-          "keyword": "react",
-          "score": 2
-        }
-      ]
-    },
     "World-Class Product Architect": {
       "positive": [
+        {
+          "keyword": "product brief",
+          "score": 6
+        },
+        {
+          "keyword": "prd",
+          "score": 6
+        },
+        {
+          "keyword": "acceptance criteria",
+          "score": 6
+        },
+        {
+          "keyword": "user flow",
+          "score": 6
+        },
+        {
+          "keyword": "user journey",
+          "score": 6
+        },
+        {
+          "keyword": "scope",
+          "score": 5
+        },
+        {
+          "keyword": "mvp",
+          "score": 5
+        },
+        {
+          "keyword": "onboarding",
+          "score": 5
+        },
+        {
+          "keyword": "需求拆解",
+          "score": 6
+        },
+        {
+          "keyword": "验收标准",
+          "score": 6
+        },
+        {
+          "keyword": "用户流",
+          "score": 6
+        },
+        {
+          "keyword": "用户旅程",
+          "score": 6
+        },
+        {
+          "keyword": "范围",
+          "score": 5
+        },
+        {
+          "keyword": "需求文档",
+          "score": 5
+        },
         {
           "keyword": "前端",
           "score": 6
@@ -1445,6 +1253,22 @@
         {
           "keyword": "融资",
           "score": 3
+        },
+        {
+          "keyword": "pricing",
+          "score": 4
+        },
+        {
+          "keyword": "monetization",
+          "score": 4
+        },
+        {
+          "keyword": "growth",
+          "score": 4
+        },
+        {
+          "keyword": "strategy",
+          "score": 4
         }
       ]
     }

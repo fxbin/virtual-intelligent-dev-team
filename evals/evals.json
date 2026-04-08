@@ -95,31 +95,33 @@
     },
     {
       "id": 7,
-      "prompt": "This SaaS is not growing. Set the strategy and also land the technical plan.",
-      "expected_output": "Lead should route to Executive Trinity and attach Technical Trinity for technical landing.",
+      "prompt": "Define the onboarding user flow, acceptance criteria, and backend contract for this signup revamp.",
+      "expected_output": "Product-definition requests should route to World-Class Product Architect, attach Technical Trinity, and use the product delivery bundle.",
       "files": [],
       "expectations": [
-        "lead_agent is Executive Trinity",
+        "lead_agent is World-Class Product Architect",
         "assistant_agents contains Technical Trinity",
+        "workflow_bundle is product-spec-deliver",
         "mode is not single-agent execution"
       ],
       "categories": [
-        "strategy-domain",
+        "product-delivery",
         "cross-domain"
       ]
     },
     {
       "id": 8,
-      "prompt": "Design a system for an unfamiliar industry, including compliance and technical landing.",
-      "expected_output": "Lead should route to Omni-Architect and attach Technical Trinity for engineering delivery.",
+      "prompt": "Define the rollback plan and branch delivery flow for this core refactor.",
+      "expected_output": "Governance-heavy delivery requests should route to Git Workflow Guardian and use the governance bundle.",
       "files": [],
       "expectations": [
-        "lead_agent is Omni-Architect",
-        "assistant_agents contains Technical Trinity",
-        "governance_plan.privy_council.selected_track is regular track"
+        "lead_agent is Git Workflow Guardian",
+        "needs_git_workflow is true",
+        "workflow_bundle is govern-change-safely"
       ],
       "categories": [
-        "strategy-domain"
+        "technical-governance",
+        "git-workflow"
       ]
     },
     {
@@ -633,7 +635,7 @@
         "lead_agent is World-Class Product Architect",
         "assistant_agents contains Git Workflow Guardian",
         "needs_git_workflow is true",
-        "priority_routing agent is None"
+        "priority_routing agent does not exist"
       ],
       "categories": [
         "frontend",
@@ -644,16 +646,17 @@
     },
     {
       "id": 40,
-      "prompt": "做个 saas 增长方案，然后把 tech plan 也落一下。",
-      "expected_output": "Colloquial strategy plus tech-plan requests should route to Executive Trinity and attach Technical Trinity.",
+      "prompt": "把这个注册流程需求拆一下，验收标准和接口契约也一起落一下。",
+      "expected_output": "Colloquial product-scope requests should route to World-Class Product Architect and attach Technical Trinity.",
       "files": [],
       "expectations": [
-        "lead_agent is Executive Trinity",
+        "lead_agent is World-Class Product Architect",
         "assistant_agents contains Technical Trinity",
-        "needs_git_workflow is false"
+        "needs_git_workflow is false",
+        "workflow_bundle is product-spec-deliver"
       ],
       "categories": [
-        "strategy-domain",
+        "product-delivery",
         "cross-domain",
         "chinese",
         "mixed-language"
@@ -697,15 +700,16 @@
       "id": 43,
       "categories": [
         "frontend",
-        "strategy-domain",
+        "product-delivery",
         "cross-domain"
       ],
-      "prompt": "We need a startup MVP with product UX, backend delivery, and launch strategy.",
-      "expected_output": "Startup MVP requests should route to Executive Trinity and attach World-Class Product Architect as the product and UX copilot while keeping governance in the regular track.",
+      "prompt": "We need an onboarding MVP with product scope, acceptance criteria, and backend delivery.",
+      "expected_output": "MVP product-delivery requests should route to World-Class Product Architect, attach Technical Trinity, and keep governance in the regular track.",
       "files": [],
       "expectations": [
-        "lead_agent is Executive Trinity",
-        "assistant_agents contains World-Class Product Architect",
+        "lead_agent is World-Class Product Architect",
+        "assistant_agents contains Technical Trinity",
+        "workflow_bundle is product-spec-deliver",
         "governance_plan.privy_council.selected_track is regular track"
       ]
     },
@@ -728,15 +732,16 @@
     {
       "id": 45,
       "categories": [
-        "strategy-domain"
+        "clarification"
       ],
-      "prompt": "Design a healthcare workflow system with compliance constraints and technical landing.",
-      "expected_output": "Regulated-domain runbook scenarios should route to Omni-Architect and attach Technical Trinity for technical landing.",
+      "prompt": "Set the pricing strategy and growth plan for this SaaS.",
+      "expected_output": "Pure business-strategy requests should stay low-confidence and ask for clarification instead of pretending the skill owns company strategy.",
       "files": [],
       "expectations": [
-        "lead_agent is Omni-Architect",
-        "assistant_agents contains Technical Trinity",
-        "governance_plan.privy_council.selected_track is regular track"
+        "lead_agent is Technical Trinity",
+        "confidence is 0.0",
+        "clarifying_question is not null",
+        "assistant_agents is empty"
       ]
     },
     {
@@ -807,20 +812,20 @@
         "assistant_agents contains Technical Trinity",
         "assistant_agents contains Git Workflow Guardian",
         "needs_git_workflow is true",
-        "priority_routing agent is None"
+        "priority_routing agent does not exist"
       ]
     },
     {
       "id": 50,
       "categories": [
-        "strategy-domain",
+        "product-delivery",
         "cross-domain"
       ],
-      "prompt": "Set the pricing strategy, then define the implementation plan and rollout PR flow.",
-      "expected_output": "When strategy, implementation, and rollout PR flow conflict, Executive Trinity should remain lead while Git Workflow Guardian and Technical Trinity attach.",
+      "prompt": "Define the onboarding flow, then define the implementation plan and rollout PR flow.",
+      "expected_output": "When product scope, implementation, and rollout PR flow conflict, World-Class Product Architect should remain lead while Git Workflow Guardian and Technical Trinity attach.",
       "files": [],
       "expectations": [
-        "lead_agent is Executive Trinity",
+        "lead_agent is World-Class Product Architect",
         "assistant_agents contains Git Workflow Guardian",
         "assistant_agents contains Technical Trinity",
         "needs_git_workflow is true"
@@ -829,15 +834,16 @@
     {
       "id": 51,
       "categories": [
-        "cross-domain"
+        "technical-governance",
+        "git-workflow"
       ],
-      "prompt": "Design a healthcare backend, then open the PR and define rollback.",
-      "expected_output": "When regulated-domain architecture and explicit PR or rollback flow conflict, Omni-Architect should remain lead and Git Workflow Guardian should attach as the workflow copilot.",
+      "prompt": "Define the rollback plan, then open the PR and define rollback for this refactor.",
+      "expected_output": "When governance and explicit PR or rollback flow conflict, Git Workflow Guardian should remain lead and keep the governance bundle active.",
       "files": [],
       "expectations": [
-        "lead_agent is Omni-Architect",
-        "assistant_agents contains Git Workflow Guardian",
-        "needs_git_workflow is true"
+        "lead_agent is Git Workflow Guardian",
+        "needs_git_workflow is true",
+        "workflow_bundle is govern-change-safely"
       ]
     },
     {
@@ -1040,13 +1046,13 @@
         "cross-domain",
         "workflow-bundle"
       ],
-      "prompt": "This SaaS is not growing. Set the strategy and also land the technical plan.",
-      "expected_output": "Cross-domain strategy routing should keep a structured assistant delta contract so the lead can merge evidence instead of loose role fragments.",
+      "prompt": "Define the onboarding user flow, acceptance criteria, and backend contract for this signup revamp.",
+      "expected_output": "Cross-domain product routing should keep a structured assistant delta contract so the lead can merge evidence instead of loose role fragments.",
       "files": [],
       "expectations": [
-        "lead_agent is Executive Trinity",
+        "lead_agent is World-Class Product Architect",
         "assistant_delta_contract.enabled is true",
-        "assistant_delta_contract.lead_owner is Executive Trinity",
+        "assistant_delta_contract.lead_owner is World-Class Product Architect",
         "assistant_delta_contract.strict_mode is true",
         "assistant_delta_contract.required_fields contains claim",
         "assistant_delta_contract.required_fields contains evidence"
@@ -1086,8 +1092,8 @@
         "allowed is true",
         "verify_action_json details.needs_git_workflow is true",
         "verify_action_json details.commands length is 12",
-        "verify_action_json router_snapshot.progress_anchor_recommended is null",
-        "verify_action_json explanation_card.workflow_bundle_source is fallback"
+        "verify_action_json router_snapshot.progress_anchor_recommended is .skill-governance/change-plan.md",
+        "verify_action_json explanation_card.workflow_bundle_source is lead-default"
       ]
     },
     {

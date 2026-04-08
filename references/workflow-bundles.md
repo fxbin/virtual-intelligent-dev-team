@@ -28,7 +28,24 @@ existing routing, planning, iteration, release, and Git rules.
 - Default resume anchor:
   - `docs/progress/MASTER.md`
 
-## 2. `audit-fix-deliver`
+## 2. `product-spec-deliver`
+
+- Use when:
+  - the request starts from product scope, user flow, acceptance criteria, or frontend/backend contract alignment
+  - the lead needs to turn product thinking into an implementation-ready slice
+- Default sequence:
+  1. define the target user and primary outcome
+  2. lock the smallest acceptable scope
+  3. write the user flow and acceptance criteria
+  4. surface frontend/backend contract questions before implementation
+- Primary references:
+  - `references/product-delivery-playbook.md`
+  - `assets/product-delivery-brief-template.md`
+- Default resume anchors:
+  - `.skill-product/current-slice.md`
+  - `.skill-product/acceptance-criteria.md`
+
+## 3. `audit-fix-deliver`
 
 - Use when:
   - the request combines review or audit with remediation
@@ -45,7 +62,24 @@ existing routing, planning, iteration, release, and Git rules.
   - `.skill-iterations/current-round-memory.md`
   - `.skill-iterations/distilled-patterns.md`
 
-## 3. `root-cause-remediate`
+## 4. `govern-change-safely`
+
+- Use when:
+  - the request is primarily about staged execution, rollback, release hygiene, branch policy, or workflow safety
+  - Git workflow and technical governance matter more than feature design
+- Default sequence:
+  1. define owner, execution mode, and stop conditions
+  2. lock the smallest safe next action
+  3. define verification evidence and rollback conditions
+  4. only then enter Git or release actions
+- Primary references:
+  - `references/technical-governance-playbook.md`
+  - `assets/technical-governance-change-plan-template.md`
+- Default resume anchors:
+  - `.skill-governance/change-plan.md`
+  - `.skill-governance/release-checklist.md`
+
+## 5. `root-cause-remediate`
 
 - Use when:
   - the user says previous fixes failed
@@ -66,7 +100,7 @@ existing routing, planning, iteration, release, and Git rules.
   - `.skill-iterations/current-round-memory.md`
   - `.skill-iterations/distilled-patterns.md`
 
-## 4. `ship-hold-remediate`
+## 6. `ship-hold-remediate`
 
 - Use when:
   - the user asks whether the current version can ship

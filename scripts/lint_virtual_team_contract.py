@@ -353,7 +353,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             },
             {
                 "check": "assistant-delta-contract",
-                "text": "This SaaS is not growing. Set the strategy and also land the technical plan.",
+                "text": "Define the onboarding user flow, acceptance criteria, and backend contract for this signup revamp.",
                 "kwargs": {},
             },
         ]
