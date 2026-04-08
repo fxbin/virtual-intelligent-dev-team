@@ -1,0 +1,307 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:beta-simulation-diff.schema",
+  "title": "Virtual Intelligent Dev Team Beta Simulation Diff",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "skill_name",
+    "previous_round_id",
+    "current_round_id",
+    "previous_manifest_path",
+    "current_manifest_path",
+    "previous_session_count",
+    "current_session_count",
+    "session_count_delta",
+    "added_personas",
+    "removed_personas",
+    "added_scenarios",
+    "removed_scenarios",
+    "added_traces",
+    "removed_traces",
+    "new_session_matrix",
+    "coverage_shift_summary",
+    "risk_notes",
+    "expansion_ok",
+    "review_required",
+    "json_report",
+    "markdown_report"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "beta-simulation-diff/v1"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "skill_name": {
+      "const": "virtual-intelligent-dev-team"
+    },
+    "previous_round_id": {
+      "type": "string"
+    },
+    "current_round_id": {
+      "type": "string"
+    },
+    "previous_manifest_path": {
+      "type": "string"
+    },
+    "current_manifest_path": {
+      "type": "string"
+    },
+    "previous_session_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "current_session_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "session_count_delta": {
+      "type": "integer"
+    },
+    "added_personas": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/persona_change"
+      }
+    },
+    "removed_personas": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/persona_change"
+      }
+    },
+    "added_scenarios": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/scenario_change"
+      }
+    },
+    "removed_scenarios": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/scenario_change"
+      }
+    },
+    "added_traces": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/trace_change"
+      }
+    },
+    "removed_traces": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/trace_change"
+      }
+    },
+    "new_session_matrix": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/session_matrix_entry"
+      }
+    },
+    "coverage_shift_summary": {
+      "$ref": "#/$defs/coverage_shift_summary"
+    },
+    "risk_notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "expansion_ok": {
+      "type": "boolean"
+    },
+    "review_required": {
+      "type": "boolean"
+    },
+    "json_report": {
+      "type": "string"
+    },
+    "markdown_report": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "persona_change": {
+      "type": "object",
+      "required": [
+        "persona_id",
+        "persona_name",
+        "session_count",
+        "session_ids"
+      ],
+      "properties": {
+        "persona_id": {
+          "type": "string"
+        },
+        "persona_name": {
+          "type": "string"
+        },
+        "session_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "session_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "scenario_change": {
+      "type": "object",
+      "required": [
+        "scenario_id",
+        "scenario_title",
+        "session_count",
+        "session_ids"
+      ],
+      "properties": {
+        "scenario_id": {
+          "type": "string"
+        },
+        "scenario_title": {
+          "type": "string"
+        },
+        "session_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "session_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "trace_change": {
+      "type": "object",
+      "required": [
+        "trace_id",
+        "trace_label",
+        "session_count",
+        "session_ids"
+      ],
+      "properties": {
+        "trace_id": {
+          "type": "string"
+        },
+        "trace_label": {
+          "type": "string"
+        },
+        "session_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "session_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "session_matrix_entry": {
+      "type": "object",
+      "required": [
+        "session_id",
+        "persona_id",
+        "persona_name",
+        "scenario_id",
+        "scenario_title",
+        "trace_id",
+        "trace_label"
+      ],
+      "properties": {
+        "session_id": {
+          "type": "string"
+        },
+        "persona_id": {
+          "type": "string"
+        },
+        "persona_name": {
+          "type": "string"
+        },
+        "scenario_id": {
+          "type": "string"
+        },
+        "scenario_title": {
+          "type": "string"
+        },
+        "trace_id": {
+          "type": "string"
+        },
+        "trace_label": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "coverage_shift_summary": {
+      "type": "object",
+      "required": [
+        "previous_persona_count",
+        "current_persona_count",
+        "previous_scenario_count",
+        "current_scenario_count",
+        "previous_trace_count",
+        "current_trace_count",
+        "new_session_matrix_count",
+        "expansion_mode"
+      ],
+      "properties": {
+        "previous_persona_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "current_persona_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "previous_scenario_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "current_scenario_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "previous_trace_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "current_trace_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "new_session_matrix_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expansion_mode": {
+          "type": "string",
+          "enum": [
+            "unchanged",
+            "expanded",
+            "contracted",
+            "mixed"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

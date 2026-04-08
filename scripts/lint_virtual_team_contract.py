@@ -28,6 +28,7 @@ VERIFY_ACTION_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "verify-action-resul
 RELEASE_GATE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "release-gate-result.schema.json"
 BETA_ROUND_REPORT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-report.schema.json"
 BETA_ROUND_GATE_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-gate-result.schema.json"
+BETA_SIMULATION_DIFF_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-diff.schema.json"
 SIMULATED_USER_PROFILE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "simulated-user-profile.schema.json"
 BETA_SIMULATION_CONFIG_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-config.schema.json"
 BETA_SIMULATION_EVENT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-event.schema.json"
@@ -94,6 +95,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
     release_gate_schema_json_path = resolved_skill_dir / "references" / "release-gate-result.schema.json"
     beta_round_report_schema_json_path = resolved_skill_dir / "references" / "beta-round-report.schema.json"
     beta_round_gate_result_schema_json_path = resolved_skill_dir / "references" / "beta-round-gate-result.schema.json"
+    beta_simulation_diff_schema_json_path = resolved_skill_dir / "references" / "beta-simulation-diff.schema.json"
     simulated_user_profile_schema_json_path = resolved_skill_dir / "references" / "simulated-user-profile.schema.json"
     beta_simulation_config_schema_json_path = resolved_skill_dir / "references" / "beta-simulation-config.schema.json"
     beta_simulation_event_schema_json_path = resolved_skill_dir / "references" / "beta-simulation-event.schema.json"
@@ -195,6 +197,11 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
         "Missing references/beta-round-gate-result.schema.json. Restore the beta round gate result schema before release.",
     )
     _check(
+        beta_simulation_diff_schema_json_path.exists(),
+        errors,
+        "Missing references/beta-simulation-diff.schema.json. Restore the beta simulation diff schema before release.",
+    )
+    _check(
         simulated_user_profile_schema_json_path.exists(),
         errors,
         "Missing references/simulated-user-profile.schema.json. Restore the simulated user profile schema before release.",
@@ -243,6 +250,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 and release_gate_schema_json_path.exists()
                 and beta_round_report_schema_json_path.exists()
                 and beta_round_gate_result_schema_json_path.exists()
+                and beta_simulation_diff_schema_json_path.exists()
                 and simulated_user_profile_schema_json_path.exists()
                 and beta_simulation_config_schema_json_path.exists()
                 and beta_simulation_event_schema_json_path.exists()
@@ -342,9 +350,11 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                             "simulation_scenario_packs": "references/simulation-scenario-packs.json",
                             "simulation_trace_catalog": "references/simulation-trace-catalog.json",
                             "simulation_preview_dir": ".skill-beta/fixture-previews",
+                            "simulation_diff_dir": ".skill-beta/fixture-diffs",
                             "simulation_run_dir": ".skill-beta/simulation-runs",
                             "simulation_init_command_template": "python scripts/init_beta_simulation.py --root . --round-id <round-id> --phase \"<phase>\" --objective \"<objective>\" --pretty",
                             "simulation_preview_command_template": "python scripts/preview_beta_simulation_fixture.py --config .skill-beta/simulation-configs/<round-id>.json --pretty",
+                            "simulation_diff_command_template": "python scripts/compare_beta_simulation_manifests.py --previous .skill-beta/fixture-previews/<previous-round-id>/beta-simulation-manifest.json --current .skill-beta/fixture-previews/<round-id>/beta-simulation-manifest.json --pretty",
                             "simulation_run_command_template": "python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/<round-id>.json --pretty",
                             "simulation_summary_command_template": "python scripts/summarize_beta_simulation.py --run .skill-beta/simulation-runs/<round-id>/beta-simulation-run.json --feedback-ledger-out .skill-beta/feedback-ledger.md --round-report-out .skill-beta/reports/<round-id>.json --pretty",
                             "report_template": "assets/beta-round-report-template.json",
@@ -739,6 +749,60 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             "json_report": ".skill-beta/fixture-previews/round-0/beta-simulation-manifest.json",
             "markdown_report": ".skill-beta/fixture-previews/round-0/beta-simulation-manifest.md",
         }
+        sample_simulation_diff = {
+            "schema_version": "beta-simulation-diff/v1",
+            "generated_at": "2026-04-08T12:00:00Z",
+            "skill_name": "virtual-intelligent-dev-team",
+            "previous_round_id": "round-0",
+            "current_round_id": "round-1",
+            "previous_manifest_path": ".skill-beta/fixture-previews/round-0/beta-simulation-manifest.json",
+            "current_manifest_path": ".skill-beta/fixture-previews/round-1/beta-simulation-manifest.json",
+            "previous_session_count": 1,
+            "current_session_count": 2,
+            "session_count_delta": 1,
+            "added_personas": [
+                {
+                    "persona_id": "edge-case-breaker",
+                    "persona_name": "Edge-Case Breaker",
+                    "session_count": 1,
+                    "session_ids": ["session-02"],
+                }
+            ],
+            "removed_personas": [],
+            "added_scenarios": [],
+            "removed_scenarios": [],
+            "added_traces": [],
+            "removed_traces": [],
+            "new_session_matrix": [
+                {
+                    "session_id": "session-02",
+                    "persona_id": "edge-case-breaker",
+                    "persona_name": "Edge-Case Breaker",
+                    "scenario_id": "scenario-1",
+                    "scenario_title": "first meaningful task",
+                    "trace_id": "novice-cta-hesitation",
+                    "trace_label": "Novice CTA hesitation",
+                }
+            ],
+            "coverage_shift_summary": {
+                "previous_persona_count": 1,
+                "current_persona_count": 2,
+                "previous_scenario_count": 1,
+                "current_scenario_count": 1,
+                "previous_trace_count": 1,
+                "current_trace_count": 1,
+                "new_session_matrix_count": 1,
+                "expansion_mode": "expanded",
+            },
+            "risk_notes": [
+                "Session count expands by 1; review new coverage before execution.",
+                "New persona/scenario/trace combinations were introduced (1 sessions); spot-check them before the run.",
+            ],
+            "expansion_ok": True,
+            "review_required": False,
+            "json_report": ".skill-beta/fixture-diffs/round-0-to-round-1/beta-simulation-diff.json",
+            "markdown_report": ".skill-beta/fixture-diffs/round-0-to-round-1/beta-simulation-diff.md",
+        }
         try:
             local_response_contract.validate_simulated_user_profile(sample_profile)
         except Exception as exc:
@@ -747,6 +811,10 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             local_response_contract.validate_beta_simulation_manifest(sample_simulation_manifest)
         except Exception as exc:
             beta_round_contract_failures.append(f"simulation-manifest: {exc}")
+        try:
+            local_response_contract.validate_beta_simulation_diff(sample_simulation_diff)
+        except Exception as exc:
+            beta_round_contract_failures.append(f"simulation-diff: {exc}")
         sample_persona_library = {
             "schema_version": "simulation-persona-library/v1",
             "skill_name": "virtual-intelligent-dev-team",
@@ -879,6 +947,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 "report_schema_json": str(beta_round_report_schema_json_path),
                 "gate_schema_json": str(beta_round_gate_result_schema_json_path),
                 "simulation_manifest_schema_json": str(SKILL_DIR / "references" / "beta-simulation-manifest.schema.json"),
+                "simulation_diff_schema_json": str(beta_simulation_diff_schema_json_path),
                 "simulation_profile_schema_json": str(simulated_user_profile_schema_json_path),
                 "simulation_persona_library_schema_json": str(SKILL_DIR / "references" / "simulation-persona-library.schema.json"),
                 "simulation_cohort_fixtures_schema_json": str(SKILL_DIR / "references" / "simulation-cohort-fixtures.schema.json"),

@@ -59,11 +59,12 @@ existing routing, planning, iteration, release, and Git rules.
      - source scenario defaults from `references/simulation-scenario-packs.json`
      - source trace defaults from `references/simulation-trace-catalog.json`
   3. preview the resolved fixture so the exact persona / scenario / trace mix is inspectable
-  4. start with a small simulated or seed-user cohort
-  5. preserve session-level traces before synthesizing the round report
-  6. sync generated feedback rows back into the ledger and inspect blocker slices by persona and scenario
-  7. expand sample size only when the previous round clears its gate
-  8. log structured feedback and severity before release or rollout decisions
+  4. diff the current fixture against the previous round before execution so expansion drift is explicit
+  5. start with a small simulated or seed-user cohort
+  6. preserve session-level traces before synthesizing the round report
+  7. sync generated feedback rows back into the ledger and inspect blocker slices by persona and scenario
+  8. expand sample size only when the previous round clears its gate
+  9. log structured feedback and severity before release or rollout decisions
 - Primary references:
   - `references/beta-validation-playbook.md`
   - `assets/beta-cohort-matrix-template.md`

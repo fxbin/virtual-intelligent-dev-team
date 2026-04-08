@@ -18,6 +18,7 @@ SCENARIO_PACKS_PATH = SKILL_DIR / "references" / "simulation-scenario-packs.json
 TRACE_CATALOG_PATH = SKILL_DIR / "references" / "simulation-trace-catalog.json"
 RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
 PREVIEW_BETA_SIMULATION_FIXTURE_SCRIPT = SCRIPT_DIR / "preview_beta_simulation_fixture.py"
+COMPARE_BETA_SIMULATION_MANIFESTS_SCRIPT = SCRIPT_DIR / "compare_beta_simulation_manifests.py"
 
 
 def load_module(name: str, path: Path):
@@ -36,6 +37,10 @@ fixture_preview = load_module(
     "virtual_team_init_beta_simulation_fixture_preview",
     PREVIEW_BETA_SIMULATION_FIXTURE_SCRIPT,
 )
+fixture_compare = load_module(
+    "virtual_team_init_beta_simulation_fixture_compare",
+    COMPARE_BETA_SIMULATION_MANIFESTS_SCRIPT,
+)
 
 
 def load_json(path: Path) -> dict[str, object]:
@@ -49,6 +54,19 @@ def load_json(path: Path) -> dict[str, object]:
 def write_json(path: Path, payload: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def infer_previous_round_id(round_id: str) -> str | None:
+    prefix = "round-"
+    if not round_id.startswith(prefix):
+        return None
+    suffix = round_id[len(prefix) :]
+    if not suffix.isdigit():
+        return None
+    value = int(suffix)
+    if value <= 0:
+        return None
+    return f"{prefix}{value - 1}"
 
 
 def load_persona_library() -> tuple[list[dict[str, object]], dict[str, list[str]]]:
@@ -299,6 +317,24 @@ def init_beta_simulation(
         status = "updated" if overwrite and config_existed else "created"
 
     preview_payload = fixture_preview.preview_beta_simulation_fixture(config_path=config_path.resolve())
+    previous_round_id = infer_previous_round_id(round_id)
+    previous_manifest_relpath: str | None = None
+    fixture_diff_json_relpath: str | None = None
+    fixture_diff_markdown_relpath: str | None = None
+    fixture_diff_review_required: bool | None = None
+    if previous_round_id is not None:
+        previous_manifest_path = (
+            root / ".skill-beta" / "fixture-previews" / previous_round_id / "beta-simulation-manifest.json"
+        )
+        if previous_manifest_path.exists():
+            previous_manifest_relpath = str(previous_manifest_path.relative_to(root))
+            diff_payload = fixture_compare.compare_beta_simulation_manifests(
+                previous_manifest_path=previous_manifest_path.resolve(),
+                current_manifest_path=Path(str(preview_payload["json_report"])).resolve(),
+            )
+            fixture_diff_json_relpath = str(Path(str(diff_payload["json_report"])).relative_to(root))
+            fixture_diff_markdown_relpath = str(Path(str(diff_payload["markdown_report"])).relative_to(root))
+            fixture_diff_review_required = bool(diff_payload.get("review_required"))
 
     return {
         "ok": True,
@@ -314,6 +350,10 @@ def init_beta_simulation(
         "cohort_fixture_id": fixture_id,
         "fixture_manifest_json": str(Path(str(preview_payload["json_report"])).relative_to(root)),
         "fixture_manifest_markdown": str(Path(str(preview_payload["markdown_report"])).relative_to(root)),
+        "previous_fixture_manifest_json": previous_manifest_relpath,
+        "fixture_diff_json": fixture_diff_json_relpath,
+        "fixture_diff_markdown": fixture_diff_markdown_relpath,
+        "fixture_diff_review_required": fixture_diff_review_required,
         "created_profiles": created_profiles,
         "scenario_count": len(scenarios),
         "session_count": len(session_plan),

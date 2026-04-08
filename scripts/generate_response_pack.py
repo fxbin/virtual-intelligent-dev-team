@@ -437,6 +437,7 @@ def build_response_pack_payload(
             "simulation_preview_dir": str(
                 beta_validation_plan.get("simulation_preview_dir", ".skill-beta/fixture-previews")
             ),
+            "simulation_diff_dir": str(beta_validation_plan.get("simulation_diff_dir", ".skill-beta/fixture-diffs")),
             "simulation_run_dir": str(beta_validation_plan.get("simulation_run_dir", ".skill-beta/simulation-runs")),
             "simulation_init_command_template": str(
                 beta_validation_plan.get(
@@ -454,6 +455,12 @@ def build_response_pack_payload(
                 beta_validation_plan.get(
                     "simulation_preview_command_template",
                     "python scripts/preview_beta_simulation_fixture.py --config .skill-beta/simulation-configs/<round-id>.json --pretty",
+                )
+            ),
+            "simulation_diff_command_template": str(
+                beta_validation_plan.get(
+                    "simulation_diff_command_template",
+                    "python scripts/compare_beta_simulation_manifests.py --previous .skill-beta/fixture-previews/<previous-round-id>/beta-simulation-manifest.json --current .skill-beta/fixture-previews/<round-id>/beta-simulation-manifest.json --pretty",
                 )
             ),
             "simulation_summary_command_template": str(
@@ -705,9 +712,11 @@ def build_response_pack(
                     f"- 模拟场景包：{beta_program.get('simulation_scenario_packs', 'references/simulation-scenario-packs.json')}",
                     f"- 模拟轨迹库：{beta_program.get('simulation_trace_catalog', 'references/simulation-trace-catalog.json')}",
                     f"- fixture 预览目录：{beta_program.get('simulation_preview_dir', '.skill-beta/fixture-previews')}",
+                    f"- fixture diff 目录：{beta_program.get('simulation_diff_dir', '.skill-beta/fixture-diffs')}",
                     f"- 模拟运行目录：{beta_program.get('simulation_run_dir', '.skill-beta/simulation-runs')}",
                     f"- 模拟起盘命令：{beta_program.get('simulation_init_command_template', 'python scripts/init_beta_simulation.py --root . --round-id <round-id> --phase \"<phase>\" --objective \"<objective>\" --pretty')}",
                     f"- fixture 预览命令：{beta_program.get('simulation_preview_command_template', 'python scripts/preview_beta_simulation_fixture.py --config .skill-beta/simulation-configs/<round-id>.json --pretty')}",
+                    f"- fixture diff 命令：{beta_program.get('simulation_diff_command_template', 'python scripts/compare_beta_simulation_manifests.py --previous .skill-beta/fixture-previews/<previous-round-id>/beta-simulation-manifest.json --current .skill-beta/fixture-previews/<round-id>/beta-simulation-manifest.json --pretty')}",
                     f"- 模拟执行命令：{beta_program.get('simulation_run_command_template', 'python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/<round-id>.json --pretty')}",
                     f"- 模拟汇总命令：{beta_program.get('simulation_summary_command_template', 'python scripts/summarize_beta_simulation.py --run .skill-beta/simulation-runs/<round-id>/beta-simulation-run.json --feedback-ledger-out .skill-beta/feedback-ledger.md --round-report-out .skill-beta/reports/<round-id>.json --pretty')}",
                     f"- 轮次报告模板：{beta_program.get('report_template', 'assets/beta-round-report-template.json')}",
@@ -742,9 +751,11 @@ def build_response_pack(
                     f"- Simulation scenario packs: {beta_program.get('simulation_scenario_packs', 'references/simulation-scenario-packs.json')}",
                     f"- Simulation trace catalog: {beta_program.get('simulation_trace_catalog', 'references/simulation-trace-catalog.json')}",
                     f"- Simulation preview dir: {beta_program.get('simulation_preview_dir', '.skill-beta/fixture-previews')}",
+                    f"- Simulation diff dir: {beta_program.get('simulation_diff_dir', '.skill-beta/fixture-diffs')}",
                     f"- Simulation run dir: {beta_program.get('simulation_run_dir', '.skill-beta/simulation-runs')}",
                     f"- Simulation init command: {beta_program.get('simulation_init_command_template', 'python scripts/init_beta_simulation.py --root . --round-id <round-id> --phase \"<phase>\" --objective \"<objective>\" --pretty')}",
                     f"- Simulation preview command: {beta_program.get('simulation_preview_command_template', 'python scripts/preview_beta_simulation_fixture.py --config .skill-beta/simulation-configs/<round-id>.json --pretty')}",
+                    f"- Simulation diff command: {beta_program.get('simulation_diff_command_template', 'python scripts/compare_beta_simulation_manifests.py --previous .skill-beta/fixture-previews/<previous-round-id>/beta-simulation-manifest.json --current .skill-beta/fixture-previews/<round-id>/beta-simulation-manifest.json --pretty')}",
                     f"- Simulation run command: {beta_program.get('simulation_run_command_template', 'python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/<round-id>.json --pretty')}",
                     f"- Simulation summary command: {beta_program.get('simulation_summary_command_template', 'python scripts/summarize_beta_simulation.py --run .skill-beta/simulation-runs/<round-id>/beta-simulation-run.json --feedback-ledger-out .skill-beta/feedback-ledger.md --round-report-out .skill-beta/reports/<round-id>.json --pretty')}",
                     f"- Round report template: {beta_program.get('report_template', 'assets/beta-round-report-template.json')}",

@@ -191,6 +191,7 @@ python scripts/init_product_delivery.py --root . --pretty
 - `references/beta-round-report.schema.json`
 - `references/beta-round-gate-result.schema.json`
 - `references/beta-simulation-manifest.schema.json`
+- `references/beta-simulation-diff.schema.json`
 
 常用初始化命令：
 
@@ -204,6 +205,10 @@ python scripts/init_beta_simulation.py --root . --round-id round-0 --phase "pre-
 
 ```bash
 python scripts/preview_beta_simulation_fixture.py --config .skill-beta/simulation-configs/round-0.json --pretty
+```
+
+```bash
+python scripts/compare_beta_simulation_manifests.py --previous .skill-beta/fixture-previews/round-0/beta-simulation-manifest.json --current .skill-beta/fixture-previews/round-1/beta-simulation-manifest.json --pretty
 ```
 
 ```bash
