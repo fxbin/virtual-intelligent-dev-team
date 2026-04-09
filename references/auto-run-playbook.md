@@ -104,3 +104,12 @@ python scripts/run_auto_workflow.py --mode go --plan .skill-auto/auto-run-plan.j
 - `.skill-auto/state/*.json`
 - `evals/release-gate/automation-state.json`
 - `.skill-post-release/decisions/automation-state.json`
+
+恢复检查：
+
+```bash
+python scripts/inspect_automation_state.py --repo . --pretty
+```
+
+这个入口用来读取最近一次 machine-readable automation state，
+并给出当前最合适的恢复命令与恢复锚点。

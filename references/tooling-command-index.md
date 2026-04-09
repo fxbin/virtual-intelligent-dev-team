@@ -214,6 +214,16 @@ python scripts/evaluate_post_release_feedback.py --report .skill-post-release/cu
 - `references/auto-run-playbook.md`
 - `references/automation-state.schema.json`
 
+恢复入口：
+
+```bash
+python scripts/inspect_automation_state.py --repo . --pretty
+```
+
+```bash
+python scripts/inspect_automation_state.py --repo . --workflow ship-hold-remediate --pretty
+```
+
 常用命令：
 
 ```bash
@@ -243,6 +253,11 @@ python scripts/run_auto_workflow.py --mode go --plan .skill-auto/auto-run-plan.j
   - `.skill-auto/last-run.json`
   - `.skill-auto/last-run.md`
   - 底层 release / post-release automation state
+- `inspect_automation_state.py` 会返回：
+  - 当前选中的 state
+  - 推荐恢复命令
+  - 可恢复锚点
+  - 所有已发现 state 的摘要
 
 ## 五、内测验证资产
 

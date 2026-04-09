@@ -42,6 +42,7 @@ INIT_TECHNICAL_GOVERNANCE_SCRIPT = SKILL_DIR / "scripts" / "init_technical_gover
 INIT_POST_RELEASE_FEEDBACK_SCRIPT = SKILL_DIR / "scripts" / "init_post_release_feedback.py"
 EVALUATE_POST_RELEASE_FEEDBACK_SCRIPT = SKILL_DIR / "scripts" / "evaluate_post_release_feedback.py"
 RUN_AUTO_WORKFLOW_SCRIPT = SKILL_DIR / "scripts" / "run_auto_workflow.py"
+INSPECT_AUTOMATION_STATE_SCRIPT = SKILL_DIR / "scripts" / "inspect_automation_state.py"
 GENERATE_RESPONSE_PACK_SCRIPT = SKILL_DIR / "scripts" / "generate_response_pack.py"
 RESPONSE_CONTRACT_SCRIPT = SKILL_DIR / "scripts" / "response_contract.py"
 VALIDATOR_SCRIPT = SKILL_DIR / "scripts" / "validate_virtual_team.py"
@@ -86,6 +87,10 @@ technical_governance_init = load_module("virtual_intelligent_dev_team_technical_
 post_release_feedback_init = load_module("virtual_intelligent_dev_team_post_release_feedback_init", INIT_POST_RELEASE_FEEDBACK_SCRIPT)
 post_release_feedback_evaluator = load_module("virtual_intelligent_dev_team_post_release_feedback_evaluator", EVALUATE_POST_RELEASE_FEEDBACK_SCRIPT)
 auto_workflow = load_module("virtual_intelligent_dev_team_auto_workflow", RUN_AUTO_WORKFLOW_SCRIPT)
+automation_state_inspector = load_module(
+    "virtual_intelligent_dev_team_inspect_automation_state",
+    INSPECT_AUTOMATION_STATE_SCRIPT,
+)
 response_pack = load_module("virtual_intelligent_dev_team_response_pack", GENERATE_RESPONSE_PACK_SCRIPT)
 response_contract = load_module("virtual_intelligent_dev_team_response_contract", RESPONSE_CONTRACT_SCRIPT)
 verify_action = load_module("virtual_intelligent_dev_team_verify_action", VERIFY_ACTION_SCRIPT)
@@ -6417,6 +6422,92 @@ class AutoWorkflowTests(unittest.TestCase):
             self.assertEqual("monitor", result["decision"])
             self.assertTrue((root / ".skill-post-release" / "current-signals.json").exists())
             post_release_mock.assert_called_once()
+
+
+class AutomationStateInspectorTests(unittest.TestCase):
+    def test_inspect_automation_state_reads_latest_auto_setup_and_recommends_go(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            auto_workflow.build_setup_plan(
+                text="/auto background safe fix this repeated regression until stable and keep benchmark evidence",
+                repo_root=root,
+                config=load_config(),
+            )
+
+            result = automation_state_inspector.inspect_automation_state(repo_root=root)
+
+            self.assertTrue(result["ok"])
+            self.assertEqual("latest", result["selection_mode"])
+            self.assertEqual("auto-run-setup", result["selected_state"]["state_kind"])
+            self.assertTrue(result["resume_ready"])
+            self.assertIn("run_auto_workflow.py --mode go", result["recommended_resume_command"])
+
+    def test_inspect_automation_state_can_filter_release_gate_state(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            output_dir = root / "evals" / "release-gate"
+
+            with mock.patch.object(
+                release_gate.benchmark_runner,
+                "run_benchmark_suite",
+                return_value={
+                    "summary": {
+                        "tests_passed": True,
+                        "validator_passed": True,
+                        "evals_passed": True,
+                        "offline_drill_enabled": True,
+                        "offline_drill_passed": True,
+                        "overall_passed": True,
+                    },
+                    "json_report": str(output_dir / "benchmark-results.json"),
+                    "markdown_report": str(output_dir / "benchmark-report.md"),
+                    "offline_drill_run": {
+                        "markdown_report": str(output_dir / "offline-loop-drill-report.md"),
+                    },
+                },
+            ):
+                release_gate.run_release_gate(output_dir=output_dir)
+
+            result = automation_state_inspector.inspect_automation_state(
+                repo_root=root,
+                workflow="ship-hold-remediate",
+            )
+
+            self.assertTrue(result["ok"])
+            self.assertEqual("workflow", result["selection_mode"])
+            self.assertEqual("release-gate-result", result["selected_state"]["state_kind"])
+            self.assertIn("run_release_gate.py", result["recommended_resume_command"])
+
+    def test_inspect_automation_state_cli_supports_explicit_path(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            setup = auto_workflow.build_setup_plan(
+                text="/auto fix this repeated regression until stable and keep benchmark evidence",
+                repo_root=root,
+                config=load_config(),
+            )
+            state_path = root / str(setup["automation_state"]["state_paths"]["primary"])
+
+            proc = subprocess.run(
+                [
+                    sys.executable,
+                    str(INSPECT_AUTOMATION_STATE_SCRIPT),
+                    "--repo",
+                    str(root),
+                    "--state",
+                    str(state_path),
+                    "--pretty",
+                ],
+                cwd=str(root),
+                text=True,
+                capture_output=True,
+                encoding="utf-8",
+            )
+
+            self.assertEqual(0, proc.returncode, proc.stderr)
+            payload = json.loads(proc.stdout)
+            self.assertEqual("path", payload["selection_mode"])
+            self.assertEqual("auto-run-setup", payload["selected_state"]["state_kind"])
 
 
 class ResponsePackTests(unittest.TestCase):
