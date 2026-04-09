@@ -147,8 +147,9 @@ existing routing, planning, iteration, release, and Git rules.
   1. run the release gate
   2. answer `ship` or `hold`
   3. if staged beta validation exists, enforce the latest beta round gate before `ship`
-  4. if `hold`, create the next remediation brief, and inherit the latest beta remediation brief when one already exists
-  5. resume via iteration or planning artifacts only when needed
+  4. if `ship`, bootstrap the post-release feedback loop so shipped evidence has a formal re-entry point
+  5. if `hold`, create the next remediation brief, and inherit the latest beta remediation brief when one already exists
+  6. resume via iteration, post-release, or planning artifacts only when needed
 - Primary references:
   - `references/release-gate-playbook.md`
   - `references/offline-loop-drill-playbook.md`
@@ -156,6 +157,25 @@ existing routing, planning, iteration, release, and Git rules.
 - Default resume anchors:
   - `evals/release-gate/release-gate-report.md`
   - `evals/release-gate/next-iteration-brief.json`
+
+## 8. `post-release-close-loop`
+
+- Use when:
+  - the version already shipped and the team needs a structured way to absorb dogfood, telemetry, support, or real-user feedback
+  - the question is no longer “can we ship?” but “what should shipped evidence reopen?”
+- Default sequence:
+  1. initialize the post-release workspace
+  2. collect structured feedback and signal evidence into the current report
+  3. evaluate whether to `monitor`, `iterate`, or `escalate`
+  4. sync product or governance writebacks before reopening remediation
+- Primary references:
+  - `references/post-release-feedback-playbook.md`
+  - `assets/post-release-signal-report-template.json`
+  - `scripts/init_post_release_feedback.py`
+  - `scripts/evaluate_post_release_feedback.py`
+- Default resume anchors:
+  - `.skill-post-release/triage-summary.md`
+  - `.skill-post-release/current-signals.json`
 
 ## Bundle Contract
 
@@ -177,3 +197,20 @@ bootstrap contract should make three things explicit:
 
 The lead owns the journey narrative. Assistants only return the delta needed for
 the current step.
+
+## Auto Overlay
+
+`/auto` 不是新的 workflow bundle。
+
+它是加在 bundle 外层的显式执行协议，只对白名单开放：
+
+- `root-cause-remediate`
+- `ship-hold-remediate`
+- `post-release-close-loop`
+
+协议要求：
+
+1. `/auto` 只进入 `setup`
+2. `/auto go` 才允许进入 `go`
+3. 必须先落 `.skill-auto/auto-run-plan.json`
+4. 默认仍是 manual mode

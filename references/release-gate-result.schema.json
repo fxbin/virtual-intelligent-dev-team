@@ -314,7 +314,8 @@
         "closure_json",
         "closure_markdown",
         "baseline_registration",
-        "distilled_pattern_sync"
+        "distilled_pattern_sync",
+        "post_release_bootstrap"
       ],
       "properties": {
         "loop_state": {
@@ -337,6 +338,41 @@
         },
         "distilled_pattern_sync": {
           "type": "object"
+        },
+        "post_release_bootstrap": {
+          "type": "object",
+          "required": [
+            "root",
+            "resume_anchor",
+            "signal_report",
+            "artifacts",
+            "actions",
+            "recommended_command"
+          ],
+          "properties": {
+            "root": {
+              "type": "string"
+            },
+            "resume_anchor": {
+              "type": "string"
+            },
+            "signal_report": {
+              "type": "string"
+            },
+            "artifacts": {
+              "$ref": "#/$defs/string_array"
+            },
+            "actions": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
+            "recommended_command": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false

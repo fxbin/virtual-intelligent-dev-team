@@ -69,6 +69,9 @@
     },
     "optimization_loop": {
       "$ref": "#/$defs/optimization_loop"
+    },
+    "auto_run": {
+      "$ref": "#/$defs/auto_run"
     }
   },
   "additionalProperties": false,
@@ -486,6 +489,84 @@
           "$ref": "#/$defs/string_array"
         },
         "resume_anchor": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "auto_run": {
+      "type": "object",
+      "required": [
+        "enabled",
+        "trigger",
+        "requested_phase",
+        "execution_mode",
+        "workflow_bundle",
+        "workflow_supported",
+        "requires_explicit_go",
+        "eligible_workflows",
+        "setup_command",
+        "go_command",
+        "resume_anchor",
+        "state_root",
+        "plan_json",
+        "plan_markdown",
+        "safety_guards",
+        "eligibility_reason"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "trigger": {
+          "type": "string"
+        },
+        "requested_phase": {
+          "enum": [
+            "setup",
+            "go"
+          ]
+        },
+        "execution_mode": {
+          "enum": [
+            "auto-setup",
+            "auto-go"
+          ]
+        },
+        "workflow_bundle": {
+          "type": "string"
+        },
+        "workflow_supported": {
+          "type": "boolean"
+        },
+        "requires_explicit_go": {
+          "type": "boolean"
+        },
+        "eligible_workflows": {
+          "$ref": "#/$defs/string_array"
+        },
+        "setup_command": {
+          "type": "string"
+        },
+        "go_command": {
+          "type": "string"
+        },
+        "resume_anchor": {
+          "type": "string"
+        },
+        "state_root": {
+          "type": "string"
+        },
+        "plan_json": {
+          "type": "string"
+        },
+        "plan_markdown": {
+          "type": "string"
+        },
+        "safety_guards": {
+          "$ref": "#/$defs/string_array"
+        },
+        "eligibility_reason": {
           "type": "string"
         }
       },

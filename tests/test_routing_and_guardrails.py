@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import importlib.util
 from contextlib import contextmanager
 import json
@@ -37,6 +39,9 @@ RUN_BETA_SIMULATION_SCRIPT = SKILL_DIR / "scripts" / "run_beta_simulation.py"
 SUMMARIZE_BETA_SIMULATION_SCRIPT = SKILL_DIR / "scripts" / "summarize_beta_simulation.py"
 EVALUATE_BETA_ROUND_SCRIPT = SKILL_DIR / "scripts" / "evaluate_beta_round.py"
 INIT_TECHNICAL_GOVERNANCE_SCRIPT = SKILL_DIR / "scripts" / "init_technical_governance.py"
+INIT_POST_RELEASE_FEEDBACK_SCRIPT = SKILL_DIR / "scripts" / "init_post_release_feedback.py"
+EVALUATE_POST_RELEASE_FEEDBACK_SCRIPT = SKILL_DIR / "scripts" / "evaluate_post_release_feedback.py"
+RUN_AUTO_WORKFLOW_SCRIPT = SKILL_DIR / "scripts" / "run_auto_workflow.py"
 GENERATE_RESPONSE_PACK_SCRIPT = SKILL_DIR / "scripts" / "generate_response_pack.py"
 RESPONSE_CONTRACT_SCRIPT = SKILL_DIR / "scripts" / "response_contract.py"
 VALIDATOR_SCRIPT = SKILL_DIR / "scripts" / "validate_virtual_team.py"
@@ -78,6 +83,9 @@ beta_simulation_runner = load_module("virtual_intelligent_dev_team_beta_simulati
 beta_simulation_summary = load_module("virtual_intelligent_dev_team_beta_simulation_summary", SUMMARIZE_BETA_SIMULATION_SCRIPT)
 beta_round_evaluator = load_module("virtual_intelligent_dev_team_beta_round_evaluator", EVALUATE_BETA_ROUND_SCRIPT)
 technical_governance_init = load_module("virtual_intelligent_dev_team_technical_governance_init", INIT_TECHNICAL_GOVERNANCE_SCRIPT)
+post_release_feedback_init = load_module("virtual_intelligent_dev_team_post_release_feedback_init", INIT_POST_RELEASE_FEEDBACK_SCRIPT)
+post_release_feedback_evaluator = load_module("virtual_intelligent_dev_team_post_release_feedback_evaluator", EVALUATE_POST_RELEASE_FEEDBACK_SCRIPT)
+auto_workflow = load_module("virtual_intelligent_dev_team_auto_workflow", RUN_AUTO_WORKFLOW_SCRIPT)
 response_pack = load_module("virtual_intelligent_dev_team_response_pack", GENERATE_RESPONSE_PACK_SCRIPT)
 response_contract = load_module("virtual_intelligent_dev_team_response_contract", RESPONSE_CONTRACT_SCRIPT)
 verify_action = load_module("virtual_intelligent_dev_team_verify_action", VERIFY_ACTION_SCRIPT)
@@ -726,6 +734,63 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual(".skill-beta/round-decisions", beta_plan["decision_dir"])
         self.assertIn("python scripts/evaluate_beta_round.py", beta_plan["gate_command_template"])
         self.assertEqual(3, len(beta_plan["rounds"]))
+
+    def test_auto_root_cause_request_exposes_auto_profile(self) -> None:
+        result = route_request.route_request(
+            "/auto fix this repeated regression until stable and keep benchmark evidence",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertTrue(result["auto_mode_enabled"])
+        self.assertEqual("/auto", result["auto_mode_source"])
+        self.assertEqual("auto-setup", result["execution_mode"])
+        self.assertEqual("root-cause-remediate", result["workflow_bundle"])
+        auto_profile = result["auto_run_profile"]
+        self.assertTrue(auto_profile["workflow_supported"])
+        self.assertEqual("setup", auto_profile["requested_phase"])
+        self.assertIn("root-cause-remediate", auto_profile["eligible_workflows"])
+        bounded_iteration_entry = next(
+            item for item in result["process_plan"] if item["skill"] == "bounded-iteration"
+        )
+        self.assertEqual("setup", bounded_iteration_entry["auto_run"]["requested_phase"])
+        self.assertIn("python scripts/run_auto_workflow.py", bounded_iteration_entry["auto_run"]["setup_command"])
+
+    def test_auto_release_go_request_requires_saved_plan(self) -> None:
+        result = route_request.route_request(
+            "/auto go Is this version ready to ship? Run the formal release gate.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertTrue(result["auto_mode_enabled"])
+        self.assertEqual("auto-go", result["execution_mode"])
+        self.assertEqual("ship-hold-remediate", result["workflow_bundle"])
+        self.assertEqual("go", result["auto_run_profile"]["requested_phase"])
+        self.assertTrue(result["auto_run_profile"]["workflow_supported"])
+        release_entry = next(item for item in result["process_plan"] if item["skill"] == "release-gate")
+        self.assertEqual("go", release_entry["auto_run"]["requested_phase"])
+
+    def test_auto_post_release_request_adds_post_release_process_plan_entry(self) -> None:
+        result = route_request.route_request(
+            "/auto The release is already live; absorb telemetry and support signals.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertEqual("post-release-close-loop", result["workflow_bundle"])
+        self.assertTrue(result["auto_run_profile"]["workflow_supported"])
+        post_release_entry = next(
+            item for item in result["process_plan"] if item["skill"] == "post-release-feedback"
+        )
+        self.assertEqual(
+            "references/post-release-feedback-playbook.md",
+            post_release_entry["reference"],
+        )
+        self.assertIn(
+            "python scripts/evaluate_post_release_feedback.py --report .skill-post-release/current-signals.json --pretty",
+            post_release_entry["commands"],
+        )
 
     def test_governance_request_routes_to_git_guardian_bundle(self) -> None:
         result = route_request.route_request(
@@ -3708,6 +3773,11 @@ class ValidatorScriptTests(unittest.TestCase):
                 "Define the onboarding user flow, acceptance criteria, and backend contract for this signup revamp.",
                 {},
             ),
+            (
+                "auto-mode",
+                "/auto fix this repeated regression until stable and keep benchmark evidence",
+                {},
+            ),
         ]
 
         for check, text, kwargs in cases:
@@ -3791,6 +3861,20 @@ class ValidatorScriptTests(unittest.TestCase):
 
         self.assertFalse(result["allowed"])
         self.assertEqual("Code Audit Council", result["details"]["expected_lead_agent"])
+
+    def test_verify_action_auto_mode_requires_setup_before_go(self) -> None:
+        result = verify_action.verify_action(
+            text="/auto go Is this version ready to ship? Run the formal release gate.",
+            config=load_config(),
+            repo_path=REPO_ROOT,
+            check="auto-mode",
+        )
+
+        self.assertFalse(result["allowed"])
+        self.assertTrue(result["details"]["auto_mode_enabled"])
+        self.assertEqual("go", result["details"]["requested_phase"])
+        self.assertFalse(result["details"]["plan_exists"])
+        self.assertIn("Run auto setup first", result["recommended_next_step"])
 
     def test_contract_lint_passes(self) -> None:
         result = contract_lint.lint_contract(SKILL_DIR)
@@ -4902,6 +4986,10 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
             sync_result = result["follow_up"]["distilled_pattern_sync"]
             self.assertTrue(Path(sync_result["distilled_patterns"]).exists())
             self.assertEqual(1, sync_result["kept_rounds"])
+            post_release_bootstrap = result["follow_up"]["post_release_bootstrap"]
+            self.assertTrue(Path(post_release_bootstrap["resume_anchor"]).exists())
+            self.assertTrue(Path(post_release_bootstrap["signal_report"]).exists())
+            self.assertTrue(any(item.endswith(".skill-post-release/triage-summary.md") for item in result["explanation_card"]["resume_artifacts"]))
 
 
 class ProjectMemoryInitTests(unittest.TestCase):
@@ -5968,6 +6056,237 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertTrue((root / ".skill-governance" / "release-checklist.md").exists())
             self.assertEqual(".skill-governance/change-plan.md", result["resume_anchor"])
 
+    def test_init_post_release_feedback_creates_expected_anchors(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            result = post_release_feedback_init.init_post_release_feedback(root=root, overwrite=False)
+
+            self.assertTrue(result["ok"])
+            self.assertTrue((root / ".skill-post-release" / "rollout-summary.md").exists())
+            self.assertTrue((root / ".skill-post-release" / "feedback-ledger.md").exists())
+            self.assertTrue((root / ".skill-post-release" / "current-signals.json").exists())
+            self.assertTrue((root / ".skill-post-release" / "triage-summary.md").exists())
+            self.assertTrue(result["resume_anchor"].endswith(".skill-post-release/triage-summary.md"))
+
+    def test_evaluate_post_release_feedback_iterates_and_writes_back_product_assets(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            product_delivery_init.init_product_delivery(root=root, overwrite=False)
+            post_release_feedback_init.init_post_release_feedback(root=root, overwrite=False)
+            report = root / ".skill-post-release" / "current-signals.json"
+            payload = {
+                "schema_version": "post-release-feedback-report/v1",
+                "generated_at": "2026-04-08T12:00:00Z",
+                "release_label": "v4.46.0",
+                "observation_window": {
+                    "start": "2026-04-08T00:00:00Z",
+                    "end": "2026-04-09T00:00:00Z"
+                },
+                "signal_summary": {
+                    "total_feedback_items": 2,
+                    "unique_users_affected": 8,
+                    "blocker_issue_count": 1,
+                    "escalation_issue_count": 0,
+                    "telemetry_status": "warning",
+                    "adoption_trend": "stable",
+                    "satisfaction_trend": "worsening"
+                },
+                "feedback_items": [
+                    {
+                        "id": "feedback-001",
+                        "source": "support",
+                        "severity": "high",
+                        "status": "new",
+                        "affected_area": "onboarding",
+                        "label": "onboarding stalls after first task",
+                        "summary": "Users hesitate after account creation.",
+                        "recommended_action": "tighten first-task guidance",
+                        "evidence_artifacts": [
+                            ".skill-post-release/feedback-ledger.md"
+                        ]
+                    }
+                ],
+                "report_context": {
+                    "feedback_ledger_markdown": ".skill-post-release/feedback-ledger.md",
+                    "release_closure_json": "evals/release-gate/release-closure.json",
+                    "release_gate_json": "evals/release-gate/release-gate-results.json"
+                }
+            }
+            report.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+            result = post_release_feedback_evaluator.evaluate_post_release_feedback(report_path=report)
+
+            response_contract.validate_post_release_feedback_result(result)
+            self.assertFalse(result["ok"])
+            self.assertEqual("iterate", result["decision"])
+            self.assertEqual("bounded-iteration", result["follow_up"]["next_action"])
+            self.assertTrue(Path(result["follow_up"]["brief_json"]).exists())
+            current_slice = (root / ".skill-product" / "current-slice.md").read_text(encoding="utf-8")
+            self.assertIn("## Post-Release Feedback Writeback", current_slice)
+            triage = (root / ".skill-post-release" / "triage-summary.md").read_text(encoding="utf-8")
+            self.assertIn("Current decision: `iterate`", triage)
+
+    def test_evaluate_post_release_feedback_escalates_and_writes_back_governance_assets(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            technical_governance_init.init_technical_governance(root=root, overwrite=False)
+            post_release_feedback_init.init_post_release_feedback(root=root, overwrite=False)
+            report = root / ".skill-post-release" / "current-signals.json"
+            payload = {
+                "schema_version": "post-release-feedback-report/v1",
+                "generated_at": "2026-04-08T12:00:00Z",
+                "release_label": "v4.46.0",
+                "observation_window": {
+                    "start": "2026-04-08T00:00:00Z",
+                    "end": "2026-04-09T00:00:00Z"
+                },
+                "signal_summary": {
+                    "total_feedback_items": 1,
+                    "unique_users_affected": 12,
+                    "blocker_issue_count": 1,
+                    "escalation_issue_count": 1,
+                    "telemetry_status": "critical",
+                    "adoption_trend": "worsening",
+                    "satisfaction_trend": "worsening"
+                },
+                "feedback_items": [
+                    {
+                        "id": "feedback-crit-001",
+                        "source": "telemetry",
+                        "severity": "critical",
+                        "status": "new",
+                        "affected_area": "checkout",
+                        "label": "critical checkout regression",
+                        "summary": "Payment completion drops after the latest release.",
+                        "recommended_action": "contain rollout and investigate release path",
+                        "evidence_artifacts": [
+                            ".skill-post-release/current-signals.json"
+                        ]
+                    }
+                ],
+                "report_context": {
+                    "feedback_ledger_markdown": ".skill-post-release/feedback-ledger.md",
+                    "release_closure_json": "evals/release-gate/release-closure.json",
+                    "release_gate_json": "evals/release-gate/release-gate-results.json",
+                    "telemetry_snapshot_json": ".skill-post-release/telemetry.json"
+                }
+            }
+            report.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+            result = post_release_feedback_evaluator.evaluate_post_release_feedback(report_path=report)
+
+            response_contract.validate_post_release_feedback_result(result)
+            self.assertFalse(result["ok"])
+            self.assertEqual("escalate", result["decision"])
+            self.assertEqual("technical-governance", result["follow_up"]["next_action"])
+            change_plan = (root / ".skill-governance" / "change-plan.md").read_text(encoding="utf-8")
+            self.assertIn("## Post-Release Feedback Escalation", change_plan)
+
+
+class AutoWorkflowTests(unittest.TestCase):
+    def test_auto_workflow_setup_persists_plan(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            result = auto_workflow.build_setup_plan(
+                text="/auto fix this repeated regression until stable and keep benchmark evidence",
+                repo_root=root,
+                config=load_config(),
+            )
+
+            self.assertTrue(result["ok"])
+            self.assertEqual("setup", result["requested_phase"])
+            self.assertEqual("root-cause-remediate", result["workflow_bundle"])
+            plan_json = root / ".skill-auto" / "auto-run-plan.json"
+            plan_markdown = root / ".skill-auto" / "auto-run-plan.md"
+            self.assertTrue(plan_json.exists())
+            self.assertTrue(plan_markdown.exists())
+            self.assertIn("root-cause-remediate", plan_markdown.read_text(encoding="utf-8"))
+
+    def test_auto_workflow_go_runs_root_cause_bundle(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            auto_workflow.build_setup_plan(
+                text="/auto fix this repeated regression until stable and keep benchmark evidence",
+                repo_root=root,
+                config=load_config(),
+            )
+            with mock.patch.object(
+                auto_workflow.iteration_loop,
+                "run_loop",
+                return_value={
+                    "status": "completed",
+                    "halt_reason": "halted on decision: keep",
+                    "summary": str(root / ".skill-iterations" / "loops" / "iteration-plan.auto-summary.json"),
+                    "rounds_run": [],
+                },
+            ) as run_loop_mock:
+                result = auto_workflow.run_go(root / ".skill-auto" / "auto-run-plan.json", root)
+
+            self.assertTrue(result["ok"])
+            self.assertEqual("root-cause-remediate", result["workflow_bundle"])
+            self.assertEqual("halted on decision: keep", result["decision"])
+            self.assertTrue((root / ".skill-iterations" / "iteration-plan.auto.json").exists())
+            run_loop_mock.assert_called_once()
+            self.assertTrue((root / ".skill-auto" / "last-run.json").exists())
+
+    def test_auto_workflow_go_runs_release_bundle(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            auto_workflow.build_setup_plan(
+                text="/auto Is this version ready to ship? Run the formal release gate.",
+                repo_root=root,
+                config=load_config(),
+            )
+            with mock.patch.object(
+                auto_workflow.release_gate,
+                "run_release_gate",
+                return_value={
+                    "ok": False,
+                    "decision": "hold",
+                    "follow_up": {
+                        "resume_anchor": str(root / "evals" / "release-gate" / "release-gate-report.md"),
+                        "resume_artifacts": [
+                            str(root / "evals" / "release-gate" / "release-gate-report.md"),
+                        ],
+                        "next_action": "read the hold brief",
+                    },
+                },
+            ) as release_gate_mock:
+                result = auto_workflow.run_go(root / ".skill-auto" / "auto-run-plan.json", root)
+
+            self.assertFalse(result["ok"])
+            self.assertEqual("ship-hold-remediate", result["workflow_bundle"])
+            self.assertEqual("hold", result["decision"])
+            release_gate_mock.assert_called_once()
+
+    def test_auto_workflow_go_runs_post_release_bundle(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            auto_workflow.build_setup_plan(
+                text="/auto The release is already live; absorb telemetry and support signals.",
+                repo_root=root,
+                config=load_config(),
+            )
+            with mock.patch.object(
+                auto_workflow.post_release_feedback,
+                "evaluate_post_release_feedback",
+                return_value={
+                    "ok": True,
+                    "decision": "monitor",
+                    "follow_up": {
+                        "resume_artifacts": [str(root / ".skill-post-release" / "triage-summary.md")],
+                        "next_action": "continue-monitoring",
+                    },
+                },
+            ) as post_release_mock:
+                result = auto_workflow.run_go(root / ".skill-auto" / "auto-run-plan.json", root)
+
+            self.assertTrue(result["ok"])
+            self.assertEqual("post-release-close-loop", result["workflow_bundle"])
+            self.assertEqual("monitor", result["decision"])
+            self.assertTrue((root / ".skill-post-release" / "current-signals.json").exists())
+            post_release_mock.assert_called_once()
+
 
 class ResponsePackTests(unittest.TestCase):
     def test_generate_response_pack_payload_matches_json_schema(self) -> None:
@@ -6089,6 +6408,23 @@ class ResponsePackTests(unittest.TestCase):
         self.assertEqual(".skill-beta/round-decisions", payload["beta_program"]["decision_dir"])
         self.assertIn("python scripts/evaluate_beta_round.py", payload["beta_program"]["gate_command_template"])
         self.assertEqual(3, len(payload["beta_program"]["rounds"]))
+
+    def test_generate_response_pack_payload_includes_auto_run_section(self) -> None:
+        result = route_request.route_request(
+            "/auto fix this repeated regression until stable and keep benchmark evidence",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        payload = response_pack.build_response_pack_payload(result)
+
+        self.assertIn("auto_run", payload)
+        self.assertTrue(payload["auto_run"]["enabled"])
+        self.assertEqual("setup", payload["auto_run"]["requested_phase"])
+        self.assertEqual("auto-setup", payload["auto_run"]["execution_mode"])
+        self.assertTrue(payload["auto_run"]["workflow_supported"])
+        self.assertIn("root-cause-remediate", payload["auto_run"]["eligible_workflows"])
+        self.assertIn("python scripts/run_auto_workflow.py", payload["auto_run"]["setup_command"])
 
     def test_generate_response_pack_cli_writes_json_sidecar_by_default(self) -> None:
         with make_tempdir() as tmp:
@@ -6283,6 +6619,20 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("路由原因：当前请求以审计或 review 为主，应先给出 findings，再决定修复与交付。", markdown)
         self.assertIn("工作流来源解释：这条 bundle 同时由主责和请求关键词触发，因此和任务语义强绑定。", markdown)
         self.assertIn("最小可执行动作：先给出 findings", markdown)
+
+    def test_generate_response_pack_renders_auto_run_section(self) -> None:
+        result = route_request.route_request(
+            "/auto The release is already live; absorb telemetry and support signals.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        markdown = response_pack.build_response_pack(result)
+
+        self.assertIn("## Auto Run", markdown)
+        self.assertIn("Current bundle: post-release-close-loop", markdown)
+        self.assertIn("Eligible workflows:", markdown)
+        self.assertIn("python scripts/run_auto_workflow.py --mode go --plan .skill-auto/auto-run-plan.json --pretty", markdown)
 
     def test_generate_response_pack_auto_uses_chinese_release_scaffold(self) -> None:
         result = route_request.route_request(

@@ -251,6 +251,7 @@ def _verify_workflow_bundle(result: dict[str, object]) -> dict[str, object]:
     if not isinstance(bundle_bootstrap, dict):
         bundle_bootstrap = {}
     source_explanations = {
+        "keyword": "The workflow bundle is activated directly by matching request keywords, so the workflow is tied to the task shape even without an explicit process skill.",
         "process-skill": "The workflow bundle is activated by an explicit process skill, so it should be treated as the primary execution journey.",
         "keyword+lead": "The workflow bundle is activated by the combination of task keywords and a high-risk lead, so it is evidence-backed but not purely process-driven.",
         "lead+keyword": "The workflow bundle is activated by both the selected lead and matching request keywords, so the journey is strongly anchored in task semantics.",
@@ -464,6 +465,61 @@ def _verify_assistant_delta_contract(result: dict[str, object]) -> dict[str, obj
     }
 
 
+def _verify_auto_mode(result: dict[str, object], repo_path: Path) -> dict[str, object]:
+    profile = result.get("auto_run_profile", {})
+    if not isinstance(profile, dict):
+        profile = {}
+    enabled = bool(profile.get("enabled"))
+    workflow_supported = bool(profile.get("workflow_supported"))
+    requested_phase = str(profile.get("requested_phase", "manual")).strip() or "manual"
+    plan_json = str(profile.get("plan_json", "")).strip()
+    plan_path = (repo_path / plan_json).resolve() if plan_json else None
+    plan_exists = plan_path.exists() if plan_path is not None else False
+    requires_explicit_go = bool(profile.get("requires_explicit_go", True))
+    explicit_go_requested = requested_phase == "go"
+    allowed = enabled and workflow_supported and (
+        not explicit_go_requested or (requires_explicit_go and plan_exists)
+    )
+    if allowed:
+        if explicit_go_requested:
+            summary = "Auto mode is enabled, workflow-supported, and ready for the explicit go phase."
+            next_step = str(profile.get("go_command", "")).strip() or "Run the auto go command from the saved plan."
+        else:
+            summary = "Auto mode is enabled for this request and is ready to generate a setup plan."
+            next_step = str(profile.get("setup_command", "")).strip() or "Run the auto setup command first."
+    elif enabled and not workflow_supported:
+        summary = "Auto mode is explicitly requested, but this workflow is outside the current auto-run whitelist."
+        next_step = "Stay in manual mode for this workflow, or reroute into root-cause, release, or post-release close-loop."
+    elif enabled and explicit_go_requested and not plan_exists:
+        summary = "Auto go was requested, but the saved auto-run plan does not exist yet."
+        next_step = "Run auto setup first so .skill-auto/auto-run-plan.json exists before go."
+    else:
+        summary = "Auto mode is not enabled for this request."
+        next_step = "Stay in manual mode unless the user explicitly asks for /auto."
+    return {
+        "allowed": allowed,
+        "summary": summary,
+        "details": {
+            "auto_mode_enabled": enabled,
+            "trigger": str(profile.get("trigger", "none")),
+            "requested_phase": requested_phase,
+            "execution_mode": str(profile.get("execution_mode", "manual")),
+            "workflow_bundle": str(profile.get("workflow_bundle", result.get("workflow_bundle", ""))),
+            "workflow_supported": workflow_supported,
+            "eligible_workflows": profile.get("eligible_workflows", []),
+            "requires_explicit_go": requires_explicit_go,
+            "setup_command": str(profile.get("setup_command", "")),
+            "go_command": str(profile.get("go_command", "")),
+            "plan_json": plan_json,
+            "plan_exists": plan_exists,
+            "resume_anchor": str(profile.get("resume_anchor", "")),
+            "safety_guards": profile.get("safety_guards", []),
+            "eligibility_reason": str(profile.get("eligibility_reason", "")),
+        },
+        "recommended_next_step": next_step,
+    }
+
+
 def _build_explanation_card(result: dict[str, object]) -> dict[str, object]:
     payload = response_pack.build_response_pack_payload(result)
     return response_contract.build_explanation_card_from_payload(payload)
@@ -505,6 +561,8 @@ def verify_action(
         outcome = _verify_bundle_bootstrap(result, repo_path)
     elif check == "assistant-delta-contract":
         outcome = _verify_assistant_delta_contract(result)
+    elif check == "auto-mode":
+        outcome = _verify_auto_mode(result, repo_path)
     else:
         raise ValueError(f"Unsupported check: {check}")
 
@@ -530,6 +588,23 @@ def verify_action(
             "progress_anchor_recommended": result.get("progress_anchor_recommended"),
             "resume_artifacts": result.get("resume_artifacts"),
             "workflow_bundle_bootstrap": result.get("workflow_bundle_bootstrap"),
+            "auto_run_profile": {
+                "auto_mode_enabled": bool((result.get("auto_run_profile") or {}).get("enabled")),
+                "trigger": str((result.get("auto_run_profile") or {}).get("trigger", "none")),
+                "requested_phase": str((result.get("auto_run_profile") or {}).get("requested_phase", "manual")),
+                "execution_mode": str((result.get("auto_run_profile") or {}).get("execution_mode", "manual")),
+                "workflow_bundle": str((result.get("auto_run_profile") or {}).get("workflow_bundle", result.get("workflow_bundle", ""))),
+                "workflow_supported": bool((result.get("auto_run_profile") or {}).get("workflow_supported")),
+                "eligible_workflows": (result.get("auto_run_profile") or {}).get("eligible_workflows", []),
+                "requires_explicit_go": bool((result.get("auto_run_profile") or {}).get("requires_explicit_go", False)),
+                "setup_command": str((result.get("auto_run_profile") or {}).get("setup_command", "")),
+                "go_command": str((result.get("auto_run_profile") or {}).get("go_command", "")),
+                "plan_json": str((result.get("auto_run_profile") or {}).get("plan_json", "")),
+                "plan_exists": False,
+                "resume_anchor": str((result.get("auto_run_profile") or {}).get("resume_anchor", "")),
+                "safety_guards": (result.get("auto_run_profile") or {}).get("safety_guards", []),
+                "eligibility_reason": str((result.get("auto_run_profile") or {}).get("eligibility_reason", "")),
+            },
         },
     }
     response_contract.validate_verify_action_result(output)
@@ -552,6 +627,7 @@ def parse_args() -> argparse.Namespace:
             "workflow-bundle",
             "bundle-bootstrap",
             "assistant-delta-contract",
+            "auto-mode",
         ],
         help="What to verify before taking action.",
     )

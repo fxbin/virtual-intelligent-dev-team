@@ -19,6 +19,8 @@ RELEASE_GATE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "release-gate-result.
 BETA_ROUND_REPORT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-report.schema.json"
 BETA_ROUND_GATE_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-gate-result.schema.json"
 BETA_REMEDIATION_BRIEF_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-remediation-brief.schema.json"
+POST_RELEASE_FEEDBACK_REPORT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "post-release-feedback-report.schema.json"
+POST_RELEASE_FEEDBACK_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "post-release-feedback-result.schema.json"
 BETA_SIMULATION_MANIFEST_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-manifest.schema.json"
 BETA_SIMULATION_DIFF_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-diff.schema.json"
 BETA_RAMP_PLAN_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-ramp-plan.schema.json"
@@ -110,6 +112,22 @@ def validate_beta_remediation_brief(payload: dict[str, object]) -> None:
         payload,
         schema_path=BETA_REMEDIATION_BRIEF_SCHEMA_JSON_PATH,
         label="beta remediation brief",
+    )
+
+
+def validate_post_release_feedback_report(payload: dict[str, object]) -> None:
+    validate_payload_against_schema(
+        payload,
+        schema_path=POST_RELEASE_FEEDBACK_REPORT_SCHEMA_JSON_PATH,
+        label="post-release feedback report",
+    )
+
+
+def validate_post_release_feedback_result(payload: dict[str, object]) -> None:
+    validate_payload_against_schema(
+        payload,
+        schema_path=POST_RELEASE_FEEDBACK_RESULT_SCHEMA_JSON_PATH,
+        label="post-release feedback result",
     )
 
 
@@ -338,6 +356,18 @@ def build_release_gate_explanation_card(
             value = str(bootstrap.get(key, "")).strip()
             if value:
                 resume_artifacts.append(value)
+    post_release_bootstrap = follow_up.get("post_release_bootstrap", {})
+    if isinstance(post_release_bootstrap, dict):
+        for key in ("resume_anchor", "signal_report"):
+            value = str(post_release_bootstrap.get(key, "")).strip()
+            if value:
+                resume_artifacts.append(value)
+        artifacts = post_release_bootstrap.get("artifacts", [])
+        if isinstance(artifacts, list):
+            for item in artifacts:
+                value = str(item).strip()
+                if value:
+                    resume_artifacts.append(value)
     if isinstance(beta_gate, dict):
         for key in ("json_report", "markdown_report"):
             value = str(beta_gate.get(key, "")).strip()
@@ -357,6 +387,7 @@ def build_release_gate_explanation_card(
     progress_anchor = (
         str(follow_up.get("brief_markdown", "")).strip()
         or str(follow_up.get("closure_markdown", "")).strip()
+        or str(post_release_bootstrap.get("resume_anchor", "")).strip()
         or "not required"
     )
     beta_summary = "beta=SKIP"

@@ -1,0 +1,200 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:post-release-feedback-report.schema",
+  "title": "Virtual Intelligent Dev Team Post-Release Feedback Report",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "release_label",
+    "observation_window",
+    "signal_summary",
+    "feedback_items",
+    "report_context"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "post-release-feedback-report/v1"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "release_label": {
+      "type": "string"
+    },
+    "observation_window": {
+      "type": "object",
+      "required": [
+        "start",
+        "end"
+      ],
+      "properties": {
+        "start": {
+          "type": "string"
+        },
+        "end": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "signal_summary": {
+      "type": "object",
+      "required": [
+        "total_feedback_items",
+        "unique_users_affected",
+        "blocker_issue_count",
+        "escalation_issue_count",
+        "telemetry_status",
+        "adoption_trend",
+        "satisfaction_trend"
+      ],
+      "properties": {
+        "total_feedback_items": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unique_users_affected": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "blocker_issue_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "escalation_issue_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "telemetry_status": {
+          "enum": [
+            "green",
+            "warning",
+            "critical",
+            "unknown"
+          ]
+        },
+        "adoption_trend": {
+          "enum": [
+            "improving",
+            "stable",
+            "worsening",
+            "unknown"
+          ]
+        },
+        "satisfaction_trend": {
+          "enum": [
+            "improving",
+            "stable",
+            "worsening",
+            "unknown"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "feedback_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "source",
+          "severity",
+          "status",
+          "affected_area",
+          "label",
+          "summary",
+          "recommended_action"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "dogfood",
+              "telemetry",
+              "support",
+              "community",
+              "sales",
+              "interview",
+              "app-review",
+              "other"
+            ]
+          },
+          "severity": {
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "status": {
+            "enum": [
+              "new",
+              "acknowledged",
+              "monitoring",
+              "fixed",
+              "accepted"
+            ]
+          },
+          "affected_area": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "recommended_action": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "evidence_artifacts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "report_context": {
+      "type": "object",
+      "required": [
+        "feedback_ledger_markdown"
+      ],
+      "properties": {
+        "feedback_ledger_markdown": {
+          "type": "string"
+        },
+        "release_closure_json": {
+          "type": "string"
+        },
+        "release_gate_json": {
+          "type": "string"
+        },
+        "telemetry_snapshot_json": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "recommended_commands": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

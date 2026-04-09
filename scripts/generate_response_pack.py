@@ -146,6 +146,10 @@ def localize_workflow_steps(bundle: str, steps: list[str], language: str) -> lis
 
 def explain_workflow_source(source: str, language: str) -> str:
     explanations = {
+        "keyword": {
+            "en": "This bundle is activated directly by matching request keywords, so the workflow is tied to the task shape even without an explicit process skill.",
+            "zh": "这条 bundle 由请求关键词直接触发，即使没有显式 process skill，也说明任务形态已经明显落到这条流程里。",
+        },
         "process-skill": {
             "en": "This bundle is activated by an explicit process skill, so it should be treated as the primary execution journey.",
             "zh": "这条 bundle 由显式 process skill 激活，应视为当前任务的主执行旅程。",
@@ -220,6 +224,9 @@ def build_response_pack_payload(
     iteration_profile = result.get("iteration_profile", {})
     if not isinstance(iteration_profile, dict):
         iteration_profile = {}
+    auto_run_profile = result.get("auto_run_profile", {})
+    if not isinstance(auto_run_profile, dict):
+        auto_run_profile = {}
     needs_planning = bool(result.get("needs_pre_development_planning"))
     needs_iteration = bool(result.get("needs_iteration"))
     selected_template = infer_template(result) if template == "auto" else template
@@ -510,6 +517,29 @@ def build_response_pack_payload(
             "allowed_decisions": iteration_profile.get("allowed_decisions", []),
             "resume_anchor": progress_anchor or ".skill-iterations/current-round-memory.md",
         }
+    if bool(auto_run_profile.get("enabled")):
+        payload["auto_run"] = {
+            "enabled": True,
+            "trigger": str(auto_run_profile.get("trigger", "/auto")),
+            "requested_phase": str(auto_run_profile.get("requested_phase", "setup")),
+            "execution_mode": str(auto_run_profile.get("execution_mode", "auto-setup")),
+            "workflow_bundle": str(auto_run_profile.get("workflow_bundle", workflow_bundle)),
+            "workflow_supported": bool(auto_run_profile.get("workflow_supported")),
+            "requires_explicit_go": bool(auto_run_profile.get("requires_explicit_go", True)),
+            "eligible_workflows": [
+                str(item) for item in auto_run_profile.get("eligible_workflows", []) if str(item).strip()
+            ],
+            "setup_command": format_missing(auto_run_profile.get("setup_command", ""), selected_language),
+            "go_command": format_missing(auto_run_profile.get("go_command", ""), selected_language),
+            "resume_anchor": format_missing(auto_run_profile.get("resume_anchor", ""), selected_language),
+            "state_root": format_missing(auto_run_profile.get("state_root", ""), selected_language),
+            "plan_json": format_missing(auto_run_profile.get("plan_json", ""), selected_language),
+            "plan_markdown": format_missing(auto_run_profile.get("plan_markdown", ""), selected_language),
+            "safety_guards": [
+                str(item) for item in auto_run_profile.get("safety_guards", []) if str(item).strip()
+            ],
+            "eligibility_reason": format_missing(auto_run_profile.get("eligibility_reason", ""), selected_language),
+        }
     return payload
 
 
@@ -531,6 +561,7 @@ def build_response_pack(
     optimization_loop = payload["optimization_loop"] if isinstance(payload.get("optimization_loop"), dict) else None
     bundle_bootstrap = payload["bundle_bootstrap"] if isinstance(payload.get("bundle_bootstrap"), dict) else None
     beta_program = payload["beta_program"] if isinstance(payload.get("beta_program"), dict) else None
+    auto_run = payload["auto_run"] if isinstance(payload.get("auto_run"), dict) else None
     none_text = "无" if selected_language == "zh" else "none"
 
     if selected_language == "zh":
@@ -702,6 +733,26 @@ def build_response_pack(
         rounds = beta_program.get("rounds", [])
         if not isinstance(rounds, list):
             rounds = []
+        default_simulation_init_command = (
+            'python scripts/init_beta_simulation.py --root . --round-id <round-id> '
+            '--phase "<phase>" --objective "<objective>" --pretty'
+        )
+        default_simulation_preview_command = (
+            "python scripts/preview_beta_simulation_fixture.py "
+            "--config .skill-beta/simulation-configs/<round-id>.json --pretty"
+        )
+        default_simulation_diff_command = (
+            "python scripts/compare_beta_simulation_manifests.py "
+            "--previous .skill-beta/fixture-previews/<previous-round-id>/beta-simulation-manifest.json "
+            "--current .skill-beta/fixture-previews/<round-id>/beta-simulation-manifest.json --pretty"
+        )
+        default_simulation_run_command = (
+            "python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/<round-id>.json --pretty"
+        )
+        default_simulation_summary_command = (
+            "python scripts/summarize_beta_simulation.py --run .skill-beta/simulation-runs/<round-id>/beta-simulation-run.json "
+            "--feedback-ledger-out .skill-beta/feedback-ledger.md --round-report-out .skill-beta/reports/<round-id>.json --pretty"
+        )
         if selected_language == "zh":
             lines.extend(
                 [
@@ -726,11 +777,11 @@ def build_response_pack(
                     f"- fixture 预览目录：{beta_program.get('simulation_preview_dir', '.skill-beta/fixture-previews')}",
                     f"- fixture diff 目录：{beta_program.get('simulation_diff_dir', '.skill-beta/fixture-diffs')}",
                     f"- 模拟运行目录：{beta_program.get('simulation_run_dir', '.skill-beta/simulation-runs')}",
-                    f"- 模拟起盘命令：{beta_program.get('simulation_init_command_template', 'python scripts/init_beta_simulation.py --root . --round-id <round-id> --phase \"<phase>\" --objective \"<objective>\" --pretty')}",
-                    f"- fixture 预览命令：{beta_program.get('simulation_preview_command_template', 'python scripts/preview_beta_simulation_fixture.py --config .skill-beta/simulation-configs/<round-id>.json --pretty')}",
-                    f"- fixture diff 命令：{beta_program.get('simulation_diff_command_template', 'python scripts/compare_beta_simulation_manifests.py --previous .skill-beta/fixture-previews/<previous-round-id>/beta-simulation-manifest.json --current .skill-beta/fixture-previews/<round-id>/beta-simulation-manifest.json --pretty')}",
-                    f"- 模拟执行命令：{beta_program.get('simulation_run_command_template', 'python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/<round-id>.json --pretty')}",
-                    f"- 模拟汇总命令：{beta_program.get('simulation_summary_command_template', 'python scripts/summarize_beta_simulation.py --run .skill-beta/simulation-runs/<round-id>/beta-simulation-run.json --feedback-ledger-out .skill-beta/feedback-ledger.md --round-report-out .skill-beta/reports/<round-id>.json --pretty')}",
+                    f"- 模拟起盘命令：{beta_program.get('simulation_init_command_template', default_simulation_init_command)}",
+                    f"- fixture 预览命令：{beta_program.get('simulation_preview_command_template', default_simulation_preview_command)}",
+                    f"- fixture diff 命令：{beta_program.get('simulation_diff_command_template', default_simulation_diff_command)}",
+                    f"- 模拟执行命令：{beta_program.get('simulation_run_command_template', default_simulation_run_command)}",
+                    f"- 模拟汇总命令：{beta_program.get('simulation_summary_command_template', default_simulation_summary_command)}",
                     f"- 轮次报告模板：{beta_program.get('report_template', 'assets/beta-round-report-template.json')}",
                     f"- 轮次报告目录：{beta_program.get('report_dir', '.skill-beta/reports')}",
                     f"- Gate 决策目录：{beta_program.get('decision_dir', '.skill-beta/round-decisions')}",
@@ -771,11 +822,11 @@ def build_response_pack(
                     f"- Simulation preview dir: {beta_program.get('simulation_preview_dir', '.skill-beta/fixture-previews')}",
                     f"- Simulation diff dir: {beta_program.get('simulation_diff_dir', '.skill-beta/fixture-diffs')}",
                     f"- Simulation run dir: {beta_program.get('simulation_run_dir', '.skill-beta/simulation-runs')}",
-                    f"- Simulation init command: {beta_program.get('simulation_init_command_template', 'python scripts/init_beta_simulation.py --root . --round-id <round-id> --phase \"<phase>\" --objective \"<objective>\" --pretty')}",
-                    f"- Simulation preview command: {beta_program.get('simulation_preview_command_template', 'python scripts/preview_beta_simulation_fixture.py --config .skill-beta/simulation-configs/<round-id>.json --pretty')}",
-                    f"- Simulation diff command: {beta_program.get('simulation_diff_command_template', 'python scripts/compare_beta_simulation_manifests.py --previous .skill-beta/fixture-previews/<previous-round-id>/beta-simulation-manifest.json --current .skill-beta/fixture-previews/<round-id>/beta-simulation-manifest.json --pretty')}",
-                    f"- Simulation run command: {beta_program.get('simulation_run_command_template', 'python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/<round-id>.json --pretty')}",
-                    f"- Simulation summary command: {beta_program.get('simulation_summary_command_template', 'python scripts/summarize_beta_simulation.py --run .skill-beta/simulation-runs/<round-id>/beta-simulation-run.json --feedback-ledger-out .skill-beta/feedback-ledger.md --round-report-out .skill-beta/reports/<round-id>.json --pretty')}",
+                    f"- Simulation init command: {beta_program.get('simulation_init_command_template', default_simulation_init_command)}",
+                    f"- Simulation preview command: {beta_program.get('simulation_preview_command_template', default_simulation_preview_command)}",
+                    f"- Simulation diff command: {beta_program.get('simulation_diff_command_template', default_simulation_diff_command)}",
+                    f"- Simulation run command: {beta_program.get('simulation_run_command_template', default_simulation_run_command)}",
+                    f"- Simulation summary command: {beta_program.get('simulation_summary_command_template', default_simulation_summary_command)}",
                     f"- Round report template: {beta_program.get('report_template', 'assets/beta-round-report-template.json')}",
                     f"- Round report dir: {beta_program.get('report_dir', '.skill-beta/reports')}",
                     f"- Gate decision dir: {beta_program.get('decision_dir', '.skill-beta/round-decisions')}",
@@ -811,6 +862,80 @@ def build_response_pack(
                     f"- Objective mode: bounded iteration with online cap {optimization_loop.get('round_cap_online', 0)} and offline cap {optimization_loop.get('round_cap_offline', 0)}.",
                     f"- Allowed decisions: {', '.join(optimization_loop.get('allowed_decisions', [])) if isinstance(optimization_loop.get('allowed_decisions'), list) else ''}",
                     f"- Current resume anchor: {optimization_loop.get('resume_anchor', '.skill-iterations/current-round-memory.md')}",
+                    "",
+                ]
+            )
+
+    if isinstance(auto_run, dict):
+        if selected_language == "zh":
+            lines.extend(
+                [
+                    "## 自动运行",
+                    f"- 触发方式：{auto_run.get('trigger', '/auto')}",
+                    f"- 当前阶段：{auto_run.get('requested_phase', 'setup')}（执行模式：{auto_run.get('execution_mode', 'auto-setup')}）",
+                    f"- 当前 bundle：{auto_run.get('workflow_bundle', 'direct-execution')}",
+                    f"- 是否在自动白名单内：{format_bool(auto_run.get('workflow_supported'), selected_language)}",
+                    f"- 是否要求显式 go：{format_bool(auto_run.get('requires_explicit_go'), selected_language)}",
+                    f"- 资格说明：{auto_run.get('eligibility_reason', '无')}",
+                    f"- 状态目录：{auto_run.get('state_root', '.skill-auto')}",
+                    f"- setup 计划：{auto_run.get('plan_markdown', '.skill-auto/auto-run-plan.md')}",
+                    f"- 恢复锚点：{auto_run.get('resume_anchor', '无')}",
+                    "- 允许自动化的 workflow：",
+                    _bullet_list(
+                        [str(item) for item in auto_run.get("eligible_workflows", [])],
+                        none_text,
+                    ),
+                    "- setup 命令：",
+                    _bullet_list(
+                        [str(auto_run.get("setup_command", ""))] if str(auto_run.get("setup_command", "")).strip() else [],
+                        none_text,
+                    ),
+                    "- go 命令：",
+                    _bullet_list(
+                        [str(auto_run.get("go_command", ""))] if str(auto_run.get("go_command", "")).strip() else [],
+                        none_text,
+                    ),
+                    "- 安全护栏：",
+                    _bullet_list(
+                        [str(item) for item in auto_run.get("safety_guards", [])],
+                        none_text,
+                    ),
+                    "",
+                ]
+            )
+        else:
+            lines.extend(
+                [
+                    "## Auto Run",
+                    f"- Trigger: {auto_run.get('trigger', '/auto')}",
+                    f"- Current phase: {auto_run.get('requested_phase', 'setup')} (execution mode: {auto_run.get('execution_mode', 'auto-setup')})",
+                    f"- Current bundle: {auto_run.get('workflow_bundle', 'direct-execution')}",
+                    f"- Workflow is auto-eligible: {format_bool(auto_run.get('workflow_supported'), selected_language)}",
+                    f"- Explicit go required: {format_bool(auto_run.get('requires_explicit_go'), selected_language)}",
+                    f"- Eligibility reason: {auto_run.get('eligibility_reason', 'n/a')}",
+                    f"- State root: {auto_run.get('state_root', '.skill-auto')}",
+                    f"- Setup plan: {auto_run.get('plan_markdown', '.skill-auto/auto-run-plan.md')}",
+                    f"- Resume anchor: {auto_run.get('resume_anchor', 'n/a')}",
+                    "- Eligible workflows:",
+                    _bullet_list(
+                        [str(item) for item in auto_run.get("eligible_workflows", [])],
+                        none_text,
+                    ),
+                    "- Setup command:",
+                    _bullet_list(
+                        [str(auto_run.get("setup_command", ""))] if str(auto_run.get("setup_command", "")).strip() else [],
+                        none_text,
+                    ),
+                    "- Go command:",
+                    _bullet_list(
+                        [str(auto_run.get("go_command", ""))] if str(auto_run.get("go_command", "")).strip() else [],
+                        none_text,
+                    ),
+                    "- Safety guards:",
+                    _bullet_list(
+                        [str(item) for item in auto_run.get("safety_guards", [])],
+                        none_text,
+                    ),
                     "",
                 ]
             )

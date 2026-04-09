@@ -78,3 +78,4 @@ Use this playbook when the request is about staged beta validation, internal tes
 - Do not move to the next round without a machine-readable gate result.
 - Do not stop at a `hold` verdict; the gate should reopen the next beta loop with a remediation brief and concrete rerun path.
 - Do not discard the remediation brief before release review; the release gate should be able to inherit its blockers, evidence, commands, and resume artifacts.
+- Once the version has actually shipped, stop extending beta artifacts and move real-world evidence into the post-release feedback loop.

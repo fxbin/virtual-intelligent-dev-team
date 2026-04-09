@@ -29,6 +29,8 @@ RELEASE_GATE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "release-gate-result.
 BETA_ROUND_REPORT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-report.schema.json"
 BETA_ROUND_GATE_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-gate-result.schema.json"
 BETA_REMEDIATION_BRIEF_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-remediation-brief.schema.json"
+POST_RELEASE_FEEDBACK_REPORT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "post-release-feedback-report.schema.json"
+POST_RELEASE_FEEDBACK_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "post-release-feedback-result.schema.json"
 BETA_SIMULATION_DIFF_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-diff.schema.json"
 BETA_RAMP_PLAN_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-ramp-plan.schema.json"
 BETA_COHORT_PLAN_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-cohort-plan.schema.json"
@@ -99,6 +101,8 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
     beta_round_report_schema_json_path = resolved_skill_dir / "references" / "beta-round-report.schema.json"
     beta_round_gate_result_schema_json_path = resolved_skill_dir / "references" / "beta-round-gate-result.schema.json"
     beta_remediation_brief_schema_json_path = resolved_skill_dir / "references" / "beta-remediation-brief.schema.json"
+    post_release_feedback_report_schema_json_path = resolved_skill_dir / "references" / "post-release-feedback-report.schema.json"
+    post_release_feedback_result_schema_json_path = resolved_skill_dir / "references" / "post-release-feedback-result.schema.json"
     beta_simulation_diff_schema_json_path = resolved_skill_dir / "references" / "beta-simulation-diff.schema.json"
     beta_ramp_plan_schema_json_path = resolved_skill_dir / "references" / "beta-ramp-plan.schema.json"
     beta_cohort_plan_schema_json_path = resolved_skill_dir / "references" / "beta-cohort-plan.schema.json"
@@ -208,6 +212,16 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
         "Missing references/beta-remediation-brief.schema.json. Restore the beta remediation brief schema before release.",
     )
     _check(
+        post_release_feedback_report_schema_json_path.exists(),
+        errors,
+        "Missing references/post-release-feedback-report.schema.json. Restore the post-release feedback report schema before release.",
+    )
+    _check(
+        post_release_feedback_result_schema_json_path.exists(),
+        errors,
+        "Missing references/post-release-feedback-result.schema.json. Restore the post-release feedback result schema before release.",
+    )
+    _check(
         beta_simulation_diff_schema_json_path.exists(),
         errors,
         "Missing references/beta-simulation-diff.schema.json. Restore the beta simulation diff schema before release.",
@@ -272,6 +286,8 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 and beta_round_report_schema_json_path.exists()
                 and beta_round_gate_result_schema_json_path.exists()
                 and beta_remediation_brief_schema_json_path.exists()
+                and post_release_feedback_report_schema_json_path.exists()
+                and post_release_feedback_result_schema_json_path.exists()
                 and beta_simulation_diff_schema_json_path.exists()
                 and beta_ramp_plan_schema_json_path.exists()
                 and beta_cohort_plan_schema_json_path.exists()
@@ -491,6 +507,11 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 "text": "Define the onboarding user flow, acceptance criteria, and backend contract for this signup revamp.",
                 "kwargs": {},
             },
+            {
+                "check": "auto-mode",
+                "text": "/auto fix this repeated regression until stable and keep benchmark evidence",
+                "kwargs": {},
+            },
         ]
         for sample in verify_samples:
             try:
@@ -583,6 +604,91 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             "name": "release-gate-contract",
             "passed": len(release_gate_failures) == 0,
             "details": {"schema_json": str(release_gate_schema_json_path)},
+        }
+    )
+
+    post_release_contract_failures: list[str] = []
+    try:
+        sample_post_release_report = {
+            "schema_version": "post-release-feedback-report/v1",
+            "generated_at": "2026-04-08T12:00:00Z",
+            "release_label": "release-ready",
+            "observation_window": {
+                "start": "2026-04-08T00:00:00Z",
+                "end": "2026-04-09T00:00:00Z",
+            },
+            "signal_summary": {
+                "total_feedback_items": 1,
+                "unique_users_affected": 2,
+                "blocker_issue_count": 0,
+                "escalation_issue_count": 0,
+                "telemetry_status": "green",
+                "adoption_trend": "stable",
+                "satisfaction_trend": "stable",
+            },
+            "feedback_items": [
+                {
+                    "id": "feedback-001",
+                    "source": "dogfood",
+                    "severity": "medium",
+                    "status": "new",
+                    "affected_area": "onboarding",
+                    "label": "example signal",
+                    "summary": "example summary",
+                    "recommended_action": "example action",
+                }
+            ],
+            "report_context": {
+                "feedback_ledger_markdown": ".skill-post-release/feedback-ledger.md",
+            },
+        }
+        local_response_contract.validate_post_release_feedback_report(sample_post_release_report)
+    except Exception as exc:
+        post_release_contract_failures.append(f"post-release-feedback-report: {exc}")
+    try:
+        sample_post_release_result = {
+            "generated_at": "2026-04-08T12:00:00Z",
+            "source_gate": "post-release-feedback",
+            "ok": True,
+            "decision": "monitor",
+            "loop_state": "watching",
+            "owner": "World-Class Product Architect",
+            "release_label": "release-ready",
+            "reason": "signals remain within thresholds",
+            "objective": "continue observing shipped feedback",
+            "signal_summary": sample_post_release_report["signal_summary"],
+            "blocker_breakdown": {
+                "by_source": [],
+                "by_area": [],
+            },
+            "report_path": ".skill-post-release/current-signals.json",
+            "report_context": sample_post_release_report["report_context"],
+            "follow_up": {
+                "loop_state": "watching",
+                "next_action": "continue-monitoring",
+                "resume_artifacts": [
+                    ".skill-post-release/triage-summary.md",
+                ],
+                "recommended_commands": [
+                    "python scripts/evaluate_post_release_feedback.py --report .skill-post-release/current-signals.json --pretty",
+                ],
+            },
+            "json_report": "evals/post-release/post-release-feedback-result.json",
+            "markdown_report": "evals/post-release/post-release-feedback-report.md",
+        }
+        local_response_contract.validate_post_release_feedback_result(sample_post_release_result)
+    except Exception as exc:
+        post_release_contract_failures.append(f"post-release-feedback-result: {exc}")
+    if post_release_contract_failures:
+        errors.extend(post_release_contract_failures)
+    checks.append(
+        {
+            "name": "post-release-feedback-contract",
+            "passed": len(post_release_contract_failures) == 0,
+            "details": {
+                "report_schema_json": str(post_release_feedback_report_schema_json_path),
+                "result_schema_json": str(post_release_feedback_result_schema_json_path),
+            },
         }
     )
 

@@ -27,7 +27,8 @@
         "iteration",
         "workflow-bundle",
         "bundle-bootstrap",
-        "assistant-delta-contract"
+        "assistant-delta-contract",
+        "auto-mode"
       ]
     },
     "allowed": {
@@ -190,6 +191,22 @@
         "properties": {
           "details": {
             "$ref": "#/$defs/assistant_delta_contract_details"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "check": {
+            "const": "auto-mode"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "details": {
+            "$ref": "#/$defs/auto_mode_details"
           }
         }
       }
@@ -369,6 +386,9 @@
         },
         "workflow_bundle_bootstrap": {
           "$ref": "#/$defs/workflow_bundle_bootstrap"
+        },
+        "auto_run_profile": {
+          "$ref": "#/$defs/auto_mode_details"
         }
       },
       "additionalProperties": false
@@ -485,6 +505,78 @@
         },
         "missing_recommended_assistants": {
           "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "auto_mode_details": {
+      "type": "object",
+      "required": [
+        "auto_mode_enabled",
+        "trigger",
+        "requested_phase",
+        "execution_mode",
+        "workflow_bundle",
+        "workflow_supported",
+        "eligible_workflows",
+        "requires_explicit_go",
+        "setup_command",
+        "go_command",
+        "plan_json",
+        "plan_exists",
+        "resume_anchor",
+        "safety_guards",
+        "eligibility_reason"
+      ],
+      "properties": {
+        "auto_mode_enabled": {
+          "type": "boolean"
+        },
+        "trigger": {
+          "type": "string"
+        },
+        "requested_phase": {
+          "enum": [
+            "setup",
+            "go",
+            "manual"
+          ]
+        },
+        "execution_mode": {
+          "type": "string"
+        },
+        "workflow_bundle": {
+          "type": "string"
+        },
+        "workflow_supported": {
+          "type": "boolean"
+        },
+        "eligible_workflows": {
+          "$ref": "#/$defs/string_array"
+        },
+        "requires_explicit_go": {
+          "type": "boolean"
+        },
+        "setup_command": {
+          "type": "string"
+        },
+        "go_command": {
+          "type": "string"
+        },
+        "plan_json": {
+          "type": "string"
+        },
+        "plan_exists": {
+          "type": "boolean"
+        },
+        "resume_anchor": {
+          "type": "string"
+        },
+        "safety_guards": {
+          "$ref": "#/$defs/string_array"
+        },
+        "eligibility_reason": {
+          "type": "string"
         }
       },
       "additionalProperties": false

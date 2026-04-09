@@ -13,10 +13,14 @@
   - 对外定位、中文术语、常见误解
 - `workflow-sequences.md`
   - 中文流程 walkthrough
+- `auto-run-playbook.md`
+  - 显式 `/auto` 协议、setup/go 两阶段和自动白名单
 - `product-delivery-playbook.md`
   - 产品定义到实现切片的默认打法
 - `beta-validation-playbook.md`
   - 开发前后分轮内测、用户递增与反馈门禁的默认打法
+- `post-release-feedback-playbook.md`
+  - 已发版版本的反馈回流、监控、回写与 reopen 闭环
 - `technical-governance-playbook.md`
   - 风险控制、发布控制、Git 治理的默认打法
 
@@ -98,6 +102,7 @@
   - `iteration-protocol.md`
   - `iteration-state-machine.md`
   - `loop-orchestration.md`
+  - 如果用户显式写 `/auto`，再补读 `auto-run-playbook.md`
 - memory 与 evidence
   - `agency-inspired-loop-patterns.md`
   - `memory-model.md`
@@ -114,7 +119,9 @@
 - release gate / offline acceptance
   - `offline-loop-drill-playbook.md`
   - `release-gate-playbook.md`
+  - 如果用户显式写 `/auto`，再补读 `auto-run-playbook.md`
   - 如果发布前还存在 staged beta，再补读 `beta-validation-playbook.md`
+  - 如果版本已经 ship，要继续做真实反馈回流，再补读 `post-release-feedback-playbook.md`
 - Git / worktree
   - `git-workflow-playbook.md`
   - `using-git-worktrees-playbook.md`

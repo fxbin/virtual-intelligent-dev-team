@@ -1213,6 +1213,124 @@
         "release_gate_json beta_gate.blocker_breakdown exists",
         "release_gate_json explanation_card.route_evidence contains beta=FAIL"
       ]
+    },
+    {
+      "id": 70,
+      "categories": [
+        "product-delivery",
+        "workflow-bundle"
+      ],
+      "prompt": "The release is already live. Pull together telemetry, support, and user feedback, then decide whether we should monitor, reopen iteration, or escalate governance.",
+      "expected_output": "Post-release feedback requests should route into the dedicated post-release-close-loop bundle and expose its workspace bootstrap.",
+      "files": [],
+      "expectations": [
+        "lead_agent is World-Class Product Architect",
+        "workflow_bundle is post-release-close-loop",
+        "progress_anchor_recommended is .skill-post-release/triage-summary.md",
+        "workflow_bundle_bootstrap.required is true",
+        "workflow_bundle_bootstrap.commands contains python scripts/init_post_release_feedback.py --root . --pretty",
+        "response_pack_json resume.progress_anchor is .skill-post-release/triage-summary.md"
+      ]
+    },
+    {
+      "id": 71,
+      "runner": "release_gate",
+      "categories": [
+        "release-gate",
+        "post-release-feedback",
+        "contract-output"
+      ],
+      "prompt": "Release gate fixture: green release should also bootstrap the post-release feedback loop.",
+      "expected_output": "release_gate ship should archive the release baseline and expose a post-release bootstrap in follow-up artifacts.",
+      "files": [],
+      "release_gate_summary": {
+        "tests_passed": true,
+        "validator_passed": true,
+        "evals_passed": true,
+        "offline_drill_enabled": true,
+        "offline_drill_passed": true,
+        "overall_passed": true
+      },
+      "expectations": [
+        "decision is ship",
+        "release_gate_json ok is true",
+        "release_gate_json follow_up.post_release_bootstrap.resume_anchor contains .skill-post-release/triage-summary.md",
+        "release_gate_json follow_up.post_release_bootstrap.signal_report contains .skill-post-release/current-signals.json"
+      ]
+    },
+    {
+      "id": 72,
+      "categories": [
+        "auto-run",
+        "workflow-bundle",
+        "iteration"
+      ],
+      "prompt": "/auto fix this repeated regression until stable and keep benchmark evidence.",
+      "expected_output": "Explicit /auto root-cause requests should stay on the root-cause bundle, expose auto setup mode, and publish an auto_run sidecar section.",
+      "files": [],
+      "expectations": [
+        "auto_mode_enabled is true",
+        "execution_mode is auto-setup",
+        "workflow_bundle is root-cause-remediate",
+        "process_plan first auto_run.requested_phase is setup",
+        "response_pack_json auto_run.enabled is true",
+        "response_pack_json auto_run.workflow_bundle is root-cause-remediate",
+        "response_pack_json auto_run.workflow_supported is true",
+        "response_pack_json auto_run.setup_command contains python scripts/run_auto_workflow.py"
+      ]
+    },
+    {
+      "id": 73,
+      "categories": [
+        "auto-run",
+        "release-gate"
+      ],
+      "prompt": "/auto Is this version ready to ship? Run the formal release gate.",
+      "expected_output": "Explicit /auto release requests should keep the release-gate journey while exposing setup/go commands for the ship-hold-remediate bundle.",
+      "files": [],
+      "expectations": [
+        "auto_mode_enabled is true",
+        "workflow_bundle is ship-hold-remediate",
+        "response_pack_json auto_run.workflow_bundle is ship-hold-remediate",
+        "response_pack_json auto_run.requested_phase is setup",
+        "response_pack_json auto_run.go_command contains python scripts/run_auto_workflow.py --mode go"
+      ]
+    },
+    {
+      "id": 74,
+      "categories": [
+        "auto-run",
+        "post-release-feedback"
+      ],
+      "prompt": "/auto The release is already live. Pull together telemetry, support, and user feedback, then decide whether we should monitor, reopen iteration, or escalate governance.",
+      "expected_output": "Explicit /auto post-release requests should route to post-release-close-loop and surface the post-release auto workflow contract.",
+      "files": [],
+      "expectations": [
+        "auto_mode_enabled is true",
+        "workflow_bundle is post-release-close-loop",
+        "process_plan first skill is post-release-feedback",
+        "response_pack_json auto_run.workflow_bundle is post-release-close-loop",
+        "response_pack_json auto_run.workflow_supported is true"
+      ]
+    },
+    {
+      "id": 75,
+      "runner": "verify_action",
+      "check": "auto-mode",
+      "categories": [
+        "auto-run",
+        "contract-output"
+      ],
+      "prompt": "/auto go Is this version ready to ship? Run the formal release gate.",
+      "expected_output": "verify_action should reject auto go when setup artifacts do not exist yet and instruct the caller to run setup first.",
+      "files": [],
+      "expectations": [
+        "allowed is false",
+        "verify_action_json details.auto_mode_enabled is true",
+        "verify_action_json details.requested_phase is go",
+        "verify_action_json details.plan_exists is false",
+        "recommended_next_step contains Run auto setup first"
+      ]
     }
   ]
 }

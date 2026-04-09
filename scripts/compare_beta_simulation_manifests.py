@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 
@@ -43,7 +43,7 @@ def write_json(path: Path, payload: dict[str, object]) -> None:
 
 
 def now_iso() -> str:
-    return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def repo_root_from_manifest(manifest_path: Path) -> Path:

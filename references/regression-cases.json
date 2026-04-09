@@ -108,6 +108,38 @@
       }
     },
     {
+      "name": "post_release_feedback_close_loop",
+      "text": "版本已经上线了，帮我把用户反馈、telemetry 和 support 信号收回来，判断是继续观察、 reopen 迭代，还是升级治理。",
+      "expect": {
+        "lead_agent": "World-Class Product Architect",
+        "workflow_bundle": "post-release-close-loop",
+        "bundle_bootstrap_commands_contains": [
+          "python scripts/init_post_release_feedback.py --root . --pretty"
+        ],
+        "bundle_bootstrap_artifacts_contains": [
+          ".skill-post-release/triage-summary.md"
+        ],
+        "resume_artifacts_contains": [
+          ".skill-post-release/current-signals.json"
+        ],
+        "priority_agent": null
+      }
+    },
+    {
+      "name": "auto_root_cause_setup_mode",
+      "text": "/auto fix this repeated regression until stable and keep benchmark evidence",
+      "expect": {
+        "lead_agent": "Technical Trinity",
+        "workflow_bundle": "root-cause-remediate",
+        "auto_mode_enabled": true,
+        "execution_mode": "auto-setup",
+        "resume_artifacts_contains": [
+          ".skill-iterations/current-round-memory.md"
+        ],
+        "priority_agent": null
+      }
+    },
+    {
       "name": "python_fastapi_design",
       "text": "Use Python and FastAPI to build a backend service.",
       "expect": {
@@ -893,6 +925,16 @@
         "allowed": false,
         "summary_contains": "conflicts",
         "recommended_next_step_contains": "Code Audit Council"
+      }
+    },
+    {
+      "name": "verify_auto_mode_requires_setup_first",
+      "text": "/auto go Is this version ready to ship? Run the formal release gate.",
+      "check": "auto-mode",
+      "expect": {
+        "allowed": false,
+        "summary_contains": "saved auto-run plan does not exist",
+        "recommended_next_step_contains": "Run auto setup first"
       }
     }
   ]

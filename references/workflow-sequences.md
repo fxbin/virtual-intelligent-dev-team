@@ -8,9 +8,9 @@
 
 ---
 
-## 1. 总览：它有 4 条主路径
+## 1. 总览：它有 6 条主路径
 
-`virtual-intelligent-dev-team` 的常见执行路径，可以粗分为 4 类：
+`virtual-intelligent-dev-team` 的常见执行路径，可以粗分为 6 类：
 
 1. **开发前规划路径**
    - 大规模改造先产出 analysis / plan / progress，再回到执行
@@ -20,6 +20,10 @@
    - 一轮不够，需要继续优化、比较、回滚或续跑
 4. **正式发布验收路径**
    - 不再只是“看起来不错”，而是要判断能不能 `ship`
+5. **已发布反馈回流路径**
+   - 已经 `ship` 之后，把真实反馈、telemetry 和治理回写重新接回下一轮
+6. **显式自动运行路径**
+   - 用户明确写 `/auto` 后，先 setup，再 go，把 root-cause / release / post-release 三条链路自动接起来
 
 可以用一个简化图来理解：
 
@@ -43,6 +47,9 @@ flowchart TD
     I -->|ship| J[release closure]
     I -->|hold| K[bootstrap next loop]
     K --> E
+    J --> L[post-release feedback loop]
+    L -->|monitor| M[keep watching]
+    L -->|iterate / escalate| E
 ```
 
 ---
@@ -233,6 +240,7 @@ sequenceDiagram
 - 关键 gate 已通过
 - 当前版本达到阶段性交付标准
 - 可以归档 release closure
+- 会自动铺设 post-release feedback workspace
 
 ### `hold`
 
@@ -278,7 +286,7 @@ hold = 下一轮修复闭环的入口
 
 ---
 
-## 7. 在当前项目里，最容易理解的 3 个用法
+## 8. 在当前项目里，最容易理解的 3 个用法
 
 ### 用法 A：让它先判断谁来主导
 
@@ -318,7 +326,7 @@ hold = 下一轮修复闭环的入口
 
 ---
 
-## 8. 一句话总结
+## 9. 一句话总结
 
 如果 `skill-positioning.md` 解释的是“它是什么”，  
 那么这份文档解释的是“它怎么跑”。
@@ -326,3 +334,33 @@ hold = 下一轮修复闭环的入口
 可以把它概括成一句话：
 
 > `virtual-intelligent-dev-team` 会先完成专家路由；如果任务进入多轮优化，则切换到 bounded iteration；如果任务进入正式验收，则切换到 release gate，并在 `hold` 时自动铺设下一轮修复路径。
+
+如果版本已经 `ship`，下一条链路就是 post-release feedback loop：把真实世界里的反馈、监控和治理变化再接回下一轮。
+
+---
+
+## 10. 显式自动运行路径：只在用户明确 `/auto` 时开启
+
+`/auto` 不是默认行为，也不是无限自循环。
+
+它的时序是：
+
+```text
+/auto
+-> route_request 识别支持的 workflow
+-> run_auto_workflow.py --mode setup
+-> 生成 .skill-auto/auto-run-plan.json / .md
+-> 用户或上层流程显式 go
+-> run_auto_workflow.py --mode go
+-> 接到底层 iteration / release gate / post-release evaluator
+```
+
+关键约束：
+
+- 默认仍是 manual mode
+- 只开放给：
+  - `root-cause-remediate`
+  - `ship-hold-remediate`
+  - `post-release-close-loop`
+- 必须先 `setup`，再 `go`
+- 自动运行结果也必须带 resume anchor

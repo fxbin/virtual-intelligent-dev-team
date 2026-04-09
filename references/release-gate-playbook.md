@@ -51,6 +51,7 @@ The release gate is stricter:
 - it writes dedicated release gate artifacts
 - it can consume the latest beta round gate result and block ship when beta is still `hold` or `escalate`
 - when a beta remediation brief exists, it should carry the same blockers, evidence requirements, rerun commands, and resume artifacts into the release `hold` follow-up
+- when the decision is `ship`, it should bootstrap the post-release feedback workspace so shipped evidence has a formal return path
 - when beta is blocking ship, the hold brief should preserve persona / scenario blocker slices so remediation is not generic
 - the offline loop drill should also keep exercising the `hold -> bootstrap -> auto-run` path so this closure does not regress silently
 
@@ -64,6 +65,7 @@ The release gate is stricter:
 - latest beta remediation brief JSON and markdown artifacts when the latest beta gate reopened a loop
 - `next-iteration-brief.json` and markdown when the result is `hold`
 - `release-closure.json` and markdown when the result is `ship`
+- post-release bootstrap artifacts when the result is `ship`
 - `iteration-plan.release-gate.json`, `open-loops.md`, and `iteration-context-chain.md` when `hold` bootstraps an iteration workspace
 - git-detached `repo-copy` plus blocker-specific remediation and target artifacts under `artifacts/release-gate-hold/` inside the copied repo when `hold` seeds the next self-mutation chain
 
@@ -73,6 +75,7 @@ The release gate is stricter:
   - all benchmark checks and offline drill checks passed
   - if beta evidence is enabled, the latest beta round gate is `advance`
   - if an iteration workspace is provided, the gate can archive a reusable release-ready baseline and sync distilled patterns
+  - the gate should also bootstrap `.skill-post-release/` so telemetry and real-user feedback can reopen the next loop without inventing a new structure later
 - `hold`
   - any gate failed
   - beta `hold` or `escalate` is a first-class release blocker, even when benchmark evidence is green

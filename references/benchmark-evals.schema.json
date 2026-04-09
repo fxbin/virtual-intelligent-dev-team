@@ -164,7 +164,8 @@
             "iteration",
             "workflow-bundle",
             "bundle-bootstrap",
-            "assistant-delta-contract"
+            "assistant-delta-contract",
+            "auto-mode"
           ]
         },
         "process_skill": {

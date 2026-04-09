@@ -30,6 +30,7 @@
 - 可选：`bundle_bootstrap`
 - 可选：`planning_pack`
 - 可选：`optimization_loop`
+- 可选：`auto_run`
 
 ## `team_dispatch`
 
@@ -148,6 +149,25 @@
 - `round_cap_offline`
 - `allowed_decisions`
 - `resume_anchor`
+
+`auto_run`:
+
+- `enabled`
+- `trigger`
+- `requested_phase`
+- `execution_mode`
+- `workflow_bundle`
+- `workflow_supported`
+- `requires_explicit_go`
+- `eligible_workflows`
+- `setup_command`
+- `go_command`
+- `resume_anchor`
+- `state_root`
+- `plan_json`
+- `plan_markdown`
+- `safety_guards`
+- `eligibility_reason`
 
 ## 兼容性规则
 

@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 import re
 import shutil
@@ -20,6 +20,7 @@ ITERATION_LOOP_SCRIPT = SCRIPT_DIR / "run_iteration_loop.py"
 SYNC_PATTERNS_SCRIPT = SCRIPT_DIR / "sync_distilled_patterns.py"
 RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
 EVALUATE_BETA_ROUND_SCRIPT = SCRIPT_DIR / "evaluate_beta_round.py"
+INIT_POST_RELEASE_FEEDBACK_SCRIPT = SCRIPT_DIR / "init_post_release_feedback.py"
 DEFAULT_OUTPUT_DIR = SKILL_DIR / "evals" / "release-gate"
 DEFAULT_ITERATION_WORKSPACE = SKILL_DIR / ".skill-iterations"
 LABEL_SAFE_CHARS = re.compile(r"[^A-Za-z0-9._-]+")
@@ -43,6 +44,10 @@ response_contract = load_module("virtual_team_release_gate_response_contract", R
 beta_round_evaluator = load_module(
     "virtual_team_release_gate_beta_round_evaluator",
     EVALUATE_BETA_ROUND_SCRIPT,
+)
+post_release_feedback_init = load_module(
+    "virtual_team_release_gate_post_release_feedback_init",
+    INIT_POST_RELEASE_FEEDBACK_SCRIPT,
 )
 
 
@@ -1318,7 +1323,7 @@ def build_hold_follow_up(
         + ("；".join(blocker_labels) if blocker_labels else reason)
     )
     brief = {
-        "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
         "source_gate": "release-gate",
         "decision": "hold",
         "reason": reason,
@@ -1427,6 +1432,29 @@ def build_hold_follow_up(
     return result
 
 
+def infer_repo_root(*, output_dir: Path, iteration_workspace: Path | None) -> Path:
+    if iteration_workspace is not None:
+        return iteration_workspace.parent
+    if output_dir.parent.name == "evals":
+        return output_dir.parent.parent
+    return output_dir.parent
+
+
+def build_post_release_bootstrap(*, repo_root: Path) -> dict[str, object]:
+    bootstrap = post_release_feedback_init.init_post_release_feedback(root=repo_root, overwrite=False)
+    signal_report = repo_root / ".skill-post-release" / "current-signals.json"
+    triage_summary = repo_root / ".skill-post-release" / "triage-summary.md"
+    return {
+        "root": str(repo_root),
+        "resume_anchor": str(triage_summary),
+        "signal_report": str(signal_report),
+        "artifacts": [str(item) for item in bootstrap.get("artifacts", []) if str(item).strip()],
+        "actions": bootstrap.get("actions", []),
+        "recommended_command": str(bootstrap.get("evaluation_command", "")).strip()
+        or "python scripts/evaluate_post_release_feedback.py --report .skill-post-release/current-signals.json --pretty",
+    }
+
+
 def build_ship_follow_up(
     *,
     output_dir: Path,
@@ -1437,6 +1465,8 @@ def build_ship_follow_up(
     iteration_workspace: Path | None,
 ) -> dict[str, object]:
     beta_snapshot = beta_gate_snapshot(beta_gate)
+    repo_root = infer_repo_root(output_dir=output_dir, iteration_workspace=iteration_workspace)
+    post_release_bootstrap = build_post_release_bootstrap(repo_root=repo_root)
     closure: dict[str, object] = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "source_gate": "release-gate",
@@ -1447,6 +1477,7 @@ def build_ship_follow_up(
         "benchmark_report": str(benchmark_json),
         "benchmark_markdown": benchmark_markdown,
         "beta_gate_report": beta_snapshot["json_report"] if beta_snapshot else None,
+        "post_release_bootstrap": post_release_bootstrap,
     }
     if iteration_workspace is not None:
         iteration_workspace.mkdir(parents=True, exist_ok=True)
@@ -1509,6 +1540,18 @@ def build_ship_follow_up(
                 f"- Kept rounds captured: `{sync_result['kept_rounds']}`",
             ]
         )
+    markdown_lines.extend(
+        [
+            "",
+            "## Post-Release Feedback Loop",
+            "",
+            f"- Resume anchor: `{post_release_bootstrap['resume_anchor']}`",
+            f"- Signal report: `{post_release_bootstrap['signal_report']}`",
+            f"- Recommended command: `{post_release_bootstrap['recommended_command']}`",
+        ]
+    )
+    for item in post_release_bootstrap["artifacts"]:
+        markdown_lines.append(f"- Artifact: `{item}`")
     markdown_lines.append("")
     markdown_path.write_text("\n".join(markdown_lines), encoding="utf-8")
     return {
@@ -1519,6 +1562,7 @@ def build_ship_follow_up(
         "closure_markdown": str(markdown_path),
         "baseline_registration": closure["baseline_registration"],
         "distilled_pattern_sync": closure["distilled_pattern_sync"],
+        "post_release_bootstrap": post_release_bootstrap,
     }
 
 
@@ -1596,6 +1640,10 @@ def render_markdown(result: dict[str, object]) -> str:
         if "closure_json" in follow_up:
             lines.append(f"- Release closure JSON: `{follow_up['closure_json']}`")
             lines.append(f"- Release closure Markdown: `{follow_up['closure_markdown']}`")
+        post_release_bootstrap = follow_up.get("post_release_bootstrap")
+        if isinstance(post_release_bootstrap, dict):
+            lines.append(f"- Post-release resume anchor: `{post_release_bootstrap.get('resume_anchor')}`")
+            lines.append(f"- Post-release signal report: `{post_release_bootstrap.get('signal_report')}`")
         lines.append("")
     return "\n".join(lines)
 

@@ -1,0 +1,45 @@
+{
+  "schema_version": "post-release-feedback-report/v1",
+  "generated_at": "2026-04-08T12:00:00Z",
+  "release_label": "release-ready",
+  "observation_window": {
+    "start": "2026-04-08T00:00:00Z",
+    "end": "2026-04-10T00:00:00Z"
+  },
+  "signal_summary": {
+    "total_feedback_items": 1,
+    "unique_users_affected": 3,
+    "blocker_issue_count": 0,
+    "escalation_issue_count": 0,
+    "telemetry_status": "green",
+    "adoption_trend": "stable",
+    "satisfaction_trend": "stable"
+  },
+  "feedback_items": [
+    {
+      "id": "feedback-001",
+      "source": "dogfood",
+      "severity": "medium",
+      "status": "new",
+      "affected_area": "onboarding",
+      "label": "First-run copy needs tightening",
+      "summary": "Internal dogfood users hesitate at the first task handoff.",
+      "recommended_action": "Clarify onboarding copy and re-check completion rate.",
+      "tags": [
+        "onboarding",
+        "copy"
+      ],
+      "evidence_artifacts": [
+        ".skill-post-release/feedback-ledger.md"
+      ]
+    }
+  ],
+  "report_context": {
+    "feedback_ledger_markdown": ".skill-post-release/feedback-ledger.md",
+    "release_closure_json": "evals/release-gate/release-closure.json",
+    "release_gate_json": "evals/release-gate/release-gate-results.json"
+  },
+  "recommended_commands": [
+    "python scripts/evaluate_post_release_feedback.py --report .skill-post-release/current-signals.json --pretty"
+  ]
+}

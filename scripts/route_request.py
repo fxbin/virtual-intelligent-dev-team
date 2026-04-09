@@ -17,6 +17,12 @@ DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent.parent / "references" / "r
 ASCII_WORD_CLASS = "a-z0-9"
 TRACK_REGULAR = "regular track"
 TRACK_FAST = "fast track"
+AUTO_TRIGGER_RE = re.compile(r"(?<!\S)/auto(?:\s+(setup|go))?(?!\S)", re.IGNORECASE)
+AUTO_ELIGIBLE_WORKFLOWS = {
+    "root-cause-remediate",
+    "ship-hold-remediate",
+    "post-release-close-loop",
+}
 
 
 def load_config(config_path: Path) -> dict[str, object]:
@@ -63,6 +69,31 @@ def keyword_matches(text: str, keyword: str) -> bool:
     # false positives such as "pr" in "improve" or "ui" in "build".
     pattern = rf"(?<![{ASCII_WORD_CLASS}]){re.escape(token)}(?![{ASCII_WORD_CLASS}])"
     return re.search(pattern, text) is not None
+
+
+def strip_auto_triggers(text: str) -> str:
+    return " ".join(AUTO_TRIGGER_RE.sub(" ", text).split())
+
+
+def detect_auto_mode(text: str) -> dict[str, object]:
+    match = AUTO_TRIGGER_RE.search(text)
+    normalized_text = strip_auto_triggers(text)
+    if match is None:
+        return {
+            "enabled": False,
+            "trigger": "none",
+            "requested_phase": "manual",
+            "normalized_text": normalized_text or text.strip(),
+        }
+    requested_phase = str(match.group(1) or "setup").strip().lower()
+    if requested_phase not in {"setup", "go"}:
+        requested_phase = "setup"
+    return {
+        "enabled": True,
+        "trigger": "/auto",
+        "requested_phase": requested_phase,
+        "normalized_text": normalized_text or text.strip(),
+    }
 
 
 def compute_scores(
@@ -1165,12 +1196,16 @@ def build_process_plan(
     repo_strategy: dict[str, str] | None = None,
     iteration_profile: dict[str, object] | None = None,
     lead_agent: str | None = None,
+    workflow_bundle_name: str | None = None,
+    auto_run_profile: dict[str, object] | None = None,
 ) -> list[dict[str, object]]:
     plan: list[dict[str, object]] = []
     if not isinstance(repo_strategy, dict):
         repo_strategy = {"strategy": "unknown", "base_branch": "main"}
     base_branch = str(repo_strategy.get("base_branch", "main"))
     iteration_owner = lead_agent or "<lead-owner>"
+    if not isinstance(auto_run_profile, dict):
+        auto_run_profile = {"enabled": False}
     if not isinstance(iteration_profile, dict):
         iteration_profile = {
             "round_cap_online": 3,
@@ -1374,6 +1409,54 @@ def build_process_plan(
                 ],
             }
         )
+    if workflow_bundle_name == "post-release-close-loop":
+        plan.append(
+            {
+                "skill": "post-release-feedback",
+                "reference": "references/post-release-feedback-playbook.md",
+                "steps": [
+                    "先初始化已发布反馈工作区",
+                    "把 telemetry、support 与真实用户反馈写入 current signal report",
+                    "运行 post-release gate，判断 monitor、iterate 或 escalate",
+                    "把回写结果同步回产品或技术治理锚点后再决定是否 reopen",
+                ],
+                "commands": [
+                    "python scripts/init_post_release_feedback.py --root . --pretty",
+                    "python scripts/evaluate_post_release_feedback.py --report .skill-post-release/current-signals.json --pretty",
+                ],
+                "artifacts": [
+                    ".skill-post-release/rollout-summary.md",
+                    ".skill-post-release/feedback-ledger.md",
+                    ".skill-post-release/current-signals.json",
+                    ".skill-post-release/triage-summary.md",
+                ],
+                "resume_anchor": ".skill-post-release/triage-summary.md",
+                "resume_artifacts": [
+                    ".skill-post-release/triage-summary.md",
+                    ".skill-post-release/current-signals.json",
+                ],
+            }
+        )
+    if bool(auto_run_profile.get("enabled")):
+        target_skill_by_bundle = {
+            "root-cause-remediate": "bounded-iteration",
+            "ship-hold-remediate": "release-gate",
+            "post-release-close-loop": "post-release-feedback",
+        }
+        target_skill = target_skill_by_bundle.get(str(auto_run_profile.get("workflow_bundle", "")))
+        if target_skill is not None:
+            for entry in plan:
+                if entry.get("skill") != target_skill:
+                    continue
+                entry["auto_run"] = {
+                    "enabled": bool(auto_run_profile.get("workflow_supported")),
+                    "requested_phase": str(auto_run_profile.get("requested_phase", "setup")),
+                    "requires_explicit_go": bool(auto_run_profile.get("requires_explicit_go", True)),
+                    "setup_command": str(auto_run_profile.get("setup_command", "")),
+                    "go_command": str(auto_run_profile.get("go_command", "")),
+                    "resume_anchor": str(auto_run_profile.get("resume_anchor", "")),
+                }
+                break
     return plan
 
 
@@ -1528,6 +1611,26 @@ def build_workflow_bundle(
         "可用性测试",
         "种子用户",
     ]
+    post_release_keywords = [
+        "post-release",
+        "post release",
+        "after launch",
+        "after release",
+        "rollout feedback",
+        "production feedback",
+        "customer feedback",
+        "telemetry",
+        "observability",
+        "发布后",
+        "上线后",
+        "上线反馈",
+        "用户反馈回流",
+        "真实反馈",
+        "生产反馈",
+        "发布后复盘",
+        "放量后",
+        "灰度后",
+    ]
     governance_keywords = [
         "governance",
         "review bar",
@@ -1580,6 +1683,26 @@ def build_workflow_bundle(
                 "docs/progress/MASTER.md",
                 "docs/analysis/project-overview.md",
                 "docs/plan/task-breakdown.md",
+            ],
+        }
+
+    if text_has_any_keyword(text, post_release_keywords):
+        return {
+            "name": "post-release-close-loop",
+            "confidence": 0.89,
+            "source": "keyword",
+            "reason": "The request is post-release feedback shaped, so shipped signals, telemetry, and real-user feedback should feed a structured triage and remediation loop instead of ad hoc notes.",
+            "steps": [
+                "initialize the post-release workspace and current signal report",
+                "cluster shipped signals by source, severity, and affected area",
+                "evaluate whether to monitor, iterate, or escalate",
+                "write feedback back into product or governance anchors before reopening remediation",
+            ],
+            "progress_anchor_recommended": ".skill-post-release/triage-summary.md",
+            "resume_artifacts": [
+                ".skill-post-release/rollout-summary.md",
+                ".skill-post-release/current-signals.json",
+                ".skill-post-release/triage-summary.md",
             ],
         }
 
@@ -1747,6 +1870,21 @@ def build_workflow_bundle_bootstrap(bundle_name: str) -> dict[str, object]:
                 ".skill-governance/release-checklist.md",
             ],
             "resume_anchor": ".skill-governance/change-plan.md",
+        }
+    if bundle_name == "post-release-close-loop":
+        return {
+            "required": True,
+            "reference": "references/post-release-feedback-playbook.md",
+            "commands": [
+                "python scripts/init_post_release_feedback.py --root . --pretty",
+            ],
+            "artifacts": [
+                ".skill-post-release/rollout-summary.md",
+                ".skill-post-release/feedback-ledger.md",
+                ".skill-post-release/current-signals.json",
+                ".skill-post-release/triage-summary.md",
+            ],
+            "resume_anchor": ".skill-post-release/triage-summary.md",
         }
     return {
         "required": False,
@@ -1921,8 +2059,87 @@ def build_beta_validation_plan(text: str, workflow_bundle_name: str) -> dict[str
     }
 
 
+def build_auto_run_profile(
+    *,
+    auto_mode: dict[str, object],
+    workflow_bundle_name: str,
+    progress_anchor: object,
+    iteration_profile: dict[str, object],
+) -> dict[str, object]:
+    enabled = bool(auto_mode.get("enabled"))
+    requested_phase = str(auto_mode.get("requested_phase", "manual")).strip() or "manual"
+    normalized_text = str(auto_mode.get("normalized_text", "")).strip()
+    workflow_supported = workflow_bundle_name in AUTO_ELIGIBLE_WORKFLOWS
+    execution_mode = "manual"
+    if enabled and requested_phase == "go":
+        execution_mode = "auto-go"
+    elif enabled:
+        execution_mode = "auto-setup"
+
+    if workflow_supported:
+        setup_command = (
+            'python scripts/run_auto_workflow.py --text "<original-request-without-/auto>" '
+            "--mode setup --pretty"
+        )
+        go_command = (
+            "python scripts/run_auto_workflow.py --mode go "
+            "--plan .skill-auto/auto-run-plan.json --pretty"
+        )
+        recommended_resume_anchor = ".skill-auto/auto-run-plan.md"
+        eligibility_reason = (
+            "This workflow supports explicit auto setup/go orchestration with bounded safety guards."
+        )
+    elif enabled:
+        setup_command = ""
+        go_command = ""
+        recommended_resume_anchor = str(progress_anchor or "")
+        eligibility_reason = (
+            "Auto mode is explicit, but this workflow is not on the current auto-run whitelist."
+        )
+    else:
+        setup_command = ""
+        go_command = ""
+        recommended_resume_anchor = str(progress_anchor or "")
+        eligibility_reason = "Auto mode is not requested."
+
+    online_round_cap = int(iteration_profile.get("round_cap_online", 3)) if isinstance(
+        iteration_profile, dict
+    ) else 3
+    return {
+        "enabled": enabled,
+        "trigger": str(auto_mode.get("trigger", "none")),
+        "requested_phase": requested_phase,
+        "execution_mode": execution_mode,
+        "workflow_bundle": workflow_bundle_name,
+        "workflow_supported": workflow_supported,
+        "eligible_workflows": sorted(AUTO_ELIGIBLE_WORKFLOWS),
+        "text_without_trigger": normalized_text,
+        "requires_explicit_go": enabled and workflow_supported,
+        "eligibility_reason": eligibility_reason,
+        "state_root": ".skill-auto",
+        "plan_json": ".skill-auto/auto-run-plan.json",
+        "plan_markdown": ".skill-auto/auto-run-plan.md",
+        "resume_anchor": recommended_resume_anchor,
+        "setup_command": setup_command,
+        "go_command": go_command,
+        "stop_caps": {
+            "iteration_online_round_cap": max(online_round_cap, 1),
+            "release_hold_loop_max_rounds": 3,
+        },
+        "safety_guards": [
+            "default mode stays manual unless /auto is explicit",
+            "auto mode is limited to root-cause-remediate, ship-hold-remediate, and post-release-close-loop",
+            "setup and go are separate phases; go must be explicit",
+            "do not run destructive git actions automatically",
+            "persist a resume plan before the go phase starts",
+        ],
+    }
+
+
 def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict[str, object]:
-    scores, reasons = compute_scores(text, config)
+    auto_mode = detect_auto_mode(text)
+    routed_text = str(auto_mode.get("normalized_text", text)).strip() or text
+    scores, reasons = compute_scores(routed_text, config)
     (
         needs_pre_development_planning,
         needs_iteration,
@@ -1931,7 +2148,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         needs_git_workflow,
         process_skills,
         process_hits,
-    ) = detect_process_skills(text, config)
+    ) = detect_process_skills(routed_text, config)
     git_reason_hits = reasons.get("Git Workflow Guardian", {}).get("positive", [])
     if isinstance(git_reason_hits, list) and should_suppress_git_agent_scoring(
         git_reason_hits=git_reason_hits,
@@ -1943,7 +2160,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
             "positive": [],
             "negative": reasons.get("Git Workflow Guardian", {}).get("negative", []),
         }
-    detected_languages, language_hits, language_routing = detect_languages(text, config)
+    detected_languages, language_hits, language_routing = detect_languages(routed_text, config)
     repo_strategy = detect_repo_strategy(repo_path)
     git_templates = build_git_templates(repo_strategy)
     iteration_profile = build_iteration_profile(config=config, enabled=needs_iteration)
@@ -1958,7 +2175,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         key=lambda item: (-item[1], order_index.get(item[0], 999)),
     )
     lead_agent, lead_score = sorted_agents[0]
-    priority_route = detect_priority_lead(text, config)
+    priority_route = detect_priority_lead(routed_text, config)
     if priority_route is not None:
         priority_agent = str(priority_route.get("agent", "")).strip()
         if (
@@ -2032,14 +2249,14 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
     if (
         lead_agent != "Git Workflow Guardian"
         and isinstance(git_reason_hits, list)
-        and is_git_review_context_only(text, git_reason_hits)
+        and is_git_review_context_only(routed_text, git_reason_hits)
     ):
         assistants = [agent for agent in assistants if agent != "Git Workflow Guardian"]
     if sentinel_overlay and lead_agent != "Sentinel Architect (NB)":
         assistants = dedupe_agents(["Sentinel Architect (NB)"] + assistants)
     governance_defaults = get_governance_defaults(config)
     governance_plan = build_governance_plan(
-        text=text,
+        text=routed_text,
         repo_path=repo_path,
         lead_agent=lead_agent,
         assistants=assistants,
@@ -2070,17 +2287,6 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
             )
         except Exception:
             pass
-    process_plan = build_process_plan(
-        needs_pre_development_planning=needs_pre_development_planning,
-        needs_iteration=needs_iteration,
-        needs_worktree=needs_worktree,
-        needs_release_gate=needs_release_gate,
-        needs_git_workflow=needs_git_workflow,
-        repo_strategy=repo_strategy,
-        iteration_profile=iteration_profile,
-        lead_agent=lead_agent,
-    )
-
     mode = pick_mode(
         confidence=confidence,
         sentinel_overlay=sentinel_overlay,
@@ -2104,7 +2310,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
     )
     clarifying_question = build_clarifying_question(text=text, need_clarify=need_clarify)
     workflow_bundle = build_workflow_bundle(
-        text=text,
+        text=routed_text,
         lead_agent=lead_agent,
         needs_pre_development_planning=needs_pre_development_planning,
         needs_iteration=needs_iteration,
@@ -2121,8 +2327,26 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         workflow_bundle=str(workflow_bundle.get("name")),
     )
     beta_validation_plan = build_beta_validation_plan(
-        text=text,
+        text=routed_text,
         workflow_bundle_name=str(workflow_bundle.get("name")),
+    )
+    auto_run_profile = build_auto_run_profile(
+        auto_mode=auto_mode,
+        workflow_bundle_name=str(workflow_bundle.get("name", "direct-execution")),
+        progress_anchor=workflow_bundle.get("progress_anchor_recommended"),
+        iteration_profile=iteration_profile,
+    )
+    process_plan = build_process_plan(
+        needs_pre_development_planning=needs_pre_development_planning,
+        needs_iteration=needs_iteration,
+        needs_worktree=needs_worktree,
+        needs_release_gate=needs_release_gate,
+        needs_git_workflow=needs_git_workflow,
+        repo_strategy=repo_strategy,
+        iteration_profile=iteration_profile,
+        lead_agent=lead_agent,
+        workflow_bundle_name=str(workflow_bundle.get("name", "direct-execution")),
+        auto_run_profile=auto_run_profile,
     )
 
     reason = {
@@ -2138,6 +2362,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "process_skill_hits": process_hits,
         "workflow_bundle_reason": workflow_bundle.get("reason"),
         "assistant_delta_contract_enabled": assistant_delta_contract.get("enabled"),
+        "auto_mode": auto_run_profile,
     }
 
     return {
@@ -2169,6 +2394,10 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "confidence": confidence,
         "request_language": "zh" if has_cjk(text) else "en",
         "mode": mode,
+        "auto_mode_enabled": auto_run_profile.get("enabled"),
+        "auto_mode_source": auto_run_profile.get("trigger"),
+        "execution_mode": auto_run_profile.get("execution_mode"),
+        "auto_run_profile": auto_run_profile,
         "clarifying_question": clarifying_question,
         "workflow_bundle": workflow_bundle.get("name"),
         "bundle_confidence": workflow_bundle.get("confidence"),

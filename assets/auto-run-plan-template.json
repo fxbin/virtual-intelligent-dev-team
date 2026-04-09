@@ -1,0 +1,33 @@
+{
+  "schema_version": "auto-run-plan/v1",
+  "trigger": "/auto",
+  "requested_phase": "setup",
+  "requires_explicit_go": true,
+  "workflow_bundle": "",
+  "workflow_supported": false,
+  "request_text": "",
+  "root": ".",
+  "state_root": ".skill-auto",
+  "plan_json": ".skill-auto/auto-run-plan.json",
+  "plan_markdown": ".skill-auto/auto-run-plan.md",
+  "resume_anchor": "",
+  "eligible_workflows": [
+    "post-release-close-loop",
+    "root-cause-remediate",
+    "ship-hold-remediate"
+  ],
+  "stop_caps": {
+    "iteration_online_round_cap": 3,
+    "release_hold_loop_max_rounds": 3
+  },
+  "safety_guards": [
+    "default mode stays manual unless /auto is explicit",
+    "setup and go are separate phases; go must be explicit",
+    "do not run destructive git actions automatically"
+  ],
+  "workflow_execution": {
+    "setup_actions": [],
+    "go_actions": [],
+    "artifacts": []
+  }
+}

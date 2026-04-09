@@ -98,7 +98,12 @@ def resolve_benchmark_script(candidate_repo: Path | None) -> Path:
 
 
 def normalize_command(command: str, output_dir: Path) -> str:
-    return command.replace("{output_dir}", str(output_dir))
+    normalized = command.replace("{output_dir}", str(output_dir))
+    stripped = normalized.lstrip()
+    if stripped.startswith("python "):
+        prefix_len = len(normalized) - len(stripped)
+        normalized = normalized[:prefix_len] + sys.executable + stripped[len("python") :]
+    return normalized
 
 
 def is_git_repo(path: Path) -> bool:
@@ -140,8 +145,13 @@ def run_checked_process(command: list[str], cwd: Path) -> dict[str, object]:
 
 
 def run_command(command: str, cwd: Path) -> dict[str, object]:
+    normalized_command = command
+    stripped = normalized_command.lstrip()
+    if stripped.startswith("python "):
+        prefix_len = len(normalized_command) - len(stripped)
+        normalized_command = normalized_command[:prefix_len] + sys.executable + stripped[len("python") :]
     proc = subprocess.run(
-        ["/bin/zsh", "-lc", command],
+        ["/bin/zsh", "-lc", normalized_command],
         cwd=str(cwd),
         text=True,
         capture_output=True,
@@ -149,7 +159,7 @@ def run_command(command: str, cwd: Path) -> dict[str, object]:
         check=False,
     )
     result = {
-        "command": command,
+        "command": normalized_command,
         "cwd": str(cwd),
         "returncode": proc.returncode,
         "stdout": proc.stdout,

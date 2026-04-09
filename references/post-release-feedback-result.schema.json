@@ -1,0 +1,344 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:post-release-feedback-result.schema",
+  "title": "Virtual Intelligent Dev Team Post-Release Feedback Result",
+  "type": "object",
+  "required": [
+    "generated_at",
+    "source_gate",
+    "ok",
+    "decision",
+    "loop_state",
+    "owner",
+    "release_label",
+    "reason",
+    "objective",
+    "signal_summary",
+    "blocker_breakdown",
+    "report_path",
+    "report_context",
+    "follow_up",
+    "json_report",
+    "markdown_report"
+  ],
+  "properties": {
+    "generated_at": {
+      "type": "string"
+    },
+    "source_gate": {
+      "const": "post-release-feedback"
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "decision": {
+      "enum": [
+        "monitor",
+        "iterate",
+        "escalate"
+      ]
+    },
+    "loop_state": {
+      "enum": [
+        "watching",
+        "reopened",
+        "escalated"
+      ]
+    },
+    "owner": {
+      "type": "string"
+    },
+    "release_label": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "objective": {
+      "type": "string"
+    },
+    "signal_summary": {
+      "$ref": "#/$defs/signal_summary"
+    },
+    "blocker_breakdown": {
+      "$ref": "#/$defs/blocker_breakdown"
+    },
+    "report_path": {
+      "type": "string"
+    },
+    "report_context": {
+      "type": "object"
+    },
+    "follow_up": {
+      "type": "object"
+    },
+    "json_report": {
+      "type": "string"
+    },
+    "markdown_report": {
+      "type": "string"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "const": "monitor"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "ok": {
+            "const": true
+          },
+          "loop_state": {
+            "const": "watching"
+          },
+          "follow_up": {
+            "$ref": "#/$defs/monitor_follow_up"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "const": "iterate"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "ok": {
+            "const": false
+          },
+          "loop_state": {
+            "const": "reopened"
+          },
+          "follow_up": {
+            "$ref": "#/$defs/iterate_follow_up"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "const": "escalate"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "ok": {
+            "const": false
+          },
+          "loop_state": {
+            "const": "escalated"
+          },
+          "follow_up": {
+            "$ref": "#/$defs/escalate_follow_up"
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "string_array": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "signal_summary": {
+      "type": "object",
+      "required": [
+        "total_feedback_items",
+        "unique_users_affected",
+        "blocker_issue_count",
+        "escalation_issue_count",
+        "telemetry_status",
+        "adoption_trend",
+        "satisfaction_trend"
+      ],
+      "properties": {
+        "total_feedback_items": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unique_users_affected": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "blocker_issue_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "escalation_issue_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "telemetry_status": {
+          "type": "string"
+        },
+        "adoption_trend": {
+          "type": "string"
+        },
+        "satisfaction_trend": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "breakdown_item": {
+      "type": "object",
+      "required": [
+        "label",
+        "feedback_count",
+        "critical_count",
+        "high_count"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "feedback_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "critical_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "high_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "blocker_breakdown": {
+      "type": "object",
+      "required": [
+        "by_source",
+        "by_area"
+      ],
+      "properties": {
+        "by_source": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/breakdown_item"
+          }
+        },
+        "by_area": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/breakdown_item"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "monitor_follow_up": {
+      "type": "object",
+      "required": [
+        "loop_state",
+        "next_action",
+        "resume_artifacts",
+        "recommended_commands"
+      ],
+      "properties": {
+        "loop_state": {
+          "const": "watching"
+        },
+        "next_action": {
+          "const": "continue-monitoring"
+        },
+        "resume_artifacts": {
+          "$ref": "#/$defs/string_array"
+        },
+        "recommended_commands": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "iterate_follow_up": {
+      "type": "object",
+      "required": [
+        "loop_state",
+        "next_action",
+        "blockers",
+        "brief_json",
+        "brief_markdown",
+        "resume_artifacts",
+        "recommended_commands"
+      ],
+      "properties": {
+        "loop_state": {
+          "const": "reopened"
+        },
+        "next_action": {
+          "const": "bounded-iteration"
+        },
+        "blockers": {
+          "$ref": "#/$defs/string_array"
+        },
+        "brief_json": {
+          "type": "string"
+        },
+        "brief_markdown": {
+          "type": "string"
+        },
+        "resume_artifacts": {
+          "$ref": "#/$defs/string_array"
+        },
+        "recommended_commands": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "escalate_follow_up": {
+      "type": "object",
+      "required": [
+        "loop_state",
+        "next_action",
+        "blockers",
+        "brief_json",
+        "brief_markdown",
+        "resume_artifacts",
+        "recommended_commands"
+      ],
+      "properties": {
+        "loop_state": {
+          "const": "escalated"
+        },
+        "next_action": {
+          "const": "technical-governance"
+        },
+        "blockers": {
+          "$ref": "#/$defs/string_array"
+        },
+        "brief_json": {
+          "type": "string"
+        },
+        "brief_markdown": {
+          "type": "string"
+        },
+        "resume_artifacts": {
+          "$ref": "#/$defs/string_array"
+        },
+        "recommended_commands": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -42,6 +42,10 @@ python scripts/verify_action.py --text "<user request>" --check workflow-bundle 
 python scripts/verify_action.py --text "<user request>" --check bundle-bootstrap --pretty
 ```
 
+```bash
+python scripts/verify_action.py --text "/auto <user request>" --check auto-mode --pretty
+```
+
 - `workflow-bundle` 校验现在会返回：
   - `workflow_bundle_source`
   - `workflow_bundle_source_explanation`
@@ -53,6 +57,10 @@ python scripts/verify_action.py --text "<user request>" --check bundle-bootstrap
   - 当前仓库里的 bootstrap 产物是 `missing / partial / ready` 哪种状态
 - `verify_action.py` 的 JSON 结果契约见：
   - `references/verify-action-result.schema.json`
+- `auto-mode` 校验会额外确认：
+  - 当前请求是否显式使用 `/auto`
+  - 当前 workflow 是否在自动白名单里
+  - 如果是 `go`，本地是否已经存在 `.skill-auto/auto-run-plan.json`
 
 ```bash
 python scripts/verify_action.py --text "<user request>" --check assistant-delta-contract --pretty
@@ -165,7 +173,70 @@ python scripts/init_pre_development_plan.py --root . --task-name "<task-name>" -
 python scripts/init_product_delivery.py --root . --pretty
 ```
 
-## 四、内测验证资产
+## 四、已发布反馈资产
+
+模板：
+
+- `assets/post-release-rollout-summary-template.md`
+- `assets/post-release-feedback-ledger-template.md`
+- `assets/post-release-signal-report-template.json`
+- `assets/post-release-triage-summary-template.md`
+- `references/post-release-feedback-playbook.md`
+- `references/post-release-feedback-report.schema.json`
+- `references/post-release-feedback-result.schema.json`
+
+常用初始化命令：
+
+```bash
+python scripts/init_post_release_feedback.py --root . --pretty
+```
+
+```bash
+python scripts/evaluate_post_release_feedback.py --report .skill-post-release/current-signals.json --pretty
+```
+
+- `run_release_gate.py` 在 `ship` 时会自动初始化 `.skill-post-release/`
+- `evaluate_post_release_feedback.py` 会把结果判断为：
+  - `monitor`
+  - `iterate`
+  - `escalate`
+- 当结果是 `iterate / escalate`：
+  - 会自动生成 `next-iteration-brief.json`
+  - 会把 shipped feedback 写回产品资产
+  - 必要时会把升级信息写回技术治理资产
+
+## 四点五、显式自动运行资产
+
+模板：
+
+- `assets/auto-run-plan-template.json`
+- `references/auto-run-playbook.md`
+
+常用命令：
+
+```bash
+python scripts/run_auto_workflow.py --text "<original-request-without-/auto>" --mode setup --pretty
+```
+
+```bash
+python scripts/run_auto_workflow.py --mode go --plan .skill-auto/auto-run-plan.json --pretty
+```
+
+- 默认仍是手动模式
+- 只有显式 `/auto` 才进入自动协议
+- 当前只对白名单 workflow 生效：
+  - `root-cause-remediate`
+  - `ship-hold-remediate`
+  - `post-release-close-loop`
+- 自动模式必须走 `setup -> go`
+- `setup` 会生成：
+  - `.skill-auto/auto-run-plan.json`
+  - `.skill-auto/auto-run-plan.md`
+- `go` 会写回：
+  - `.skill-auto/last-run.json`
+  - `.skill-auto/last-run.md`
+
+## 五、内测验证资产
 
 模板：
 
@@ -251,7 +322,7 @@ python scripts/evaluate_beta_round.py --report .skill-beta/reports/round-1.json 
   - 同时生成 `next-round-remediation-brief.md`
   - brief 会附带 blocker 列表、推荐重跑命令、resume artifacts，以及 persona / scenario blocker breakdown
 
-## 五、技术治理资产
+## 六、技术治理资产
 
 模板：
 
@@ -265,7 +336,7 @@ python scripts/evaluate_beta_round.py --report .skill-beta/reports/round-1.json 
 python scripts/init_technical_governance.py --root . --pretty
 ```
 
-## 六、bounded iteration 资产
+## 七、bounded iteration 资产
 
 模板：
 
@@ -277,7 +348,7 @@ python scripts/init_technical_governance.py --root . --pretty
 - `assets/iteration-plan-template.json`
 - `references/project-memory-lite.md`
 
-## 六点五、project memory lite
+## 七点五、project memory lite
 
 推荐锚点：
 
@@ -306,7 +377,7 @@ cp assets/round-memory-template.md .skill-iterations/current-round-memory.md
 cp assets/distilled-patterns-template.md .skill-iterations/distilled-patterns.md
 ```
 
-## 七、iteration 命令
+## 八、iteration 命令
 
 - 初始化 round
 
@@ -338,7 +409,7 @@ python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill
 python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.json --resume --pretty
 ```
 
-## 七、release / drill / compare
+## 九、release / drill / compare
 
 - offline drill
 
@@ -367,6 +438,10 @@ python scripts/run_release_gate.py --output-dir evals/release-gate --beta-report
   - `next-iteration-brief.json` 会继承 beta brief 的 `required_evidence`
   - `next-iteration-brief.json` 会继承 beta brief 的 `recommended_commands`
   - `explanation_card.resume_artifacts` 和 release hold brief 会带上 beta brief 与 writeback artifacts，方便跨阶段恢复
+- 当 release gate 结果是 `ship`：
+  - 会自动初始化 `.skill-post-release/rollout-summary.md`
+  - 会自动初始化 `.skill-post-release/current-signals.json`
+  - follow-up 里会带出 `post_release_bootstrap`
 
 - benchmark eval runner 支持：
   - `route`
@@ -379,7 +454,7 @@ python scripts/run_release_gate.py --output-dir evals/release-gate --beta-report
 python scripts/compare_benchmark_results.py --baseline <baseline-report> --candidate <candidate-report> --pretty
 ```
 
-## 六、promotion / sync / materialize
+## 十、promotion / sync / materialize
 
 - promote baseline
 
@@ -399,7 +474,7 @@ python scripts/sync_distilled_patterns.py --workspace .skill-iterations --pretty
 python scripts/materialize_candidate_patch.py --brief .skill-iterations/candidate-briefs/round-01.json --candidate-root ../wt-round-01 --patch-output .skill-iterations/patches/round-01.patch --pretty
 ```
 
-## 七、使用原则
+## 十一、使用原则
 
 - 高风险、多阶段、多人协作前，先用 `verify_action.py` 确认 process skill / lead assignment / release gate / iteration 是否真的该开
 - 如果路由返回了 `product-spec-deliver`、`beta-feedback-ramp` 或 `govern-change-safely`，再额外跑一次 `bundle-bootstrap`，确认起盘动作和恢复锚点没有漂移
@@ -409,5 +484,6 @@ python scripts/materialize_candidate_patch.py --brief .skill-iterations/candidat
 - iteration 深循环时，先开本索引，再补对应 playbook
 - `run_release_gate.py` 优先用于 `ship / hold` 判断，不用 benchmark 结果硬代替
 - beta 已经 `hold / escalate` 时，不要手工重写一份 release remediation；优先复用 beta remediation brief 继续收口
+- 版本已经 `ship` 后，不要把真实反馈继续塞回 beta；优先走 `.skill-post-release/` 的正式回流链路
 - `run_iteration_loop.py --resume` 只对同一 plan 文件恢复
 - loop controller 逻辑改动后，优先跑 `offline drill` 再叫它稳定
