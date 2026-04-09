@@ -233,3 +233,7 @@ python3 virtual-intelligent-dev-team/scripts/validate_virtual_team.py --pretty
 ## 版本
 
 当前版本见 [VERSION](VERSION)。
+
+## License
+
+本项目使用 [MIT License](LICENSE)。
