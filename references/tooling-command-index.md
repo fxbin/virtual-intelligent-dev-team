@@ -214,6 +214,7 @@ python scripts/evaluate_post_release_feedback.py --report .skill-post-release/cu
 - `references/auto-run-playbook.md`
 - `references/automation-state.schema.json`
 - `references/automation-resume-decision-matrix.md`
+- `references/automation-resume-execution.schema.json`
 
 恢复入口：
 
@@ -276,6 +277,8 @@ python scripts/run_auto_workflow.py --mode go --plan .skill-auto/auto-run-plan.j
 - 执行后会额外沉淀：
   - `.skill-auto/resume-executions/<resume-exec-id>.json`
   - `.skill-auto/resume-executions/<resume-exec-id>.md`
+- 其中 JSON ledger 现在受正式 schema 约束：
+  - `references/automation-resume-execution.schema.json`
 - 当前 allowlist 只开放：
   - `run_auto_workflow.py`
   - `run_release_gate.py`

@@ -9,7 +9,7 @@
 
 - 让下游脚本直接消费结构化输出，而不是反向解析 Markdown
 - 保持 `response_pack / verify_action / release_gate` 三条输出链的解释层一致
-- 给后续 benchmark、automation、workspace bootstrap 提供稳定接口
+- 给后续 benchmark、automation、workspace bootstrap 与 automation resume 提供稳定接口
 
 ## 顶层字段
 

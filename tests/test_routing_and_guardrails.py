@@ -6384,6 +6384,95 @@ class AutoWorkflowTests(unittest.TestCase):
 
             self.assertTrue(run_loop_mock.call_args.kwargs["resume"])
 
+    def test_auto_workflow_go_resume_can_execute_state_first_path(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            plan = auto_workflow.build_setup_plan(
+                text="/auto resume safe Is this version ready to ship? Run the formal release gate.",
+                repo_root=root,
+                config=load_config(),
+            )
+            plan_path = root / ".skill-auto" / "auto-run-plan.json"
+            plan["resume_context"]["state_resume_available"] = True
+            plan["resume_context"]["state_resume_state_path"] = "evals/release-gate/automation-state.json"
+            plan["resume_context"]["state_resume_decision_id"] = "release-hold-reopen-iteration"
+            plan["resume_context"]["state_resume_command"] = (
+                "python scripts/init_iteration_round.py --workspace .skill-iterations --round-id round-01 "
+                '--objective "resume hold brief" --baseline stable --pretty'
+            )
+            plan_path.write_text(json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+            state_first_payload = {
+                "ok": True,
+                "selected_state_path": "evals/release-gate/automation-state.json",
+                "selection_mode": "workflow",
+                "recommended_command": plan["resume_context"]["state_resume_command"],
+                "command_allowed": True,
+                "resume_execution_ledger": {
+                    "json": ".skill-auto/resume-executions/resume-exec-test.json",
+                    "markdown": ".skill-auto/resume-executions/resume-exec-test.md",
+                },
+                "decision_card": {
+                    "decision_id": "release-hold-reopen-iteration",
+                    "decision_label": "Release hold requires bounded remediation",
+                    "decision_reason": "state-first remediation should reopen bounded iteration",
+                    "resume_strategy": "playbook-follow-through",
+                    "recommended_command": plan["resume_context"]["state_resume_command"],
+                    "resume_anchor": ".skill-iterations/current-round-memory.md",
+                    "playbooks": [
+                        "references/release-gate-playbook.md",
+                        "references/iteration-protocol.md"
+                    ],
+                    "blocking_conditions": [
+                        "Release blockers remain unresolved until the hold brief evidence is satisfied."
+                    ],
+                    "handoff_target": "",
+                    "follow_up_artifacts": [
+                        "evals/release-gate/next-iteration-brief.json"
+                    ],
+                    "companion_payload_path": "evals/release-gate/release-gate-results.json",
+                },
+                "execution": {
+                    "executed": True,
+                    "command": [
+                        "python",
+                        "scripts/init_iteration_round.py",
+                        "--workspace",
+                        ".skill-iterations",
+                        "--round-id",
+                        "round-01",
+                        "--objective",
+                        "resume hold brief",
+                        "--baseline",
+                        "stable",
+                        "--pretty"
+                    ],
+                    "returncode": 0,
+                    "stdout": "{\"ok\": true}\n",
+                    "stderr": "",
+                },
+            }
+
+            with mock.patch.object(
+                auto_workflow.automation_state_resumer,
+                "build_resume_payload",
+                return_value=state_first_payload,
+            ) as resume_mock, mock.patch.object(
+                auto_workflow.release_gate,
+                "run_release_gate",
+            ) as release_gate_mock:
+                result = auto_workflow.run_go(plan_path, root)
+
+            self.assertTrue(result["ok"])
+            self.assertTrue(result["state_first_resume_used"])
+            self.assertEqual("release-hold-reopen-iteration", result["decision"])
+            self.assertIn(
+                ".skill-auto/resume-executions/resume-exec-test.md",
+                result["resume_artifacts"],
+            )
+            resume_mock.assert_called_once()
+            release_gate_mock.assert_not_called()
+
     def test_auto_workflow_go_runs_release_bundle(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
@@ -6662,7 +6751,23 @@ class AutomationStateResumeTests(unittest.TestCase):
                 "selected_state_path": ".skill-post-release/decisions/current-signals/automation-state.json",
                 "decision_card": {
                     "decision_id": "post-release-escalate-governance",
+                    "decision_label": "Escalate shipped feedback into governance",
+                    "decision_reason": "state-first governance escalation is required",
+                    "resume_strategy": "handoff",
                     "recommended_command": "python scripts/init_technical_governance.py --root . --pretty",
+                    "resume_anchor": ".skill-governance/change-plan.md",
+                    "playbooks": [
+                        "references/post-release-feedback-playbook.md",
+                        "references/technical-governance-playbook.md",
+                    ],
+                    "blocking_conditions": [
+                        "Do not continue normal rollout while governance escalation is unresolved."
+                    ],
+                    "handoff_target": "technical-governance",
+                    "follow_up_artifacts": [
+                        ".skill-post-release/triage-summary.md"
+                    ],
+                    "companion_payload_path": ".skill-post-release/decisions/post-release-feedback-result.json",
                 },
                 "recommended_resume_command": "python scripts/init_technical_governance.py --root . --pretty",
             }
@@ -6689,6 +6794,10 @@ class AutomationStateResumeTests(unittest.TestCase):
             self.assertEqual(0, result["execution"]["returncode"])
             self.assertTrue((root / result["resume_execution_ledger"]["json"]).exists())
             self.assertTrue((root / result["resume_execution_ledger"]["markdown"]).exists())
+            ledger_payload = json.loads(
+                (root / result["resume_execution_ledger"]["json"]).read_text(encoding="utf-8")
+            )
+            response_contract.validate_automation_resume_execution(ledger_payload)
             run_mock.assert_called_once()
 
     def test_resume_from_automation_state_blocks_non_allowlisted_command(self) -> None:

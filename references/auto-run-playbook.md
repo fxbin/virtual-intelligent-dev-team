@@ -50,6 +50,7 @@
 目标：
 
 - 读取 setup 生成的 plan
+- 如果是 `resume`，优先尝试 state-first 恢复
 - 按 workflow 分派到底层脚本
 - 输出统一结果、恢复锚点和下一步
 - 写统一 automation state
@@ -89,6 +90,7 @@
 - `background` 目前只定义 resumable contract，不启动 daemon
 - `safe` 会收紧 release hold 自动 remediation 与 iteration cap
 - `resume` 会优先暴露 state-driven decision card、恢复命令和 playbook
+- `go` 在 `resume_requested=true` 时，如果存在可执行 state decision，会先执行这条 state-first 路径
 
 ## 6. 常用命令
 

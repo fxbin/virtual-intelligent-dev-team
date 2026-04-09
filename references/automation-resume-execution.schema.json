@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:automation-resume-execution",
+  "title": "Automation Resume Execution",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "resume_execution_id",
+    "selected_state_path",
+    "selection_mode",
+    "decision_card",
+    "recommended_command",
+    "command_allowed",
+    "allowed_script",
+    "execution"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "automation-resume-execution/v1"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "resume_execution_id": {
+      "type": "string"
+    },
+    "selected_state_path": {
+      "type": "string"
+    },
+    "selection_mode": {
+      "type": "string"
+    },
+    "decision_card": {
+      "type": "object",
+      "required": [
+        "decision_id",
+        "decision_label",
+        "decision_reason",
+        "resume_strategy",
+        "recommended_command",
+        "resume_anchor",
+        "playbooks",
+        "blocking_conditions",
+        "handoff_target",
+        "follow_up_artifacts",
+        "companion_payload_path"
+      ],
+      "properties": {
+        "decision_id": {
+          "type": "string"
+        },
+        "decision_label": {
+          "type": "string"
+        },
+        "decision_reason": {
+          "type": "string"
+        },
+        "resume_strategy": {
+          "type": "string"
+        },
+        "recommended_command": {
+          "type": "string"
+        },
+        "resume_anchor": {
+          "type": "string"
+        },
+        "playbooks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "blocking_conditions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "handoff_target": {
+          "type": "string"
+        },
+        "follow_up_artifacts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "companion_payload_path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "recommended_command": {
+      "type": "string"
+    },
+    "command_allowed": {
+      "type": "boolean"
+    },
+    "allowed_script": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "execution": {
+      "type": "object",
+      "required": [
+        "executed",
+        "returncode",
+        "stdout",
+        "stderr"
+      ],
+      "properties": {
+        "executed": {
+          "type": "boolean"
+        },
+        "command": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "returncode": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "stdout": {
+          "type": "string"
+        },
+        "stderr": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

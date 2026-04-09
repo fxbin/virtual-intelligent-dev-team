@@ -19,6 +19,7 @@ INIT_PROJECT_MEMORY_SCRIPT = SCRIPT_DIR / "init_project_memory.py"
 INIT_POST_RELEASE_FEEDBACK_SCRIPT = SCRIPT_DIR / "init_post_release_feedback.py"
 EVALUATE_POST_RELEASE_FEEDBACK_SCRIPT = SCRIPT_DIR / "evaluate_post_release_feedback.py"
 AUTOMATION_STATE_SCRIPT = SCRIPT_DIR / "automation_state.py"
+RESUME_FROM_AUTOMATION_STATE_SCRIPT = SCRIPT_DIR / "resume_from_automation_state.py"
 DEFAULT_CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 AUTO_PLAN_TEMPLATE_PATH = SKILL_DIR / "assets" / "auto-run-plan-template.json"
 ITERATION_PLAN_TEMPLATE_PATH = SKILL_DIR / "assets" / "iteration-plan-template.json"
@@ -48,6 +49,10 @@ post_release_feedback = load_module(
 automation_state = load_module(
     "virtual_team_auto_automation_state",
     AUTOMATION_STATE_SCRIPT,
+)
+automation_state_resumer = load_module(
+    "virtual_team_auto_resume_from_automation_state",
+    RESUME_FROM_AUTOMATION_STATE_SCRIPT,
 )
 
 
@@ -151,6 +156,9 @@ def build_setup_markdown(plan: dict[str, object]) -> str:
 
 
 def build_go_markdown(summary: dict[str, object]) -> str:
+    state_first_resume = summary.get("state_first_resume", {})
+    if not isinstance(state_first_resume, dict):
+        state_first_resume = {}
     return "\n".join(
         [
             "# Auto Run Result",
@@ -168,12 +176,22 @@ def build_go_markdown(summary: dict[str, object]) -> str:
             f"- Decision: `{summary['decision']}`",
             f"- Resume anchor: `{summary['resume_anchor']}`",
             f"- Automation state: `{summary['automation_state_path']}`",
+            f"- State-first resume used: `{summary.get('state_first_resume_used', False)}`",
             "",
             "## Resume Artifacts",
             "",
         ]
         + [f"- `{item}`" for item in summary["resume_artifacts"]]
         + [
+            "",
+            "## State-First Resume",
+            "",
+            f"- Strategy: `{state_first_resume.get('strategy', 'plan-reuse')}`",
+            f"- Selected state: `{state_first_resume.get('selected_state_path', '')}`",
+            f"- Decision: `{state_first_resume.get('decision_id', '')}`",
+            f"- Recommended command: `{state_first_resume.get('recommended_command', '')}`",
+            f"- Execution ledger: `{state_first_resume.get('ledger_markdown', '')}`",
+            "",
             "",
             "## Recommended Next Step",
             "",
@@ -229,6 +247,88 @@ def latest_existing_plan(plan_json_path: Path) -> dict[str, object] | None:
         return load_json(plan_json_path)
     except Exception:
         return None
+
+
+def parse_resume_command(command: str) -> list[str]:
+    import shlex
+
+    try:
+        return shlex.split(command)
+    except ValueError:
+        return []
+
+
+def is_self_referential_resume_command(command: str) -> bool:
+    tokens = parse_resume_command(command)
+    if len(tokens) < 2:
+        return False
+    script_path = Path(tokens[1]).as_posix()
+    return script_path == "scripts/run_auto_workflow.py"
+
+
+def run_state_first_resume(repo_root: Path, plan: dict[str, object]) -> dict[str, object] | None:
+    if not bool(plan.get("resume_requested")):
+        return None
+    resume_context = plan.get("resume_context", {})
+    if not isinstance(resume_context, dict):
+        return None
+    if not bool(resume_context.get("state_resume_available")):
+        return None
+    recommended_command = str(resume_context.get("state_resume_command", "")).strip()
+    if recommended_command == "" or is_self_referential_resume_command(recommended_command):
+        return None
+    workflow_bundle = str(plan.get("workflow_bundle", "")).strip() or None
+    state_path = str(resume_context.get("state_resume_state_path", "")).strip()
+    resume_result = automation_state_resumer.build_resume_payload(
+        repo_root=repo_root,
+        workflow=workflow_bundle,
+        state_path=automation_state.resolve_path(repo_root, state_path) if state_path else None,
+        execute=True,
+    )
+    decision_card = resume_result.get("decision_card", {})
+    if not isinstance(decision_card, dict):
+        decision_card = {}
+    ledger = resume_result.get("resume_execution_ledger", {})
+    if not isinstance(ledger, dict):
+        ledger = {}
+    ledger_json = str(ledger.get("json", "")).strip()
+    ledger_markdown = str(ledger.get("markdown", "")).strip()
+    resume_anchor = (
+        str(decision_card.get("resume_anchor", "")).strip()
+        or ledger_markdown
+        or str(plan.get("resume_anchor", ""))
+    )
+    resume_artifacts = [
+        item
+        for item in [
+            ledger_json,
+            ledger_markdown,
+            state_path,
+            str(decision_card.get("companion_payload_path", "")).strip(),
+        ]
+        if item
+    ]
+    resume_artifacts.extend(
+        [
+            str(item)
+            for item in decision_card.get("follow_up_artifacts", [])
+            if str(item).strip()
+        ]
+    )
+    return {
+        "ok": bool(resume_result.get("ok")),
+        "status": "completed" if bool(resume_result.get("ok")) else "failed",
+        "decision": str(decision_card.get("decision_id", "state-first-resume")).strip() or "state-first-resume",
+        "resume_anchor": resume_anchor,
+        "resume_artifacts": sorted({item for item in resume_artifacts if item}),
+        "recommended_next_step": (
+            "Inspect the resume execution ledger and continue from the state-first decision artifacts."
+            if bool(resume_result.get("ok"))
+            else str(resume_result.get("error", "state-first resume failed"))
+        ),
+        "upstream_dependencies": [state_path] if state_path else [],
+        "result": resume_result,
+    }
 
 
 def create_root_cause_iteration_plan(repo_root: Path, plan: dict[str, object]) -> Path:
@@ -546,14 +646,18 @@ def run_post_release_go(repo_root: Path, plan: dict[str, object]) -> dict[str, o
 def run_go(plan_path: Path, repo_root: Path) -> dict[str, object]:
     plan = load_json(plan_path)
     workflow_bundle = str(plan.get("workflow_bundle", "")).strip()
-    if workflow_bundle == "root-cause-remediate":
-        execution = run_root_cause_go(repo_root, plan)
-    elif workflow_bundle == "ship-hold-remediate":
-        execution = run_release_go(repo_root, plan)
-    elif workflow_bundle == "post-release-close-loop":
-        execution = run_post_release_go(repo_root, plan)
+    state_first_execution = run_state_first_resume(repo_root, plan)
+    if state_first_execution is not None:
+        execution = state_first_execution
     else:
-        raise RuntimeError(f"unsupported auto workflow bundle: {workflow_bundle}")
+        if workflow_bundle == "root-cause-remediate":
+            execution = run_root_cause_go(repo_root, plan)
+        elif workflow_bundle == "ship-hold-remediate":
+            execution = run_release_go(repo_root, plan)
+        elif workflow_bundle == "post-release-close-loop":
+            execution = run_post_release_go(repo_root, plan)
+        else:
+            raise RuntimeError(f"unsupported auto workflow bundle: {workflow_bundle}")
 
     state_root = repo_root / str(plan.get("state_root", ".skill-auto"))
     last_run_json = state_root / "last-run.json"
@@ -601,6 +705,24 @@ def run_go(plan_path: Path, repo_root: Path) -> dict[str, object]:
             str(item) for item in execution.get("upstream_dependencies", []) if str(item).strip()
         ]
         + ([nested_state_path] if nested_state_path else []),
+        "state_first_resume_used": state_first_execution is not None,
+        "state_first_resume": {
+            "strategy": "state-first" if state_first_execution is not None else "plan-reuse",
+            "selected_state_path": str(plan.get("resume_context", {}).get("state_resume_state_path", "")).strip()
+            if isinstance(plan.get("resume_context"), dict)
+            else "",
+            "decision_id": str(plan.get("resume_context", {}).get("state_resume_decision_id", "")).strip()
+            if isinstance(plan.get("resume_context"), dict)
+            else "",
+            "recommended_command": str(plan.get("resume_context", {}).get("state_resume_command", "")).strip()
+            if isinstance(plan.get("resume_context"), dict)
+            else "",
+            "ledger_markdown": (
+                str((execution.get("result", {}) or {}).get("resume_execution_ledger", {}).get("markdown", "")).strip()
+                if state_first_execution is not None and isinstance(execution.get("result", {}), dict)
+                else ""
+            ),
+        },
         "result": execution.get("result", {}),
     }
     state_payload = automation_state.write_automation_state(
@@ -627,16 +749,30 @@ def run_go(plan_path: Path, repo_root: Path) -> dict[str, object]:
             relative_path(last_run_json, repo_root),
             relative_path(last_run_markdown, repo_root),
             relative_path(plan_path, repo_root),
+        ]
+        + [
+            str(summary.get("state_first_resume", {}).get("selected_state_path", "")).strip()
+            if isinstance(summary.get("state_first_resume"), dict)
+            else ""
+        ]
+        + [
+            str(summary.get("state_first_resume", {}).get("ledger_markdown", "")).strip()
+            if isinstance(summary.get("state_first_resume"), dict)
+            else ""
         ],
         upstream_dependencies=list(summary.get("upstream_dependencies", [])),
         notes=[
             "background mode remains synchronous here; detached orchestration is represented through resumable state only"
             if bool(summary.get("detached_ready"))
-            else "auto go completed under the explicit setup -> go protocol"
+            else "auto go completed under the explicit setup -> go protocol",
+            "state-first resume executed the latest automation-state decision before falling back to workflow-native go"
+            if state_first_execution is not None
+            else "workflow-native go path remained the source of truth for this run",
         ],
         metadata={
             "workflow_bundle": workflow_bundle,
             "ok": bool(summary.get("ok")),
+            "state_first_resume_used": bool(summary.get("state_first_resume_used")),
         },
     )
     summary["automation_state"] = state_payload

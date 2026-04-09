@@ -16,6 +16,7 @@ import subprocess
 SCRIPT_DIR = Path(__file__).resolve().parent
 INSPECT_AUTOMATION_STATE_SCRIPT = SCRIPT_DIR / "inspect_automation_state.py"
 AUTOMATION_STATE_SCRIPT = SCRIPT_DIR / "automation_state.py"
+RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
 ALLOWED_SCRIPT_PATHS = {
     "scripts/run_auto_workflow.py",
     "scripts/run_release_gate.py",
@@ -43,6 +44,10 @@ automation_state_inspector = load_module(
 automation_state = load_module(
     "virtual_team_resume_from_automation_state_helper",
     AUTOMATION_STATE_SCRIPT,
+)
+response_contract = load_module(
+    "virtual_team_resume_from_automation_state_contract",
+    RESPONSE_CONTRACT_SCRIPT,
 )
 
 
@@ -111,6 +116,7 @@ def write_execution_ledger(
         "allowed_script": payload.get("allowed_script"),
         "execution": execution,
     }
+    response_contract.validate_automation_resume_execution(ledger_payload)
     ledger_json.parent.mkdir(parents=True, exist_ok=True)
     ledger_json.write_text(json.dumps(ledger_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     markdown_lines = [

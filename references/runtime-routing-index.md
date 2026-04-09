@@ -21,6 +21,8 @@
   - 包含 `inspect_automation_state.py` 与 `resume_from_automation_state.py` 的恢复 / 执行入口
 - `response-pack-sidecar-schema.md`
   - `automation_resume` 如何进入用户可见 sidecar
+- `automation-resume-execution.schema.json`
+  - resume execution ledger 的正式契约
 - `product-delivery-playbook.md`
   - 产品定义到实现切片的默认打法
 - `beta-validation-playbook.md`
