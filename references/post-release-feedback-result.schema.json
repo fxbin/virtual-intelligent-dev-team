@@ -18,6 +18,7 @@
     "report_path",
     "report_context",
     "follow_up",
+    "automation_state",
     "json_report",
     "markdown_report"
   ],
@@ -71,6 +72,9 @@
     },
     "follow_up": {
       "type": "object"
+    },
+    "automation_state": {
+      "$ref": "#/$defs/automation_state"
     },
     "json_report": {
       "type": "string"
@@ -154,6 +158,43 @@
       "items": {
         "type": "string"
       }
+    },
+    "automation_state": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "state_kind",
+        "decision",
+        "state_paths"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "automation-state/v1"
+        },
+        "state_kind": {
+          "const": "post-release-feedback-result"
+        },
+        "decision": {
+          "type": "string"
+        },
+        "state_paths": {
+          "type": "object",
+          "required": [
+            "primary",
+            "related"
+          ],
+          "properties": {
+            "primary": {
+              "type": "string"
+            },
+            "related": {
+              "$ref": "#/$defs/string_array"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
     },
     "signal_summary": {
       "type": "object",

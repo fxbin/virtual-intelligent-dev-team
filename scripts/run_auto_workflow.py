@@ -18,6 +18,7 @@ RELEASE_GATE_SCRIPT = SCRIPT_DIR / "run_release_gate.py"
 INIT_PROJECT_MEMORY_SCRIPT = SCRIPT_DIR / "init_project_memory.py"
 INIT_POST_RELEASE_FEEDBACK_SCRIPT = SCRIPT_DIR / "init_post_release_feedback.py"
 EVALUATE_POST_RELEASE_FEEDBACK_SCRIPT = SCRIPT_DIR / "evaluate_post_release_feedback.py"
+AUTOMATION_STATE_SCRIPT = SCRIPT_DIR / "automation_state.py"
 DEFAULT_CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 AUTO_PLAN_TEMPLATE_PATH = SKILL_DIR / "assets" / "auto-run-plan-template.json"
 ITERATION_PLAN_TEMPLATE_PATH = SKILL_DIR / "assets" / "iteration-plan-template.json"
@@ -43,6 +44,10 @@ post_release_init = load_module(
 post_release_feedback = load_module(
     "virtual_team_auto_post_release_feedback",
     EVALUATE_POST_RELEASE_FEEDBACK_SCRIPT,
+)
+automation_state = load_module(
+    "virtual_team_auto_automation_state",
+    AUTOMATION_STATE_SCRIPT,
 )
 
 
@@ -90,13 +95,18 @@ def build_setup_markdown(plan: dict[str, object]) -> str:
         [
             "# Auto Run Plan",
             "",
+            f"- Run ID: `{plan['run_id']}`",
             f"- Generated: `{plan['generated_at']}`",
             f"- Trigger: `{plan['trigger']}`",
             f"- Requested phase: `{plan['requested_phase']}`",
+            f"- Run style: `{plan['run_style']}`",
+            f"- Safety level: `{plan['safety_level']}`",
+            f"- Resume requested: `{plan['resume_requested']}`",
             f"- Workflow bundle: `{plan['workflow_bundle']}`",
             f"- Lead agent: `{plan['route_snapshot']['lead_agent']}`",
             f"- Workflow supported: `{plan['workflow_supported']}`",
             f"- Resume anchor: `{plan['resume_anchor']}`",
+            f"- Automation state: `{plan['automation_state_path']}`",
             "",
             "## Request",
             "",
@@ -133,12 +143,19 @@ def build_go_markdown(summary: dict[str, object]) -> str:
         [
             "# Auto Run Result",
             "",
+            f"- Run ID: `{summary['run_id']}`",
+            f"- Parent run ID: `{summary['parent_run_id']}`",
             f"- Generated: `{summary['generated_at']}`",
             f"- Mode: `{summary['mode']}`",
+            f"- Phase: `{summary['phase']}`",
+            f"- Run style: `{summary['run_style']}`",
+            f"- Safety level: `{summary['safety_level']}`",
+            f"- Resume requested: `{summary['resume_requested']}`",
             f"- Workflow bundle: `{summary['workflow_bundle']}`",
             f"- Status: `{summary['status']}`",
             f"- Decision: `{summary['decision']}`",
             f"- Resume anchor: `{summary['resume_anchor']}`",
+            f"- Automation state: `{summary['automation_state_path']}`",
             "",
             "## Resume Artifacts",
             "",
@@ -193,8 +210,20 @@ def workflow_go_actions(bundle: str) -> list[str]:
     return []
 
 
+def latest_existing_plan(plan_json_path: Path) -> dict[str, object] | None:
+    if not plan_json_path.exists():
+        return None
+    try:
+        return load_json(plan_json_path)
+    except Exception:
+        return None
+
+
 def create_root_cause_iteration_plan(repo_root: Path, plan: dict[str, object]) -> Path:
     project_memory_init.init_project_memory(root=repo_root, mode="iteration", overwrite=False)
+    iteration_plan_path = repo_root / ".skill-iterations" / "iteration-plan.auto.json"
+    if bool(plan.get("resume_requested")) and iteration_plan_path.exists():
+        return iteration_plan_path
     iteration_plan = load_json(ITERATION_PLAN_TEMPLATE_PATH)
     loop_policy = dict(iteration_plan.get("loop_policy", {}))
     stop_caps = plan.get("stop_caps", {})
@@ -214,7 +243,6 @@ def create_root_cause_iteration_plan(repo_root: Path, plan: dict[str, object]) -
     iteration_plan["baseline_label"] = "stable"
     iteration_plan["autonomous_candidate_generation"] = True
     iteration_plan["candidates"] = []
-    iteration_plan_path = repo_root / ".skill-iterations" / "iteration-plan.auto.json"
     write_json(iteration_plan_path, iteration_plan)
     return iteration_plan_path
 
@@ -238,24 +266,46 @@ def build_setup_plan(
     state_root.mkdir(parents=True, exist_ok=True)
     plan_json_path = repo_root / str(auto_profile.get("plan_json", ".skill-auto/auto-run-plan.json"))
     plan_markdown_path = repo_root / str(auto_profile.get("plan_markdown", ".skill-auto/auto-run-plan.md"))
+    state_dir = repo_root / str(auto_profile.get("state_dir", ".skill-auto/state"))
+    existing_plan = latest_existing_plan(plan_json_path) if bool(auto_profile.get("resume_requested")) else None
+    run_id = automation_state.generate_run_id("auto-setup")
+    parent_run_id = (
+        str(existing_plan.get("run_id", "")).strip() or None
+        if isinstance(existing_plan, dict)
+        else None
+    )
+    automation_state_path = relative_path(state_dir / f"{run_id}.json", repo_root)
 
     payload = load_json(AUTO_PLAN_TEMPLATE_PATH)
     payload.update(
         {
             "ok": True,
             "mode": "setup",
+            "phase": "setup",
             "generated_at": now_iso(),
+            "run_id": run_id,
+            "parent_run_id": parent_run_id,
             "trigger": str(auto_profile.get("trigger", "/auto")),
             "requested_phase": "setup",
+            "execution_mode": str(auto_profile.get("execution_mode", "auto-setup")),
+            "run_style": str(auto_profile.get("run_style", "foreground")),
+            "safety_level": str(auto_profile.get("safety_level", "standard")),
+            "resume_requested": bool(auto_profile.get("resume_requested")),
+            "detached_ready": bool(auto_profile.get("detached_ready")),
             "requires_explicit_go": bool(auto_profile.get("requires_explicit_go", True)),
             "workflow_bundle": str(route_result.get("workflow_bundle", "")),
             "workflow_supported": bool(auto_profile.get("workflow_supported")),
             "request_text": str(auto_profile.get("text_without_trigger", text)).strip() or text.strip(),
             "root": str(repo_root),
             "state_root": relative_path(state_root, repo_root),
+            "state_dir": relative_path(state_dir, repo_root),
             "plan_json": relative_path(plan_json_path, repo_root),
             "plan_markdown": relative_path(plan_markdown_path, repo_root),
             "resume_anchor": str(auto_profile.get("resume_anchor", relative_path(plan_markdown_path, repo_root))),
+            "automation_state_schema": str(
+                auto_profile.get("automation_state_schema", "references/automation-state.schema.json")
+            ),
+            "automation_state_path": automation_state_path,
             "eligible_workflows": [
                 str(item) for item in auto_profile.get("eligible_workflows", []) if str(item).strip()
             ],
@@ -280,10 +330,52 @@ def build_setup_plan(
                 "artifacts": [
                     relative_path(plan_json_path, repo_root),
                     relative_path(plan_markdown_path, repo_root),
+                    automation_state_path,
                 ],
             },
         }
     )
+    state_payload = automation_state.write_automation_state(
+        repo_root=repo_root,
+        source_workflow=str(route_result.get("workflow_bundle", "")),
+        state_kind="auto-run-setup",
+        mode="auto",
+        phase="setup",
+        status="planned",
+        decision="awaiting-explicit-go",
+        run_style=str(payload.get("run_style", "foreground")),
+        safety_level=str(payload.get("safety_level", "standard")),
+        resume_requested=bool(payload.get("resume_requested")),
+        detached_ready=bool(payload.get("detached_ready")),
+        run_id=run_id,
+        parent_run_id=parent_run_id,
+        execution_mode=str(payload.get("execution_mode", "auto-setup")),
+        resume_anchor=str(payload.get("resume_anchor", "")),
+        resume_artifacts=[
+            relative_path(plan_json_path, repo_root),
+            relative_path(plan_markdown_path, repo_root),
+        ],
+        recommended_next_step=str(payload.get("go_command", "")),
+        handoff_target=str(route_result.get("lead_agent", "")),
+        primary_path=automation_state_path,
+        related_paths=[
+            relative_path(plan_json_path, repo_root),
+            relative_path(plan_markdown_path, repo_root),
+        ],
+        upstream_dependencies=[
+            str(existing_plan.get("automation_state_path", "")).strip()
+            for existing_plan in [existing_plan]
+            if isinstance(existing_plan, dict) and str(existing_plan.get("automation_state_path", "")).strip()
+        ],
+        notes=[
+            "setup persists the explicit plan and requires a separate go command before execution starts",
+        ],
+        metadata={
+            "lead_agent": route_result.get("lead_agent"),
+            "workflow_supported": bool(auto_profile.get("workflow_supported")),
+        },
+    )
+    payload["automation_state"] = state_payload
     write_json(plan_json_path, payload)
     write_text(plan_markdown_path, build_setup_markdown(payload) + "\n")
     return payload
@@ -292,7 +384,12 @@ def build_setup_plan(
 def run_root_cause_go(repo_root: Path, plan: dict[str, object]) -> dict[str, object]:
     iteration_plan_path = create_root_cause_iteration_plan(repo_root, plan)
     workspace = repo_root / ".skill-iterations"
-    result = iteration_loop.run_loop(workspace=workspace, plan_path=iteration_plan_path, resume=False)
+    resume_requested = bool(plan.get("resume_requested"))
+    result = iteration_loop.run_loop(
+        workspace=workspace,
+        plan_path=iteration_plan_path,
+        resume=resume_requested and iteration_plan_path.exists(),
+    )
     resume_anchor = str(result.get("summary", relative_path(workspace / "current-round-memory.md", repo_root)))
     resume_artifacts = [
         str(item)
@@ -312,6 +409,9 @@ def run_root_cause_go(repo_root: Path, plan: dict[str, object]) -> dict[str, obj
         "resume_anchor": resume_anchor,
         "resume_artifacts": resume_artifacts,
         "recommended_next_step": "Inspect the latest iteration summary and either keep the accepted baseline or refine the next hypothesis.",
+        "upstream_dependencies": [
+            relative_path(iteration_plan_path, repo_root),
+        ],
         "result": result,
     }
 
@@ -319,10 +419,13 @@ def run_root_cause_go(repo_root: Path, plan: dict[str, object]) -> dict[str, obj
 def run_release_go(repo_root: Path, plan: dict[str, object]) -> dict[str, object]:
     output_dir = repo_root / "evals" / "release-gate"
     iteration_workspace = repo_root / ".skill-iterations"
+    safe_mode = str(plan.get("safety_level", "standard")) == "safe"
+    resume_requested = bool(plan.get("resume_requested"))
+    existing_result = output_dir / "release-gate-results.json"
     result = release_gate.run_release_gate(
         output_dir=output_dir,
         iteration_workspace=iteration_workspace,
-        auto_run_next_iteration_on_hold=True,
+        auto_run_next_iteration_on_hold=not safe_mode,
         hold_loop_max_rounds=max(int(plan.get("stop_caps", {}).get("release_hold_loop_max_rounds", 3)), 1),
     )
     follow_up = result.get("follow_up", {})
@@ -353,6 +456,11 @@ def run_release_go(repo_root: Path, plan: dict[str, object]) -> dict[str, object
                 "Read the release gate follow-up and continue from ship closure or hold remediation.",
             )
         ),
+        "upstream_dependencies": [
+            relative_path(existing_result, repo_root)
+            for existing_result in [existing_result]
+            if resume_requested and existing_result.exists()
+        ],
         "result": result,
     }
 
@@ -371,6 +479,7 @@ def run_post_release_go(repo_root: Path, plan: dict[str, object]) -> dict[str, o
     ]
     if not artifacts:
         artifacts = [str(item) for item in init_result.get("artifacts", []) if str(item).strip()]
+    existing_report = report_path if bool(plan.get("resume_requested")) and report_path.exists() else None
     return {
         "ok": bool(result.get("ok")),
         "status": "completed",
@@ -383,6 +492,7 @@ def run_post_release_go(repo_root: Path, plan: dict[str, object]) -> dict[str, o
                 "Use the post-release decision to decide whether to monitor, iterate, or escalate.",
             )
         ),
+        "upstream_dependencies": [str(existing_report)] if existing_report is not None else [],
         "result": result,
     }
 
@@ -402,10 +512,30 @@ def run_go(plan_path: Path, repo_root: Path) -> dict[str, object]:
     state_root = repo_root / str(plan.get("state_root", ".skill-auto"))
     last_run_json = state_root / "last-run.json"
     last_run_markdown = state_root / "last-run.md"
+    run_id = automation_state.generate_run_id("auto-go")
+    automation_state_path = relative_path(
+        repo_root / str(plan.get("state_dir", ".skill-auto/state")) / f"{run_id}.json",
+        repo_root,
+    )
+    nested_result = execution.get("result", {})
+    nested_automation_state = nested_result.get("automation_state", {}) if isinstance(nested_result, dict) else {}
+    nested_state_path = (
+        str((nested_automation_state.get("state_paths") or {}).get("primary", "")).strip()
+        if isinstance(nested_automation_state, dict)
+        else ""
+    )
     summary = {
         "ok": bool(execution.get("ok", True)),
+        "run_id": run_id,
+        "parent_run_id": str(plan.get("run_id", "")).strip() or None,
         "generated_at": now_iso(),
         "mode": "go",
+        "phase": "go",
+        "execution_mode": str(plan.get("execution_mode", "auto-go")),
+        "run_style": str(plan.get("run_style", "foreground")),
+        "safety_level": str(plan.get("safety_level", "standard")),
+        "resume_requested": bool(plan.get("resume_requested")),
+        "detached_ready": bool(plan.get("detached_ready")),
         "workflow_bundle": workflow_bundle,
         "status": str(execution.get("status", "completed")),
         "decision": str(execution.get("decision", "completed")),
@@ -417,8 +547,53 @@ def run_go(plan_path: Path, repo_root: Path) -> dict[str, object]:
         "plan_json": relative_path(plan_path, repo_root),
         "last_run_json": relative_path(last_run_json, repo_root),
         "last_run_markdown": relative_path(last_run_markdown, repo_root),
+        "automation_state_schema": str(
+            plan.get("automation_state_schema", "references/automation-state.schema.json")
+        ),
+        "automation_state_path": automation_state_path,
+        "upstream_dependencies": [
+            str(item) for item in execution.get("upstream_dependencies", []) if str(item).strip()
+        ]
+        + ([nested_state_path] if nested_state_path else []),
         "result": execution.get("result", {}),
     }
+    state_payload = automation_state.write_automation_state(
+        repo_root=repo_root,
+        source_workflow=workflow_bundle,
+        state_kind="auto-run-go",
+        mode="auto",
+        phase="go",
+        status=str(summary.get("status", "completed")),
+        decision=str(summary.get("decision", "completed")),
+        run_style=str(summary.get("run_style", "foreground")),
+        safety_level=str(summary.get("safety_level", "standard")),
+        resume_requested=bool(summary.get("resume_requested")),
+        detached_ready=bool(summary.get("detached_ready")),
+        run_id=run_id,
+        parent_run_id=summary.get("parent_run_id"),
+        execution_mode=str(summary.get("execution_mode", "auto-go")),
+        resume_anchor=str(summary.get("resume_anchor", "")),
+        resume_artifacts=list(summary.get("resume_artifacts", [])),
+        recommended_next_step=str(summary.get("recommended_next_step", "")),
+        handoff_target=str(workflow_bundle),
+        primary_path=automation_state_path,
+        related_paths=[
+            relative_path(last_run_json, repo_root),
+            relative_path(last_run_markdown, repo_root),
+            relative_path(plan_path, repo_root),
+        ],
+        upstream_dependencies=list(summary.get("upstream_dependencies", [])),
+        notes=[
+            "background mode remains synchronous here; detached orchestration is represented through resumable state only"
+            if bool(summary.get("detached_ready"))
+            else "auto go completed under the explicit setup -> go protocol"
+        ],
+        metadata={
+            "workflow_bundle": workflow_bundle,
+            "ok": bool(summary.get("ok")),
+        },
+    )
+    summary["automation_state"] = state_payload
     write_json(last_run_json, summary)
     write_text(last_run_markdown, build_go_markdown(summary) + "\n")
     return summary

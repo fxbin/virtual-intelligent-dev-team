@@ -756,6 +756,49 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual("setup", bounded_iteration_entry["auto_run"]["requested_phase"])
         self.assertIn("python scripts/run_auto_workflow.py", bounded_iteration_entry["auto_run"]["setup_command"])
 
+    def test_auto_background_request_marks_detached_resume_contract(self) -> None:
+        result = route_request.route_request(
+            "/auto background fix this repeated regression until stable and keep benchmark evidence",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertTrue(result["auto_mode_enabled"])
+        self.assertEqual("auto-setup", result["execution_mode"])
+        self.assertEqual("background", result["auto_run_profile"]["run_style"])
+        self.assertTrue(result["auto_run_profile"]["detached_ready"])
+        bounded_iteration_entry = next(
+            item for item in result["process_plan"] if item["skill"] == "bounded-iteration"
+        )
+        self.assertEqual("background", bounded_iteration_entry["auto_run"]["run_style"])
+        self.assertTrue(bounded_iteration_entry["auto_run"]["detached_ready"])
+
+    def test_auto_safe_request_clamps_stop_caps(self) -> None:
+        result = route_request.route_request(
+            "/auto safe Is this version ready to ship? Run the formal release gate.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertTrue(result["auto_mode_enabled"])
+        self.assertEqual("safe", result["auto_run_profile"]["safety_level"])
+        self.assertEqual(1, result["auto_run_profile"]["stop_caps"]["release_hold_loop_max_rounds"])
+        self.assertIn(
+            "safe mode clamps automation to a single bounded pass before any further escalation",
+            result["auto_run_profile"]["safety_guards"],
+        )
+
+    def test_auto_resume_go_request_marks_resume_profile(self) -> None:
+        result = route_request.route_request(
+            "/auto resume go fix this repeated regression until stable and keep benchmark evidence",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertTrue(result["auto_mode_enabled"])
+        self.assertEqual("go", result["auto_run_profile"]["requested_phase"])
+        self.assertTrue(result["auto_run_profile"]["resume_requested"])
+
     def test_auto_release_go_request_requires_saved_plan(self) -> None:
         result = route_request.route_request(
             "/auto go Is this version ready to ship? Run the formal release gate.",
@@ -3876,6 +3919,25 @@ class ValidatorScriptTests(unittest.TestCase):
         self.assertFalse(result["details"]["plan_exists"])
         self.assertIn("Run auto setup first", result["recommended_next_step"])
 
+    def test_verify_action_auto_mode_exposes_safe_background_resume_details(self) -> None:
+        result = verify_action.verify_action(
+            text="/auto resume background safe fix this repeated regression until stable and keep benchmark evidence.",
+            config=load_config(),
+            repo_path=REPO_ROOT,
+            check="auto-mode",
+        )
+
+        self.assertTrue(result["allowed"])
+        self.assertEqual("background", result["details"]["run_style"])
+        self.assertEqual("safe", result["details"]["safety_level"])
+        self.assertTrue(result["details"]["resume_requested"])
+        self.assertTrue(result["details"]["detached_ready"])
+        self.assertEqual(".skill-auto/state", result["details"]["state_dir"])
+        self.assertEqual(
+            "references/automation-state.schema.json",
+            result["details"]["automation_state_schema"],
+        )
+
     def test_contract_lint_passes(self) -> None:
         result = contract_lint.lint_contract(SKILL_DIR)
 
@@ -4331,6 +4393,8 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
             self.assertEqual("offline loop drill failed", result["reason"])
             self.assertTrue(Path(result["json_report"]).exists())
             self.assertTrue(Path(result["markdown_report"]).exists())
+            self.assertTrue(Path(result["automation_state"]["state_paths"]["primary"]).exists())
+            self.assertEqual("release-gate-result", result["automation_state"]["state_kind"])
             self.assertEqual("reopened", result["follow_up"]["loop_state"])
             self.assertEqual("bounded-iteration", result["follow_up"]["next_action"])
             assert_field_expectation(
@@ -6120,6 +6184,8 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertFalse(result["ok"])
             self.assertEqual("iterate", result["decision"])
             self.assertEqual("bounded-iteration", result["follow_up"]["next_action"])
+            self.assertTrue(Path(result["automation_state"]["state_paths"]["primary"]).exists())
+            self.assertEqual("post-release-feedback-result", result["automation_state"]["state_kind"])
             self.assertTrue(Path(result["follow_up"]["brief_json"]).exists())
             current_slice = (root / ".skill-product" / "current-slice.md").read_text(encoding="utf-8")
             self.assertIn("## Post-Release Feedback Writeback", current_slice)
@@ -6200,7 +6266,28 @@ class AutoWorkflowTests(unittest.TestCase):
             plan_markdown = root / ".skill-auto" / "auto-run-plan.md"
             self.assertTrue(plan_json.exists())
             self.assertTrue(plan_markdown.exists())
+            self.assertTrue((root / result["automation_state"]["state_paths"]["primary"]).exists())
             self.assertIn("root-cause-remediate", plan_markdown.read_text(encoding="utf-8"))
+
+    def test_auto_workflow_setup_resume_anchors_previous_run(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            first = auto_workflow.build_setup_plan(
+                text="/auto fix this repeated regression until stable and keep benchmark evidence",
+                repo_root=root,
+                config=load_config(),
+            )
+
+            resumed = auto_workflow.build_setup_plan(
+                text="/auto resume background safe fix this repeated regression until stable and keep benchmark evidence",
+                repo_root=root,
+                config=load_config(),
+            )
+
+            self.assertEqual(first["run_id"], resumed["parent_run_id"])
+            self.assertEqual("background", resumed["run_style"])
+            self.assertEqual("safe", resumed["safety_level"])
+            self.assertTrue(resumed["resume_requested"])
 
     def test_auto_workflow_go_runs_root_cause_bundle(self) -> None:
         with make_tempdir() as tmp:
@@ -6228,12 +6315,37 @@ class AutoWorkflowTests(unittest.TestCase):
             self.assertTrue((root / ".skill-iterations" / "iteration-plan.auto.json").exists())
             run_loop_mock.assert_called_once()
             self.assertTrue((root / ".skill-auto" / "last-run.json").exists())
+            self.assertTrue((root / result["automation_state"]["state_paths"]["primary"]).exists())
+
+    def test_auto_workflow_go_resume_reuses_iteration_state(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            auto_workflow.build_setup_plan(
+                text="/auto resume go fix this repeated regression until stable and keep benchmark evidence",
+                repo_root=root,
+                config=load_config(),
+            )
+            (root / ".skill-iterations").mkdir(parents=True, exist_ok=True)
+            (root / ".skill-iterations" / "iteration-plan.auto.json").write_text("{}", encoding="utf-8")
+            with mock.patch.object(
+                auto_workflow.iteration_loop,
+                "run_loop",
+                return_value={
+                    "status": "completed",
+                    "halt_reason": "halted on decision: keep",
+                    "summary": str(root / ".skill-iterations" / "loops" / "iteration-plan.auto-summary.json"),
+                    "rounds_run": [],
+                },
+            ) as run_loop_mock:
+                auto_workflow.run_go(root / ".skill-auto" / "auto-run-plan.json", root)
+
+            self.assertTrue(run_loop_mock.call_args.kwargs["resume"])
 
     def test_auto_workflow_go_runs_release_bundle(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
             auto_workflow.build_setup_plan(
-                text="/auto Is this version ready to ship? Run the formal release gate.",
+                text="/auto safe Is this version ready to ship? Run the formal release gate.",
                 repo_root=root,
                 config=load_config(),
             )
@@ -6243,6 +6355,15 @@ class AutoWorkflowTests(unittest.TestCase):
                 return_value={
                     "ok": False,
                     "decision": "hold",
+                    "automation_state": {
+                        "schema_version": "automation-state/v1",
+                        "state_kind": "release-gate-result",
+                        "decision": "hold",
+                        "state_paths": {
+                            "primary": str(root / "evals" / "release-gate" / "automation-state.json"),
+                            "related": [],
+                        },
+                    },
                     "follow_up": {
                         "resume_anchor": str(root / "evals" / "release-gate" / "release-gate-report.md"),
                         "resume_artifacts": [
@@ -6258,6 +6379,7 @@ class AutoWorkflowTests(unittest.TestCase):
             self.assertEqual("ship-hold-remediate", result["workflow_bundle"])
             self.assertEqual("hold", result["decision"])
             release_gate_mock.assert_called_once()
+            self.assertFalse(release_gate_mock.call_args.kwargs["auto_run_next_iteration_on_hold"])
 
     def test_auto_workflow_go_runs_post_release_bundle(self) -> None:
         with make_tempdir() as tmp:
@@ -6273,6 +6395,15 @@ class AutoWorkflowTests(unittest.TestCase):
                 return_value={
                     "ok": True,
                     "decision": "monitor",
+                    "automation_state": {
+                        "schema_version": "automation-state/v1",
+                        "state_kind": "post-release-feedback-result",
+                        "decision": "monitor",
+                        "state_paths": {
+                            "primary": str(root / ".skill-post-release" / "decisions" / "automation-state.json"),
+                            "related": [],
+                        },
+                    },
                     "follow_up": {
                         "resume_artifacts": [str(root / ".skill-post-release" / "triage-summary.md")],
                         "next_action": "continue-monitoring",
@@ -6411,7 +6542,7 @@ class ResponsePackTests(unittest.TestCase):
 
     def test_generate_response_pack_payload_includes_auto_run_section(self) -> None:
         result = route_request.route_request(
-            "/auto fix this repeated regression until stable and keep benchmark evidence",
+            "/auto resume background safe fix this repeated regression until stable and keep benchmark evidence",
             load_config(),
             repo_path=REPO_ROOT,
         )
@@ -6422,8 +6553,14 @@ class ResponsePackTests(unittest.TestCase):
         self.assertTrue(payload["auto_run"]["enabled"])
         self.assertEqual("setup", payload["auto_run"]["requested_phase"])
         self.assertEqual("auto-setup", payload["auto_run"]["execution_mode"])
+        self.assertEqual("background", payload["auto_run"]["run_style"])
+        self.assertEqual("safe", payload["auto_run"]["safety_level"])
+        self.assertTrue(payload["auto_run"]["resume_requested"])
+        self.assertTrue(payload["auto_run"]["detached_ready"])
         self.assertTrue(payload["auto_run"]["workflow_supported"])
         self.assertIn("root-cause-remediate", payload["auto_run"]["eligible_workflows"])
+        self.assertEqual(".skill-auto/state", payload["auto_run"]["state_dir"])
+        self.assertEqual("references/automation-state.schema.json", payload["auto_run"]["automation_state_schema"])
         self.assertIn("python scripts/run_auto_workflow.py", payload["auto_run"]["setup_command"])
 
     def test_generate_response_pack_cli_writes_json_sidecar_by_default(self) -> None:
@@ -6622,7 +6759,7 @@ class ResponsePackTests(unittest.TestCase):
 
     def test_generate_response_pack_renders_auto_run_section(self) -> None:
         result = route_request.route_request(
-            "/auto The release is already live; absorb telemetry and support signals.",
+            "/auto background The release is already live; absorb telemetry and support signals.",
             load_config(),
             repo_path=REPO_ROOT,
         )
@@ -6631,7 +6768,9 @@ class ResponsePackTests(unittest.TestCase):
 
         self.assertIn("## Auto Run", markdown)
         self.assertIn("Current bundle: post-release-close-loop", markdown)
+        self.assertIn("Run style: background / safety level: standard", markdown)
         self.assertIn("Eligible workflows:", markdown)
+        self.assertIn("State schema: references/automation-state.schema.json", markdown)
         self.assertIn("python scripts/run_auto_workflow.py --mode go --plan .skill-auto/auto-run-plan.json --pretty", markdown)
 
     def test_generate_response_pack_auto_uses_chinese_release_scaffold(self) -> None:

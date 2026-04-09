@@ -17,6 +17,7 @@
     "offline_drill_report",
     "beta_gate",
     "explanation_card",
+    "automation_state",
     "json_report",
     "markdown_report"
   ],
@@ -73,6 +74,9 @@
     "explanation_card": {
       "$ref": "#/$defs/explanation_card"
     },
+    "automation_state": {
+      "$ref": "#/$defs/automation_state"
+    },
     "json_report": {
       "type": "string"
     },
@@ -127,6 +131,43 @@
       "items": {
         "type": "string"
       }
+    },
+    "automation_state": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "state_kind",
+        "decision",
+        "state_paths"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "automation-state/v1"
+        },
+        "state_kind": {
+          "const": "release-gate-result"
+        },
+        "decision": {
+          "type": "string"
+        },
+        "state_paths": {
+          "type": "object",
+          "required": [
+            "primary",
+            "related"
+          ],
+          "properties": {
+            "primary": {
+              "type": "string"
+            },
+            "related": {
+              "$ref": "#/$defs/string_array"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
     },
     "summary": {
       "type": "object",

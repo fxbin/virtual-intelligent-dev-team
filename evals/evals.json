@@ -1331,6 +1331,45 @@
         "verify_action_json details.plan_exists is false",
         "recommended_next_step contains Run auto setup first"
       ]
+    },
+    {
+      "id": 76,
+      "categories": [
+        "auto-run",
+        "contract-output"
+      ],
+      "prompt": "/auto background safe fix this repeated regression until stable and keep benchmark evidence.",
+      "expected_output": "Auto background/safe modifiers should stay inside the explicit setup phase while publishing machine-readable run style and safety controls.",
+      "files": [],
+      "expectations": [
+        "auto_mode_enabled is true",
+        "workflow_bundle is root-cause-remediate",
+        "response_pack_json auto_run.run_style is background",
+        "response_pack_json auto_run.safety_level is safe",
+        "response_pack_json auto_run.detached_ready is true",
+        "response_pack_json auto_run.state_dir is .skill-auto/state",
+        "response_pack_json auto_run.automation_state_schema is references/automation-state.schema.json"
+      ]
+    },
+    {
+      "id": 77,
+      "runner": "verify_action",
+      "check": "auto-mode",
+      "categories": [
+        "auto-run",
+        "contract-output"
+      ],
+      "prompt": "/auto resume background safe fix this repeated regression until stable and keep benchmark evidence.",
+      "expected_output": "verify_action should expose resume/background/safe sub-protocol details for explicit auto requests.",
+      "files": [],
+      "expectations": [
+        "allowed is true",
+        "verify_action_json details.run_style is background",
+        "verify_action_json details.safety_level is safe",
+        "verify_action_json details.resume_requested is true",
+        "verify_action_json details.detached_ready is true",
+        "verify_action_json details.state_dir is .skill-auto/state"
+      ]
     }
   ]
 }

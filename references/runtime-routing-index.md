@@ -14,7 +14,7 @@
 - `workflow-sequences.md`
   - 中文流程 walkthrough
 - `auto-run-playbook.md`
-  - 显式 `/auto` 协议、setup/go 两阶段和自动白名单
+  - 显式 `/auto` 协议、setup/go 两阶段、`safe/background/resume` 子协议和自动白名单
 - `product-delivery-playbook.md`
   - 产品定义到实现切片的默认打法
 - `beta-validation-playbook.md`

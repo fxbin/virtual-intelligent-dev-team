@@ -673,6 +673,17 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                     "python scripts/evaluate_post_release_feedback.py --report .skill-post-release/current-signals.json --pretty",
                 ],
             },
+            "automation_state": {
+                "schema_version": "automation-state/v1",
+                "state_kind": "post-release-feedback-result",
+                "decision": "monitor",
+                "state_paths": {
+                    "primary": ".skill-post-release/decisions/automation-state.json",
+                    "related": [
+                        "evals/post-release/post-release-feedback-result.json",
+                    ],
+                },
+            },
             "json_report": "evals/post-release/post-release-feedback-result.json",
             "markdown_report": "evals/post-release/post-release-feedback-report.md",
         }

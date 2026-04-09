@@ -350,6 +350,7 @@ hold = 下一轮修复闭环的入口
 -> route_request 识别支持的 workflow
 -> run_auto_workflow.py --mode setup
 -> 生成 .skill-auto/auto-run-plan.json / .md
+-> 生成 .skill-auto/state/*.json
 -> 用户或上层流程显式 go
 -> run_auto_workflow.py --mode go
 -> 接到底层 iteration / release gate / post-release evaluator
@@ -364,3 +365,7 @@ hold = 下一轮修复闭环的入口
   - `post-release-close-loop`
 - 必须先 `setup`，再 `go`
 - 自动运行结果也必须带 resume anchor
+- `safe / background / resume` 是叠加子协议：
+  - `safe` 收紧 stop cap
+  - `background` 只要求 resumable state，不代表 daemon
+  - `resume` 优先复用最近一次 plan / state

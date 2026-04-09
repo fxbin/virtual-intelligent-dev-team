@@ -61,6 +61,7 @@ python scripts/verify_action.py --text "/auto <user request>" --check auto-mode 
   - 当前请求是否显式使用 `/auto`
   - 当前 workflow 是否在自动白名单里
   - 如果是 `go`，本地是否已经存在 `.skill-auto/auto-run-plan.json`
+  - `safe / background / resume` 子协议是否已经落成 machine-readable profile
 
 ```bash
 python scripts/verify_action.py --text "<user request>" --check assistant-delta-contract --pretty
@@ -211,6 +212,7 @@ python scripts/evaluate_post_release_feedback.py --report .skill-post-release/cu
 
 - `assets/auto-run-plan-template.json`
 - `references/auto-run-playbook.md`
+- `references/automation-state.schema.json`
 
 常用命令：
 
@@ -229,12 +231,18 @@ python scripts/run_auto_workflow.py --mode go --plan .skill-auto/auto-run-plan.j
   - `ship-hold-remediate`
   - `post-release-close-loop`
 - 自动模式必须走 `setup -> go`
+- 当前支持子协议：
+  - `safe`
+  - `background`
+  - `resume`
 - `setup` 会生成：
   - `.skill-auto/auto-run-plan.json`
   - `.skill-auto/auto-run-plan.md`
+  - `.skill-auto/state/*.json`
 - `go` 会写回：
   - `.skill-auto/last-run.json`
   - `.skill-auto/last-run.md`
+  - 底层 release / post-release automation state
 
 ## 五、内测验证资产
 

@@ -19,6 +19,7 @@ BASELINE_SCRIPT = SCRIPT_DIR / "register_benchmark_baseline.py"
 ITERATION_LOOP_SCRIPT = SCRIPT_DIR / "run_iteration_loop.py"
 SYNC_PATTERNS_SCRIPT = SCRIPT_DIR / "sync_distilled_patterns.py"
 RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
+AUTOMATION_STATE_SCRIPT = SCRIPT_DIR / "automation_state.py"
 EVALUATE_BETA_ROUND_SCRIPT = SCRIPT_DIR / "evaluate_beta_round.py"
 INIT_POST_RELEASE_FEEDBACK_SCRIPT = SCRIPT_DIR / "init_post_release_feedback.py"
 DEFAULT_OUTPUT_DIR = SKILL_DIR / "evals" / "release-gate"
@@ -41,6 +42,7 @@ baseline_registry = load_module("virtual_team_release_gate_baseline_registry", B
 iteration_loop = load_module("virtual_team_release_gate_iteration_loop", ITERATION_LOOP_SCRIPT)
 pattern_sync = load_module("virtual_team_release_gate_pattern_sync", SYNC_PATTERNS_SCRIPT)
 response_contract = load_module("virtual_team_release_gate_response_contract", RESPONSE_CONTRACT_SCRIPT)
+automation_state = load_module("virtual_team_release_gate_automation_state", AUTOMATION_STATE_SCRIPT)
 beta_round_evaluator = load_module(
     "virtual_team_release_gate_beta_round_evaluator",
     EVALUATE_BETA_ROUND_SCRIPT,
@@ -1663,6 +1665,11 @@ def run_release_gate(
     beta_report_dir: Path | None = None,
 ) -> dict[str, object]:
     output_dir.mkdir(parents=True, exist_ok=True)
+    resolved_iteration_workspace = iteration_workspace.resolve() if iteration_workspace else None
+    repo_root = infer_repo_root(
+        output_dir=output_dir.resolve(),
+        iteration_workspace=resolved_iteration_workspace,
+    ).resolve()
     benchmark_result = (
         load_benchmark_fixture(benchmark_fixture.resolve())
         if benchmark_fixture is not None
@@ -1694,7 +1701,7 @@ def run_release_gate(
             benchmark_markdown=benchmark_result["markdown_report"],
             beta_gate=beta_gate,
             release_label=resolved_release_label,
-            iteration_workspace=iteration_workspace.resolve() if iteration_workspace else None,
+            iteration_workspace=resolved_iteration_workspace,
         )
         if ok
         else build_hold_follow_up(
@@ -1706,7 +1713,7 @@ def run_release_gate(
             benchmark_markdown=benchmark_result["markdown_report"],
             offline_drill_report=benchmark_result.get("offline_drill_run", {}).get("markdown_report"),
             beta_gate=beta_gate,
-            iteration_workspace=iteration_workspace.resolve() if iteration_workspace else None,
+            iteration_workspace=resolved_iteration_workspace,
             auto_run_next_iteration_on_hold=auto_run_next_iteration_on_hold,
             hold_loop_max_rounds=hold_loop_max_rounds,
         )
@@ -1737,6 +1744,49 @@ def run_release_gate(
     markdown_path = output_dir / "release-gate-report.md"
     result["json_report"] = str(json_path)
     result["markdown_report"] = str(markdown_path)
+    follow_up_resume_artifacts = follow_up.get("resume_artifacts", []) if isinstance(follow_up, dict) else []
+    result["automation_state"] = automation_state.write_automation_state(
+        repo_root=repo_root,
+        source_workflow="ship-hold-remediate",
+        state_kind="release-gate-result",
+        mode="manual",
+        phase="release-gate",
+        status="completed",
+        decision=decision,
+        execution_mode="release-gate",
+        resume_anchor=str(
+            follow_up.get("resume_anchor", result["markdown_report"]) if isinstance(follow_up, dict) else result["markdown_report"]
+        ),
+        resume_artifacts=[str(item) for item in follow_up_resume_artifacts if str(item).strip()],
+        recommended_next_step=str(
+            follow_up.get("next_action", "inspect the release gate follow-up") if isinstance(follow_up, dict) else "inspect the release gate follow-up"
+        ),
+        handoff_target=str(
+            follow_up.get("next_action", "release-decision") if isinstance(follow_up, dict) else "release-decision"
+        ),
+        primary_path=str(output_dir / "automation-state.json"),
+        related_paths=[
+            str(json_path),
+            str(markdown_path),
+            str(benchmark_result["json_report"]),
+            str(benchmark_result["markdown_report"]),
+        ],
+        upstream_dependencies=[
+            str(item)
+            for item in [
+                benchmark_result.get("json_report"),
+                benchmark_result.get("markdown_report"),
+                benchmark_result.get("offline_drill_run", {}).get("markdown_report"),
+                (result.get("beta_gate") or {}).get("json_report") if isinstance(result.get("beta_gate"), dict) else None,
+            ]
+            if str(item).strip()
+        ],
+        metadata={
+            "ok": ok,
+            "auto_run_next_iteration_on_hold": auto_run_next_iteration_on_hold,
+            "hold_loop_max_rounds": hold_loop_max_rounds,
+        },
+    )
     response_contract.validate_release_gate_result(result)
     with json_path.open("w", encoding="utf-8") as file:
         json.dump(result, file, ensure_ascii=False, indent=2)

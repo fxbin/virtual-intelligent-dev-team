@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:automation-state.schema",
+  "title": "Virtual Intelligent Dev Team Automation State",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "run_id",
+    "parent_run_id",
+    "source_workflow",
+    "state_kind",
+    "mode",
+    "phase",
+    "status",
+    "decision",
+    "execution_mode",
+    "run_style",
+    "safety_level",
+    "resume_requested",
+    "detached_ready",
+    "resume_anchor",
+    "resume_artifacts",
+    "recommended_next_step",
+    "handoff_target",
+    "state_paths",
+    "upstream_dependencies",
+    "notes",
+    "metadata"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "automation-state/v1"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "parent_run_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "source_workflow": {
+      "type": "string"
+    },
+    "state_kind": {
+      "type": "string"
+    },
+    "mode": {
+      "type": "string"
+    },
+    "phase": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "decision": {
+      "type": "string"
+    },
+    "execution_mode": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "run_style": {
+      "enum": [
+        "foreground",
+        "background"
+      ]
+    },
+    "safety_level": {
+      "enum": [
+        "standard",
+        "safe"
+      ]
+    },
+    "resume_requested": {
+      "type": "boolean"
+    },
+    "detached_ready": {
+      "type": "boolean"
+    },
+    "resume_anchor": {
+      "type": "string"
+    },
+    "resume_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "recommended_next_step": {
+      "type": "string"
+    },
+    "handoff_target": {
+      "type": "string"
+    },
+    "state_paths": {
+      "type": "object",
+      "required": [
+        "primary",
+        "related"
+      ],
+      "properties": {
+        "primary": {
+          "type": "string"
+        },
+        "related": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "upstream_dependencies": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "metadata": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

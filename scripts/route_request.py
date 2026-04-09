@@ -17,7 +17,8 @@ DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent.parent / "references" / "r
 ASCII_WORD_CLASS = "a-z0-9"
 TRACK_REGULAR = "regular track"
 TRACK_FAST = "fast track"
-AUTO_TRIGGER_RE = re.compile(r"(?<!\S)/auto(?:\s+(setup|go))?(?!\S)", re.IGNORECASE)
+AUTO_TRIGGER_RE = re.compile(r"(?<!\S)/auto\b", re.IGNORECASE)
+AUTO_RESERVED_TOKENS = ("setup", "go", "safe", "background", "resume")
 AUTO_ELIGIBLE_WORKFLOWS = {
     "root-cause-remediate",
     "ship-hold-remediate",
@@ -72,27 +73,51 @@ def keyword_matches(text: str, keyword: str) -> bool:
 
 
 def strip_auto_triggers(text: str) -> str:
-    return " ".join(AUTO_TRIGGER_RE.sub(" ", text).split())
+    return str(detect_auto_mode(text).get("normalized_text", text)).strip()
 
 
 def detect_auto_mode(text: str) -> dict[str, object]:
     match = AUTO_TRIGGER_RE.search(text)
-    normalized_text = strip_auto_triggers(text)
     if match is None:
         return {
             "enabled": False,
             "trigger": "none",
             "requested_phase": "manual",
-            "normalized_text": normalized_text or text.strip(),
+            "run_style": "foreground",
+            "safety_level": "standard",
+            "resume_requested": False,
+            "detached_ready": False,
+            "modifier_tokens": [],
+            "normalized_text": text.strip(),
+            "original_text": text,
         }
-    requested_phase = str(match.group(1) or "setup").strip().lower()
-    if requested_phase not in {"setup", "go"}:
-        requested_phase = "setup"
+
+    before = text[: match.start()].strip()
+    remainder = text[match.end() :]
+    modifier_tokens: list[str] = []
+    while True:
+        token_match = re.match(r"\s*(setup|go|safe|background|resume)\b", remainder, re.IGNORECASE)
+        if token_match is None:
+            break
+        modifier_tokens.append(str(token_match.group(1)).lower())
+        remainder = remainder[token_match.end() :]
+
+    normalized_text = " ".join(part for part in [before, remainder.strip()] if part)
+    requested_phase = "go" if "go" in modifier_tokens else "setup"
+    run_style = "background" if "background" in modifier_tokens else "foreground"
+    safety_level = "safe" if "safe" in modifier_tokens else "standard"
+    resume_requested = "resume" in modifier_tokens
     return {
         "enabled": True,
         "trigger": "/auto",
         "requested_phase": requested_phase,
+        "run_style": run_style,
+        "safety_level": safety_level,
+        "resume_requested": resume_requested,
+        "detached_ready": run_style == "background",
+        "modifier_tokens": modifier_tokens,
         "normalized_text": normalized_text or text.strip(),
+        "original_text": text,
     }
 
 
@@ -1451,6 +1476,10 @@ def build_process_plan(
                 entry["auto_run"] = {
                     "enabled": bool(auto_run_profile.get("workflow_supported")),
                     "requested_phase": str(auto_run_profile.get("requested_phase", "setup")),
+                    "run_style": str(auto_run_profile.get("run_style", "foreground")),
+                    "safety_level": str(auto_run_profile.get("safety_level", "standard")),
+                    "resume_requested": bool(auto_run_profile.get("resume_requested")),
+                    "detached_ready": bool(auto_run_profile.get("detached_ready")),
                     "requires_explicit_go": bool(auto_run_profile.get("requires_explicit_go", True)),
                     "setup_command": str(auto_run_profile.get("setup_command", "")),
                     "go_command": str(auto_run_profile.get("go_command", "")),
@@ -2069,6 +2098,14 @@ def build_auto_run_profile(
     enabled = bool(auto_mode.get("enabled"))
     requested_phase = str(auto_mode.get("requested_phase", "manual")).strip() or "manual"
     normalized_text = str(auto_mode.get("normalized_text", "")).strip()
+    original_text = str(auto_mode.get("original_text", "")).strip()
+    run_style = str(auto_mode.get("run_style", "foreground")).strip() or "foreground"
+    if run_style not in {"foreground", "background"}:
+        run_style = "foreground"
+    safety_level = str(auto_mode.get("safety_level", "standard")).strip() or "standard"
+    if safety_level not in {"standard", "safe"}:
+        safety_level = "standard"
+    resume_requested = bool(auto_mode.get("resume_requested"))
     workflow_supported = workflow_bundle_name in AUTO_ELIGIBLE_WORKFLOWS
     execution_mode = "manual"
     if enabled and requested_phase == "go":
@@ -2078,7 +2115,7 @@ def build_auto_run_profile(
 
     if workflow_supported:
         setup_command = (
-            'python scripts/run_auto_workflow.py --text "<original-request-without-/auto>" '
+            f'python scripts/run_auto_workflow.py --text "{original_text or "<original-request-with-/auto-modifiers>"}" '
             "--mode setup --pretty"
         )
         go_command = (
@@ -2105,34 +2142,51 @@ def build_auto_run_profile(
     online_round_cap = int(iteration_profile.get("round_cap_online", 3)) if isinstance(
         iteration_profile, dict
     ) else 3
+    if safety_level == "safe":
+        online_round_cap = min(max(online_round_cap, 1), 1)
+    release_hold_loop_max_rounds = 1 if safety_level == "safe" else 3
+    safety_guards = [
+        "default mode stays manual unless /auto is explicit",
+        "auto mode is limited to root-cause-remediate, ship-hold-remediate, and post-release-close-loop",
+        "setup and go are separate phases; go must be explicit",
+        "do not run destructive git actions automatically",
+        "persist a resume plan before the go phase starts",
+    ]
+    if safety_level == "safe":
+        safety_guards.append("safe mode clamps automation to a single bounded pass before any further escalation")
+    if run_style == "background":
+        safety_guards.append("background mode only changes the resumable contract; it does not imply unmanaged daemon execution")
+    if resume_requested:
+        safety_guards.append("resume mode reuses the latest saved plan or state when the workflow supports it")
     return {
         "enabled": enabled,
         "trigger": str(auto_mode.get("trigger", "none")),
         "requested_phase": requested_phase,
         "execution_mode": execution_mode,
+        "run_style": run_style,
+        "safety_level": safety_level,
+        "resume_requested": resume_requested,
+        "detached_ready": run_style == "background",
         "workflow_bundle": workflow_bundle_name,
         "workflow_supported": workflow_supported,
         "eligible_workflows": sorted(AUTO_ELIGIBLE_WORKFLOWS),
+        "modifier_tokens": auto_mode.get("modifier_tokens", []),
         "text_without_trigger": normalized_text,
         "requires_explicit_go": enabled and workflow_supported,
         "eligibility_reason": eligibility_reason,
         "state_root": ".skill-auto",
+        "state_dir": ".skill-auto/state",
         "plan_json": ".skill-auto/auto-run-plan.json",
         "plan_markdown": ".skill-auto/auto-run-plan.md",
         "resume_anchor": recommended_resume_anchor,
+        "automation_state_schema": "references/automation-state.schema.json",
         "setup_command": setup_command,
         "go_command": go_command,
         "stop_caps": {
             "iteration_online_round_cap": max(online_round_cap, 1),
-            "release_hold_loop_max_rounds": 3,
+            "release_hold_loop_max_rounds": release_hold_loop_max_rounds,
         },
-        "safety_guards": [
-            "default mode stays manual unless /auto is explicit",
-            "auto mode is limited to root-cause-remediate, ship-hold-remediate, and post-release-close-loop",
-            "setup and go are separate phases; go must be explicit",
-            "do not run destructive git actions automatically",
-            "persist a resume plan before the go phase starts",
-        ],
+        "safety_guards": safety_guards,
     }
 
 

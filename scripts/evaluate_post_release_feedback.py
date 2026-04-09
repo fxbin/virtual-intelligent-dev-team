@@ -14,6 +14,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
+AUTOMATION_STATE_SCRIPT = SCRIPT_DIR / "automation_state.py"
 
 
 def load_module(name: str, path: Path):
@@ -26,6 +27,10 @@ def load_module(name: str, path: Path):
 
 
 response_contract = load_module("virtual_team_evaluate_post_release_response_contract", RESPONSE_CONTRACT_SCRIPT)
+automation_state = load_module(
+    "virtual_team_evaluate_post_release_automation_state",
+    AUTOMATION_STATE_SCRIPT,
+)
 
 
 def load_report(report_path: Path) -> dict[str, object]:
@@ -437,6 +442,41 @@ def evaluate_post_release_feedback(report_path: Path) -> dict[str, object]:
     markdown_path = output_dir / "post-release-feedback-report.md"
     result["json_report"] = str(json_path)
     result["markdown_report"] = str(markdown_path)
+    result["automation_state"] = automation_state.write_automation_state(
+        repo_root=repo_root,
+        source_workflow="post-release-close-loop",
+        state_kind="post-release-feedback-result",
+        mode="manual",
+        phase="post-release",
+        status="completed",
+        decision=decision,
+        execution_mode="post-release-feedback",
+        resume_anchor=str(repo_root / ".skill-post-release" / "triage-summary.md"),
+        resume_artifacts=[str(item) for item in follow_up.get("resume_artifacts", []) if str(item).strip()],
+        recommended_next_step=str(follow_up.get("next_action", next_action)),
+        handoff_target=str(follow_up.get("next_action", next_action)),
+        primary_path=str(output_dir / "automation-state.json"),
+        related_paths=[
+            str(json_path),
+            str(markdown_path),
+            str(resolved_report),
+        ],
+        upstream_dependencies=[
+            str(item)
+            for item in [
+                resolved_report,
+                report_context.get("release_closure_json"),
+                report_context.get("release_gate_json"),
+                report_context.get("telemetry_snapshot_json"),
+            ]
+            if str(item).strip()
+        ],
+        metadata={
+            "ok": ok,
+            "loop_state": loop_state,
+            "owner": owner,
+        },
+    )
     response_contract.validate_post_release_feedback_result(result)
     json_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
 

@@ -12,6 +12,15 @@
 - `/auto go`
   - 进入 `go` 阶段
   - 只在已存在 `.skill-auto/auto-run-plan.json` 时允许继续
+- `/auto safe`
+  - 保持两阶段协议
+  - 把 stop cap 收紧到单次安全闭环
+- `/auto background`
+  - 仍然走同步脚本
+  - 但额外写 resumable state，供外层 detached / resume 协议消费
+- `/auto resume`
+  - 优先复用最近一次 plan / state
+  - 不绕过显式 `go`
 
 ## 2. 当前白名单
 
@@ -32,7 +41,9 @@
 - 识别 workflow
 - 生成 `.skill-auto/auto-run-plan.json`
 - 生成 `.skill-auto/auto-run-plan.md`
+- 生成 `.skill-auto/state/*.json`
 - 明确 stop cap、resume anchor、go command、安全护栏
+- 明确 `run_style / safety_level / resume_requested`
 
 ### `go`
 
@@ -41,6 +52,7 @@
 - 读取 setup 生成的 plan
 - 按 workflow 分派到底层脚本
 - 输出统一结果、恢复锚点和下一步
+- 写统一 automation state
 
 ## 4. workflow 对应底层接线
 
@@ -74,6 +86,8 @@
 - 不自动执行 destructive git
 - 必须先写 plan，再进入 go
 - 结果必须带 resume anchor
+- `background` 目前只定义 resumable contract，不启动 daemon
+- `safe` 会收紧 release hold 自动 remediation 与 iteration cap
 
 ## 6. 常用命令
 
@@ -84,3 +98,9 @@ python scripts/run_auto_workflow.py --text "<original-request-without-/auto>" --
 ```bash
 python scripts/run_auto_workflow.py --mode go --plan .skill-auto/auto-run-plan.json --pretty
 ```
+
+产物补充：
+
+- `.skill-auto/state/*.json`
+- `evals/release-gate/automation-state.json`
+- `.skill-post-release/decisions/automation-state.json`

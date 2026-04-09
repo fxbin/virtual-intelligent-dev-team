@@ -15,6 +15,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 SIDECAR_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "response-pack-sidecar.schema.json"
 VERIFY_ACTION_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "verify-action-result.schema.json"
+AUTOMATION_STATE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "automation-state.schema.json"
 RELEASE_GATE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "release-gate-result.schema.json"
 BETA_ROUND_REPORT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-report.schema.json"
 BETA_ROUND_GATE_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-round-gate-result.schema.json"
@@ -80,6 +81,14 @@ def validate_verify_action_result(payload: dict[str, object]) -> None:
         payload,
         schema_path=VERIFY_ACTION_SCHEMA_JSON_PATH,
         label="verify_action result",
+    )
+
+
+def validate_automation_state(payload: dict[str, object]) -> None:
+    validate_payload_against_schema(
+        payload,
+        schema_path=AUTOMATION_STATE_SCHEMA_JSON_PATH,
+        label="automation state",
     )
 
 

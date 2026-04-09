@@ -501,6 +501,10 @@
         "trigger",
         "requested_phase",
         "execution_mode",
+        "run_style",
+        "safety_level",
+        "resume_requested",
+        "detached_ready",
         "workflow_bundle",
         "workflow_supported",
         "requires_explicit_go",
@@ -509,8 +513,10 @@
         "go_command",
         "resume_anchor",
         "state_root",
+        "state_dir",
         "plan_json",
         "plan_markdown",
+        "automation_state_schema",
         "safety_guards",
         "eligibility_reason"
       ],
@@ -532,6 +538,24 @@
             "auto-setup",
             "auto-go"
           ]
+        },
+        "run_style": {
+          "enum": [
+            "foreground",
+            "background"
+          ]
+        },
+        "safety_level": {
+          "enum": [
+            "standard",
+            "safe"
+          ]
+        },
+        "resume_requested": {
+          "type": "boolean"
+        },
+        "detached_ready": {
+          "type": "boolean"
         },
         "workflow_bundle": {
           "type": "string"
@@ -557,10 +581,16 @@
         "state_root": {
           "type": "string"
         },
+        "state_dir": {
+          "type": "string"
+        },
         "plan_json": {
           "type": "string"
         },
         "plan_markdown": {
+          "type": "string"
+        },
+        "automation_state_schema": {
           "type": "string"
         },
         "safety_guards": {

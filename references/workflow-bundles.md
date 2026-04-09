@@ -214,3 +214,4 @@ the current step.
 2. `/auto go` 才允许进入 `go`
 3. 必须先落 `.skill-auto/auto-run-plan.json`
 4. 默认仍是 manual mode
+5. `safe / background / resume` 只作为子协议叠加，不改变 bundle 选择本身

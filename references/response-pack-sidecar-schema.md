@@ -156,6 +156,10 @@
 - `trigger`
 - `requested_phase`
 - `execution_mode`
+- `run_style`
+- `safety_level`
+- `resume_requested`
+- `detached_ready`
 - `workflow_bundle`
 - `workflow_supported`
 - `requires_explicit_go`
@@ -164,8 +168,10 @@
 - `go_command`
 - `resume_anchor`
 - `state_root`
+- `state_dir`
 - `plan_json`
 - `plan_markdown`
+- `automation_state_schema`
 - `safety_guards`
 - `eligibility_reason`
 
