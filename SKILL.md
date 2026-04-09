@@ -84,6 +84,8 @@ One more runtime rule:
   [references/runtime-routing-index.md](references/runtime-routing-index.md)
 - 脚本、模板、验证与命令入口：
   [references/tooling-command-index.md](references/tooling-command-index.md)
+- 面向维护者的项目说明：
+  [README.md](README.md) 和 [docs/README.md](docs/README.md)
 
 ## When to use
 
