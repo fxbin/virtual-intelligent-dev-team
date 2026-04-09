@@ -809,6 +809,33 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual("go", result["auto_run_profile"]["requested_phase"])
         self.assertTrue(result["auto_run_profile"]["resume_requested"])
 
+    def test_auto_resume_request_prefers_latest_automation_state_when_available(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            auto_workflow.build_setup_plan(
+                text="/auto background safe fix this repeated regression until stable and keep benchmark evidence",
+                repo_root=root,
+                config=load_config(),
+            )
+
+            result = route_request.route_request(
+                "/auto resume background safe fix this repeated regression until stable and keep benchmark evidence",
+                load_config(),
+                repo_path=root,
+            )
+
+            self.assertTrue(result["auto_run_profile"]["resume_requested"])
+            self.assertEqual("state-first", result["auto_run_profile"]["resume_strategy"])
+            self.assertTrue(result["auto_run_profile"]["state_resume_available"])
+            self.assertEqual(
+                "resume-explicit-go",
+                result["auto_run_profile"]["state_resume_decision_id"],
+            )
+            self.assertIn(
+                "resume_from_automation_state.py",
+                result["auto_run_profile"]["state_resume_dry_run_command"],
+            )
+
     def test_auto_release_go_request_requires_saved_plan(self) -> None:
         result = route_request.route_request(
             "/auto go Is this version ready to ship? Run the formal release gate.",
@@ -6298,6 +6325,12 @@ class AutoWorkflowTests(unittest.TestCase):
             self.assertEqual("background", resumed["run_style"])
             self.assertEqual("safe", resumed["safety_level"])
             self.assertTrue(resumed["resume_requested"])
+            self.assertEqual("state-first", resumed["resume_context"]["resume_strategy"])
+            self.assertTrue(resumed["resume_context"]["state_resume_available"])
+            self.assertEqual(
+                "resume-explicit-go",
+                resumed["resume_context"]["state_resume_decision_id"],
+            )
 
     def test_auto_workflow_go_runs_root_cause_bundle(self) -> None:
         with make_tempdir() as tmp:
@@ -6654,6 +6687,8 @@ class AutomationStateResumeTests(unittest.TestCase):
             self.assertFalse(result["dry_run"])
             self.assertTrue(result["execution"]["executed"])
             self.assertEqual(0, result["execution"]["returncode"])
+            self.assertTrue((root / result["resume_execution_ledger"]["json"]).exists())
+            self.assertTrue((root / result["resume_execution_ledger"]["markdown"]).exists())
             run_mock.assert_called_once()
 
     def test_resume_from_automation_state_blocks_non_allowlisted_command(self) -> None:
@@ -6826,6 +6861,31 @@ class ResponsePackTests(unittest.TestCase):
         self.assertEqual("references/automation-state.schema.json", payload["auto_run"]["automation_state_schema"])
         self.assertIn("python scripts/run_auto_workflow.py", payload["auto_run"]["setup_command"])
 
+    def test_generate_response_pack_payload_includes_automation_resume_section(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            auto_workflow.build_setup_plan(
+                text="/auto background safe fix this repeated regression until stable and keep benchmark evidence",
+                repo_root=root,
+                config=load_config(),
+            )
+            result = route_request.route_request(
+                "/auto resume background safe fix this repeated regression until stable and keep benchmark evidence",
+                load_config(),
+                repo_path=root,
+            )
+
+            payload = response_pack.build_response_pack_payload(result)
+
+            self.assertIn("automation_resume", payload)
+            self.assertTrue(payload["automation_resume"]["enabled"])
+            self.assertTrue(payload["automation_resume"]["state_resume_available"])
+            self.assertEqual("resume-explicit-go", payload["automation_resume"]["decision_id"])
+            self.assertIn(
+                "resume_from_automation_state.py",
+                payload["automation_resume"]["dry_run_command"],
+            )
+
     def test_generate_response_pack_cli_writes_json_sidecar_by_default(self) -> None:
         with make_tempdir() as tmp:
             output = Path(tmp) / "response-pack.md"
@@ -6924,6 +6984,26 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("python scripts/summarize_beta_simulation.py", markdown)
         self.assertIn("assets/beta-round-report-template.json", markdown)
         self.assertIn("python scripts/evaluate_beta_round.py --report .skill-beta/reports/<round-id>.json --pretty", markdown)
+
+    def test_generate_response_pack_renders_automation_resume_section(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            auto_workflow.build_setup_plan(
+                text="/auto background safe fix this repeated regression until stable and keep benchmark evidence",
+                repo_root=root,
+                config=load_config(),
+            )
+            result = route_request.route_request(
+                "/auto resume background safe fix this repeated regression until stable and keep benchmark evidence",
+                load_config(),
+                repo_path=root,
+            )
+
+            markdown = response_pack.build_response_pack(result)
+
+            self.assertIn("## Automation Resume", markdown)
+            self.assertIn("resume-explicit-go", markdown)
+            self.assertIn("resume_from_automation_state.py", markdown)
 
     def test_generate_response_pack_auto_uses_chinese_scaffold(self) -> None:
         result = route_request.route_request(

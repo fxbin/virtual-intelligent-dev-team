@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import importlib.util
 import json
 from pathlib import Path
@@ -14,6 +15,7 @@ import subprocess
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 INSPECT_AUTOMATION_STATE_SCRIPT = SCRIPT_DIR / "inspect_automation_state.py"
+AUTOMATION_STATE_SCRIPT = SCRIPT_DIR / "automation_state.py"
 ALLOWED_SCRIPT_PATHS = {
     "scripts/run_auto_workflow.py",
     "scripts/run_release_gate.py",
@@ -37,6 +39,10 @@ def load_module(name: str, path: Path):
 automation_state_inspector = load_module(
     "virtual_team_resume_from_automation_state_inspector",
     INSPECT_AUTOMATION_STATE_SCRIPT,
+)
+automation_state = load_module(
+    "virtual_team_resume_from_automation_state_helper",
+    AUTOMATION_STATE_SCRIPT,
 )
 
 
@@ -68,6 +74,76 @@ def normalize_command_tokens(tokens: list[str]) -> list[str]:
     return normalized
 
 
+def now_iso() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def build_ledger_paths(repo_root: Path, resume_execution_id: str) -> tuple[Path, Path]:
+    ledger_dir = repo_root / ".skill-auto" / "resume-executions"
+    return (
+        ledger_dir / f"{resume_execution_id}.json",
+        ledger_dir / f"{resume_execution_id}.md",
+    )
+
+
+def write_execution_ledger(
+    *,
+    repo_root: Path,
+    resume_execution_id: str,
+    payload: dict[str, object],
+) -> tuple[str, str]:
+    ledger_json, ledger_markdown = build_ledger_paths(repo_root, resume_execution_id)
+    execution = payload.get("execution", {})
+    if not isinstance(execution, dict):
+        execution = {}
+    decision_card = payload.get("decision_card", {})
+    if not isinstance(decision_card, dict):
+        decision_card = {}
+    ledger_payload = {
+        "schema_version": "automation-resume-execution/v1",
+        "generated_at": now_iso(),
+        "resume_execution_id": resume_execution_id,
+        "selected_state_path": payload.get("selected_state_path"),
+        "selection_mode": payload.get("selection_mode"),
+        "decision_card": decision_card,
+        "recommended_command": payload.get("recommended_command"),
+        "command_allowed": payload.get("command_allowed"),
+        "allowed_script": payload.get("allowed_script"),
+        "execution": execution,
+    }
+    ledger_json.parent.mkdir(parents=True, exist_ok=True)
+    ledger_json.write_text(json.dumps(ledger_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    markdown_lines = [
+        "# Automation Resume Execution",
+        "",
+        f"- Resume execution id: `{resume_execution_id}`",
+        f"- Generated at: `{ledger_payload['generated_at']}`",
+        f"- Selected state: `{payload.get('selected_state_path', '')}`",
+        f"- Decision: `{decision_card.get('decision_id', '')}`",
+        f"- Recommended command: `{payload.get('recommended_command', '')}`",
+        f"- Allowed script: `{payload.get('allowed_script', '')}`",
+        f"- Return code: `{execution.get('returncode')}`",
+        "",
+        "## Stdout",
+        "",
+        "```text",
+        str(execution.get("stdout", "")).rstrip(),
+        "```",
+        "",
+        "## Stderr",
+        "",
+        "```text",
+        str(execution.get("stderr", "")).rstrip(),
+        "```",
+        "",
+    ]
+    ledger_markdown.write_text("\n".join(markdown_lines), encoding="utf-8")
+    return (
+        automation_state.relative_path(ledger_json, repo_root),
+        automation_state.relative_path(ledger_markdown, repo_root),
+    )
+
+
 def build_resume_payload(
     *,
     repo_root: Path,
@@ -76,6 +152,8 @@ def build_resume_payload(
     state_path: Path | None = None,
     execute: bool = False,
 ) -> dict[str, object]:
+    resume_execution_id = automation_state.generate_run_id("resume-exec")
+    planned_ledger_json, planned_ledger_markdown = build_ledger_paths(repo_root, resume_execution_id)
     inspection = automation_state_inspector.inspect_automation_state(
         repo_root=repo_root,
         workflow=workflow,
@@ -101,6 +179,11 @@ def build_resume_payload(
         "command_allowed": command_allowed,
         "allowed_script": allowed_script,
         "allowed_command_prefixes": allowed_command_prefixes(),
+        "resume_execution_id": resume_execution_id,
+        "resume_execution_ledger": {
+            "json": automation_state.relative_path(planned_ledger_json, repo_root),
+            "markdown": automation_state.relative_path(planned_ledger_markdown, repo_root),
+        },
         "execution": {
             "executed": False,
             "returncode": None,
@@ -135,6 +218,15 @@ def build_resume_payload(
         "returncode": proc.returncode,
         "stdout": proc.stdout,
         "stderr": proc.stderr,
+    }
+    ledger_json, ledger_markdown = write_execution_ledger(
+        repo_root=repo_root,
+        resume_execution_id=resume_execution_id,
+        payload=payload,
+    )
+    payload["resume_execution_ledger"] = {
+        "json": ledger_json,
+        "markdown": ledger_markdown,
     }
     if proc.returncode != 0:
         payload["error"] = "resume command exited with a non-zero status"

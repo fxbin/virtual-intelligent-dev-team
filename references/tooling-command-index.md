@@ -273,6 +273,9 @@ python scripts/run_auto_workflow.py --mode go --plan .skill-auto/auto-run-plan.j
   - 校验推荐命令是否在白名单里
   - 告诉你如果显式加 `--execute` 会跑什么
 - 只有显式 `--execute` 时才会真正执行恢复命令
+- 执行后会额外沉淀：
+  - `.skill-auto/resume-executions/<resume-exec-id>.json`
+  - `.skill-auto/resume-executions/<resume-exec-id>.md`
 - 当前 allowlist 只开放：
   - `run_auto_workflow.py`
   - `run_release_gate.py`
@@ -280,7 +283,11 @@ python scripts/run_auto_workflow.py --mode go --plan .skill-auto/auto-run-plan.j
   - `init_technical_governance.py`
   - `init_product_delivery.py`
   - `init_iteration_round.py`
-  - `run_iteration_loop.py`
+- `run_iteration_loop.py`
+
+- `generate_response_pack.py` 在显式 `/auto resume` 请求上还会额外输出：
+  - `automation_resume`
+  - 包含当前命中的 state、决策卡、dry-run 命令、execute 命令、playbook 和阻塞条件
   - 可恢复锚点
   - 所有已发现 state 的摘要
 

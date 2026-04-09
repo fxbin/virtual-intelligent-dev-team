@@ -31,6 +31,7 @@
 - 可选：`planning_pack`
 - 可选：`optimization_loop`
 - 可选：`auto_run`
+- 可选：`automation_resume`
 
 ## `team_dispatch`
 
@@ -174,6 +175,25 @@
 - `automation_state_schema`
 - `safety_guards`
 - `eligibility_reason`
+
+`automation_resume`:
+
+- `enabled`
+- `resume_strategy`
+- `state_resume_available`
+- `selected_state_path`
+- `selection_mode`
+- `decision_id`
+- `decision_label`
+- `decision_reason`
+- `recommended_command`
+- `resume_anchor`
+- `playbooks`
+- `blocking_conditions`
+- `command_allowed`
+- `dry_run_command`
+- `execute_command`
+- `error`
 
 ## 兼容性规则
 

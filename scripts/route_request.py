@@ -7,13 +7,16 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timedelta
+import importlib.util
 import json
 import re
 import subprocess
 from pathlib import Path
 
 
-DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent.parent / "references" / "routing-rules.json"
+SCRIPT_DIR = Path(__file__).resolve().parent
+DEFAULT_CONFIG_PATH = SCRIPT_DIR.parent / "references" / "routing-rules.json"
+RESUME_FROM_AUTOMATION_STATE_SCRIPT = SCRIPT_DIR / "resume_from_automation_state.py"
 ASCII_WORD_CLASS = "a-z0-9"
 TRACK_REGULAR = "regular track"
 TRACK_FAST = "fast track"
@@ -24,6 +27,21 @@ AUTO_ELIGIBLE_WORKFLOWS = {
     "ship-hold-remediate",
     "post-release-close-loop",
 }
+
+
+def load_module(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Unable to load module from {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+automation_state_resumer = load_module(
+    "virtual_team_route_request_resume_from_automation_state",
+    RESUME_FROM_AUTOMATION_STATE_SCRIPT,
+)
 
 
 def load_config(config_path: Path) -> dict[str, object]:
@@ -2094,6 +2112,7 @@ def build_auto_run_profile(
     workflow_bundle_name: str,
     progress_anchor: object,
     iteration_profile: dict[str, object],
+    repo_root: Path,
 ) -> dict[str, object]:
     enabled = bool(auto_mode.get("enabled"))
     requested_phase = str(auto_mode.get("requested_phase", "manual")).strip() or "manual"
@@ -2139,6 +2158,72 @@ def build_auto_run_profile(
         recommended_resume_anchor = str(progress_anchor or "")
         eligibility_reason = "Auto mode is not requested."
 
+    state_resume_context = {
+        "resume_strategy": "plan-reuse",
+        "state_resume_available": False,
+        "state_resume_selection_mode": "",
+        "state_resume_state_path": "",
+        "state_resume_decision_id": "",
+        "state_resume_decision_label": "",
+        "state_resume_decision_reason": "",
+        "state_resume_command": "",
+        "state_resume_anchor": "",
+        "state_resume_playbooks": [],
+        "state_resume_blocking_conditions": [],
+        "state_resume_command_allowed": False,
+        "state_resume_dry_run_command": "",
+        "state_resume_execute_command": "",
+        "state_resume_error": "",
+    }
+    if resume_requested and workflow_supported:
+        dry_run_command = (
+            f"python scripts/resume_from_automation_state.py --repo . --workflow {workflow_bundle_name} --pretty"
+        )
+        execute_command = (
+            f"python scripts/resume_from_automation_state.py --repo . --workflow {workflow_bundle_name} --execute --pretty"
+        )
+        state_resume_context["state_resume_dry_run_command"] = dry_run_command
+        state_resume_context["state_resume_execute_command"] = execute_command
+        try:
+            resume_probe = automation_state_resumer.build_resume_payload(
+                repo_root=repo_root,
+                workflow=workflow_bundle_name,
+                execute=False,
+            )
+        except Exception as exc:
+            state_resume_context["state_resume_error"] = str(exc)
+        else:
+            decision_card = resume_probe.get("decision_card", {})
+            if not isinstance(decision_card, dict):
+                decision_card = {}
+            state_resume_context.update(
+                {
+                    "resume_strategy": "state-first" if bool(resume_probe.get("ok")) else "plan-reuse",
+                    "state_resume_available": bool(resume_probe.get("ok")),
+                    "state_resume_selection_mode": str(resume_probe.get("selection_mode", "")),
+                    "state_resume_state_path": str(resume_probe.get("selected_state_path", "")),
+                    "state_resume_decision_id": str(decision_card.get("decision_id", "")),
+                    "state_resume_decision_label": str(decision_card.get("decision_label", "")),
+                    "state_resume_decision_reason": str(decision_card.get("decision_reason", "")),
+                    "state_resume_command": str(resume_probe.get("recommended_command", "")),
+                    "state_resume_anchor": str(decision_card.get("resume_anchor", "")),
+                    "state_resume_playbooks": [
+                        str(item) for item in decision_card.get("playbooks", []) if str(item).strip()
+                    ],
+                    "state_resume_blocking_conditions": [
+                        str(item)
+                        for item in decision_card.get("blocking_conditions", [])
+                        if str(item).strip()
+                    ],
+                    "state_resume_command_allowed": bool(resume_probe.get("command_allowed")),
+                    "state_resume_error": str(resume_probe.get("error", "")),
+                }
+            )
+            if bool(resume_probe.get("ok")):
+                eligibility_reason = (
+                    "Resume mode found a latest automation-state decision, so the workflow can recover from state before reusing the saved plan."
+                )
+
     online_round_cap = int(iteration_profile.get("round_cap_online", 3)) if isinstance(
         iteration_profile, dict
     ) else 3
@@ -2158,6 +2243,8 @@ def build_auto_run_profile(
         safety_guards.append("background mode only changes the resumable contract; it does not imply unmanaged daemon execution")
     if resume_requested:
         safety_guards.append("resume mode reuses the latest saved plan or state when the workflow supports it")
+        if bool(state_resume_context.get("state_resume_available")):
+            safety_guards.append("resume mode prefers the latest automation-state decision before falling back to plain plan reuse")
     return {
         "enabled": enabled,
         "trigger": str(auto_mode.get("trigger", "none")),
@@ -2187,6 +2274,7 @@ def build_auto_run_profile(
             "release_hold_loop_max_rounds": release_hold_loop_max_rounds,
         },
         "safety_guards": safety_guards,
+        **state_resume_context,
     }
 
 
@@ -2389,6 +2477,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         workflow_bundle_name=str(workflow_bundle.get("name", "direct-execution")),
         progress_anchor=workflow_bundle.get("progress_anchor_recommended"),
         iteration_profile=iteration_profile,
+        repo_root=repo_path,
     )
     process_plan = build_process_plan(
         needs_pre_development_planning=needs_pre_development_planning,
@@ -2465,6 +2554,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "assistant_delta_contract": assistant_delta_contract,
         "scores": scores,
         "reason": reason,
+        "repo_root_hint": str(repo_path),
     }
 
 

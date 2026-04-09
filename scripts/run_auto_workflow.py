@@ -91,6 +91,9 @@ def relative_path(path: Path, root: Path) -> str:
 
 
 def build_setup_markdown(plan: dict[str, object]) -> str:
+    resume_context = plan.get("resume_context", {})
+    if not isinstance(resume_context, dict):
+        resume_context = {}
     return "\n".join(
         [
             "# Auto Run Plan",
@@ -111,6 +114,15 @@ def build_setup_markdown(plan: dict[str, object]) -> str:
             "## Request",
             "",
             plan["request_text"],
+            "",
+            "## Resume Context",
+            "",
+            f"- Resume strategy: `{resume_context.get('resume_strategy', 'plan-reuse')}`",
+            f"- State resume available: `{resume_context.get('state_resume_available', False)}`",
+            f"- Selected state: `{resume_context.get('state_resume_state_path', '')}`",
+            f"- Resume decision: `{resume_context.get('state_resume_decision_id', '')}`",
+            f"- State resume command: `{resume_context.get('state_resume_command', '')}`",
+            f"- State resume anchor: `{resume_context.get('state_resume_anchor', '')}`",
             "",
             "## Setup Actions",
             "",
@@ -324,6 +336,29 @@ def build_setup_plan(
                 "resume_artifacts": route_result.get("resume_artifacts", []),
                 "iteration_profile": route_result.get("iteration_profile", {}),
             },
+            "resume_context": {
+                "resume_strategy": str(auto_profile.get("resume_strategy", "plan-reuse")),
+                "state_resume_available": bool(auto_profile.get("state_resume_available")),
+                "state_resume_selection_mode": str(auto_profile.get("state_resume_selection_mode", "")),
+                "state_resume_state_path": str(auto_profile.get("state_resume_state_path", "")),
+                "state_resume_decision_id": str(auto_profile.get("state_resume_decision_id", "")),
+                "state_resume_decision_label": str(auto_profile.get("state_resume_decision_label", "")),
+                "state_resume_decision_reason": str(auto_profile.get("state_resume_decision_reason", "")),
+                "state_resume_command": str(auto_profile.get("state_resume_command", "")),
+                "state_resume_anchor": str(auto_profile.get("state_resume_anchor", "")),
+                "state_resume_command_allowed": bool(auto_profile.get("state_resume_command_allowed")),
+                "state_resume_dry_run_command": str(auto_profile.get("state_resume_dry_run_command", "")),
+                "state_resume_execute_command": str(auto_profile.get("state_resume_execute_command", "")),
+                "state_resume_playbooks": [
+                    str(item) for item in auto_profile.get("state_resume_playbooks", []) if str(item).strip()
+                ],
+                "state_resume_blocking_conditions": [
+                    str(item)
+                    for item in auto_profile.get("state_resume_blocking_conditions", [])
+                    if str(item).strip()
+                ],
+                "state_resume_error": str(auto_profile.get("state_resume_error", "")),
+            },
             "workflow_execution": {
                 "setup_actions": workflow_setup_actions(str(route_result.get("workflow_bundle", ""))),
                 "go_actions": workflow_go_actions(str(route_result.get("workflow_bundle", ""))),
@@ -361,6 +396,12 @@ def build_setup_plan(
         related_paths=[
             relative_path(plan_json_path, repo_root),
             relative_path(plan_markdown_path, repo_root),
+        ]
+        + [
+            str(payload.get("resume_context", {}).get("state_resume_state_path", "")).strip()
+        ]
+        + [
+            str(payload.get("resume_context", {}).get("state_resume_anchor", "")).strip()
         ],
         upstream_dependencies=[
             str(existing_plan.get("automation_state_path", "")).strip()
@@ -369,6 +410,11 @@ def build_setup_plan(
         ],
         notes=[
             "setup persists the explicit plan and requires a separate go command before execution starts",
+            "resume mode captured the latest automation-state decision for state-first recovery"
+            if bool(payload.get("resume_context", {}).get("state_resume_available"))
+            else "resume mode falls back to saved plan reuse when no compatible automation-state decision exists"
+            if bool(payload.get("resume_requested"))
+            else "",
         ],
         metadata={
             "lead_agent": route_result.get("lead_agent"),

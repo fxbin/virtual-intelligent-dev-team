@@ -19,7 +19,7 @@
   - 仍然走同步脚本
   - 但额外写 resumable state，供外层 detached / resume 协议消费
 - `/auto resume`
-  - 优先复用最近一次 plan / state
+  - 优先吃最近一次 automation state 决策，再回退到最近一次 plan
   - 不绕过显式 `go`
 
 ## 2. 当前白名单
@@ -88,6 +88,7 @@
 - 结果必须带 resume anchor
 - `background` 目前只定义 resumable contract，不启动 daemon
 - `safe` 会收紧 release hold 自动 remediation 与 iteration cap
+- `resume` 会优先暴露 state-driven decision card、恢复命令和 playbook
 
 ## 6. 常用命令
 
@@ -127,4 +128,5 @@ python scripts/resume_from_automation_state.py --repo . --execute --pretty
 - 默认仍然先 dry-run
 - 只有显式 `--execute` 才会执行恢复命令
 - 执行前会检查推荐命令是否命中受控 allowlist
+- 执行结果会写入 `.skill-auto/resume-executions/`
 - 这个入口不会绕过 `/auto` 的 `setup -> go` 两阶段

@@ -13,6 +13,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 ROUTE_SCRIPT = SCRIPT_DIR / "route_request.py"
 RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
+RESUME_FROM_AUTOMATION_STATE_SCRIPT = SCRIPT_DIR / "resume_from_automation_state.py"
 DEFAULT_CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 
 
@@ -27,6 +28,10 @@ def load_module(name: str, path: Path):
 
 route_request = load_module("virtual_team_generate_response_pack_route_request", ROUTE_SCRIPT)
 response_contract = load_module("virtual_team_generate_response_pack_response_contract", RESPONSE_CONTRACT_SCRIPT)
+automation_state_resumer = load_module(
+    "virtual_team_generate_response_pack_resume_from_automation_state",
+    RESUME_FROM_AUTOMATION_STATE_SCRIPT,
+)
 
 
 def _bullet_list(items: list[str], empty_text: str) -> str:
@@ -72,6 +77,92 @@ def format_missing(value: object, language: str) -> str:
     if text:
         return text
     return "无" if language == "zh" else "n/a"
+
+
+def build_automation_resume_block(
+    *,
+    result: dict[str, object],
+    auto_run_profile: dict[str, object],
+    language: str,
+) -> dict[str, object] | None:
+    if not bool(auto_run_profile.get("enabled")) or not bool(auto_run_profile.get("resume_requested")):
+        return None
+    workflow = str(auto_run_profile.get("workflow_bundle", "")).strip()
+    dry_run_command = str(auto_run_profile.get("state_resume_dry_run_command", "")).strip()
+    execute_command = str(auto_run_profile.get("state_resume_execute_command", "")).strip()
+    if dry_run_command == "" and workflow:
+        dry_run_command = (
+            f"python scripts/resume_from_automation_state.py --repo . --workflow {workflow} --pretty"
+        )
+    if execute_command == "" and workflow:
+        execute_command = (
+            f"python scripts/resume_from_automation_state.py --repo . --workflow {workflow} --execute --pretty"
+        )
+    block = {
+        "enabled": True,
+        "resume_strategy": str(auto_run_profile.get("resume_strategy", "plan-reuse")),
+        "state_resume_available": bool(auto_run_profile.get("state_resume_available")),
+        "selected_state_path": format_missing(auto_run_profile.get("state_resume_state_path", ""), language),
+        "selection_mode": format_missing(auto_run_profile.get("state_resume_selection_mode", ""), language),
+        "decision_id": format_missing(auto_run_profile.get("state_resume_decision_id", ""), language),
+        "decision_label": format_missing(auto_run_profile.get("state_resume_decision_label", ""), language),
+        "decision_reason": format_missing(auto_run_profile.get("state_resume_decision_reason", ""), language),
+        "recommended_command": format_missing(auto_run_profile.get("state_resume_command", ""), language),
+        "resume_anchor": format_missing(auto_run_profile.get("state_resume_anchor", ""), language),
+        "playbooks": [
+            str(item) for item in auto_run_profile.get("state_resume_playbooks", []) if str(item).strip()
+        ],
+        "blocking_conditions": [
+            str(item)
+            for item in auto_run_profile.get("state_resume_blocking_conditions", [])
+            if str(item).strip()
+        ],
+        "command_allowed": bool(auto_run_profile.get("state_resume_command_allowed")),
+        "dry_run_command": format_missing(dry_run_command, language),
+        "execute_command": format_missing(execute_command, language),
+        "error": format_missing(auto_run_profile.get("state_resume_error", ""), language),
+    }
+    if not bool(auto_run_profile.get("state_resume_available")):
+        repo_root_hint = str(result.get("repo_root_hint", "")).strip()
+        if repo_root_hint:
+            try:
+                probe = automation_state_resumer.build_resume_payload(
+                    repo_root=Path(repo_root_hint).resolve(),
+                    workflow=workflow or None,
+                    execute=False,
+                )
+            except Exception as exc:
+                block["error"] = str(exc)
+            else:
+                decision_card = probe.get("decision_card", {})
+                if not isinstance(decision_card, dict):
+                    decision_card = {}
+                block.update(
+                    {
+                        "resume_strategy": str(
+                            decision_card.get("resume_strategy", block["resume_strategy"])
+                        ),
+                        "state_resume_available": bool(probe.get("ok")),
+                        "selected_state_path": format_missing(probe.get("selected_state_path", ""), language),
+                        "selection_mode": format_missing(probe.get("selection_mode", ""), language),
+                        "decision_id": format_missing(decision_card.get("decision_id", ""), language),
+                        "decision_label": format_missing(decision_card.get("decision_label", ""), language),
+                        "decision_reason": format_missing(decision_card.get("decision_reason", ""), language),
+                        "recommended_command": format_missing(probe.get("recommended_command", ""), language),
+                        "resume_anchor": format_missing(decision_card.get("resume_anchor", ""), language),
+                        "playbooks": [
+                            str(item) for item in decision_card.get("playbooks", []) if str(item).strip()
+                        ],
+                        "blocking_conditions": [
+                            str(item)
+                            for item in decision_card.get("blocking_conditions", [])
+                            if str(item).strip()
+                        ],
+                        "command_allowed": bool(probe.get("command_allowed")),
+                        "error": format_missing(probe.get("error", ""), language),
+                    }
+                )
+    return block
 
 
 def localize_workflow_reason(bundle: str, reason: str, language: str) -> str:
@@ -231,6 +322,11 @@ def build_response_pack_payload(
     needs_iteration = bool(result.get("needs_iteration"))
     selected_template = infer_template(result) if template == "auto" else template
     selected_language = infer_language(result) if language == "auto" else language
+    automation_resume = build_automation_resume_block(
+        result=result,
+        auto_run_profile=auto_run_profile,
+        language=selected_language,
+    )
     localized_workflow_reason = localize_workflow_reason(
         workflow_bundle,
         workflow_reason,
@@ -549,6 +645,8 @@ def build_response_pack_payload(
             ],
             "eligibility_reason": format_missing(auto_run_profile.get("eligibility_reason", ""), selected_language),
         }
+    if isinstance(automation_resume, dict):
+        payload["automation_resume"] = automation_resume
     return payload
 
 
@@ -571,6 +669,7 @@ def build_response_pack(
     bundle_bootstrap = payload["bundle_bootstrap"] if isinstance(payload.get("bundle_bootstrap"), dict) else None
     beta_program = payload["beta_program"] if isinstance(payload.get("beta_program"), dict) else None
     auto_run = payload["auto_run"] if isinstance(payload.get("auto_run"), dict) else None
+    automation_resume = payload["automation_resume"] if isinstance(payload.get("automation_resume"), dict) else None
     none_text = "无" if selected_language == "zh" else "none"
 
     if selected_language == "zh":
@@ -951,6 +1050,64 @@ def build_response_pack(
                     "- Safety guards:",
                     _bullet_list(
                         [str(item) for item in auto_run.get("safety_guards", [])],
+                        none_text,
+                    ),
+                    "",
+                ]
+            )
+
+    if isinstance(automation_resume, dict):
+        if selected_language == "zh":
+            lines.extend(
+                [
+                    "## 自动恢复",
+                    f"- 恢复策略：{automation_resume.get('resume_strategy', 'plan-reuse')}",
+                    f"- 是否找到状态恢复决策：{format_bool(automation_resume.get('state_resume_available'), selected_language)}",
+                    f"- 命中的状态文件：{automation_resume.get('selected_state_path', none_text)}",
+                    f"- 决策：{automation_resume.get('decision_id', none_text)} / {automation_resume.get('decision_label', none_text)}",
+                    f"- 决策原因：{automation_resume.get('decision_reason', none_text)}",
+                    f"- 推荐恢复命令：{automation_resume.get('recommended_command', none_text)}",
+                    f"- 恢复锚点：{automation_resume.get('resume_anchor', none_text)}",
+                    f"- 推荐 dry-run 命令：{automation_resume.get('dry_run_command', none_text)}",
+                    f"- 推荐 execute 命令：{automation_resume.get('execute_command', none_text)}",
+                    f"- 命令是否命中 allowlist：{format_bool(automation_resume.get('command_allowed'), selected_language)}",
+                    f"- 恢复错误：{automation_resume.get('error', none_text)}",
+                    "- 相关 playbook：",
+                    _bullet_list(
+                        [str(item) for item in automation_resume.get("playbooks", [])],
+                        none_text,
+                    ),
+                    "- 阻塞条件：",
+                    _bullet_list(
+                        [str(item) for item in automation_resume.get("blocking_conditions", [])],
+                        none_text,
+                    ),
+                    "",
+                ]
+            )
+        else:
+            lines.extend(
+                [
+                    "## Automation Resume",
+                    f"- Resume strategy: {automation_resume.get('resume_strategy', 'plan-reuse')}",
+                    f"- State decision available: {format_bool(automation_resume.get('state_resume_available'), selected_language)}",
+                    f"- Selected state: {automation_resume.get('selected_state_path', none_text)}",
+                    f"- Decision: {automation_resume.get('decision_id', none_text)} / {automation_resume.get('decision_label', none_text)}",
+                    f"- Decision reason: {automation_resume.get('decision_reason', none_text)}",
+                    f"- Recommended command: {automation_resume.get('recommended_command', none_text)}",
+                    f"- Resume anchor: {automation_resume.get('resume_anchor', none_text)}",
+                    f"- Dry-run command: {automation_resume.get('dry_run_command', none_text)}",
+                    f"- Execute command: {automation_resume.get('execute_command', none_text)}",
+                    f"- Command is allowlisted: {format_bool(automation_resume.get('command_allowed'), selected_language)}",
+                    f"- Resume error: {automation_resume.get('error', none_text)}",
+                    "- Playbooks:",
+                    _bullet_list(
+                        [str(item) for item in automation_resume.get("playbooks", [])],
+                        none_text,
+                    ),
+                    "- Blocking conditions:",
+                    _bullet_list(
+                        [str(item) for item in automation_resume.get("blocking_conditions", [])],
                         none_text,
                     ),
                     "",

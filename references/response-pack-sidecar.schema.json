@@ -72,6 +72,9 @@
     },
     "auto_run": {
       "$ref": "#/$defs/auto_run"
+    },
+    "automation_resume": {
+      "$ref": "#/$defs/automation_resume"
     }
   },
   "additionalProperties": false,
@@ -597,6 +600,78 @@
           "$ref": "#/$defs/string_array"
         },
         "eligibility_reason": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "automation_resume": {
+      "type": "object",
+      "required": [
+        "enabled",
+        "resume_strategy",
+        "state_resume_available",
+        "selected_state_path",
+        "selection_mode",
+        "decision_id",
+        "decision_label",
+        "decision_reason",
+        "recommended_command",
+        "resume_anchor",
+        "playbooks",
+        "blocking_conditions",
+        "command_allowed",
+        "dry_run_command",
+        "execute_command",
+        "error"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "resume_strategy": {
+          "type": "string"
+        },
+        "state_resume_available": {
+          "type": "boolean"
+        },
+        "selected_state_path": {
+          "type": "string"
+        },
+        "selection_mode": {
+          "type": "string"
+        },
+        "decision_id": {
+          "type": "string"
+        },
+        "decision_label": {
+          "type": "string"
+        },
+        "decision_reason": {
+          "type": "string"
+        },
+        "recommended_command": {
+          "type": "string"
+        },
+        "resume_anchor": {
+          "type": "string"
+        },
+        "playbooks": {
+          "$ref": "#/$defs/string_array"
+        },
+        "blocking_conditions": {
+          "$ref": "#/$defs/string_array"
+        },
+        "command_allowed": {
+          "type": "boolean"
+        },
+        "dry_run_command": {
+          "type": "string"
+        },
+        "execute_command": {
+          "type": "string"
+        },
+        "error": {
           "type": "string"
         }
       },
