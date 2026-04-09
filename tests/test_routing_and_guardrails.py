@@ -43,6 +43,7 @@ INIT_POST_RELEASE_FEEDBACK_SCRIPT = SKILL_DIR / "scripts" / "init_post_release_f
 EVALUATE_POST_RELEASE_FEEDBACK_SCRIPT = SKILL_DIR / "scripts" / "evaluate_post_release_feedback.py"
 RUN_AUTO_WORKFLOW_SCRIPT = SKILL_DIR / "scripts" / "run_auto_workflow.py"
 INSPECT_AUTOMATION_STATE_SCRIPT = SKILL_DIR / "scripts" / "inspect_automation_state.py"
+RESUME_FROM_AUTOMATION_STATE_SCRIPT = SKILL_DIR / "scripts" / "resume_from_automation_state.py"
 GENERATE_RESPONSE_PACK_SCRIPT = SKILL_DIR / "scripts" / "generate_response_pack.py"
 RESPONSE_CONTRACT_SCRIPT = SKILL_DIR / "scripts" / "response_contract.py"
 VALIDATOR_SCRIPT = SKILL_DIR / "scripts" / "validate_virtual_team.py"
@@ -90,6 +91,10 @@ auto_workflow = load_module("virtual_intelligent_dev_team_auto_workflow", RUN_AU
 automation_state_inspector = load_module(
     "virtual_intelligent_dev_team_inspect_automation_state",
     INSPECT_AUTOMATION_STATE_SCRIPT,
+)
+automation_state_resumer = load_module(
+    "virtual_intelligent_dev_team_resume_from_automation_state",
+    RESUME_FROM_AUTOMATION_STATE_SCRIPT,
 )
 response_pack = load_module("virtual_intelligent_dev_team_response_pack", GENERATE_RESPONSE_PACK_SCRIPT)
 response_contract = load_module("virtual_intelligent_dev_team_response_contract", RESPONSE_CONTRACT_SCRIPT)
@@ -6441,6 +6446,15 @@ class AutomationStateInspectorTests(unittest.TestCase):
             self.assertEqual("auto-run-setup", result["selected_state"]["state_kind"])
             self.assertTrue(result["resume_ready"])
             self.assertIn("run_auto_workflow.py --mode go", result["recommended_resume_command"])
+            self.assertEqual("resume-explicit-go", result["decision_card"]["decision_id"])
+            self.assertIn(
+                "references/auto-run-playbook.md",
+                result["decision_card"]["playbooks"],
+            )
+            self.assertIn(
+                "references/root-cause-escalation-playbook.md",
+                result["decision_card"]["playbooks"],
+            )
 
     def test_inspect_automation_state_can_filter_release_gate_state(self) -> None:
         with make_tempdir() as tmp:
@@ -6477,6 +6491,83 @@ class AutomationStateInspectorTests(unittest.TestCase):
             self.assertEqual("workflow", result["selection_mode"])
             self.assertEqual("release-gate-result", result["selected_state"]["state_kind"])
             self.assertIn("run_release_gate.py", result["recommended_resume_command"])
+            self.assertEqual(
+                "release-ship-continue-post-release",
+                result["decision_card"]["decision_id"],
+            )
+            self.assertIn(
+                "references/post-release-feedback-playbook.md",
+                result["decision_card"]["playbooks"],
+            )
+            self.assertIn(
+                "evaluate_post_release_feedback.py",
+                result["decision_card"]["recommended_command"],
+            )
+
+    def test_inspect_automation_state_routes_post_release_escalation_to_governance(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            technical_governance_init.init_technical_governance(root=root, overwrite=False)
+            post_release_feedback_init.init_post_release_feedback(root=root, overwrite=False)
+            report = root / ".skill-post-release" / "current-signals.json"
+            payload = {
+                "schema_version": "post-release-feedback-report/v1",
+                "generated_at": "2026-04-08T12:00:00Z",
+                "release_label": "v4.49.0",
+                "observation_window": {
+                    "start": "2026-04-08T00:00:00Z",
+                    "end": "2026-04-09T00:00:00Z",
+                },
+                "signal_summary": {
+                    "total_feedback_items": 1,
+                    "unique_users_affected": 12,
+                    "blocker_issue_count": 1,
+                    "escalation_issue_count": 1,
+                    "telemetry_status": "critical",
+                    "adoption_trend": "worsening",
+                    "satisfaction_trend": "worsening",
+                },
+                "feedback_items": [
+                    {
+                        "id": "feedback-crit-001",
+                        "source": "telemetry",
+                        "severity": "critical",
+                        "status": "new",
+                        "affected_area": "checkout",
+                        "label": "critical checkout regression",
+                        "summary": "Payment completion drops after the latest release.",
+                        "recommended_action": "contain rollout and investigate release path",
+                        "evidence_artifacts": [
+                            ".skill-post-release/current-signals.json"
+                        ],
+                    }
+                ],
+                "report_context": {
+                    "feedback_ledger_markdown": ".skill-post-release/feedback-ledger.md",
+                    "release_closure_json": "evals/release-gate/release-closure.json",
+                    "release_gate_json": "evals/release-gate/release-gate-results.json",
+                },
+            }
+            report.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+            post_release_feedback_evaluator.evaluate_post_release_feedback(report_path=report)
+
+            result = automation_state_inspector.inspect_automation_state(
+                repo_root=root,
+                workflow="post-release-close-loop",
+            )
+
+            self.assertEqual("post-release-escalate-governance", result["decision_card"]["decision_id"])
+            self.assertIn(
+                "references/technical-governance-playbook.md",
+                result["decision_card"]["playbooks"],
+            )
+            self.assertEqual("handoff", result["decision_card"]["resume_strategy"])
+            self.assertTrue(
+                any(
+                    token in result["decision_card"]["recommended_command"]
+                    for token in ("init_technical_governance.py", "run_release_gate.py")
+                )
+            )
 
     def test_inspect_automation_state_cli_supports_explicit_path(self) -> None:
         with make_tempdir() as tmp:
@@ -6508,6 +6599,87 @@ class AutomationStateInspectorTests(unittest.TestCase):
             payload = json.loads(proc.stdout)
             self.assertEqual("path", payload["selection_mode"])
             self.assertEqual("auto-run-setup", payload["selected_state"]["state_kind"])
+
+
+class AutomationStateResumeTests(unittest.TestCase):
+    def test_resume_from_automation_state_dry_run_returns_guarded_command(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            auto_workflow.build_setup_plan(
+                text="/auto background safe fix this repeated regression until stable and keep benchmark evidence",
+                repo_root=root,
+                config=load_config(),
+            )
+
+            result = automation_state_resumer.build_resume_payload(repo_root=root)
+
+            self.assertTrue(result["ok"])
+            self.assertTrue(result["dry_run"])
+            self.assertFalse(result["execute_requested"])
+            self.assertTrue(result["command_allowed"])
+            self.assertIn("run_auto_workflow.py --mode go", result["recommended_command"])
+            self.assertIn("pass --execute", result["next_action"])
+
+    def test_resume_from_automation_state_execute_runs_recommended_command(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            inspection_payload = {
+                "ok": True,
+                "selection_mode": "workflow",
+                "selected_state_path": ".skill-post-release/decisions/current-signals/automation-state.json",
+                "decision_card": {
+                    "decision_id": "post-release-escalate-governance",
+                    "recommended_command": "python scripts/init_technical_governance.py --root . --pretty",
+                },
+                "recommended_resume_command": "python scripts/init_technical_governance.py --root . --pretty",
+            }
+
+            with mock.patch.object(
+                automation_state_resumer.automation_state_inspector,
+                "inspect_automation_state",
+                return_value=inspection_payload,
+            ), mock.patch.object(
+                automation_state_resumer.subprocess,
+                "run",
+                return_value=subprocess.CompletedProcess(
+                    args=["python", "scripts/init_technical_governance.py", "--root", ".", "--pretty"],
+                    returncode=0,
+                    stdout='{"ok": true}\n',
+                    stderr="",
+                ),
+            ) as run_mock:
+                result = automation_state_resumer.build_resume_payload(repo_root=root, execute=True)
+
+            self.assertTrue(result["ok"])
+            self.assertFalse(result["dry_run"])
+            self.assertTrue(result["execution"]["executed"])
+            self.assertEqual(0, result["execution"]["returncode"])
+            run_mock.assert_called_once()
+
+    def test_resume_from_automation_state_blocks_non_allowlisted_command(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            inspection_payload = {
+                "ok": True,
+                "selection_mode": "workflow",
+                "selected_state_path": ".skill-auto/state/fake.json",
+                "decision_card": {
+                    "decision_id": "manual-review",
+                    "recommended_command": "python scripts/git_workflow_guardrail.py",
+                },
+                "recommended_resume_command": "python scripts/git_workflow_guardrail.py",
+            }
+
+            with mock.patch.object(
+                automation_state_resumer.automation_state_inspector,
+                "inspect_automation_state",
+                return_value=inspection_payload,
+            ):
+                result = automation_state_resumer.build_resume_payload(repo_root=root)
+
+            self.assertFalse(result["ok"])
+            self.assertFalse(result["command_allowed"])
+            self.assertIn("allowlist", result["error"])
 
 
 class ResponsePackTests(unittest.TestCase):

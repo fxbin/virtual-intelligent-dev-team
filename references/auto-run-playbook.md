@@ -112,4 +112,19 @@ python scripts/inspect_automation_state.py --repo . --pretty
 ```
 
 这个入口用来读取最近一次 machine-readable automation state，
-并给出当前最合适的恢复命令与恢复锚点。
+并给出当前最合适的恢复命令、恢复锚点，以及状态驱动的 playbook 决策。
+
+如果要把这个决策推进到真正执行：
+
+```bash
+python scripts/resume_from_automation_state.py --repo . --pretty
+```
+
+```bash
+python scripts/resume_from_automation_state.py --repo . --execute --pretty
+```
+
+- 默认仍然先 dry-run
+- 只有显式 `--execute` 才会执行恢复命令
+- 执行前会检查推荐命令是否命中受控 allowlist
+- 这个入口不会绕过 `/auto` 的 `setup -> go` 两阶段

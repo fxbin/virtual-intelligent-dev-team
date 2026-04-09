@@ -15,6 +15,10 @@
   - 中文流程 walkthrough
 - `auto-run-playbook.md`
   - 显式 `/auto` 协议、setup/go 两阶段、`safe/background/resume` 子协议和自动白名单
+- `automation-resume-decision-matrix.md`
+  - automation state 如何映射成 resume 决策、命令与 playbook
+- `tooling-command-index.md`
+  - 包含 `inspect_automation_state.py` 与 `resume_from_automation_state.py` 的恢复 / 执行入口
 - `product-delivery-playbook.md`
   - 产品定义到实现切片的默认打法
 - `beta-validation-playbook.md`

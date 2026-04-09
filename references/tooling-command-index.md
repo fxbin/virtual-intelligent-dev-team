@@ -213,6 +213,7 @@ python scripts/evaluate_post_release_feedback.py --report .skill-post-release/cu
 - `assets/auto-run-plan-template.json`
 - `references/auto-run-playbook.md`
 - `references/automation-state.schema.json`
+- `references/automation-resume-decision-matrix.md`
 
 恢复入口：
 
@@ -222,6 +223,16 @@ python scripts/inspect_automation_state.py --repo . --pretty
 
 ```bash
 python scripts/inspect_automation_state.py --repo . --workflow ship-hold-remediate --pretty
+```
+
+受控恢复执行入口：
+
+```bash
+python scripts/resume_from_automation_state.py --repo . --pretty
+```
+
+```bash
+python scripts/resume_from_automation_state.py --repo . --workflow post-release-close-loop --execute --pretty
 ```
 
 常用命令：
@@ -255,7 +266,21 @@ python scripts/run_auto_workflow.py --mode go --plan .skill-auto/auto-run-plan.j
   - 底层 release / post-release automation state
 - `inspect_automation_state.py` 会返回：
   - 当前选中的 state
+  - `decision_card`
   - 推荐恢复命令
+- `resume_from_automation_state.py` 默认只做 dry-run：
+  - 读取 `decision_card`
+  - 校验推荐命令是否在白名单里
+  - 告诉你如果显式加 `--execute` 会跑什么
+- 只有显式 `--execute` 时才会真正执行恢复命令
+- 当前 allowlist 只开放：
+  - `run_auto_workflow.py`
+  - `run_release_gate.py`
+  - `evaluate_post_release_feedback.py`
+  - `init_technical_governance.py`
+  - `init_product_delivery.py`
+  - `init_iteration_round.py`
+  - `run_iteration_loop.py`
   - 可恢复锚点
   - 所有已发现 state 的摘要
 
