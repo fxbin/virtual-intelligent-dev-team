@@ -160,6 +160,13 @@ python scripts/generate_response_pack.py --text "<user request>" --repo . --outp
 python scripts/init_pre_development_plan.py --root . --task-name "<task-name>" --task-description "<task-description>" --phase-name foundation --pretty
 ```
 
+默认会同时生成完整多阶段 planning 骨架：
+
+- `docs/progress/phase-1-<name>.md`
+- `docs/progress/phase-2-architecture.md`
+- `docs/progress/phase-3-execution.md`
+- `docs/progress/phase-4-cutover.md`
+
 ## 三、产品交付资产
 
 模板：

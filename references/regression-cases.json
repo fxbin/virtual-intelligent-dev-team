@@ -792,6 +792,9 @@
         "commands_contains": [
           "python scripts/init_project_memory.py --root . --mode planning --pretty",
           "python scripts/init_pre_development_plan.py --root . --task-name \"<task-name>\" --task-description \"<task-description>\" --phase-name foundation --pretty"
+        ],
+        "artifacts_contains": [
+          "docs/progress/phase-4-cutover.md"
         ]
       }
     }

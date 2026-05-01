@@ -40,6 +40,7 @@ Create or refresh these artifacts when the branch is active:
 - `docs/plan/task-breakdown.md`
 - `docs/progress/MASTER.md`
 - `docs/progress/phase-1-<name>.md`
+- the remaining default phase trackers such as `docs/progress/phase-2-architecture.md`, `phase-3-execution.md`, and `phase-4-cutover.md`
 
 ## Optional Artifacts
 
@@ -49,7 +50,7 @@ Add these only when complexity warrants them:
 - `docs/analysis/risk-assessment.md`
 - `docs/plan/dependency-graph.md`
 - `docs/plan/milestones.md`
-- additional `docs/progress/phase-N-<name>.md` files
+- additional `docs/progress/phase-N-<name>.md` files beyond the default multi-phase skeleton
 
 ## Resume Protocol
 

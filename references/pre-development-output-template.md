@@ -20,6 +20,9 @@ Keep the response compact. The goal is to make the transformation executable, no
   - docs/plan/task-breakdown.md
   - docs/progress/MASTER.md
   - docs/progress/phase-1-<name>.md
+  - docs/progress/phase-2-architecture.md
+  - docs/progress/phase-3-execution.md
+  - docs/progress/phase-4-cutover.md
 
 ## First Execution Phase
 - Phase 1 goal: <what phase 1 achieves>
@@ -37,5 +40,6 @@ Keep the response compact. The goal is to make the transformation executable, no
 
 - Keep the planning summary short enough to scan in one screen.
 - Mention only the artifacts that actually exist.
+- If the planning initializer generated a default multi-phase skeleton, mention that the later phases are placeholders for future sessions rather than already completed work.
 - If the planning pack is partial by design, say what is intentionally deferred.
 - If `docs/progress/MASTER.md` already existed, say that the plan was resumed rather than created fresh.

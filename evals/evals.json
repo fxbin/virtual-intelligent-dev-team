@@ -967,6 +967,7 @@
         "workflow_bundle is plan-first-build",
         "bundle_confidence >= 0.95",
         "progress_anchor_recommended is docs/progress/MASTER.md",
+        "process_plan first artifacts contain docs/progress/phase-4-cutover.md",
         "response_pack_json planning_pack exists",
         "response_pack_json optimization_loop does not exist"
       ]

@@ -1288,6 +1288,9 @@ def build_process_plan(
                     "docs/plan/task-breakdown.md",
                     "docs/progress/MASTER.md",
                     "docs/progress/phase-1-foundation.md",
+                    "docs/progress/phase-2-architecture.md",
+                    "docs/progress/phase-3-execution.md",
+                    "docs/progress/phase-4-cutover.md",
                 ],
                 "resume_anchor": "docs/progress/MASTER.md",
                 "resume_artifacts": [

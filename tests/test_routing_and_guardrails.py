@@ -457,6 +457,7 @@ class RoutingTests(unittest.TestCase):
             "python scripts/init_pre_development_plan.py --root . --task-name \"<task-name>\" --task-description \"<task-description>\" --phase-name foundation --pretty",
             result["process_plan"][0]["commands"],
         )
+        self.assertIn("docs/progress/phase-4-cutover.md", result["process_plan"][0]["artifacts"])
 
     def test_chinese_research_first_migration_keeps_planning_branch_with_sentinel(self) -> None:
         result = route_request.route_request(
@@ -1293,13 +1294,20 @@ class IterationHelperTests(unittest.TestCase):
             master_path = Path(payload["artifacts"]["master"])
             overview_path = Path(payload["artifacts"]["project_overview"])
             phase_path = Path(payload["artifacts"]["phase"])
+            phase_files = [Path(item) for item in payload["artifacts"]["phase_files"]]
 
             self.assertTrue(master_path.exists())
             self.assertTrue(overview_path.exists())
             self.assertTrue(phase_path.exists())
+            self.assertEqual(4, payload["phase_count"])
+            self.assertEqual(4, len(phase_files))
+            self.assertTrue(all(path.exists() for path in phase_files))
             self.assertIn("Rust Rewrite", master_path.read_text(encoding="utf-8"))
+            self.assertIn("Architecture", master_path.read_text(encoding="utf-8"))
+            self.assertIn("Cutover", master_path.read_text(encoding="utf-8"))
             self.assertIn("Rewrite the monolith into a Rust service stack.", overview_path.read_text(encoding="utf-8"))
             self.assertIn("Phase 1: Foundation", phase_path.read_text(encoding="utf-8"))
+            self.assertIn("Phase 4: Cutover", phase_files[-1].read_text(encoding="utf-8"))
 
     def test_init_iteration_round_creates_expected_assets(self) -> None:
         with make_tempdir() as tmp:

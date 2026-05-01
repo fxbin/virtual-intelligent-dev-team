@@ -172,10 +172,14 @@ def validate_process_plan_cases(cases: list[dict[str, object]]) -> list[dict[str
         )
         check(len(plan) > 0, f"{name}: empty process plan")
         commands = plan[0].get("commands", [])
+        artifacts = plan[0].get("artifacts", [])
         check(isinstance(commands, list), f"{name}: commands must be a list")
+        check(isinstance(artifacts, list), f"{name}: artifacts must be a list")
 
         for command in expect.get("commands_contains", []):
             check(command in commands, f"{name}: missing command {command}")
+        for artifact in expect.get("artifacts_contains", []):
+            check(artifact in artifacts, f"{name}: missing artifact {artifact}")
         for first, second in expect.get("ordered_pairs", []):
             check(first in commands and second in commands, f"{name}: missing ordered pair commands")
             check(commands.index(first) < commands.index(second), f"{name}: invalid command order")
