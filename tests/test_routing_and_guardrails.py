@@ -376,6 +376,25 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual([], result["process_skills"])
         self.assertEqual("audit-fix-deliver", result["workflow_bundle"])
 
+    def test_route_exposes_execution_quality_gate(self) -> None:
+        result = route_request.route_request(
+            "Migrate this subsystem. Plan before coding and define verification first.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertEqual("plan-first-build", result["workflow_bundle"])
+        quality_gate = result["quality_gate"]
+        self.assertEqual("references/execution-quality-guardrails.md", quality_gate["reference"])
+        self.assertIn("surface-assumptions", quality_gate["principles"])
+        self.assertIn("smallest-defensible-bundle", quality_gate["principles"])
+        self.assertEqual("plan-first-build", quality_gate["surgical_scope"]["workflow_bundle"])
+        self.assertIn("docs/progress/MASTER.md", quality_gate["verification_check"])
+        self.assertEqual(
+            "references/execution-quality-guardrails.md",
+            result["reason"]["quality_gate_reference"],
+        )
+
     def test_ui_review_stays_with_product_architect(self) -> None:
         result = route_request.route_request(
             "给 React 页面做 UI review",

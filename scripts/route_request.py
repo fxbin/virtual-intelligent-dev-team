@@ -27,6 +27,7 @@ AUTO_ELIGIBLE_WORKFLOWS = {
     "ship-hold-remediate",
     "post-release-close-loop",
 }
+QUALITY_GUARDRAIL_REFERENCE = "references/execution-quality-guardrails.md"
 
 
 def load_module(name: str, path: Path):
@@ -1945,6 +1946,63 @@ def build_workflow_bundle_bootstrap(bundle_name: str) -> dict[str, object]:
     }
 
 
+def build_quality_gate(
+    *,
+    lead_agent: str,
+    assistants: list[str],
+    workflow_bundle: dict[str, object],
+    clarifying_question: str | None,
+) -> dict[str, object]:
+    bundle_name = str(workflow_bundle.get("name", "direct-execution"))
+    steps = [str(item) for item in workflow_bundle.get("steps", []) if str(item).strip()]
+    route_assumption = (
+        "Request is clear enough to route."
+        if clarifying_question is None
+        else "Route is provisional until the clarification answer changes scope, stack, or expected output."
+    )
+    if bundle_name == "plan-first-build":
+        verification = "planning pack and docs/progress/MASTER.md exist before implementation starts"
+    elif bundle_name == "product-spec-deliver":
+        verification = "current slice, acceptance criteria, and contract questions are written"
+    elif bundle_name == "beta-feedback-ramp":
+        verification = "cohort plan, ramp plan, feedback ledger, and round gate evidence exist"
+    elif bundle_name == "audit-fix-deliver":
+        verification = "severity-ordered findings and the smallest remediation step are explicit"
+    elif bundle_name == "govern-change-safely":
+        verification = "owner, stop conditions, verification evidence, and rollback conditions are explicit"
+    elif bundle_name == "root-cause-remediate":
+        verification = "one hypothesis is tested against evidence and ends in keep, retry, rollback, or stop"
+    elif bundle_name == "ship-hold-remediate":
+        verification = "release gate returns ship or hold and preserves the follow-up artifact"
+    elif bundle_name == "post-release-close-loop":
+        verification = "post-release signals are triaged into monitor, iterate, or escalate"
+    else:
+        verification = "the lead can name the smallest next action and observable result"
+
+    return {
+        "reference": QUALITY_GUARDRAIL_REFERENCE,
+        "principles": [
+            "surface-assumptions",
+            "smallest-defensible-bundle",
+            "surgical-execution",
+            "verifiable-closure",
+        ],
+        "assumption_check": route_assumption,
+        "minimality_check": (
+            f"{bundle_name} is selected because it is the smallest bundle matching the route; "
+            f"assistants={assistants or []}."
+        ),
+        "surgical_scope": {
+            "lead_owner": lead_agent,
+            "assistants": assistants,
+            "workflow_bundle": bundle_name,
+            "in_scope_lanes": steps,
+        },
+        "verification_check": verification,
+        "clarification_required": clarifying_question is not None,
+    }
+
+
 def build_assistant_delta_contract(
     lead_agent: str, assistants: list[str], workflow_bundle: str | None
 ) -> dict[str, object]:
@@ -2466,6 +2524,12 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
     workflow_bundle_bootstrap = build_workflow_bundle_bootstrap(
         str(workflow_bundle.get("name", "direct-execution"))
     )
+    quality_gate = build_quality_gate(
+        lead_agent=lead_agent,
+        assistants=assistants,
+        workflow_bundle=workflow_bundle,
+        clarifying_question=clarifying_question,
+    )
     assistant_delta_contract = build_assistant_delta_contract(
         lead_agent=lead_agent,
         assistants=assistants,
@@ -2507,6 +2571,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "language_hits": language_hits,
         "process_skill_hits": process_hits,
         "workflow_bundle_reason": workflow_bundle.get("reason"),
+        "quality_gate_reference": quality_gate.get("reference"),
         "assistant_delta_contract_enabled": assistant_delta_contract.get("enabled"),
         "auto_mode": auto_run_profile,
     }
@@ -2550,6 +2615,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "workflow_bundle_source": workflow_bundle.get("source"),
         "workflow_steps": workflow_bundle.get("steps", []),
         "workflow_reason": workflow_bundle.get("reason"),
+        "quality_gate": quality_gate,
         "progress_anchor_recommended": workflow_bundle.get("progress_anchor_recommended"),
         "resume_artifacts": workflow_bundle.get("resume_artifacts", []),
         "workflow_bundle_bootstrap": workflow_bundle_bootstrap,

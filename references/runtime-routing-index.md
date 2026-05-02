@@ -13,6 +13,8 @@
   - 对外定位、中文术语、常见误解
 - `workflow-sequences.md`
   - 中文流程 walkthrough
+- `execution-quality-guardrails.md`
+  - 假设显性化、最小 bundle、外科手术式范围、可验证闭环的通用执行护栏
 - `auto-run-playbook.md`
   - 显式 `/auto` 协议、setup/go 两阶段、`safe/background/resume` 子协议和自动白名单
 - `automation-resume-decision-matrix.md`

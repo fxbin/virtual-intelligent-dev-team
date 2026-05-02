@@ -184,6 +184,7 @@ Every bundle should expose:
 - `workflow_bundle`
 - `workflow_reason`
 - `workflow_steps`
+- `quality_gate`
 - `workflow_bundle_bootstrap`
 - `progress_anchor_recommended`
 - `resume_artifacts`
@@ -197,6 +198,11 @@ bootstrap contract should make three things explicit:
 
 The lead owns the journey narrative. Assistants only return the delta needed for
 the current step.
+
+Each bundle also inherits the execution-quality guardrails in
+`references/execution-quality-guardrails.md`: expose route-changing assumptions,
+justify why the bundle is minimal, keep scope surgical, and name the verification
+evidence that closes the route.
 
 ## Auto Overlay
 

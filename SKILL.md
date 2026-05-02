@@ -1,5 +1,6 @@
 ---
 name: virtual-intelligent-dev-team
+archetype: router
 description: R&D / product / staged-beta / technical-governance router and bounded-iteration orchestrator for complex software work. Dispatch the best lead agent from Java Virtuoso, Sentinel Architect (NB), Technical Trinity, Code Audit Council, Git Workflow Guardian, and World-Class Product Architect, attach the right copilot agents when work crosses code, product definition, staged user validation, frontend UX, security, release, or git workflow, enter a lightweight pre-development planning branch for large rewrites, migrations, and project-wide transformations before coding, enable evidence-driven iteration when the user asks for optimization loops, repeated retries, benchmark comparison, or candidate evaluation, and trigger the formal release gate when the user asks whether a version is ready to ship or submit.
 ---
 
@@ -13,9 +14,10 @@ Handle complex requests with one unified workflow:
 4. Add one or two assistant agents only when they add clear value.
 5. Enable governance or process guardrails only when needed.
 6. Use a compact handoff when lead and assistants need structured coordination.
-7. If the user asks for optimization, repeated improvement, benchmark comparison, or another round, enter bounded iteration instead of open-ended self-looping.
-8. If the user asks whether the current version can ship, submit, or pass formal acceptance, run the release gate instead of answering from a benchmark summary alone.
-9. Produce one unified response instead of disconnected role fragments.
+7. Apply execution-quality guardrails: surface route-changing assumptions, keep the smallest defensible bundle, limit scope surgically, and define verifiable closure.
+8. If the user asks for optimization, repeated improvement, benchmark comparison, or another round, enter bounded iteration instead of open-ended self-looping.
+9. If the user asks whether the current version can ship, submit, or pass formal acceptance, run the release gate instead of answering from a benchmark summary alone.
+10. Produce one unified response instead of disconnected role fragments.
 
 ## Positioning
 
@@ -39,6 +41,36 @@ The goal is evidence-driven execution with boundaries, not open-ended autonomous
 One more runtime rule:
 
 - When routing alone is not enough, return the smallest matching workflow bundle and resume anchor instead of inventing a new ceremony.
+
+## Routing goal
+
+Route complex software requests into the smallest defensible workflow bundle, keep one semantic lead, and attach only the assistants, governance, and artifacts that materially improve delivery fidelity.
+
+## Trigger cues
+
+- multi-domain software delivery
+- rewrite / migration / plan-before-coding
+- repeated optimization or retry loops
+- staged beta validation or rollout risk control
+- release readiness / ship-hold decisions
+- git workflow, rollback, or governance-sensitive delivery
+
+## Workflow
+
+1. detect the dominant task shape and process signal
+2. select the smallest workflow bundle that closes the task safely
+3. assign one semantic lead and only the assistants that add material value
+4. load the minimal references, templates, and scripts required for that route
+5. return one unified execution answer with the right resume anchor
+
+## Output template
+
+- `Selected route`
+  - lead, assistants, workflow bundle, and why this route won
+- `Fallback`
+  - clarification path or downgraded route when confidence or evidence is weak
+- `Next step`
+  - smallest executable action, required artifact, and resume anchor
 
 ## Quick examples
 
@@ -82,6 +114,8 @@ One more runtime rule:
 
 - 路由、场景、迭代、release、Git 分流：
   [references/runtime-routing-index.md](references/runtime-routing-index.md)
+- 执行质量护栏：
+  [references/execution-quality-guardrails.md](references/execution-quality-guardrails.md)
 - 脚本、模板、验证与命令入口：
   [references/tooling-command-index.md](references/tooling-command-index.md)
 - 面向维护者的项目说明：
@@ -115,6 +149,15 @@ Use pre-development planning only when the request benefits from it:
 - architecture overhaul before implementation
 - project-wide refactor with dependency-aware phase planning
 - "plan first, code later" requests that need durable progress tracking
+
+Selected route markers:
+
+- `Selected route`
+  - The workflow bundle, lead, and assistants the skill chooses.
+- `Fallback`
+  - The downgraded route when confidence or evidence is insufficient.
+- `Next step`
+  - The smallest executable action and resume anchor the user should use next.
 
 ## Team catalog
 

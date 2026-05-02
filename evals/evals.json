@@ -1371,6 +1371,25 @@
         "verify_action_json details.detached_ready is true",
         "verify_action_json details.state_dir is .skill-auto/state"
       ]
+    },
+    {
+      "id": 78,
+      "categories": [
+        "planning",
+        "quality-guardrails",
+        "contract-output"
+      ],
+      "prompt": "Migrate this subsystem. Plan before coding, keep the change surgical, and define verification first.",
+      "expected_output": "Plan-first routing should expose the execution quality gate adapted from compact behavioral guideline skills.",
+      "files": [],
+      "expectations": [
+        "workflow_bundle is plan-first-build",
+        "quality_gate.reference is references/execution-quality-guardrails.md",
+        "quality_gate.principles contains surface-assumptions",
+        "quality_gate.principles contains smallest-defensible-bundle",
+        "quality_gate.surgical_scope.workflow_bundle is plan-first-build",
+        "quality_gate.verification_check contains docs/progress/MASTER.md"
+      ]
     }
   ]
 }
