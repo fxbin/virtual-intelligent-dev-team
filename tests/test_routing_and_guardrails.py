@@ -49,6 +49,8 @@ RESPONSE_CONTRACT_SCRIPT = SKILL_DIR / "scripts" / "response_contract.py"
 VALIDATOR_SCRIPT = SKILL_DIR / "scripts" / "validate_virtual_team.py"
 VERIFY_ACTION_SCRIPT = SKILL_DIR / "scripts" / "verify_action.py"
 CONTRACT_LINT_SCRIPT = SKILL_DIR / "scripts" / "lint_virtual_team_contract.py"
+SKILL_SNAPSHOT_SCRIPT = SKILL_DIR / "scripts" / "skill_snapshot.py"
+VERSION_SYNC_SCRIPT = REPO_ROOT / "scripts" / "sync_virtual_intelligent_dev_team_version.py"
 CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 
 
@@ -100,6 +102,8 @@ response_pack = load_module("virtual_intelligent_dev_team_response_pack", GENERA
 response_contract = load_module("virtual_intelligent_dev_team_response_contract", RESPONSE_CONTRACT_SCRIPT)
 verify_action = load_module("virtual_intelligent_dev_team_verify_action", VERIFY_ACTION_SCRIPT)
 contract_lint = load_module("virtual_intelligent_dev_team_contract_lint", CONTRACT_LINT_SCRIPT)
+skill_snapshot = load_module("virtual_intelligent_dev_team_skill_snapshot", SKILL_SNAPSHOT_SCRIPT)
+version_sync = load_module("repo_sync_virtual_intelligent_dev_team_version", VERSION_SYNC_SCRIPT)
 
 
 def load_config() -> dict[str, object]:
@@ -221,6 +225,10 @@ def write_beta_gate_fixture(
     (output_dir / "beta-round-gate-report.md").write_text("# Beta Gate\n", encoding="utf-8")
     response_contract.validate_beta_round_gate_result(payload)
     return fixture_path
+
+
+def copy_skill_fixture(target_dir: Path) -> Path:
+    return skill_snapshot.copy_skill_snapshot(target_dir, source_root=SKILL_DIR)
 
 
 def write_beta_manifest(
@@ -1281,6 +1289,15 @@ class GuardrailTests(unittest.TestCase):
 
 
 class IterationHelperTests(unittest.TestCase):
+    def test_copy_skill_fixture_ignores_release_gate_and_benchmark_outputs(self) -> None:
+        with make_tempdir() as tmp:
+            fixture_dir = Path(tmp) / "virtual-intelligent-dev-team-fixture"
+            copy_skill_fixture(fixture_dir)
+
+            self.assertFalse((fixture_dir / "evals" / "release-gate").exists())
+            self.assertFalse((fixture_dir / "evals" / "benchmark-results").exists())
+            self.assertFalse((fixture_dir / ".tmp-offline-loop-drill").exists())
+
     def test_init_pre_development_plan_creates_expected_artifacts(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp) / "planning-root"
@@ -3814,6 +3831,33 @@ class IterationHelperTests(unittest.TestCase):
 
 
 class ValidatorScriptTests(unittest.TestCase):
+    def test_version_sync_script_repairs_repo_metadata(self) -> None:
+        with make_tempdir() as tmp:
+            repo_copy = Path(tmp) / "repo-copy"
+            repo_copy.mkdir(parents=True, exist_ok=True)
+            copy_skill_fixture(repo_copy / "virtual-intelligent-dev-team")
+            shutil.copyfile(REPO_ROOT / "README.md", repo_copy / "README.md")
+            shutil.copyfile(REPO_ROOT / "skills-index.json", repo_copy / "skills-index.json")
+
+            (repo_copy / "virtual-intelligent-dev-team" / "VERSION").write_text("v9.9.9\n", encoding="utf-8")
+            drift = version_sync.check_all(repo_copy)
+            self.assertTrue(drift["changed"]["README.md"])
+            self.assertTrue(drift["changed"]["skills-index.json"])
+            self.assertTrue(drift["changed"]["virtual-intelligent-dev-team/references/routing-rules.json"])
+
+            result = version_sync.sync_all(repo_copy)
+
+            self.assertEqual("v9.9.9", result["version"])
+            self.assertTrue(result["changed"]["README.md"])
+            self.assertTrue(result["changed"]["skills-index.json"])
+            self.assertTrue(result["changed"]["virtual-intelligent-dev-team/references/routing-rules.json"])
+            self.assertIn("`v9.9.9`", (repo_copy / "README.md").read_text(encoding="utf-8"))
+            skills_payload = json.loads((repo_copy / "skills-index.json").read_text(encoding="utf-8"))
+            target = next(item for item in skills_payload["skills"] if item["id"] == "virtual-intelligent-dev-team")
+            self.assertEqual("v9.9.9", target["version"])
+            clean = version_sync.check_all(repo_copy)
+            self.assertFalse(any(clean["changed"].values()))
+
     def test_verify_action_outputs_match_json_schema(self) -> None:
         cases = [
             (
@@ -3991,7 +4035,7 @@ class ValidatorScriptTests(unittest.TestCase):
     def test_contract_lint_fails_on_version_mismatch_fixture(self) -> None:
         with make_tempdir() as tmp:
             fixture_dir = Path(tmp) / "virtual-intelligent-dev-team-fixture"
-            shutil.copytree(SKILL_DIR, fixture_dir)
+            copy_skill_fixture(fixture_dir)
             (fixture_dir / "VERSION").write_text("v0.0.0\n", encoding="utf-8")
 
             result = contract_lint.lint_contract(fixture_dir)
@@ -4005,7 +4049,7 @@ class ValidatorScriptTests(unittest.TestCase):
     def test_contract_lint_fails_on_process_skill_key_drift_fixture(self) -> None:
         with make_tempdir() as tmp:
             fixture_dir = Path(tmp) / "virtual-intelligent-dev-team-fixture"
-            shutil.copytree(SKILL_DIR, fixture_dir)
+            copy_skill_fixture(fixture_dir)
             config_path = fixture_dir / "references" / "routing-rules.json"
             payload = json.loads(config_path.read_text(encoding="utf-8"))
             payload["process_skill_lead_agents"]["fake-skill"] = "Technical Trinity"
@@ -4022,7 +4066,7 @@ class ValidatorScriptTests(unittest.TestCase):
     def test_contract_lint_fails_on_missing_index_script_fixture(self) -> None:
         with make_tempdir() as tmp:
             fixture_dir = Path(tmp) / "virtual-intelligent-dev-team-fixture"
-            shutil.copytree(SKILL_DIR, fixture_dir)
+            copy_skill_fixture(fixture_dir)
             index_path = fixture_dir / "references" / "tooling-command-index.md"
             index_path.write_text(
                 index_path.read_text(encoding="utf-8")
@@ -4041,7 +4085,7 @@ class ValidatorScriptTests(unittest.TestCase):
     def test_contract_lint_fails_on_sidecar_schema_version_mismatch_fixture(self) -> None:
         with make_tempdir() as tmp:
             fixture_dir = Path(tmp) / "virtual-intelligent-dev-team-fixture"
-            shutil.copytree(SKILL_DIR, fixture_dir)
+            copy_skill_fixture(fixture_dir)
             schema_path = fixture_dir / "references" / "response-pack-sidecar-schema.md"
             schema_path.write_text(
                 schema_path.read_text(encoding="utf-8").replace(
@@ -4062,7 +4106,7 @@ class ValidatorScriptTests(unittest.TestCase):
     def test_contract_lint_fails_on_duplicate_eval_id_fixture(self) -> None:
         with make_tempdir() as tmp:
             fixture_dir = Path(tmp) / "virtual-intelligent-dev-team-fixture"
-            shutil.copytree(SKILL_DIR, fixture_dir)
+            copy_skill_fixture(fixture_dir)
             evals_path = fixture_dir / "evals" / "evals.json"
             payload = json.loads(evals_path.read_text(encoding="utf-8"))
             payload["evals"][1]["id"] = payload["evals"][0]["id"]

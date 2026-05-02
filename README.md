@@ -225,6 +225,8 @@ python3 validate.py --changed
 skill 级：
 
 ```bash
+python3 ../scripts/sync_virtual_intelligent_dev_team_version.py --check
+python3 ../scripts/sync_virtual_intelligent_dev_team_version.py
 python3 skill-forge/scripts/quick_validate.py ./virtual-intelligent-dev-team
 python3 -m unittest virtual-intelligent-dev-team.tests.test_routing_and_guardrails
 python3 virtual-intelligent-dev-team/scripts/validate_virtual_team.py --pretty

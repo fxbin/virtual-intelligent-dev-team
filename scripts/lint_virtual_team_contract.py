@@ -14,11 +14,13 @@ from unittest import mock
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
+REPO_ROOT = SKILL_DIR.parent
 ROUTE_SCRIPT = SCRIPT_DIR / "route_request.py"
 RESPONSE_PACK_SCRIPT = SCRIPT_DIR / "generate_response_pack.py"
 RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
 VERIFY_ACTION_SCRIPT = SCRIPT_DIR / "verify_action.py"
 RELEASE_GATE_SCRIPT = SCRIPT_DIR / "run_release_gate.py"
+VERSION_SYNC_SCRIPT = REPO_ROOT / "scripts" / "sync_virtual_intelligent_dev_team_version.py"
 CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 VERSION_PATH = SKILL_DIR / "VERSION"
 BENCHMARK_EVALS_PATH = SKILL_DIR / "evals" / "evals.json"
@@ -61,6 +63,11 @@ def load_json(path: Path) -> dict[str, object]:
     if not isinstance(data, dict):
         raise RuntimeError(f"{path} must contain a JSON object")
     return data
+
+
+def load_json_any(path: Path) -> object:
+    with path.open("r", encoding="utf-8") as file:
+        return json.load(file)
 
 
 def _check(condition: bool, errors: list[str], message: str) -> None:
@@ -153,6 +160,14 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
         if release_gate_script.exists()
         else None
     )
+    local_version_sync = (
+        load_module(
+            f"virtual_team_contract_lint_version_sync_{resolved_skill_dir.name}",
+            VERSION_SYNC_SCRIPT,
+        )
+        if VERSION_SYNC_SCRIPT.exists()
+        else None
+    )
     config = load_json(config_path)
     errors: list[str] = []
     checks: list[dict[str, object]] = []
@@ -165,6 +180,69 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
         f"VERSION mismatch: `{version}` != routing-rules meta.version `{config_version}`. Fix both files together before release.",
     )
     checks.append({"name": "version-sync", "passed": version == config_version})
+
+    root_readme_path = resolved_skill_dir.parent / "README.md"
+    skills_index_path = resolved_skill_dir.parent / "skills-index.json"
+    if root_readme_path.exists():
+        readme_text = root_readme_path.read_text(encoding="utf-8")
+        version_hits = [
+            f"| `{resolved_skill_dir.name}` | `{version}` |" in readme_text,
+            f"| `{resolved_skill_dir.name}` | Virtual Intelligent Dev Team | `{version}` |" in readme_text,
+        ]
+        _check(
+            all(version_hits),
+            errors,
+            "Root README version references for virtual-intelligent-dev-team are out of sync with VERSION.",
+        )
+        checks.append({"name": "root-readme-version-sync", "passed": all(version_hits)})
+    if skills_index_path.exists():
+        payload = load_json_any(skills_index_path)
+        matched_version = None
+        if isinstance(payload, dict):
+            skills = payload.get("skills", [])
+            if isinstance(skills, list):
+                for item in skills:
+                    if isinstance(item, dict) and item.get("id") == resolved_skill_dir.name:
+                        matched_version = str(item.get("version", "")).strip()
+                        break
+        _check(
+            matched_version == version,
+            errors,
+            "skills-index.json version for virtual-intelligent-dev-team is out of sync with VERSION.",
+        )
+        checks.append({"name": "skills-index-version-sync", "passed": matched_version == version})
+    root_metadata_available = root_readme_path.exists() and skills_index_path.exists()
+    _check(
+        (not root_metadata_available) or VERSION_SYNC_SCRIPT.exists(),
+        errors,
+        "Missing scripts/sync_virtual_intelligent_dev_team_version.py. Restore the repo-level version sync helper.",
+    )
+    checks.append(
+        {
+            "name": "version-sync-script",
+            "passed": (not root_metadata_available) or VERSION_SYNC_SCRIPT.exists(),
+        }
+    )
+    if root_metadata_available and local_version_sync is not None and hasattr(local_version_sync, "check_all"):
+        try:
+            sync_result = local_version_sync.check_all(resolved_skill_dir.parent)
+            sync_changed = sync_result.get("changed", {}) if isinstance(sync_result, dict) else {}
+            _check(
+                isinstance(sync_changed, dict) and not any(bool(value) for value in sync_changed.values()),
+                errors,
+                "Version sync helper found drift across repo metadata. Run scripts/sync_virtual_intelligent_dev_team_version.py before release.",
+            )
+            checks.append(
+                {
+                    "name": "version-sync-helper-clean",
+                    "passed": isinstance(sync_changed, dict) and not any(bool(value) for value in sync_changed.values()),
+                }
+            )
+        except Exception as exc:
+            errors.append(f"Version sync helper failed: {exc}")
+            checks.append({"name": "version-sync-helper-clean", "passed": False})
+    else:
+        checks.append({"name": "version-sync-helper-clean", "passed": True})
 
     _check(
         response_pack_script.exists(),

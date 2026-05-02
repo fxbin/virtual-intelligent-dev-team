@@ -22,6 +22,7 @@ RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
 AUTOMATION_STATE_SCRIPT = SCRIPT_DIR / "automation_state.py"
 EVALUATE_BETA_ROUND_SCRIPT = SCRIPT_DIR / "evaluate_beta_round.py"
 INIT_POST_RELEASE_FEEDBACK_SCRIPT = SCRIPT_DIR / "init_post_release_feedback.py"
+SKILL_SNAPSHOT_SCRIPT = SCRIPT_DIR / "skill_snapshot.py"
 DEFAULT_OUTPUT_DIR = SKILL_DIR / "evals" / "release-gate"
 DEFAULT_ITERATION_WORKSPACE = SKILL_DIR / ".skill-iterations"
 LABEL_SAFE_CHARS = re.compile(r"[^A-Za-z0-9._-]+")
@@ -51,6 +52,7 @@ post_release_feedback_init = load_module(
     "virtual_team_release_gate_post_release_feedback_init",
     INIT_POST_RELEASE_FEEDBACK_SCRIPT,
 )
+skill_snapshot = load_module("virtual_team_release_gate_skill_snapshot", SKILL_SNAPSHOT_SCRIPT)
 
 
 def load_json(path: Path) -> dict[str, object]:
@@ -1102,19 +1104,7 @@ def build_hold_mutation_catalog(brief: dict[str, object]) -> list[dict[str, obje
 
 
 def copy_skill_snapshot(candidate_repo: Path) -> Path:
-    if candidate_repo.exists():
-        shutil.rmtree(candidate_repo)
-    ignore = shutil.ignore_patterns(
-        ".git",
-        "__pycache__",
-        "*.pyc",
-        ".tmp-*",
-        "evals/benchmark-results",
-        "evals/release-gate",
-        ".skill-iterations",
-    )
-    shutil.copytree(SKILL_DIR, candidate_repo, ignore=ignore)
-    return candidate_repo
+    return skill_snapshot.copy_skill_snapshot(candidate_repo, source_root=SKILL_DIR)
 
 
 def render_hold_open_loops(brief: dict[str, object]) -> str:
