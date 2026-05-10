@@ -1390,6 +1390,26 @@
         "quality_gate.surgical_scope.workflow_bundle is plan-first-build",
         "quality_gate.verification_check contains docs/progress/MASTER.md"
       ]
+    },
+    {
+      "id": 79,
+      "categories": [
+        "backend-stack",
+        "contract-output",
+        "technical-governance"
+      ],
+      "prompt": "Implement the checkout API fix and verify the regression test before editing production code.",
+      "expected_output": "Code-facing routing should require the Hermes engineering constraint file before implementation.",
+      "files": [],
+      "expectations": [
+        "hermes_constraint_gate.required is true",
+        "hermes_constraint_gate.reference is references/hermes-engineering-constraint-protocol.md",
+        "hermes_constraint_gate.artifact is .skill-hermes/engineering-constraints.md",
+        "hermes_constraint_gate.command contains init_hermes_constraints.py",
+        "hermes_constraint_gate.principles contains constraints-before-code",
+        "response_pack_json engineering_constraints.artifact is .skill-hermes/engineering-constraints.md",
+        "response_pack_json next_action.smallest_executable_action contains Hermes engineering constraints first"
+      ]
     }
   ]
 }

@@ -144,6 +144,22 @@ python scripts/generate_response_pack.py --text "<user request>" --repo . --outp
   - `<path> length is <n>`
   - `<path> >= <number>` / `<=` / `>` / `<`
 
+## 一点五、Hermes 工程约束资产
+
+代码实现前先创建或刷新约束文件：
+
+```bash
+python scripts/init_hermes_constraints.py --root . --summary "<task summary>" --pretty
+```
+
+默认产物：
+
+- `.skill-hermes/engineering-constraints.md`
+
+协议说明：
+
+- `references/hermes-engineering-constraint-protocol.md`
+
 ## 二、开发前规划资产
 
 模板：

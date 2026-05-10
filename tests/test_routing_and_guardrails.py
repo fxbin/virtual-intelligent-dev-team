@@ -49,6 +49,7 @@ RESPONSE_CONTRACT_SCRIPT = SKILL_DIR / "scripts" / "response_contract.py"
 VALIDATOR_SCRIPT = SKILL_DIR / "scripts" / "validate_virtual_team.py"
 VERIFY_ACTION_SCRIPT = SKILL_DIR / "scripts" / "verify_action.py"
 CONTRACT_LINT_SCRIPT = SKILL_DIR / "scripts" / "lint_virtual_team_contract.py"
+INIT_HERMES_CONSTRAINTS_SCRIPT = SKILL_DIR / "scripts" / "init_hermes_constraints.py"
 SKILL_SNAPSHOT_SCRIPT = SKILL_DIR / "scripts" / "skill_snapshot.py"
 VERSION_SYNC_SCRIPT = REPO_ROOT / "scripts" / "sync_virtual_intelligent_dev_team_version.py"
 CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
@@ -102,6 +103,10 @@ response_pack = load_module("virtual_intelligent_dev_team_response_pack", GENERA
 response_contract = load_module("virtual_intelligent_dev_team_response_contract", RESPONSE_CONTRACT_SCRIPT)
 verify_action = load_module("virtual_intelligent_dev_team_verify_action", VERIFY_ACTION_SCRIPT)
 contract_lint = load_module("virtual_intelligent_dev_team_contract_lint", CONTRACT_LINT_SCRIPT)
+hermes_constraints_init = load_module(
+    "virtual_intelligent_dev_team_hermes_constraints_init",
+    INIT_HERMES_CONSTRAINTS_SCRIPT,
+)
 skill_snapshot = load_module("virtual_intelligent_dev_team_skill_snapshot", SKILL_SNAPSHOT_SCRIPT)
 version_sync = load_module("repo_sync_virtual_intelligent_dev_team_version", VERSION_SYNC_SCRIPT)
 
@@ -393,6 +398,24 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual(
             "references/execution-quality-guardrails.md",
             result["reason"]["quality_gate_reference"],
+        )
+
+    def test_code_route_requires_hermes_constraint_gate(self) -> None:
+        result = route_request.route_request(
+            "Implement the checkout API fix and verify the regression test.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        gate = result["hermes_constraint_gate"]
+        self.assertTrue(gate["required"])
+        self.assertEqual("references/hermes-engineering-constraint-protocol.md", gate["reference"])
+        self.assertEqual(".skill-hermes/engineering-constraints.md", gate["artifact"])
+        self.assertIn("init_hermes_constraints.py", gate["command"])
+        self.assertIn("constraints-before-code", gate["principles"])
+        self.assertEqual(
+            "references/hermes-engineering-constraint-protocol.md",
+            result["reason"]["hermes_constraint_reference"],
         )
 
     def test_ui_review_stays_with_product_architect(self) -> None:
@@ -1308,6 +1331,22 @@ class GuardrailTests(unittest.TestCase):
 
 
 class IterationHelperTests(unittest.TestCase):
+    def test_init_hermes_constraints_creates_constraint_file(self) -> None:
+        with make_tempdir() as tmp:
+            result = hermes_constraints_init.init_constraints(
+                Path(tmp),
+                output=".skill-hermes/engineering-constraints.md",
+                summary="checkout API fix",
+            )
+
+            target = Path(result["path"])
+            self.assertTrue(result["created"])
+            self.assertTrue(target.exists())
+            text = target.read_text(encoding="utf-8")
+            self.assertIn("Task summary: checkout API fix", text)
+            self.assertIn("## Non-Negotiable Constraints", text)
+            self.assertIn("## Verification Evidence", text)
+
     def test_copy_skill_fixture_ignores_release_gate_and_benchmark_outputs(self) -> None:
         with make_tempdir() as tmp:
             fixture_dir = Path(tmp) / "virtual-intelligent-dev-team-fixture"
@@ -6977,6 +7016,26 @@ class ResponsePackTests(unittest.TestCase):
             "python scripts/init_product_delivery.py --root . --pretty",
             payload["bundle_bootstrap"]["commands"],
         )
+
+    def test_generate_response_pack_payload_includes_hermes_constraints_for_code_route(self) -> None:
+        result = route_request.route_request(
+            "Implement the checkout API fix and verify the regression test.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        payload = response_pack.build_response_pack_payload(result)
+
+        self.assertTrue(payload["engineering_constraints"]["required"])
+        self.assertEqual(
+            ".skill-hermes/engineering-constraints.md",
+            payload["engineering_constraints"]["artifact"],
+        )
+        self.assertIn(
+            "Hermes engineering constraints first",
+            payload["next_action"]["smallest_executable_action"],
+        )
+        response_contract.validate_response_pack_payload(payload)
 
     def test_generate_response_pack_payload_includes_beta_program(self) -> None:
         result = route_request.route_request(

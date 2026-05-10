@@ -294,6 +294,9 @@ def build_response_pack_payload(
     bundle_bootstrap = result.get("workflow_bundle_bootstrap", {})
     if not isinstance(bundle_bootstrap, dict):
         bundle_bootstrap = {}
+    hermes_constraints = result.get("hermes_constraint_gate", {})
+    if not isinstance(hermes_constraints, dict):
+        hermes_constraints = {}
     beta_validation_plan = result.get("beta_validation_plan", {})
     if not isinstance(beta_validation_plan, dict):
         beta_validation_plan = {}
@@ -457,6 +460,15 @@ def build_response_pack_payload(
                 "main_risks": f"governance track `{privy.get('selected_track', 'regular track')}`, process skills `{', '.join(process_skills) if process_skills else none_text}`.",
             }
 
+    next_action_text = localized_workflow_steps[0] if localized_workflow_steps else direct_step_text
+    if bool(hermes_constraints.get("required")):
+        artifact = hermes_constraints.get("artifact", ".skill-hermes/engineering-constraints.md")
+        next_action_text = (
+            f"{next_action_text}；先创建或刷新 Hermes 工程约束：{artifact}"
+            if selected_language == "zh"
+            else f"{next_action_text}; create or refresh Hermes engineering constraints first: {artifact}"
+        )
+
     payload: dict[str, object] = {
         "schema_version": response_contract.SIDECAR_SCHEMA_VERSION,
         "language": selected_language,
@@ -481,7 +493,7 @@ def build_response_pack_payload(
             },
         },
         "next_action": {
-            "smallest_executable_action": localized_workflow_steps[0] if localized_workflow_steps else direct_step_text,
+            "smallest_executable_action": next_action_text,
             "current_owner": lead,
         },
         "resume": {
@@ -509,6 +521,14 @@ def build_response_pack_payload(
             "commands": [str(item) for item in bundle_bootstrap.get("commands", []) if str(item).strip()],
             "artifacts": [str(item) for item in bundle_bootstrap.get("artifacts", []) if str(item).strip()],
             "resume_anchor": format_missing(bundle_bootstrap.get("resume_anchor", ""), selected_language),
+        }
+    if bool(hermes_constraints):
+        payload["engineering_constraints"] = {
+            "required": bool(hermes_constraints.get("required")),
+            "reference": format_missing(hermes_constraints.get("reference", ""), selected_language),
+            "artifact": format_missing(hermes_constraints.get("artifact", ""), selected_language),
+            "command": format_missing(hermes_constraints.get("command", ""), selected_language),
+            "verification_check": format_missing(hermes_constraints.get("verification_check", ""), selected_language),
         }
     if bool(beta_validation_plan.get("enabled")):
         payload["beta_program"] = {
@@ -666,6 +686,9 @@ def build_response_pack(
     governance = payload["governance"] if isinstance(payload.get("governance"), dict) else {}
     planning_pack = payload["planning_pack"] if isinstance(payload.get("planning_pack"), dict) else None
     optimization_loop = payload["optimization_loop"] if isinstance(payload.get("optimization_loop"), dict) else None
+    engineering_constraints = (
+        payload["engineering_constraints"] if isinstance(payload.get("engineering_constraints"), dict) else None
+    )
     bundle_bootstrap = payload["bundle_bootstrap"] if isinstance(payload.get("bundle_bootstrap"), dict) else None
     beta_program = payload["beta_program"] if isinstance(payload.get("beta_program"), dict) else None
     auto_run = payload["auto_run"] if isinstance(payload.get("auto_run"), dict) else None
@@ -782,6 +805,32 @@ def build_response_pack(
                 "",
             ]
         )
+
+    if isinstance(engineering_constraints, dict):
+        if selected_language == "zh":
+            lines.extend(
+                [
+                    "## Hermes 工程约束",
+                    f"- 是否必需：{format_bool(engineering_constraints.get('required'), selected_language)}",
+                    f"- 约束文件：{engineering_constraints.get('artifact', '无')}",
+                    f"- 参考协议：{engineering_constraints.get('reference', '无')}",
+                    f"- 初始化命令：{engineering_constraints.get('command', '无')}",
+                    f"- 验证点：{engineering_constraints.get('verification_check', '无')}",
+                    "",
+                ]
+            )
+        else:
+            lines.extend(
+                [
+                    "## Hermes Engineering Constraints",
+                    f"- Required: {format_bool(engineering_constraints.get('required'), selected_language)}",
+                    f"- Constraint file: {engineering_constraints.get('artifact', 'n/a')}",
+                    f"- Reference: {engineering_constraints.get('reference', 'n/a')}",
+                    f"- Init command: {engineering_constraints.get('command', 'n/a')}",
+                    f"- Verification check: {engineering_constraints.get('verification_check', 'n/a')}",
+                    "",
+                ]
+            )
 
     if isinstance(planning_pack, dict):
         if selected_language == "zh":

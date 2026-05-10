@@ -61,6 +61,9 @@
     "bundle_bootstrap": {
       "$ref": "#/$defs/bundle_bootstrap"
     },
+    "engineering_constraints": {
+      "$ref": "#/$defs/engineering_constraints"
+    },
     "beta_program": {
       "$ref": "#/$defs/beta_program"
     },
@@ -285,6 +288,34 @@
           "$ref": "#/$defs/string_array"
         },
         "resume_anchor": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "engineering_constraints": {
+      "type": "object",
+      "required": [
+        "required",
+        "reference",
+        "artifact",
+        "command",
+        "verification_check"
+      ],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "artifact": {
+          "type": "string"
+        },
+        "command": {
+          "type": "string"
+        },
+        "verification_check": {
           "type": "string"
         }
       },

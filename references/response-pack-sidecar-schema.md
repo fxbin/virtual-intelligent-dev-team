@@ -28,6 +28,7 @@
 - `governance`
 - 可选：`beta_program`
 - 可选：`bundle_bootstrap`
+- 可选：`engineering_constraints`
 - 可选：`planning_pack`
 - 可选：`optimization_loop`
 - 可选：`auto_run`
@@ -93,6 +94,14 @@
 - `commands`
 - `artifacts`
 - `resume_anchor`
+
+## `engineering_constraints`
+
+- `required`
+- `reference`
+- `artifact`
+- `command`
+- `verification_check`
 
 ## `beta_program`
 

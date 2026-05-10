@@ -15,9 +15,10 @@ Handle complex requests with one unified workflow:
 5. Enable governance or process guardrails only when needed.
 6. Use a compact handoff when lead and assistants need structured coordination.
 7. Apply execution-quality guardrails: surface route-changing assumptions, keep the smallest defensible bundle, limit scope surgically, and define verifiable closure.
-8. If the user asks for optimization, repeated improvement, benchmark comparison, or another round, enter bounded iteration instead of open-ended self-looping.
-9. If the user asks whether the current version can ship, submit, or pass formal acceptance, run the release gate instead of answering from a benchmark summary alone.
-10. Produce one unified response instead of disconnected role fragments.
+8. For code-facing routes, apply the Hermes constraint gate before implementation: create or refresh `.skill-hermes/engineering-constraints.md`.
+9. If the user asks for optimization, repeated improvement, benchmark comparison, or another round, enter bounded iteration instead of open-ended self-looping.
+10. If the user asks whether the current version can ship, submit, or pass formal acceptance, run the release gate instead of answering from a benchmark summary alone.
+11. Produce one unified response instead of disconnected role fragments.
 
 ## Positioning
 
@@ -116,6 +117,8 @@ Route complex software requests into the smallest defensible workflow bundle, ke
   [references/runtime-routing-index.md](references/runtime-routing-index.md)
 - 执行质量护栏：
   [references/execution-quality-guardrails.md](references/execution-quality-guardrails.md)
+- Hermes 工程约束门禁：
+  [references/hermes-engineering-constraint-protocol.md](references/hermes-engineering-constraint-protocol.md)
 - 脚本、模板、验证与命令入口：
   [references/tooling-command-index.md](references/tooling-command-index.md)
 - 面向维护者的项目说明：

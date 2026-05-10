@@ -15,6 +15,8 @@
   - 中文流程 walkthrough
 - `execution-quality-guardrails.md`
   - 假设显性化、最小 bundle、外科手术式范围、可验证闭环的通用执行护栏
+- `hermes-engineering-constraint-protocol.md`
+  - 代码实现前必须创建或刷新 `.skill-hermes/engineering-constraints.md` 的 Hermes 工程约束门禁
 - `auto-run-playbook.md`
   - 显式 `/auto` 协议、setup/go 两阶段、`safe/background/resume` 子协议和自动白名单
 - `automation-resume-decision-matrix.md`

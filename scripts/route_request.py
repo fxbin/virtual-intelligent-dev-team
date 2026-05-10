@@ -28,6 +28,17 @@ AUTO_ELIGIBLE_WORKFLOWS = {
     "post-release-close-loop",
 }
 QUALITY_GUARDRAIL_REFERENCE = "references/execution-quality-guardrails.md"
+HERMES_CONSTRAINT_REFERENCE = "references/hermes-engineering-constraint-protocol.md"
+HERMES_CONSTRAINT_ARTIFACT = ".skill-hermes/engineering-constraints.md"
+HERMES_CONSTRAINT_COMMAND = "python scripts/init_hermes_constraints.py --root . --summary \"<task summary>\" --pretty"
+HERMES_CONSTRAINT_WORKFLOWS = {
+    "plan-first-build",
+    "product-spec-deliver",
+    "audit-fix-deliver",
+    "govern-change-safely",
+    "root-cause-remediate",
+    "direct-execution",
+}
 
 
 def load_module(name: str, path: Path):
@@ -2003,6 +2014,45 @@ def build_quality_gate(
     }
 
 
+def build_hermes_constraint_gate(
+    *,
+    workflow_bundle: dict[str, object],
+    lead_agent: str,
+    assistants: list[str],
+    request_text: str,
+) -> dict[str, object]:
+    bundle_name = str(workflow_bundle.get("name", "direct-execution"))
+    required = bundle_name in HERMES_CONSTRAINT_WORKFLOWS
+    task_summary = " ".join(request_text.split())[:160] or "<task summary>"
+    reason = (
+        "Code-facing routes must create or refresh the Hermes engineering constraints before implementation."
+        if required
+        else "This route is evidence, release, beta, or post-release focused; Hermes constraints are optional unless implementation begins."
+    )
+
+    return {
+        "required": required,
+        "reference": HERMES_CONSTRAINT_REFERENCE,
+        "artifact": HERMES_CONSTRAINT_ARTIFACT,
+        "command": HERMES_CONSTRAINT_COMMAND,
+        "principles": [
+            "constraints-before-code",
+            "single-constraint-file",
+            "current-rules-not-history",
+            "verify-before-implementation",
+        ],
+        "lead_owner": lead_agent,
+        "assistants": assistants,
+        "workflow_bundle": bundle_name,
+        "task_summary": task_summary,
+        "reason": reason,
+        "verification_check": (
+            f"{HERMES_CONSTRAINT_ARTIFACT} exists and records scope, non-negotiable constraints, "
+            "forbidden changes, verification evidence, and rollback/stop conditions."
+        ),
+    }
+
+
 def build_assistant_delta_contract(
     lead_agent: str, assistants: list[str], workflow_bundle: str | None
 ) -> dict[str, object]:
@@ -2530,6 +2580,12 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         workflow_bundle=workflow_bundle,
         clarifying_question=clarifying_question,
     )
+    hermes_constraint_gate = build_hermes_constraint_gate(
+        workflow_bundle=workflow_bundle,
+        lead_agent=lead_agent,
+        assistants=assistants,
+        request_text=routed_text,
+    )
     assistant_delta_contract = build_assistant_delta_contract(
         lead_agent=lead_agent,
         assistants=assistants,
@@ -2572,6 +2628,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "process_skill_hits": process_hits,
         "workflow_bundle_reason": workflow_bundle.get("reason"),
         "quality_gate_reference": quality_gate.get("reference"),
+        "hermes_constraint_reference": hermes_constraint_gate.get("reference"),
         "assistant_delta_contract_enabled": assistant_delta_contract.get("enabled"),
         "auto_mode": auto_run_profile,
     }
@@ -2616,6 +2673,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "workflow_steps": workflow_bundle.get("steps", []),
         "workflow_reason": workflow_bundle.get("reason"),
         "quality_gate": quality_gate,
+        "hermes_constraint_gate": hermes_constraint_gate,
         "progress_anchor_recommended": workflow_bundle.get("progress_anchor_recommended"),
         "resume_artifacts": workflow_bundle.get("resume_artifacts", []),
         "workflow_bundle_bootstrap": workflow_bundle_bootstrap,
