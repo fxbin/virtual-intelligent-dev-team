@@ -185,7 +185,7 @@ Every bundle should expose:
 - `workflow_reason`
 - `workflow_steps`
 - `quality_gate`
-- `hermes_constraint_gate`
+- `harness_constraint_gate`
 - `workflow_bundle_bootstrap`
 - `progress_anchor_recommended`
 - `resume_artifacts`
@@ -205,9 +205,9 @@ Each bundle also inherits the execution-quality guardrails in
 justify why the bundle is minimal, keep scope surgical, and name the verification
 evidence that closes the route.
 
-Code-facing bundles also inherit the Hermes engineering constraint protocol in
-`references/hermes-engineering-constraint-protocol.md`: before implementation,
-create or refresh `.skill-hermes/engineering-constraints.md` and treat it as the
+Code-facing bundles also inherit the Harness engineering constraint protocol in
+`references/harness-engineering-constraint-protocol.md`: before implementation,
+create or refresh `.skill-harness/engineering-constraints.md` and treat it as the
 current constraint source for scope, forbidden changes, verification evidence,
 and rollback or stop conditions.
 

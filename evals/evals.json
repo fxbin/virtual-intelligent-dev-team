@@ -1399,16 +1399,16 @@
         "technical-governance"
       ],
       "prompt": "Implement the checkout API fix and verify the regression test before editing production code.",
-      "expected_output": "Code-facing routing should require the Hermes engineering constraint file before implementation.",
+      "expected_output": "Code-facing routing should require the Harness engineering constraint file before implementation.",
       "files": [],
       "expectations": [
-        "hermes_constraint_gate.required is true",
-        "hermes_constraint_gate.reference is references/hermes-engineering-constraint-protocol.md",
-        "hermes_constraint_gate.artifact is .skill-hermes/engineering-constraints.md",
-        "hermes_constraint_gate.command contains init_hermes_constraints.py",
-        "hermes_constraint_gate.principles contains constraints-before-code",
-        "response_pack_json engineering_constraints.artifact is .skill-hermes/engineering-constraints.md",
-        "response_pack_json next_action.smallest_executable_action contains Hermes engineering constraints first"
+        "harness_constraint_gate.required is true",
+        "harness_constraint_gate.reference is references/harness-engineering-constraint-protocol.md",
+        "harness_constraint_gate.artifact is .skill-harness/engineering-constraints.md",
+        "harness_constraint_gate.command contains init_harness_constraints.py",
+        "harness_constraint_gate.principles contains constraints-before-code",
+        "response_pack_json engineering_constraints.artifact is .skill-harness/engineering-constraints.md",
+        "response_pack_json next_action.smallest_executable_action contains Harness engineering constraints first"
       ]
     }
   ]

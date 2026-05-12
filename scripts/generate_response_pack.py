@@ -294,9 +294,9 @@ def build_response_pack_payload(
     bundle_bootstrap = result.get("workflow_bundle_bootstrap", {})
     if not isinstance(bundle_bootstrap, dict):
         bundle_bootstrap = {}
-    hermes_constraints = result.get("hermes_constraint_gate", {})
-    if not isinstance(hermes_constraints, dict):
-        hermes_constraints = {}
+    harness_constraints = result.get("harness_constraint_gate", {})
+    if not isinstance(harness_constraints, dict):
+        harness_constraints = {}
     beta_validation_plan = result.get("beta_validation_plan", {})
     if not isinstance(beta_validation_plan, dict):
         beta_validation_plan = {}
@@ -461,12 +461,12 @@ def build_response_pack_payload(
             }
 
     next_action_text = localized_workflow_steps[0] if localized_workflow_steps else direct_step_text
-    if bool(hermes_constraints.get("required")):
-        artifact = hermes_constraints.get("artifact", ".skill-hermes/engineering-constraints.md")
+    if bool(harness_constraints.get("required")):
+        artifact = harness_constraints.get("artifact", ".skill-harness/engineering-constraints.md")
         next_action_text = (
-            f"{next_action_text}；先创建或刷新 Hermes 工程约束：{artifact}"
+            f"{next_action_text}；先创建或刷新 Harness 工程约束：{artifact}"
             if selected_language == "zh"
-            else f"{next_action_text}; create or refresh Hermes engineering constraints first: {artifact}"
+            else f"{next_action_text}; create or refresh Harness engineering constraints first: {artifact}"
         )
 
     payload: dict[str, object] = {
@@ -522,13 +522,13 @@ def build_response_pack_payload(
             "artifacts": [str(item) for item in bundle_bootstrap.get("artifacts", []) if str(item).strip()],
             "resume_anchor": format_missing(bundle_bootstrap.get("resume_anchor", ""), selected_language),
         }
-    if bool(hermes_constraints):
+    if bool(harness_constraints):
         payload["engineering_constraints"] = {
-            "required": bool(hermes_constraints.get("required")),
-            "reference": format_missing(hermes_constraints.get("reference", ""), selected_language),
-            "artifact": format_missing(hermes_constraints.get("artifact", ""), selected_language),
-            "command": format_missing(hermes_constraints.get("command", ""), selected_language),
-            "verification_check": format_missing(hermes_constraints.get("verification_check", ""), selected_language),
+            "required": bool(harness_constraints.get("required")),
+            "reference": format_missing(harness_constraints.get("reference", ""), selected_language),
+            "artifact": format_missing(harness_constraints.get("artifact", ""), selected_language),
+            "command": format_missing(harness_constraints.get("command", ""), selected_language),
+            "verification_check": format_missing(harness_constraints.get("verification_check", ""), selected_language),
         }
     if bool(beta_validation_plan.get("enabled")):
         payload["beta_program"] = {
@@ -810,7 +810,7 @@ def build_response_pack(
         if selected_language == "zh":
             lines.extend(
                 [
-                    "## Hermes 工程约束",
+                    "## Harness 工程约束",
                     f"- 是否必需：{format_bool(engineering_constraints.get('required'), selected_language)}",
                     f"- 约束文件：{engineering_constraints.get('artifact', '无')}",
                     f"- 参考协议：{engineering_constraints.get('reference', '无')}",
@@ -822,7 +822,7 @@ def build_response_pack(
         else:
             lines.extend(
                 [
-                    "## Hermes Engineering Constraints",
+                    "## Harness Engineering Constraints",
                     f"- Required: {format_bool(engineering_constraints.get('required'), selected_language)}",
                     f"- Constraint file: {engineering_constraints.get('artifact', 'n/a')}",
                     f"- Reference: {engineering_constraints.get('reference', 'n/a')}",

@@ -1,4 +1,4 @@
-# Hermes Engineering Constraint Protocol
+# Harness Engineering Constraint Protocol
 
 Use this protocol whenever a routed request can lead to code changes.
 
@@ -8,12 +8,12 @@ until the current engineering constraints are explicit.
 
 ## Required Artifact
 
-- `.skill-hermes/engineering-constraints.md`
+- `.skill-harness/engineering-constraints.md`
 
 Initialize it with:
 
 ```bash
-python scripts/init_hermes_constraints.py --root . --summary "<task summary>" --pretty
+python scripts/init_harness_constraints.py --root . --summary "<task summary>" --pretty
 ```
 
 ## Required Sections
@@ -32,12 +32,12 @@ python scripts/init_hermes_constraints.py --root . --summary "<task summary>" --
 
 ## Routing Rule
 
-For code-facing bundles, expose a machine-readable `hermes_constraint_gate` with:
+For code-facing bundles, expose a machine-readable `harness_constraint_gate` with:
 
 - `required: true`
-- `reference: references/hermes-engineering-constraint-protocol.md`
-- `artifact: .skill-hermes/engineering-constraints.md`
-- `command: python scripts/init_hermes_constraints.py --root . --summary "<task summary>" --pretty`
+- `reference: references/harness-engineering-constraint-protocol.md`
+- `artifact: .skill-harness/engineering-constraints.md`
+- `command: python scripts/init_harness_constraints.py --root . --summary "<task summary>" --pretty`
 - `verification_check`
 
 Code-facing bundles:

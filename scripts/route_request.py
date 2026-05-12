@@ -28,10 +28,10 @@ AUTO_ELIGIBLE_WORKFLOWS = {
     "post-release-close-loop",
 }
 QUALITY_GUARDRAIL_REFERENCE = "references/execution-quality-guardrails.md"
-HERMES_CONSTRAINT_REFERENCE = "references/hermes-engineering-constraint-protocol.md"
-HERMES_CONSTRAINT_ARTIFACT = ".skill-hermes/engineering-constraints.md"
-HERMES_CONSTRAINT_COMMAND = "python scripts/init_hermes_constraints.py --root . --summary \"<task summary>\" --pretty"
-HERMES_CONSTRAINT_WORKFLOWS = {
+HARNESS_CONSTRAINT_REFERENCE = "references/harness-engineering-constraint-protocol.md"
+HARNESS_CONSTRAINT_ARTIFACT = ".skill-harness/engineering-constraints.md"
+HARNESS_CONSTRAINT_COMMAND = "python scripts/init_harness_constraints.py --root . --summary \"<task summary>\" --pretty"
+HARNESS_CONSTRAINT_WORKFLOWS = {
     "plan-first-build",
     "product-spec-deliver",
     "audit-fix-deliver",
@@ -2014,7 +2014,7 @@ def build_quality_gate(
     }
 
 
-def build_hermes_constraint_gate(
+def build_harness_constraint_gate(
     *,
     workflow_bundle: dict[str, object],
     lead_agent: str,
@@ -2022,19 +2022,19 @@ def build_hermes_constraint_gate(
     request_text: str,
 ) -> dict[str, object]:
     bundle_name = str(workflow_bundle.get("name", "direct-execution"))
-    required = bundle_name in HERMES_CONSTRAINT_WORKFLOWS
+    required = bundle_name in HARNESS_CONSTRAINT_WORKFLOWS
     task_summary = " ".join(request_text.split())[:160] or "<task summary>"
     reason = (
-        "Code-facing routes must create or refresh the Hermes engineering constraints before implementation."
+        "Code-facing routes must create or refresh the Harness engineering constraints before implementation."
         if required
-        else "This route is evidence, release, beta, or post-release focused; Hermes constraints are optional unless implementation begins."
+        else "This route is evidence, release, beta, or post-release focused; Harness constraints are optional unless implementation begins."
     )
 
     return {
         "required": required,
-        "reference": HERMES_CONSTRAINT_REFERENCE,
-        "artifact": HERMES_CONSTRAINT_ARTIFACT,
-        "command": HERMES_CONSTRAINT_COMMAND,
+        "reference": HARNESS_CONSTRAINT_REFERENCE,
+        "artifact": HARNESS_CONSTRAINT_ARTIFACT,
+        "command": HARNESS_CONSTRAINT_COMMAND,
         "principles": [
             "constraints-before-code",
             "single-constraint-file",
@@ -2047,7 +2047,7 @@ def build_hermes_constraint_gate(
         "task_summary": task_summary,
         "reason": reason,
         "verification_check": (
-            f"{HERMES_CONSTRAINT_ARTIFACT} exists and records scope, non-negotiable constraints, "
+            f"{HARNESS_CONSTRAINT_ARTIFACT} exists and records scope, non-negotiable constraints, "
             "forbidden changes, verification evidence, and rollback/stop conditions."
         ),
     }
@@ -2580,7 +2580,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         workflow_bundle=workflow_bundle,
         clarifying_question=clarifying_question,
     )
-    hermes_constraint_gate = build_hermes_constraint_gate(
+    harness_constraint_gate = build_harness_constraint_gate(
         workflow_bundle=workflow_bundle,
         lead_agent=lead_agent,
         assistants=assistants,
@@ -2628,7 +2628,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "process_skill_hits": process_hits,
         "workflow_bundle_reason": workflow_bundle.get("reason"),
         "quality_gate_reference": quality_gate.get("reference"),
-        "hermes_constraint_reference": hermes_constraint_gate.get("reference"),
+        "harness_constraint_reference": harness_constraint_gate.get("reference"),
         "assistant_delta_contract_enabled": assistant_delta_contract.get("enabled"),
         "auto_mode": auto_run_profile,
     }
@@ -2673,7 +2673,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "workflow_steps": workflow_bundle.get("steps", []),
         "workflow_reason": workflow_bundle.get("reason"),
         "quality_gate": quality_gate,
-        "hermes_constraint_gate": hermes_constraint_gate,
+        "harness_constraint_gate": harness_constraint_gate,
         "progress_anchor_recommended": workflow_bundle.get("progress_anchor_recommended"),
         "resume_artifacts": workflow_bundle.get("resume_artifacts", []),
         "workflow_bundle_bootstrap": workflow_bundle_bootstrap,
