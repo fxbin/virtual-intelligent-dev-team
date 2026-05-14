@@ -1,13 +1,13 @@
-# Agency-Inspired Loop Patterns
+# Bounded Iteration Patterns
 
-This reference distills the useful iteration patterns learned from `agency-agents-main` and adapts them to this skill.
+This reference distills iteration patterns for bounded, evidence-driven loops. For source attribution, see [README.md – 致谢与参考来源](../README.md#致谢与参考来源).
 
 ## 1. Preserve The Semantic Owner
 
 - Pick the domain lead first.
 - Do not let the loop controller erase the real owner.
-- A frontend optimization loop should still belong to `World-Class Product Architect`.
-- A product-scope optimization loop should still belong to `World-Class Product Architect`.
+- The loop lead must match the domain lead from the initial routing decision; do not override it just because iteration mode is active.
+- If in doubt, re-check `references/agent-catalog.md` and `references/routing-rules.json` for the correct lead assignment.
 
 ## 2. Run A Dev↔QA Evidence Loop
 

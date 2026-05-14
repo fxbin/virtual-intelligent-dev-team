@@ -123,7 +123,7 @@
   - `loop-orchestration.md`
   - 如果用户显式写 `/auto`，再补读 `auto-run-playbook.md`
 - memory 与 evidence
-  - `agency-inspired-loop-patterns.md`
+  - `bounded-iteration-patterns.md`
   - `memory-model.md`
   - `evidence-ledger-schema.md`
   - `baseline-registry.md`

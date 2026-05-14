@@ -72,10 +72,12 @@
 | 日常交付 | 小切片 brief、项目上下文、状态锚点 | 容易直接跳到实现，缺少可恢复上下文 |
 | 执行模式 | 支持手动模式与显式 `/auto` | 通常没有明确模式切换 |
 | 恢复能力 | 状态优先恢复、resume、恢复锚点 | 容易依赖上下文记忆 |
-| 迭代能力 | 有边界的多轮优化、基线、回滚决策 | 常见问题是无限“再来一轮” |
-| 发布治理 | release gate、hold 后续修复入口 | 常停留在“建议发/不发” |
+| 迭代能力 | 有边界的多轮优化、基线、回滚决策 | 常见问题是无限"再来一轮" |
+| 发布治理 | release gate、hold 后续修复入口 | 常停留在"建议发/不发" |
 | 上线后闭环 | post-release feedback loop | 很少覆盖上线后的反馈回写 |
 | 产品协同 | 支持产品、研发、技术治理联动 | 容易偏单一研发视角 |
+| Beta 验证 | 分轮内测、模拟用户、cohort ramp、反馈门禁 | 通常只有静态测试计划，没有结构化分轮验证 |
+| 离线验证 | offline loop drill 验证回滚与恢复路径 | 很少验证关键闭环路径是否真的跑通 |
 
 ## 快速开始
 
@@ -117,6 +119,7 @@ virtual-intelligent-dev-team/
 ├── SKILL.md
 ├── README.md
 ├── VERSION
+├── LICENSE
 ├── agents/
 ├── assets/
 ├── docs/
@@ -240,6 +243,12 @@ python3 virtual-intelligent-dev-team/scripts/validate_virtual_team.py --pretty
 ## 版本
 
 当前版本见 [VERSION](VERSION)。
+
+## 致谢与参考来源
+
+本项目的迭代优化模式部分参考了 [agency-agents](https://github.com/msitarzewski/agency-agents) 的设计思路，并在其基础上适配了本 skill 的闭环工作流、状态恢复与发布治理等能力。
+
+相关的模式提炼见 [references/bounded-iteration-patterns.md](references/bounded-iteration-patterns.md)。
 
 ## License
 

@@ -84,10 +84,10 @@ Use these runbooks when the user request implies a recurring multi-role pattern.
   3. State the verification and rollback plan before command execution.
   4. Attach audit support if quality/security gate is part of the ask.
 - Success markers:
-- explicit execution mode
-- verification before release or merge
-- rollback conditions written down
-- Git or release sequence is justified, not assumed
+  - explicit execution mode
+  - verification before release or merge
+  - rollback conditions written down
+  - Git or release sequence is justified, not assumed
 - Preferred bundle:
   - `govern-change-safely`
 
@@ -102,10 +102,10 @@ Use these runbooks when the user request implies a recurring multi-role pattern.
   3. Define rollback and stop conditions.
   4. Keep coordination tight; do not add assistants without a clear job.
 - Success markers:
-- staged plan
-- rollback thinking
-- explicit stop conditions
-- post-change verification
+  - staged plan
+  - rollback thinking
+  - explicit stop conditions
+  - post-change verification
 - Preferred bundle:
   - `ship-hold-remediate` when release judgment is central
 
@@ -121,10 +121,10 @@ Use these runbooks when the user request implies a recurring multi-role pattern.
   4. Validate before proposing a patch.
   5. If a fix is required, define the safest next change and rollback path.
 - Success markers:
-- evidence-first debugging
-- root cause separated from symptom
-- no speculative patching
-- minimal validating next step
+  - evidence-first debugging
+  - root cause separated from symptom
+  - no speculative patching
+  - minimal validating next step
 - Preferred bundle:
   - `root-cause-remediate`
 
