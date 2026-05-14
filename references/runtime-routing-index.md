@@ -15,6 +15,10 @@
   - 中文流程 walkthrough
 - `execution-quality-guardrails.md`
   - 假设显性化、最小 bundle、外科手术式范围、可验证闭环的通用执行护栏
+- `runtime-operation-contract.md`
+  - 边界、路由默认、协同、治理、planning、iteration、root-cause、Git 与轻量规则
+- `output-contract.md`
+  - 用户可见输出结构与 response-pack sidecar 说明
 - `harness-engineering-constraint-protocol.md`
   - 代码实现前必须创建或刷新 `.skill-harness/engineering-constraints.md` 的 Harness 工程约束门禁
 - `auto-run-playbook.md`
@@ -29,6 +33,8 @@
   - resume execution ledger 的正式契约
 - `product-delivery-playbook.md`
   - 产品定义到实现切片的默认打法
+- `quick-slice-delivery-playbook.md`
+  - 小型功能 / bugfix / 明确实现切片的默认打法
 - `beta-validation-playbook.md`
   - 开发前后分轮内测、用户递增与反馈门禁的默认打法
 - `post-release-feedback-playbook.md`
@@ -75,6 +81,7 @@
 - Large-scale transformation planning
 - Audit and fix
 - Product slice to delivery
+- Quick implementation slice
 - Beta validation with staged cohorts
   - simulation persona library / cohort fixtures / scenario packs / trace catalog / config / trace
 - Frontend UX with backend coupling

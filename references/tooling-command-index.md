@@ -128,6 +128,8 @@ python scripts/generate_response_pack.py --text "<user request>" --repo . --outp
   - 适合在执行前把 `workflow_bundle / source explanation / next action / resume anchor` 直接喂给别的脚本
 - JSON sidecar 的稳定字段说明见：
   - `references/response-pack-sidecar-schema.md`
+- 用户可见输出结构见：
+  - `references/output-contract.md`
 - 可执行 schema 见：
   - `references/response-pack-sidecar.schema.json`
 - `generate_response_pack.py` 写 sidecar 前会先做 schema 校验
@@ -159,6 +161,39 @@ python scripts/init_harness_constraints.py --root . --summary "<task summary>" -
 协议说明：
 
 - `references/harness-engineering-constraint-protocol.md`
+
+## 一点六、项目上下文资产
+
+长期项目规则、常用命令、架构约束和禁改范围：
+
+```bash
+python scripts/init_project_context.py --root . --pretty
+```
+
+默认产物：
+
+- `.skill-context/project-context.md`
+
+协议说明：
+
+- `references/project-memory-lite.md`
+
+## 一点七、小切片交付资产
+
+小型功能、bugfix 或明确实现切片：
+
+```bash
+python scripts/init_quick_slice.py --root . --pretty
+```
+
+默认产物：
+
+- `.skill-delivery/current-slice.md`
+- `.skill-delivery/status.yaml`
+
+打法说明：
+
+- `references/quick-slice-delivery-playbook.md`
 
 ## 二、开发前规划资产
 
