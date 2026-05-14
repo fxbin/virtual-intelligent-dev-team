@@ -10,9 +10,11 @@
 
 1. 让我接管一个复杂任务
    - 例如重构、迁移、架构梳理、跨团队协同
-2. 让我进入自动模式
+2. 让我处理一个明确的小切片
+   - 例如小功能、bugfix、窄范围实现和回归验证
+3. 让我进入自动模式
    - 先 `/auto setup`，再 `/auto go`
-3. 让我判断当前版本能不能发
+4. 让我判断当前版本能不能发
    - 进入 release gate
 
 ## 最小上手路径
@@ -90,7 +92,30 @@ $virtual-intelligent-dev-team /auto go
 - 计划 / 执行 bundle
 - 风险与验证路径
 
-### 2. 分轮 beta 内测
+### 2. 小切片交付
+
+适合：
+
+- 小型功能
+- bugfix
+- 明确范围的实现切片
+
+典型结果：
+
+- quick slice brief
+- project context
+- delivery status
+- acceptance criteria
+- targeted verification evidence
+
+默认初始化：
+
+```bash
+python scripts/init_project_context.py --root . --pretty
+python scripts/init_quick_slice.py --root . --pretty
+```
+
+### 3. 分轮 beta 内测
 
 适合：
 
@@ -107,7 +132,7 @@ $virtual-intelligent-dev-team /auto go
 - preview manifest
 - beta gate
 
-### 3. release gate
+### 4. release gate
 
 适合：
 
@@ -120,7 +145,7 @@ $virtual-intelligent-dev-team /auto go
 - `ship` 或 `hold`
 - 如果 `hold`，要给出下一轮修复入口
 
-### 4. post-release feedback loop
+### 5. post-release feedback loop
 
 适合：
 
@@ -161,6 +186,9 @@ flowchart TD
 
 如果任务跨多轮或跨多天，建议保留：
 
+- `.skill-context/project-context.md`
+- `.skill-delivery/current-slice.md`
+- `.skill-delivery/status.yaml`
 - `docs/progress/MASTER.md`
 - beta / release / feedback 相关输出
 - automation state 与 response pack

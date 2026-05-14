@@ -35,7 +35,7 @@
 ## 文档分工
 
 - `usage-guide.md`
-  - 讲怎么实际使用这个项目，包括手动模式、`/auto`、resume、release、beta 等典型路径
+  - 讲怎么实际使用这个项目，包括手动模式、小切片交付、`/auto`、resume、release、beta 等典型路径
 - `design-philosophy.md`
   - 讲为什么这个项目要这样设计，以及边界在哪里
 
