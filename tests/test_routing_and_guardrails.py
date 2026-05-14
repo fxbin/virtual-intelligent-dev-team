@@ -29,7 +29,9 @@ RUN_OFFLINE_DRILL_SCRIPT = SKILL_DIR / "scripts" / "run_offline_loop_drill.py"
 RUN_RELEASE_GATE_SCRIPT = SKILL_DIR / "scripts" / "run_release_gate.py"
 INIT_PRE_DEVELOPMENT_SCRIPT = SKILL_DIR / "scripts" / "init_pre_development_plan.py"
 INIT_PROJECT_MEMORY_SCRIPT = SKILL_DIR / "scripts" / "init_project_memory.py"
+INIT_PROJECT_CONTEXT_SCRIPT = SKILL_DIR / "scripts" / "init_project_context.py"
 INIT_PRODUCT_DELIVERY_SCRIPT = SKILL_DIR / "scripts" / "init_product_delivery.py"
+INIT_QUICK_SLICE_SCRIPT = SKILL_DIR / "scripts" / "init_quick_slice.py"
 INIT_BETA_VALIDATION_SCRIPT = SKILL_DIR / "scripts" / "init_beta_validation.py"
 INIT_BETA_ROUND_REPORT_SCRIPT = SKILL_DIR / "scripts" / "init_beta_round_report.py"
 INIT_BETA_SIMULATION_SCRIPT = SKILL_DIR / "scripts" / "init_beta_simulation.py"
@@ -78,7 +80,9 @@ offline_loop_drill = load_module("virtual_intelligent_dev_team_run_offline_loop_
 release_gate = load_module("virtual_intelligent_dev_team_run_release_gate", RUN_RELEASE_GATE_SCRIPT)
 planning_init = load_module("virtual_intelligent_dev_team_planning_init", INIT_PRE_DEVELOPMENT_SCRIPT)
 project_memory_init = load_module("virtual_intelligent_dev_team_project_memory_init", INIT_PROJECT_MEMORY_SCRIPT)
+project_context_init = load_module("virtual_intelligent_dev_team_project_context_init", INIT_PROJECT_CONTEXT_SCRIPT)
 product_delivery_init = load_module("virtual_intelligent_dev_team_product_delivery_init", INIT_PRODUCT_DELIVERY_SCRIPT)
+quick_slice_init = load_module("virtual_intelligent_dev_team_quick_slice_init", INIT_QUICK_SLICE_SCRIPT)
 beta_validation_init = load_module("virtual_intelligent_dev_team_beta_validation_init", INIT_BETA_VALIDATION_SCRIPT)
 beta_round_report_init = load_module("virtual_intelligent_dev_team_beta_round_report_init", INIT_BETA_ROUND_REPORT_SCRIPT)
 beta_simulation_init = load_module("virtual_intelligent_dev_team_beta_simulation_init", INIT_BETA_SIMULATION_SCRIPT)
@@ -417,6 +421,37 @@ class RoutingTests(unittest.TestCase):
             "references/harness-engineering-constraint-protocol.md",
             result["reason"]["harness_constraint_reference"],
         )
+        self.assertEqual("quick-slice-deliver", result["workflow_bundle"])
+        self.assertTrue(result["workflow_bundle_bootstrap"]["required"])
+        self.assertIn(
+            "python scripts/init_project_context.py --root . --pretty",
+            result["workflow_bundle_bootstrap"]["commands"],
+        )
+        self.assertIn(
+            "python scripts/init_quick_slice.py --root . --pretty",
+            result["workflow_bundle_bootstrap"]["commands"],
+        )
+        self.assertIn(".skill-delivery/current-slice.md", result["resume_artifacts"])
+        self.assertIn(".skill-context/project-context.md", result["resume_artifacts"])
+
+    def test_quick_slice_initializer_creates_delivery_anchors(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            result = quick_slice_init.init_quick_slice(root)
+
+            self.assertTrue(result["ok"])
+            self.assertEqual(".skill-delivery/current-slice.md", result["resume_anchor"])
+            self.assertTrue((root / ".skill-delivery" / "current-slice.md").exists())
+            self.assertTrue((root / ".skill-delivery" / "status.yaml").exists())
+
+    def test_project_context_initializer_creates_context_anchor(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            result = project_context_init.init_project_context(root)
+
+            self.assertTrue(result["ok"])
+            self.assertEqual(".skill-context/project-context.md", result["resume_anchor"])
+            self.assertTrue((root / ".skill-context" / "project-context.md").exists())
 
     def test_ui_review_stays_with_product_architect(self) -> None:
         result = route_request.route_request(

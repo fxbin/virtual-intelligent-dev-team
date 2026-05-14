@@ -1402,6 +1402,12 @@
       "expected_output": "Code-facing routing should require the Harness engineering constraint file before implementation.",
       "files": [],
       "expectations": [
+        "workflow_bundle is quick-slice-deliver",
+        "workflow_bundle_bootstrap.required is true",
+        "workflow_bundle_bootstrap.commands contains python scripts/init_project_context.py --root . --pretty",
+        "workflow_bundle_bootstrap.commands contains python scripts/init_quick_slice.py --root . --pretty",
+        "workflow_bundle_bootstrap.artifacts contains .skill-delivery/current-slice.md",
+        "resume_artifacts contains .skill-context/project-context.md",
         "harness_constraint_gate.required is true",
         "harness_constraint_gate.reference is references/harness-engineering-constraint-protocol.md",
         "harness_constraint_gate.artifact is .skill-harness/engineering-constraints.md",

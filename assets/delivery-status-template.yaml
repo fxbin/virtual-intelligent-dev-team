@@ -1,0 +1,18 @@
+schema_version: delivery-status/v1
+skill_name: virtual-intelligent-dev-team
+current_slice:
+  id: slice-001
+  title: ""
+  owner: ""
+  state: ready
+  updated_at: ""
+context:
+  project_context: .skill-context/project-context.md
+  quick_slice_brief: .skill-delivery/current-slice.md
+verification:
+  required_commands: []
+  last_result: unknown
+  evidence: []
+risks:
+  blockers: []
+  follow_up: []

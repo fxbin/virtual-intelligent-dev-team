@@ -164,6 +164,29 @@
       }
     },
     {
+      "name": "quick_slice_checkout_fix",
+      "text": "Implement the checkout API fix and verify the regression test.",
+      "expect": {
+        "lead_agent": "Technical Trinity",
+        "needs_git_workflow": false,
+        "workflow_bundle": "quick-slice-deliver",
+        "bundle_bootstrap_commands_contains": [
+          "python scripts/init_project_context.py --root . --pretty",
+          "python scripts/init_quick_slice.py --root . --pretty"
+        ],
+        "bundle_bootstrap_artifacts_contains": [
+          ".skill-context/project-context.md",
+          ".skill-delivery/current-slice.md",
+          ".skill-delivery/status.yaml"
+        ],
+        "resume_artifacts_contains": [
+          ".skill-delivery/current-slice.md",
+          ".skill-context/project-context.md"
+        ],
+        "priority_agent": null
+      }
+    },
+    {
       "name": "rewrite_plan_first_bundle",
       "text": "Rewrite this project in Rust, but plan before coding and keep a progress tracker for later sessions.",
       "expect": {

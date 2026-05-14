@@ -46,7 +46,30 @@ existing routing, planning, iteration, release, and Git rules.
   - `.skill-product/current-slice.md`
   - `.skill-product/acceptance-criteria.md`
 
-## 3. `beta-feedback-ramp`
+## 3. `quick-slice-deliver`
+
+- Use when:
+  - the request is a narrow implementation, bug fix, or small feature slice
+  - the route needs enough structure to avoid drift but does not need a full product brief, planning branch, or iteration loop
+- Default sequence:
+  1. clarify only route-changing gaps
+  2. record intent, non-goals, acceptance criteria, and verification evidence
+  3. create or refresh durable project context when needed
+  4. implement the smallest coherent change
+  5. run targeted verification and self-review before presenting
+- Primary references:
+  - `references/quick-slice-delivery-playbook.md`
+  - `assets/quick-slice-brief-template.md`
+  - `assets/delivery-status-template.yaml`
+  - `assets/project-context-template.md`
+  - `scripts/init_quick_slice.py`
+  - `scripts/init_project_context.py`
+- Default resume anchors:
+  - `.skill-delivery/current-slice.md`
+  - `.skill-delivery/status.yaml`
+  - `.skill-context/project-context.md`
+
+## 4. `beta-feedback-ramp`
 
 - Use when:
   - the request is about internal beta, staged user validation, or a round-by-round cohort ramp
@@ -82,7 +105,7 @@ existing routing, planning, iteration, release, and Git rules.
   - `.skill-beta/cohort-matrix.md`
   - `.skill-beta/feedback-ledger.md`
 
-## 4. `audit-fix-deliver`
+## 5. `audit-fix-deliver`
 
 - Use when:
   - the request combines review or audit with remediation
@@ -99,7 +122,7 @@ existing routing, planning, iteration, release, and Git rules.
   - `.skill-iterations/current-round-memory.md`
   - `.skill-iterations/distilled-patterns.md`
 
-## 5. `govern-change-safely`
+## 6. `govern-change-safely`
 
 - Use when:
   - the request is primarily about staged execution, rollback, release hygiene, branch policy, or workflow safety
@@ -117,7 +140,7 @@ existing routing, planning, iteration, release, and Git rules.
   - `.skill-governance/change-plan.md`
   - `.skill-governance/release-checklist.md`
 
-## 6. `root-cause-remediate`
+## 7. `root-cause-remediate`
 
 - Use when:
   - the user says previous fixes failed
@@ -138,7 +161,7 @@ existing routing, planning, iteration, release, and Git rules.
   - `.skill-iterations/current-round-memory.md`
   - `.skill-iterations/distilled-patterns.md`
 
-## 7. `ship-hold-remediate`
+## 8. `ship-hold-remediate`
 
 - Use when:
   - the user asks whether the current version can ship
@@ -158,7 +181,7 @@ existing routing, planning, iteration, release, and Git rules.
   - `evals/release-gate/release-gate-report.md`
   - `evals/release-gate/next-iteration-brief.json`
 
-## 8. `post-release-close-loop`
+## 9. `post-release-close-loop`
 
 - Use when:
   - the version already shipped and the team needs a structured way to absorb dogfood, telemetry, support, or real-user feedback

@@ -49,6 +49,19 @@ Keep just enough durable context to:
   - reuse rule
   - evidence note
 
+## 4. Project Context Anchor
+
+- File:
+  - `.skill-context/project-context.md`
+- Use when:
+  - durable project rules, commands, stack assumptions, or forbidden changes should carry across slices
+  - a quick delivery slice needs project-specific constraints before implementation
+- Stores:
+  - stack and command defaults
+  - architecture and style rules
+  - delivery expectations
+  - forbidden changes and required verification evidence
+
 ## Lightweight Resume Contract
 
 When recommending resume artifacts, prefer:
@@ -65,6 +78,12 @@ Do not ask the next session to replay every round file by default.
 
 ```bash
 python scripts/init_project_memory.py --root . --mode all --pretty
+```
+
+- Project context:
+
+```bash
+python scripts/init_project_context.py --root . --pretty
 ```
 
 - Planning anchor:
@@ -93,3 +112,4 @@ cp assets/distilled-patterns-template.md .skill-iterations/distilled-patterns.md
 - Do not pretend this is long-term institutional memory.
 - Do not store speculative notes as accepted patterns.
 - Do not return five or six anchors when one would unblock the next step.
+- Do not put one-off task constraints in project context; use the Harness constraint artifact for per-task implementation boundaries.

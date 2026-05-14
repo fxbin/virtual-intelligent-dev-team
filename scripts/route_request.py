@@ -34,6 +34,7 @@ HARNESS_CONSTRAINT_COMMAND = "python scripts/init_harness_constraints.py --root 
 HARNESS_CONSTRAINT_WORKFLOWS = {
     "plan-first-build",
     "product-spec-deliver",
+    "quick-slice-deliver",
     "audit-fix-deliver",
     "govern-change-safely",
     "root-cause-remediate",
@@ -267,6 +268,42 @@ def is_frontend_checkout_context(text: str, git_hits: list[str]) -> bool:
     return any(keyword_matches(lowered, keyword) for keyword in frontend_context_keywords)
 
 
+def is_domain_checkout_context(text: str, git_hits: list[str]) -> bool:
+    if len(git_hits) == 0:
+        return False
+    normalized_hits = {normalize_process_hit(hit) for hit in git_hits}
+    if "checkout" not in normalized_hits:
+        return False
+
+    lowered = text.lower()
+    domain_keywords = [
+        "api",
+        "payment",
+        "cart",
+        "order",
+        "form",
+        "flow",
+        "ux",
+        "frontend",
+        "backend",
+        "regression test",
+        "业务",
+        "支付",
+        "订单",
+        "购物车",
+        "结账",
+        "接口",
+    ]
+    git_context_keywords = [
+        "git checkout",
+        "branch",
+        "分支",
+    ]
+    return any(keyword_matches(lowered, keyword) for keyword in domain_keywords) and not any(
+        keyword_matches(lowered, keyword) for keyword in git_context_keywords
+    )
+
+
 def is_release_readiness_context_only(
     git_hits: list[str], release_hits: list[str]
 ) -> bool:
@@ -285,14 +322,27 @@ def should_suppress_git_workflow(text: str, process_hits: dict[str, list[str]]) 
     return (
         is_git_review_context_only(text, git_hits)
         or is_frontend_checkout_context(text, git_hits)
+        or is_domain_checkout_context(text, git_hits)
         or is_release_readiness_context_only(git_hits, release_hits)
     )
 
 
-def should_suppress_bounded_iteration(process_hits: dict[str, list[str]]) -> bool:
+def should_suppress_bounded_iteration(text: str, process_hits: dict[str, list[str]]) -> bool:
     iteration_hits = process_hits.get("bounded-iteration", [])
     release_hits = process_hits.get("release-gate", [])
     if len(iteration_hits) == 0 or len(release_hits) == 0:
+        lowered = text.lower()
+        normalized_iteration_hits = {normalize_process_hit(hit) for hit in iteration_hits}
+        if normalized_iteration_hits.issubset({"regression"}):
+            targeted_test_keywords = [
+                "regression test",
+                "regression tests",
+                "run regression",
+                "verify the regression",
+                "回归测试",
+                "跑回归",
+            ]
+            return any(keyword_matches(lowered, keyword) for keyword in targeted_test_keywords)
         return False
     normalized_iteration_hits = {normalize_process_hit(hit) for hit in iteration_hits}
     weak_benchmark_reference_hits = {"benchmark", "基准"}
@@ -365,7 +415,7 @@ def detect_process_skills(
 
     if should_suppress_git_workflow(text, process_hits):
         process_hits.pop("git-workflow", None)
-    if should_suppress_bounded_iteration(process_hits):
+    if should_suppress_bounded_iteration(text, process_hits):
         process_hits.pop("bounded-iteration", None)
 
     needs_pre_development_planning = "pre-development-planning" in process_hits
@@ -592,8 +642,9 @@ def detect_priority_lead(text: str, config: dict[str, object]) -> dict[str, obje
             continue
         if len(any_keywords) > 0 and len(any_hits) == 0:
             continue
-        if agent == "Git Workflow Guardian" and is_frontend_checkout_context(
-            text, any_hits + all_hits
+        if agent == "Git Workflow Guardian" and (
+            is_frontend_checkout_context(text, any_hits + all_hits)
+            or is_domain_checkout_context(text, any_hits + all_hits)
         ):
             continue
         if len(exclude_hits) > 0:
@@ -1555,6 +1606,31 @@ def rebalance_git_lead_for_semantic_owner(
     return lead_agent
 
 
+def is_quick_slice_context(text: str) -> bool:
+    quick_slice_keywords = [
+        "implement",
+        "build",
+        "add",
+        "fix",
+        "bugfix",
+        "patch",
+        "small feature",
+        "tiny feature",
+        "quick fix",
+        "wire up",
+        "hook up",
+        "实现",
+        "开发",
+        "修复",
+        "小功能",
+        "小改动",
+        "补一个",
+        "加一个",
+        "接一下",
+    ]
+    return text_has_any_keyword(text, quick_slice_keywords)
+
+
 def pick_mode(
     confidence: float,
     sentinel_overlay: bool,
@@ -1874,6 +1950,26 @@ def build_workflow_bundle(
             ],
         }
 
+    if is_quick_slice_context(text) and not needs_git_workflow:
+        return {
+            "name": "quick-slice-deliver",
+            "confidence": 0.72,
+            "source": "keyword+lead",
+            "reason": "The request is a narrow implementation or bug-fix slice, so it should keep a small delivery brief, durable project context, targeted verification, and self-review without expanding into a full planning or product workflow.",
+            "steps": [
+                "clarify only route-changing gaps",
+                "record intent, non-goals, acceptance criteria, and verification evidence",
+                "create or refresh durable project context when needed",
+                "implement the smallest coherent change and self-review it",
+            ],
+            "progress_anchor_recommended": ".skill-delivery/current-slice.md",
+            "resume_artifacts": [
+                ".skill-delivery/current-slice.md",
+                ".skill-delivery/status.yaml",
+                ".skill-context/project-context.md",
+            ],
+        }
+
     return {
         "name": "direct-execution",
         "confidence": 0.35,
@@ -1919,6 +2015,21 @@ def build_workflow_bundle_bootstrap(bundle_name: str) -> dict[str, object]:
                 ".skill-product/contract-questions.md",
             ],
             "resume_anchor": ".skill-product/current-slice.md",
+        }
+    if bundle_name == "quick-slice-deliver":
+        return {
+            "required": True,
+            "reference": "references/quick-slice-delivery-playbook.md",
+            "commands": [
+                "python scripts/init_project_context.py --root . --pretty",
+                "python scripts/init_quick_slice.py --root . --pretty",
+            ],
+            "artifacts": [
+                ".skill-context/project-context.md",
+                ".skill-delivery/current-slice.md",
+                ".skill-delivery/status.yaml",
+            ],
+            "resume_anchor": ".skill-delivery/current-slice.md",
         }
     if bundle_name == "govern-change-safely":
         return {
@@ -1975,6 +2086,8 @@ def build_quality_gate(
         verification = "planning pack and docs/progress/MASTER.md exist before implementation starts"
     elif bundle_name == "product-spec-deliver":
         verification = "current slice, acceptance criteria, and contract questions are written"
+    elif bundle_name == "quick-slice-deliver":
+        verification = "quick slice brief, delivery status, project context, and targeted verification evidence are present"
     elif bundle_name == "beta-feedback-ramp":
         verification = "cohort plan, ramp plan, feedback ledger, and round gate evidence exist"
     elif bundle_name == "audit-fix-deliver":
@@ -2461,6 +2574,14 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         default_lead = str(config.get("default_unknown_lead_agent", "Technical Trinity"))
         lead_agent = default_lead
         lead_score = scores.get(lead_agent, 0)
+    elif (
+        lead_agent == "Git Workflow Guardian"
+        and not needs_git_workflow
+        and priority_route is None
+        and is_quick_slice_context(routed_text)
+    ):
+        lead_agent = "Technical Trinity"
+        lead_score = max(scores.get(lead_agent, 0), 1)
 
     top_three_total = sum(score for _, score in sorted_agents[:3])
     confidence = round(lead_score / max(top_three_total, 1), 3) if top_three_total > 0 else 0.0
