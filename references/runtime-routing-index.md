@@ -21,6 +21,12 @@
   - 用户可见输出结构与 response-pack sidecar 说明
 - `harness-engineering-constraint-protocol.md`
   - 代码实现前必须创建或刷新 `.skill-harness/engineering-constraints.md` 的 Harness 工程约束门禁
+- `team-engine-lite-protocol.md`
+  - Worker / Verifier 角色分离、状态机、max cycles、DeliveryCycleReport 和 soft runtime claim
+- `worker-verifier-cycle-protocol.md`
+  - implementation output、verification report、remediation patch 与 stop/retry 规则
+- `external-agent-backend-orchestration-protocol.md`
+  - Codex / Claude Code / OpenCode 等外部后端只能作为软编排角色会话，不得虚假声称真实异步多进程 runtime
 - `auto-run-playbook.md`
   - 显式 `/auto` 协议、setup/go 两阶段、`safe/background/resume` 子协议和自动白名单
 - `automation-resume-decision-matrix.md`
@@ -58,6 +64,8 @@
   - assistant 激活卡
 - `workflow-bundles.md`
   - 默认交付旅程与恢复锚点
+- `team-engine-lite-protocol.md`
+  - 当 workflow bundle 涉及实现、修复、发版、Git 或用户可见行为时，作为验收闭环合同
 
 常见 lead 速记：
 

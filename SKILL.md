@@ -26,6 +26,8 @@ It has six practical closure layers:
    - Release readiness uses a formal `ship` / `hold` gate and bootstraps the next remediation loop when needed.
 6. `Drill closure`
    - Offline drills verify rollback, resume, and release-gate bootstrap paths.
+7. `Team Engine Lite closure`
+   - Code-facing delivery now carries Worker / Verifier separation, max-cycle retry, remediation patch, external-agent soft orchestration boundaries, and a DeliveryCycleReport before Lead acceptance.
 
 Runtime rule:
 
@@ -83,9 +85,11 @@ If the task is simple and clearly single-domain, keep routing lightweight.
 7. Use a compact handoff when lead and assistants need structured coordination.
 8. Apply execution-quality guardrails: surface route-changing assumptions, keep the smallest defensible bundle, limit scope surgically, and define verifiable closure.
 9. For code-facing routes, apply the Harness constraint gate before implementation: create or refresh `.skill-harness/engineering-constraints.md`.
-10. If the user asks for optimization, repeated improvement, benchmark comparison, or another round, enter bounded iteration instead of open-ended self-looping.
-11. If the user asks whether the current version can ship, submit, or pass formal acceptance, run the release gate instead of answering from a benchmark summary alone.
-12. Produce one unified response instead of disconnected role fragments.
+10. For code-facing, release-facing, Git-facing, or remediation routes, apply Team Engine Lite: Worker can produce, Verifier can pass/fail/hold, and Lead can accept only after a DeliveryCycleReport.
+11. If external Agent backends are available, treat them as soft backend sessions under the same role boundary; do not claim true async multi-process runtime without runtime evidence.
+12. If the user asks for optimization, repeated improvement, benchmark comparison, or another round, enter bounded iteration instead of open-ended self-looping.
+13. If the user asks whether the current version can ship, submit, or pass formal acceptance, run the release gate instead of answering from a benchmark summary alone.
+14. Produce one unified response instead of disconnected role fragments.
 
 ## Output template
 
@@ -148,6 +152,10 @@ Read indexes first; do not flatten the whole skill into this file.
   [references/execution-quality-guardrails.md](references/execution-quality-guardrails.md)
 - Harness engineering constraint gate:
   [references/harness-engineering-constraint-protocol.md](references/harness-engineering-constraint-protocol.md)
+- Team Engine Lite, Worker / Verifier cycle, and external Agent backend soft orchestration:
+  [references/team-engine-lite-protocol.md](references/team-engine-lite-protocol.md),
+  [references/worker-verifier-cycle-protocol.md](references/worker-verifier-cycle-protocol.md), and
+  [references/external-agent-backend-orchestration-protocol.md](references/external-agent-backend-orchestration-protocol.md)
 - Scripts, templates, validation, and command entrypoints:
   [references/tooling-command-index.md](references/tooling-command-index.md)
 - Workflow bundles and resume anchors:

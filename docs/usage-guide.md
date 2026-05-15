@@ -40,6 +40,7 @@ $virtual-intelligent-dev-team /auto go
 - 任务需要多轮优化、版本比较、基线追踪
 - 任务上线前后都需要更正式的 gate 和反馈回写
 - 任务规模较大，想先规划再执行
+- 任务需要把 Worker 和 Verifier 分开，避免同一个 Agent 自产自审
 
 ## 默认模式
 
@@ -145,7 +146,30 @@ python scripts/init_quick_slice.py --root . --pretty
 - `ship` 或 `hold`
 - 如果 `hold`，要给出下一轮修复入口
 
-### 5. post-release feedback loop
+### 5. Team Engine Lite 交付验收
+
+适合：
+
+- 代码实现、bugfix、审计修复
+- release gate 后的 remediation
+- Git 交付或高风险技术治理
+- 需要外部 Agent 后端软编排的任务
+
+关键规则：
+
+- Worker 只能产出实现或修复，不能给自己 `pass`
+- Verifier 必须独立输出 `VerificationReport`
+- Verifier `fail` 必须给 `RemediationPatch`
+- Lead 只能在 `DeliveryCycleReport.next_state = accepted` 后接受结果
+- 默认 `runtime_claim = soft_orchestration_only`，不声称真实异步多进程 runtime
+
+离线检查：
+
+```bash
+python scripts/run_team_engine_drill.py --pretty
+```
+
+### 6. post-release feedback loop
 
 适合：
 
@@ -190,6 +214,7 @@ flowchart TD
 - `.skill-delivery/current-slice.md`
 - `.skill-delivery/status.yaml`
 - `docs/progress/MASTER.md`
+- Team Engine Lite 的 WorkOrder / DeliveryCycleReport / backend orchestration plan
 - beta / release / feedback 相关输出
 - automation state 与 response pack
 

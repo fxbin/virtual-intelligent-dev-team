@@ -40,12 +40,23 @@ After routing, answer with one unified structure. The lead agent owns the respon
    - Whether roundtable governance is enabled
    - Selected governance track
    - DRI, SLO, dual-sign, and post-audit requirements when relevant
-8. `Planning Pack` when pre-development planning is active
+8. `Team Engine Lite` when role-separated delivery is active
+   - Whether Worker / Verifier separation is required
+   - Worker and Verifier roles
+   - Max cycles and acceptance gates
+   - Whether Worker can self-pass
+   - Runtime claim and closure verdict
+9. `External Agent Backend` when soft backend orchestration is active
+   - Orchestration mode
+   - Runtime claim
+   - Backend orchestration verdict
+   - Required output contracts
+10. `Planning Pack` when pre-development planning is active
    - Confirmed transformation scope, target, and constraints
    - Analysis artifacts to create or refresh
    - Phase plan, lane notes, and merge-risk guidance
    - Progress anchor and resume point
-9. `Optimization Loop` when bounded iteration is active
+11. `Optimization Loop` when bounded iteration is active
    - Objective and baseline
    - Current round and evidence source
    - Active owner, round memory, and self-feedback chain

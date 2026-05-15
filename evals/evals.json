@@ -1416,6 +1416,54 @@
         "response_pack_json engineering_constraints.artifact is .skill-harness/engineering-constraints.md",
         "response_pack_json next_action.smallest_executable_action contains Harness engineering constraints first"
       ]
+    },
+    {
+      "id": 80,
+      "categories": [
+        "backend-stack",
+        "team-engine-lite",
+        "contract-output"
+      ],
+      "prompt": "Implement the checkout API fix and verify the regression test before editing production code.",
+      "expected_output": "Code-facing delivery should expose Team Engine Lite role separation and prevent Worker self-pass.",
+      "files": [],
+      "expectations": [
+        "workflow_bundle is quick-slice-deliver",
+        "team_engine_gate.required is true",
+        "team_engine_gate.reference is references/team-engine-lite-protocol.md",
+        "team_engine_gate.cycle_reference is references/worker-verifier-cycle-protocol.md",
+        "team_engine_gate.producer_can_self_pass is false",
+        "team_engine_gate.leader_accept_requires_cycle_report is true",
+        "team_engine_gate.verifier_fail_requires_remediation_patch is true",
+        "team_engine_gate.runtime_claim is soft_orchestration_only",
+        "team_engine_gate.team_engine_closure_verdict is pass_with_watch",
+        "response_pack_json team_engine.producer_can_self_pass is false",
+        "response_pack_json team_engine.leader_accept_requires_cycle_report is true",
+        "response_pack_json team_engine.team_engine_closure_verdict is pass_with_watch"
+      ]
+    },
+    {
+      "id": 81,
+      "categories": [
+        "multi-agent",
+        "external-agent-backend",
+        "contract-output"
+      ],
+      "prompt": "Use Codex, Claude Code, or OpenCode as separate agents to implement and verify this risky refactor.",
+      "expected_output": "External Agent backend orchestration should stay a soft orchestration claim unless real runtime evidence exists.",
+      "files": [],
+      "expectations": [
+        "team_engine_gate.required is true",
+        "external_agent_backend_plan.enabled is true",
+        "external_agent_backend_plan.reference is references/external-agent-backend-orchestration-protocol.md",
+        "external_agent_backend_plan.orchestration_mode is soft_external_backend",
+        "external_agent_backend_plan.runtime_claim is soft_orchestration_only",
+        "external_agent_backend_plan.backend_orchestration_verdict is simulated",
+        "external_agent_backend_plan.required_outputs contains WorkOrder",
+        "external_agent_backend_plan.required_outputs contains VerificationReport",
+        "response_pack_json external_agent_backend.runtime_claim is soft_orchestration_only",
+        "response_pack_json external_agent_backend.backend_orchestration_verdict is simulated"
+      ]
     }
   ]
 }

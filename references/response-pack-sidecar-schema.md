@@ -29,6 +29,8 @@
 - 可选：`beta_program`
 - 可选：`bundle_bootstrap`
 - 可选：`engineering_constraints`
+- 可选：`team_engine`
+- 可选：`external_agent_backend`
 - 可选：`planning_pack`
 - 可选：`optimization_loop`
 - 可选：`auto_run`
@@ -102,6 +104,35 @@
 - `artifact`
 - `command`
 - `verification_check`
+
+## `team_engine`
+
+- `required`
+- `reference`
+- `cycle_reference`
+- `workflow_bundle`
+- `lead_role`
+- `worker_role`
+- `verifier_role`
+- `max_cycles`
+- `acceptance_gates`
+- `producer_can_self_pass`
+- `leader_accept_requires_cycle_report`
+- `verifier_fail_requires_remediation_patch`
+- `runtime_claim`
+- `team_engine_closure_verdict`
+- `reason`
+
+## `external_agent_backend`
+
+- `enabled`
+- `reference`
+- `orchestration_mode`
+- `runtime_claim`
+- `backend_orchestration_verdict`
+- `team_engine_closure_verdict`
+- `required_outputs`
+- `boundary_note`
 
 ## `beta_program`
 

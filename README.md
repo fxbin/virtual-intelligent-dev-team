@@ -44,6 +44,7 @@
 - 产品定义、验收标准、分轮 beta 内测
 - release gate 与 post-release feedback loop
 - 显式 `/auto` 自动运行与状态优先恢复
+- Team Engine Lite 的 Worker / Verifier 分离、RemediationPatch 和 DeliveryCycleReport
 
 ## 核心能力
 
@@ -59,6 +60,10 @@
   - 恢复优先读取机器可读的 automation state，而不是靠对话猜测上下文。
 - `小切片交付`
   - 小型功能或 bugfix 默认保留 quick slice brief、project context、delivery status 和验证证据。
+- `Team Engine Lite`
+  - 代码交付、审计修复、release gate remediation 与 Git 治理路线默认保留 Worker / Verifier 分离、max-cycle retry、RemediationPatch 和 DeliveryCycleReport。
+- `外部 Agent 后端软编排`
+  - 可以把 Codex / Claude Code / OpenCode 当作角色后端，但默认只声明 `soft_orchestration_only`，不虚假声称真实异步多进程 runtime。
 - `有边界的迭代优化`
   - 优化循环是有边界、有证据、有回滚点的，不做无限自转。
 - `发布与反馈闭环`

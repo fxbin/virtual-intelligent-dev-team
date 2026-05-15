@@ -20,6 +20,12 @@ python scripts/route_request.py --text "<user request>" --config references/rout
 python scripts/validate_virtual_team.py --pretty
 ```
 
+- Team Engine Lite 离线 drill
+
+```bash
+python scripts/run_team_engine_drill.py --pretty
+```
+
 - 执行动作前先做合法性校验
 
 ```bash
@@ -161,6 +167,29 @@ python scripts/init_harness_constraints.py --root . --summary "<task summary>" -
 协议说明：
 
 - `references/harness-engineering-constraint-protocol.md`
+
+## 一点五五、Team Engine Lite 资产
+
+代码交付、审计修复、release gate、Git 交付与根因修复路线默认需要 Worker / Verifier 分离。
+
+模板：
+
+- `assets/team-work-order-template.json`
+- `assets/delivery-cycle-report-template.json`
+- `assets/external-agent-backend-plan-template.json`
+- `assets/sample-delivery-cycle-report.json`
+
+协议说明：
+
+- `references/team-engine-lite-protocol.md`
+- `references/worker-verifier-cycle-protocol.md`
+- `references/external-agent-backend-orchestration-protocol.md`
+
+离线验证：
+
+```bash
+python scripts/run_team_engine_drill.py --pretty
+```
 
 ## 一点六、项目上下文资产
 
