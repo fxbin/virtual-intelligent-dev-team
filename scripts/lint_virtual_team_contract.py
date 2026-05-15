@@ -20,6 +20,7 @@ RESPONSE_PACK_SCRIPT = SCRIPT_DIR / "generate_response_pack.py"
 RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
 VERIFY_ACTION_SCRIPT = SCRIPT_DIR / "verify_action.py"
 RELEASE_GATE_SCRIPT = SCRIPT_DIR / "run_release_gate.py"
+TEAM_ENGINE_DRILL_SCRIPT = SCRIPT_DIR / "run_team_engine_drill.py"
 VERSION_SYNC_SCRIPT = REPO_ROOT / "scripts" / "sync_virtual_intelligent_dev_team_version.py"
 CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 VERSION_PATH = SKILL_DIR / "VERSION"
@@ -42,6 +43,13 @@ BETA_SIMULATION_EVENT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simula
 BETA_SIMULATION_RUN_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-run.schema.json"
 BENCHMARK_EVALS_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-evals.schema.json"
 BENCHMARK_RUN_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-run-result.schema.json"
+TEAM_ENGINE_REFERENCE_PATH = SKILL_DIR / "references" / "team-engine-lite-protocol.md"
+WORKER_VERIFIER_REFERENCE_PATH = SKILL_DIR / "references" / "worker-verifier-cycle-protocol.md"
+EXTERNAL_AGENT_BACKEND_REFERENCE_PATH = SKILL_DIR / "references" / "external-agent-backend-orchestration-protocol.md"
+TEAM_WORK_ORDER_TEMPLATE_PATH = SKILL_DIR / "assets" / "team-work-order-template.json"
+DELIVERY_CYCLE_REPORT_TEMPLATE_PATH = SKILL_DIR / "assets" / "delivery-cycle-report-template.json"
+EXTERNAL_AGENT_BACKEND_PLAN_TEMPLATE_PATH = SKILL_DIR / "assets" / "external-agent-backend-plan-template.json"
+SAMPLE_DELIVERY_CYCLE_REPORT_PATH = SKILL_DIR / "assets" / "sample-delivery-cycle-report.json"
 MARKDOWN_PATH_RE = re.compile(r"(?<![\w./-])((?:assets|references|scripts)/[A-Za-z0-9_./-]+\.(?:md|json|py))(?![\w./-])")
 BARE_REFERENCE_RE = re.compile(r"^\s*-\s+`([A-Za-z0-9_.-]+\.(?:md|json))`\s*$")
 SCRIPT_COMMAND_RE = re.compile(r"python\s+(scripts/[A-Za-z0-9_.-]+\.py)\b")
@@ -100,6 +108,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
     response_contract_script = resolved_skill_dir / "scripts" / "response_contract.py"
     verify_action_script = resolved_skill_dir / "scripts" / "verify_action.py"
     release_gate_script = resolved_skill_dir / "scripts" / "run_release_gate.py"
+    team_engine_drill_script = resolved_skill_dir / "scripts" / "run_team_engine_drill.py"
     benchmark_evals_path = resolved_skill_dir / "evals" / "evals.json"
     sidecar_schema_path = resolved_skill_dir / "references" / "response-pack-sidecar-schema.md"
     sidecar_schema_json_path = resolved_skill_dir / "references" / "response-pack-sidecar.schema.json"
@@ -119,6 +128,13 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
     beta_simulation_run_schema_json_path = resolved_skill_dir / "references" / "beta-simulation-run.schema.json"
     benchmark_evals_schema_json_path = resolved_skill_dir / "references" / "benchmark-evals.schema.json"
     benchmark_run_result_schema_json_path = resolved_skill_dir / "references" / "benchmark-run-result.schema.json"
+    team_engine_reference_path = resolved_skill_dir / "references" / "team-engine-lite-protocol.md"
+    worker_verifier_reference_path = resolved_skill_dir / "references" / "worker-verifier-cycle-protocol.md"
+    external_agent_backend_reference_path = resolved_skill_dir / "references" / "external-agent-backend-orchestration-protocol.md"
+    team_work_order_template_path = resolved_skill_dir / "assets" / "team-work-order-template.json"
+    delivery_cycle_report_template_path = resolved_skill_dir / "assets" / "delivery-cycle-report-template.json"
+    external_agent_backend_plan_template_path = resolved_skill_dir / "assets" / "external-agent-backend-plan-template.json"
+    sample_delivery_cycle_report_path = resolved_skill_dir / "assets" / "sample-delivery-cycle-report.json"
     route_script = resolved_skill_dir / "scripts" / "route_request.py"
     index_paths = [
         resolved_skill_dir / "references" / "tooling-command-index.md",
@@ -158,6 +174,14 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             release_gate_script,
         )
         if release_gate_script.exists()
+        else None
+    )
+    local_team_engine_drill = (
+        load_module(
+            f"virtual_team_contract_lint_team_engine_drill_{resolved_skill_dir.name}",
+            team_engine_drill_script,
+        )
+        if team_engine_drill_script.exists()
         else None
     )
     local_version_sync = (
@@ -349,6 +373,22 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
         errors,
         "Missing references/benchmark-run-result.schema.json. Restore the benchmark result executable schema before release.",
     )
+    team_engine_files = [
+        team_engine_reference_path,
+        worker_verifier_reference_path,
+        external_agent_backend_reference_path,
+        team_work_order_template_path,
+        delivery_cycle_report_template_path,
+        external_agent_backend_plan_template_path,
+        sample_delivery_cycle_report_path,
+        team_engine_drill_script,
+    ]
+    for path in team_engine_files:
+        _check(
+            path.exists(),
+            errors,
+            f"Missing Team Engine Lite artifact `{path.relative_to(resolved_skill_dir)}`. Restore the role-separated delivery contract before release.",
+        )
     checks.append(
         {
             "name": "response-contract-schema-files",
@@ -376,6 +416,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 and benchmark_evals_path.exists()
                 and benchmark_evals_schema_json_path.exists()
                 and benchmark_run_result_schema_json_path.exists()
+                and all(path.exists() for path in team_engine_files)
             ),
         }
     )
@@ -531,6 +572,62 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
         )
     else:
         checks.append({"name": "response-pack-sidecar-contract", "passed": False})
+
+    team_engine_failures: list[str] = []
+    try:
+        sample_route = local_route_request.route_request(
+            text="Implement the checkout API fix and verify the regression test.",
+            config=config,
+            repo_path=resolved_skill_dir.parent,
+        )
+        team_engine_gate = sample_route.get("team_engine_gate", {})
+        external_backend_plan = sample_route.get("external_agent_backend_plan", {})
+        if not isinstance(team_engine_gate, dict) or not team_engine_gate.get("required"):
+            team_engine_failures.append("route_request did not emit required team_engine_gate for quick-slice delivery")
+        else:
+            if team_engine_gate.get("producer_can_self_pass") is not False:
+                team_engine_failures.append("team_engine_gate must keep producer_can_self_pass=false")
+            if team_engine_gate.get("leader_accept_requires_cycle_report") is not True:
+                team_engine_failures.append("team_engine_gate must require Lead acceptance through DeliveryCycleReport")
+            if team_engine_gate.get("runtime_claim") != "soft_orchestration_only":
+                team_engine_failures.append("team_engine_gate runtime_claim must be soft_orchestration_only")
+        if not isinstance(external_backend_plan, dict) or external_backend_plan.get("runtime_claim") != "soft_orchestration_only":
+            team_engine_failures.append("external_agent_backend_plan must declare soft_orchestration_only")
+        if isinstance(external_backend_plan, dict) and external_backend_plan.get("backend_orchestration_verdict") != "simulated":
+            team_engine_failures.append("external_agent_backend_plan must not claim real backend execution by default")
+        if callable(build_payload):
+            sidecar = build_payload(sample_route)
+            if "team_engine" not in sidecar:
+                team_engine_failures.append("response pack sidecar missing team_engine section")
+            if "external_agent_backend" not in sidecar:
+                team_engine_failures.append("response pack sidecar missing external_agent_backend section")
+    except Exception as exc:
+        team_engine_failures.append(f"team engine route contract failed: {exc}")
+    if local_team_engine_drill is not None:
+        try:
+            drill_result = local_team_engine_drill.run_drill()
+            if not bool(drill_result.get("ok")):
+                team_engine_failures.extend(drill_result.get("errors", []))
+        except Exception as exc:
+            team_engine_failures.append(f"team engine drill failed: {exc}")
+    else:
+        team_engine_failures.append("run_team_engine_drill.py module missing")
+    _check(
+        len(team_engine_failures) == 0,
+        errors,
+        "Team Engine Lite contract validation failed: " + "; ".join(team_engine_failures),
+    )
+    checks.append(
+        {
+            "name": "team-engine-lite-contract",
+            "passed": len(team_engine_failures) == 0,
+            "details": {
+                "reference": str(team_engine_reference_path),
+                "worker_verifier_reference": str(worker_verifier_reference_path),
+                "external_backend_reference": str(external_agent_backend_reference_path),
+            },
+        }
+    )
 
     verify_action_failures: list[str] = []
     if (

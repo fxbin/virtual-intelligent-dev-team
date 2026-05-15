@@ -1,8 +1,8 @@
 {
   "meta": {
     "author": "fxbin",
-    "version": "v4.58.1",
-    "updated": "2026-05-01"
+    "version": "v4.59.0",
+    "updated": "2026-05-16"
   },
   "thresholds": {
     "max_agent_score": 20,
@@ -1259,6 +1259,86 @@
         {
           "keyword": "可访问性",
           "score": 4
+        },
+        {
+          "keyword": "post-release",
+          "score": 6
+        },
+        {
+          "keyword": "post release",
+          "score": 6
+        },
+        {
+          "keyword": "after launch",
+          "score": 6
+        },
+        {
+          "keyword": "after release",
+          "score": 6
+        },
+        {
+          "keyword": "already live",
+          "score": 6
+        },
+        {
+          "keyword": "rollout feedback",
+          "score": 6
+        },
+        {
+          "keyword": "production feedback",
+          "score": 6
+        },
+        {
+          "keyword": "customer feedback",
+          "score": 6
+        },
+        {
+          "keyword": "telemetry",
+          "score": 5
+        },
+        {
+          "keyword": "support",
+          "score": 5
+        },
+        {
+          "keyword": "user feedback",
+          "score": 6
+        },
+        {
+          "keyword": "monitor",
+          "score": 4
+        },
+        {
+          "keyword": "reopen iteration",
+          "score": 5
+        },
+        {
+          "keyword": "发布后",
+          "score": 6
+        },
+        {
+          "keyword": "上线后",
+          "score": 6
+        },
+        {
+          "keyword": "上线反馈",
+          "score": 6
+        },
+        {
+          "keyword": "用户反馈回流",
+          "score": 6
+        },
+        {
+          "keyword": "真实反馈",
+          "score": 6
+        },
+        {
+          "keyword": "生产反馈",
+          "score": 6
+        },
+        {
+          "keyword": "发布后复盘",
+          "score": 6
         }
       ],
       "negative": [

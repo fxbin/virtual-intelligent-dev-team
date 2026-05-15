@@ -64,6 +64,12 @@
     "engineering_constraints": {
       "$ref": "#/$defs/engineering_constraints"
     },
+    "team_engine": {
+      "$ref": "#/$defs/team_engine"
+    },
+    "external_agent_backend": {
+      "$ref": "#/$defs/external_agent_backend"
+    },
     "beta_program": {
       "$ref": "#/$defs/beta_program"
     },
@@ -316,6 +322,115 @@
           "type": "string"
         },
         "verification_check": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "team_engine": {
+      "type": "object",
+      "required": [
+        "required",
+        "reference",
+        "cycle_reference",
+        "workflow_bundle",
+        "lead_role",
+        "worker_role",
+        "verifier_role",
+        "max_cycles",
+        "acceptance_gates",
+        "producer_can_self_pass",
+        "leader_accept_requires_cycle_report",
+        "verifier_fail_requires_remediation_patch",
+        "runtime_claim",
+        "team_engine_closure_verdict",
+        "reason"
+      ],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "cycle_reference": {
+          "type": "string"
+        },
+        "workflow_bundle": {
+          "type": "string"
+        },
+        "lead_role": {
+          "type": "string"
+        },
+        "worker_role": {
+          "type": "string"
+        },
+        "verifier_role": {
+          "type": "string"
+        },
+        "max_cycles": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "acceptance_gates": {
+          "$ref": "#/$defs/string_array"
+        },
+        "producer_can_self_pass": {
+          "type": "boolean"
+        },
+        "leader_accept_requires_cycle_report": {
+          "type": "boolean"
+        },
+        "verifier_fail_requires_remediation_patch": {
+          "type": "boolean"
+        },
+        "runtime_claim": {
+          "type": "string"
+        },
+        "team_engine_closure_verdict": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "external_agent_backend": {
+      "type": "object",
+      "required": [
+        "enabled",
+        "reference",
+        "orchestration_mode",
+        "runtime_claim",
+        "backend_orchestration_verdict",
+        "team_engine_closure_verdict",
+        "required_outputs",
+        "boundary_note"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "orchestration_mode": {
+          "type": "string"
+        },
+        "runtime_claim": {
+          "type": "string"
+        },
+        "backend_orchestration_verdict": {
+          "type": "string"
+        },
+        "team_engine_closure_verdict": {
+          "type": "string"
+        },
+        "required_outputs": {
+          "$ref": "#/$defs/string_array"
+        },
+        "boundary_note": {
           "type": "string"
         }
       },

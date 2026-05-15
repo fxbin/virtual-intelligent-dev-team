@@ -1,0 +1,52 @@
+{
+  "work_order": {
+    "task_id": "<task-id>",
+    "workflow_bundle": "<workflow-bundle>",
+    "objective": "<objective>",
+    "lead_role": "<lead-agent>",
+    "worker_role": "implementation-worker",
+    "verifier_role": "delivery-verifier",
+    "input_artifacts": [],
+    "output_artifacts": [],
+    "acceptance_gates": [
+      "scope_gate",
+      "acceptance_criteria_gate",
+      "tests_or_verification_gate",
+      "role_separation_gate",
+      "delivery_cycle_report_gate"
+    ],
+    "dependency_ids": [],
+    "max_cycles": 3,
+    "tool_boundary": {
+      "worker_allowed": [
+        "read_artifacts",
+        "write_artifacts",
+        "run_targeted_checks"
+      ],
+      "verifier_allowed": [
+        "read_artifacts",
+        "run_or_review_checks",
+        "write_verification_report",
+        "write_remediation_patch"
+      ]
+    },
+    "context_boundary": {
+      "worker_context": "work_order + input_artifacts + remediation_patch",
+      "verifier_context": "work_order + implementation_output + acceptance_gates",
+      "lead_context": "delivery_cycle_report + resume_anchor"
+    },
+    "backend_binding": {
+      "orchestration_mode": "soft_external_backend",
+      "runtime_claim": "soft_orchestration_only",
+      "worker_backend_id": "worker-session-001",
+      "verifier_backend_id": "verifier-session-001",
+      "backend_orchestration_verdict": "simulated"
+    },
+    "permissions": {
+      "worker_can_self_pass": false,
+      "verifier_can_silently_rewrite_artifact": false,
+      "lead_accept_requires_cycle_report": true
+    },
+    "resume_anchor": ".skill-delivery/status.yaml"
+  }
+}

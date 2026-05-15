@@ -297,6 +297,12 @@ def build_response_pack_payload(
     harness_constraints = result.get("harness_constraint_gate", {})
     if not isinstance(harness_constraints, dict):
         harness_constraints = {}
+    team_engine_gate = result.get("team_engine_gate", {})
+    if not isinstance(team_engine_gate, dict):
+        team_engine_gate = {}
+    external_agent_backend_plan = result.get("external_agent_backend_plan", {})
+    if not isinstance(external_agent_backend_plan, dict):
+        external_agent_backend_plan = {}
     beta_validation_plan = result.get("beta_validation_plan", {})
     if not isinstance(beta_validation_plan, dict):
         beta_validation_plan = {}
@@ -514,6 +520,60 @@ def build_response_pack_payload(
             "dual_sign_required": bool(privy.get("dual_sign_required")),
         },
     }
+    if bool(team_engine_gate):
+        payload["team_engine"] = {
+            "required": bool(team_engine_gate.get("required")),
+            "reference": format_missing(team_engine_gate.get("reference", ""), selected_language),
+            "cycle_reference": format_missing(team_engine_gate.get("cycle_reference", ""), selected_language),
+            "workflow_bundle": workflow_bundle,
+            "lead_role": format_missing(team_engine_gate.get("lead_role", lead), selected_language),
+            "worker_role": format_missing(team_engine_gate.get("worker_role", ""), selected_language),
+            "verifier_role": format_missing(team_engine_gate.get("verifier_role", ""), selected_language),
+            "max_cycles": int(team_engine_gate.get("max_cycles", 0)),
+            "acceptance_gates": [
+                str(item) for item in team_engine_gate.get("acceptance_gates", []) if str(item).strip()
+            ],
+            "producer_can_self_pass": bool(team_engine_gate.get("producer_can_self_pass")),
+            "leader_accept_requires_cycle_report": bool(
+                team_engine_gate.get("leader_accept_requires_cycle_report")
+            ),
+            "verifier_fail_requires_remediation_patch": bool(
+                team_engine_gate.get("verifier_fail_requires_remediation_patch")
+            ),
+            "runtime_claim": format_missing(team_engine_gate.get("runtime_claim", ""), selected_language),
+            "team_engine_closure_verdict": format_missing(
+                team_engine_gate.get("team_engine_closure_verdict", ""),
+                selected_language,
+            ),
+            "reason": format_missing(team_engine_gate.get("reason", ""), selected_language),
+        }
+    if bool(external_agent_backend_plan):
+        payload["external_agent_backend"] = {
+            "enabled": bool(external_agent_backend_plan.get("enabled")),
+            "reference": format_missing(external_agent_backend_plan.get("reference", ""), selected_language),
+            "orchestration_mode": format_missing(
+                external_agent_backend_plan.get("orchestration_mode", ""),
+                selected_language,
+            ),
+            "runtime_claim": format_missing(external_agent_backend_plan.get("runtime_claim", ""), selected_language),
+            "backend_orchestration_verdict": format_missing(
+                external_agent_backend_plan.get("backend_orchestration_verdict", ""),
+                selected_language,
+            ),
+            "team_engine_closure_verdict": format_missing(
+                external_agent_backend_plan.get("team_engine_closure_verdict", ""),
+                selected_language,
+            ),
+            "required_outputs": [
+                str(item)
+                for item in external_agent_backend_plan.get("required_outputs", [])
+                if str(item).strip()
+            ],
+            "boundary_note": format_missing(
+                external_agent_backend_plan.get("boundary_note", ""),
+                selected_language,
+            ),
+        }
     if bool(bundle_bootstrap.get("required")):
         payload["bundle_bootstrap"] = {
             "required": True,
@@ -689,6 +749,10 @@ def build_response_pack(
     engineering_constraints = (
         payload["engineering_constraints"] if isinstance(payload.get("engineering_constraints"), dict) else None
     )
+    team_engine = payload["team_engine"] if isinstance(payload.get("team_engine"), dict) else None
+    external_agent_backend = (
+        payload["external_agent_backend"] if isinstance(payload.get("external_agent_backend"), dict) else None
+    )
     bundle_bootstrap = payload["bundle_bootstrap"] if isinstance(payload.get("bundle_bootstrap"), dict) else None
     beta_program = payload["beta_program"] if isinstance(payload.get("beta_program"), dict) else None
     auto_run = payload["auto_run"] if isinstance(payload.get("auto_run"), dict) else None
@@ -828,6 +892,68 @@ def build_response_pack(
                     f"- Reference: {engineering_constraints.get('reference', 'n/a')}",
                     f"- Init command: {engineering_constraints.get('command', 'n/a')}",
                     f"- Verification check: {engineering_constraints.get('verification_check', 'n/a')}",
+                    "",
+                ]
+            )
+
+    if isinstance(team_engine, dict):
+        if selected_language == "zh":
+            lines.extend(
+                [
+                    "## Team Engine Lite",
+                    f"- 是否必需：{format_bool(team_engine.get('required'), selected_language)}",
+                    f"- 参考协议：{team_engine.get('reference', '无')}",
+                    f"- Worker/Verifier 协议：{team_engine.get('cycle_reference', '无')}",
+                    f"- Worker：{team_engine.get('worker_role', '无')}",
+                    f"- Verifier：{team_engine.get('verifier_role', '无')}",
+                    f"- 最大循环轮次：{team_engine.get('max_cycles', 0)}",
+                    f"- Worker 可自审通过：{format_bool(team_engine.get('producer_can_self_pass'), selected_language)}",
+                    f"- Lead 接受是否依赖 CycleReport：{format_bool(team_engine.get('leader_accept_requires_cycle_report'), selected_language)}",
+                    f"- Runtime claim：{team_engine.get('runtime_claim', '无')}",
+                    f"- 闭环 verdict：{team_engine.get('team_engine_closure_verdict', '无')}",
+                    "",
+                ]
+            )
+        else:
+            lines.extend(
+                [
+                    "## Team Engine Lite",
+                    f"- Required: {format_bool(team_engine.get('required'), selected_language)}",
+                    f"- Reference: {team_engine.get('reference', 'n/a')}",
+                    f"- Worker/Verifier protocol: {team_engine.get('cycle_reference', 'n/a')}",
+                    f"- Worker: {team_engine.get('worker_role', 'n/a')}",
+                    f"- Verifier: {team_engine.get('verifier_role', 'n/a')}",
+                    f"- Max cycles: {team_engine.get('max_cycles', 0)}",
+                    f"- Worker can self-pass: {format_bool(team_engine.get('producer_can_self_pass'), selected_language)}",
+                    f"- Lead accepts only after CycleReport: {format_bool(team_engine.get('leader_accept_requires_cycle_report'), selected_language)}",
+                    f"- Runtime claim: {team_engine.get('runtime_claim', 'n/a')}",
+                    f"- Closure verdict: {team_engine.get('team_engine_closure_verdict', 'n/a')}",
+                    "",
+                ]
+            )
+
+    if isinstance(external_agent_backend, dict):
+        if selected_language == "zh":
+            lines.extend(
+                [
+                    "## 外部 Agent 后端",
+                    f"- 是否启用：{format_bool(external_agent_backend.get('enabled'), selected_language)}",
+                    f"- 编排模式：{external_agent_backend.get('orchestration_mode', '无')}",
+                    f"- Runtime claim：{external_agent_backend.get('runtime_claim', '无')}",
+                    f"- 后端 verdict：{external_agent_backend.get('backend_orchestration_verdict', '无')}",
+                    f"- 边界说明：{external_agent_backend.get('boundary_note', '无')}",
+                    "",
+                ]
+            )
+        else:
+            lines.extend(
+                [
+                    "## External Agent Backend",
+                    f"- Enabled: {format_bool(external_agent_backend.get('enabled'), selected_language)}",
+                    f"- Orchestration mode: {external_agent_backend.get('orchestration_mode', 'n/a')}",
+                    f"- Runtime claim: {external_agent_backend.get('runtime_claim', 'n/a')}",
+                    f"- Backend verdict: {external_agent_backend.get('backend_orchestration_verdict', 'n/a')}",
+                    f"- Boundary note: {external_agent_backend.get('boundary_note', 'n/a')}",
                     "",
                 ]
             )

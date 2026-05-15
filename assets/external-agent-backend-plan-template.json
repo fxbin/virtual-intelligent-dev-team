@@ -1,0 +1,48 @@
+{
+  "backend_orchestration_plan": {
+    "orchestration_mode": "soft_external_backend",
+    "runtime_claim": "soft_orchestration_only",
+    "task_id": "<task-id>",
+    "objective": "<objective>",
+    "backend_matrix": {
+      "lead": {
+        "backend_id": "lead-session-001",
+        "provider": "codex",
+        "context_policy": "summary_plus_artifact",
+        "output_contract": "WorkOrder"
+      },
+      "worker": {
+        "backend_id": "worker-session-001",
+        "provider": "claude_code",
+        "context_policy": "task_only",
+        "output_contract": "ImplementationOutput"
+      },
+      "verifier": {
+        "backend_id": "verifier-session-001",
+        "provider": "opencode",
+        "context_policy": "artifact_only",
+        "output_contract": "VerificationReport + RemediationPatch"
+      }
+    },
+    "isolation_contract": {
+      "shared_full_context_allowed": false,
+      "worker_reads_verifier_private_reasoning": false,
+      "verifier_reads_worker_private_reasoning": false,
+      "user_messages_route_to": "lead"
+    },
+    "fallback_policy": {
+      "unavailable_backend": "downgrade to single_thread_simulated and mark backend_orchestration_verdict = simulated",
+      "malformed_output": "request structured repair once, then hold",
+      "role_boundary_violation": "hold and regenerate WorkOrder with stricter role boundaries",
+      "max_cycles_exhausted": "escalate to human decision"
+    },
+    "required_outputs": [
+      "WorkOrder",
+      "ImplementationOutput",
+      "VerificationReport",
+      "RemediationPatch",
+      "DeliveryCycleReport"
+    ],
+    "backend_orchestration_verdict": "simulated"
+  }
+}

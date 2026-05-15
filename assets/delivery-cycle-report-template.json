@@ -1,0 +1,30 @@
+{
+  "delivery_cycle_report": {
+    "task_id": "<task-id>",
+    "workflow_bundle": "<workflow-bundle>",
+    "current_state": "passed",
+    "cycle_count": 1,
+    "max_cycles": 3,
+    "lead_role": "<lead-agent>",
+    "worker_role": "implementation-worker",
+    "verifier_role": "delivery-verifier",
+    "producer_can_self_pass": false,
+    "checked_gates": [
+      {
+        "gate_id": "scope_gate",
+        "passed": true,
+        "evidence": "<evidence>"
+      }
+    ],
+    "verifier_verdict": "pass",
+    "confirmed_issues": [],
+    "remediation_patch": null,
+    "final_artifacts": [],
+    "evidence_refs": [],
+    "resume_anchor": ".skill-delivery/status.yaml",
+    "backend_orchestration_verdict": "simulated",
+    "human_escalation": null,
+    "next_state": "accepted",
+    "team_engine_closure_verdict": "pass_with_watch"
+  }
+}

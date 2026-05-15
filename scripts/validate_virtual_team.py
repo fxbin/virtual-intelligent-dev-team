@@ -21,6 +21,7 @@ ROUTE_SCRIPT = SKILL_DIR / "scripts" / "route_request.py"
 GUARDRAIL_SCRIPT = SKILL_DIR / "scripts" / "git_workflow_guardrail.py"
 VERIFY_ACTION_SCRIPT = SKILL_DIR / "scripts" / "verify_action.py"
 CONTRACT_LINT_SCRIPT = SKILL_DIR / "scripts" / "lint_virtual_team_contract.py"
+TEAM_ENGINE_DRILL_SCRIPT = SKILL_DIR / "scripts" / "run_team_engine_drill.py"
 
 
 def load_module(name: str, path: Path):
@@ -36,6 +37,7 @@ route_request = load_module("virtual_team_route_request_validator", ROUTE_SCRIPT
 guardrail = load_module("virtual_team_guardrail_validator", GUARDRAIL_SCRIPT)
 verify_action = load_module("virtual_team_verify_action_validator", VERIFY_ACTION_SCRIPT)
 contract_lint = load_module("virtual_team_contract_lint_validator", CONTRACT_LINT_SCRIPT)
+team_engine_drill = load_module("virtual_team_engine_drill_validator", TEAM_ENGINE_DRILL_SCRIPT)
 
 
 def load_json(path: Path) -> dict[str, object]:
@@ -318,6 +320,20 @@ def validate_contract_lint() -> list[dict[str, object]]:
     return [{"name": "mechanical_contract_lint", "status": "passed"}]
 
 
+def validate_team_engine_drill() -> list[dict[str, object]]:
+    result = team_engine_drill.run_drill()
+    if not bool(result.get("ok")):
+        raise AssertionError(f"team engine drill failed: {' | '.join(result.get('errors', []))}")
+    return [
+        {
+            "name": "team_engine_lite_drill",
+            "status": "passed",
+            "final_state": result.get("final_state"),
+            "cycle_count": result.get("cycle_count"),
+        }
+    ]
+
+
 def validate() -> dict[str, object]:
     config = load_config()
     cases = load_json(CASES_PATH)
@@ -333,6 +349,7 @@ def validate() -> dict[str, object]:
 
     sections = {
         "contract_lint": validate_contract_lint(),
+        "team_engine_drill": validate_team_engine_drill(),
         "routing_cases": validate_routing_cases(config, routing_cases),
         "process_plan_cases": validate_process_plan_cases(process_plan_cases),
         "guardrail_cases": validate_guardrail_cases(guardrail_cases),

@@ -1,0 +1,141 @@
+{
+  "work_order": {
+    "task_id": "checkout-api-regression-fix",
+    "workflow_bundle": "quick-slice-deliver",
+    "objective": "fix checkout API regression and verify the targeted regression test",
+    "lead_role": "Technical Trinity",
+    "worker_role": "implementation-worker",
+    "verifier_role": "delivery-verifier",
+    "input_artifacts": [
+      ".skill-delivery/current-slice.md",
+      ".skill-context/project-context.md"
+    ],
+    "output_artifacts": [
+      "src/checkout/api.ts",
+      "tests/checkout-api.test.ts"
+    ],
+    "acceptance_gates": [
+      "scope_gate",
+      "acceptance_criteria_gate",
+      "tests_or_verification_gate",
+      "role_separation_gate",
+      "delivery_cycle_report_gate"
+    ],
+    "dependency_ids": [],
+    "max_cycles": 3,
+    "tool_boundary": {
+      "worker_allowed": [
+        "write_artifacts",
+        "run_targeted_checks"
+      ],
+      "verifier_allowed": [
+        "read_artifacts",
+        "review_checks",
+        "write_verification_report"
+      ]
+    },
+    "context_boundary": {
+      "worker_context": "work_order + input_artifacts + remediation_patch",
+      "verifier_context": "work_order + implementation_output + acceptance_gates",
+      "lead_context": "delivery_cycle_report + resume_anchor"
+    },
+    "backend_binding": {
+      "orchestration_mode": "soft_external_backend",
+      "runtime_claim": "soft_orchestration_only",
+      "worker_backend_id": "worker-session-001",
+      "verifier_backend_id": "verifier-session-001",
+      "backend_orchestration_verdict": "simulated"
+    },
+    "permissions": {
+      "worker_can_self_pass": false,
+      "verifier_can_silently_rewrite_artifact": false,
+      "lead_accept_requires_cycle_report": true
+    },
+    "resume_anchor": ".skill-delivery/status.yaml"
+  },
+  "cycles": [
+    {
+      "cycle_id": "cycle-001",
+      "implementation_output": {
+        "task_id": "checkout-api-regression-fix",
+        "cycle_id": "cycle-001",
+        "worker_role": "implementation-worker",
+        "produced_artifacts": [
+          "src/checkout/api.ts",
+          "tests/checkout-api.test.ts"
+        ],
+        "artifact_delta": "patched missing checkout status handling and added regression coverage",
+        "commands_run": [
+          "npm test -- checkout-api"
+        ],
+        "tests_run": [
+          "checkout-api regression"
+        ],
+        "assumptions": [],
+        "known_risks": [],
+        "self_reported_done": true
+      },
+      "verification_report": {
+        "task_id": "checkout-api-regression-fix",
+        "cycle_id": "cycle-001",
+        "verifier_role": "delivery-verifier",
+        "verdict": "pass",
+        "checked_gates": [
+          {
+            "gate_id": "scope_gate",
+            "passed": true,
+            "evidence": "only checkout API and regression test artifacts changed"
+          },
+          {
+            "gate_id": "tests_or_verification_gate",
+            "passed": true,
+            "evidence": "npm test -- checkout-api passed"
+          },
+          {
+            "gate_id": "role_separation_gate",
+            "passed": true,
+            "evidence": "worker produced output; verifier passed it; lead accepts only after DeliveryCycleReport"
+          }
+        ],
+        "confirmed_issues": [],
+        "remediation_patch": null,
+        "evidence_refs": [
+          "tests/checkout-api.test.ts",
+          "npm test -- checkout-api"
+        ],
+        "false_positive_risk": "low"
+      }
+    }
+  ],
+  "delivery_cycle_report": {
+    "task_id": "checkout-api-regression-fix",
+    "workflow_bundle": "quick-slice-deliver",
+    "current_state": "passed",
+    "cycle_count": 1,
+    "max_cycles": 3,
+    "lead_role": "Technical Trinity",
+    "worker_role": "implementation-worker",
+    "verifier_role": "delivery-verifier",
+    "producer_can_self_pass": false,
+    "checked_gates": [
+      "scope_gate",
+      "tests_or_verification_gate",
+      "role_separation_gate"
+    ],
+    "verifier_verdict": "pass",
+    "confirmed_issues": [],
+    "remediation_patch": null,
+    "final_artifacts": [
+      "src/checkout/api.ts",
+      "tests/checkout-api.test.ts"
+    ],
+    "evidence_refs": [
+      "npm test -- checkout-api"
+    ],
+    "resume_anchor": ".skill-delivery/status.yaml",
+    "backend_orchestration_verdict": "simulated",
+    "human_escalation": null,
+    "next_state": "accepted",
+    "team_engine_closure_verdict": "pass_with_watch"
+  }
+}

@@ -286,6 +286,14 @@ def parse_field_expectation(
         if isinstance(value, str):
             return expected in value, f"{context_label}.{field.strip()}={value!r}"
         return False, f"{context_label}.{field.strip()}={value!r}"
+    if " contain " in expectation:
+        field, expected = expectation.split(" contain ", 1)
+        value = read_nested(data, field.strip(), default=MISSING)
+        if isinstance(value, list):
+            return expected in value, f"{context_label}.{field.strip()}={value!r}"
+        if isinstance(value, str):
+            return expected in value, f"{context_label}.{field.strip()}={value!r}"
+        return False, f"{context_label}.{field.strip()}={value!r}"
 
     if " is not " in expectation:
         field, expected = expectation.split(" is not ", 1)
@@ -364,6 +372,12 @@ def parse_expectation(
         if not isinstance(commands, list):
             return False, f"process_plan[0].commands={commands!r}"
         return expected in commands, f"process_plan[0].commands={commands!r}"
+    if expectation.startswith("process_plan first "):
+        inner_expectation = expectation.removeprefix("process_plan first ")
+        plans = result.get("process_plan")
+        if not isinstance(plans, list) or len(plans) == 0 or not isinstance(plans[0], dict):
+            return False, f"process_plan={plans!r}"
+        return parse_field_expectation(inner_expectation, plans[0], context_label="result.process_plan[0]")
 
     return parse_field_expectation(expectation, result, context_label="result")
 

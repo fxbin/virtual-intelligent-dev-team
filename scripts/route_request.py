@@ -29,6 +29,9 @@ AUTO_ELIGIBLE_WORKFLOWS = {
 }
 QUALITY_GUARDRAIL_REFERENCE = "references/execution-quality-guardrails.md"
 HARNESS_CONSTRAINT_REFERENCE = "references/harness-engineering-constraint-protocol.md"
+TEAM_ENGINE_REFERENCE = "references/team-engine-lite-protocol.md"
+WORKER_VERIFIER_REFERENCE = "references/worker-verifier-cycle-protocol.md"
+EXTERNAL_AGENT_BACKEND_REFERENCE = "references/external-agent-backend-orchestration-protocol.md"
 HARNESS_CONSTRAINT_ARTIFACT = ".skill-harness/engineering-constraints.md"
 HARNESS_CONSTRAINT_COMMAND = "python scripts/init_harness_constraints.py --root . --summary \"<task summary>\" --pretty"
 HARNESS_CONSTRAINT_WORKFLOWS = {
@@ -39,6 +42,15 @@ HARNESS_CONSTRAINT_WORKFLOWS = {
     "govern-change-safely",
     "root-cause-remediate",
     "direct-execution",
+}
+TEAM_ENGINE_REQUIRED_WORKFLOWS = {
+    "plan-first-build",
+    "product-spec-deliver",
+    "quick-slice-deliver",
+    "audit-fix-deliver",
+    "govern-change-safely",
+    "root-cause-remediate",
+    "ship-hold-remediate",
 }
 
 
@@ -316,10 +328,42 @@ def is_release_readiness_context_only(
     )
 
 
+def is_post_release_feedback_context(text: str) -> bool:
+    lowered = text.lower()
+    post_release_markers = [
+        "post-release",
+        "post release",
+        "after launch",
+        "after release",
+        "already live",
+        "release is already live",
+        "rollout feedback",
+        "production feedback",
+        "customer feedback",
+        "telemetry",
+        "support",
+        "user feedback",
+        "monitor",
+        "reopen iteration",
+        "发布后",
+        "上线后",
+        "上线反馈",
+        "用户反馈回流",
+        "真实反馈",
+        "生产反馈",
+        "发布后复盘",
+        "放量后",
+        "灰度后",
+    ]
+    return any(keyword_matches(lowered, keyword) for keyword in post_release_markers)
+
+
 def should_suppress_git_workflow(text: str, process_hits: dict[str, list[str]]) -> bool:
     git_hits = process_hits.get("git-workflow", [])
     release_hits = process_hits.get("release-gate", [])
     return (
+        is_post_release_feedback_context(text)
+        or
         is_git_review_context_only(text, git_hits)
         or is_frontend_checkout_context(text, git_hits)
         or is_domain_checkout_context(text, git_hits)
@@ -328,6 +372,8 @@ def should_suppress_git_workflow(text: str, process_hits: dict[str, list[str]]) 
 
 
 def should_suppress_bounded_iteration(text: str, process_hits: dict[str, list[str]]) -> bool:
+    if is_post_release_feedback_context(text):
+        return True
     iteration_hits = process_hits.get("bounded-iteration", [])
     release_hits = process_hits.get("release-gate", [])
     if len(iteration_hits) == 0 or len(release_hits) == 0:
@@ -645,6 +691,7 @@ def detect_priority_lead(text: str, config: dict[str, object]) -> dict[str, obje
         if agent == "Git Workflow Guardian" and (
             is_frontend_checkout_context(text, any_hits + all_hits)
             or is_domain_checkout_context(text, any_hits + all_hits)
+            or is_post_release_feedback_context(text)
         ):
             continue
         if len(exclude_hits) > 0:
@@ -2166,6 +2213,213 @@ def build_harness_constraint_gate(
     }
 
 
+def build_team_engine_gate(
+    *,
+    workflow_bundle: dict[str, object],
+    lead_agent: str,
+    assistants: list[str],
+    needs_release_gate: bool,
+    needs_git_workflow: bool,
+    needs_iteration: bool,
+) -> dict[str, object]:
+    bundle_name = str(workflow_bundle.get("name", "direct-execution"))
+    required = (
+        bundle_name in TEAM_ENGINE_REQUIRED_WORKFLOWS
+        or needs_release_gate
+        or needs_git_workflow
+        or needs_iteration
+    )
+    max_cycles = 3
+    if bundle_name == "root-cause-remediate":
+        max_cycles = 3
+    elif bundle_name == "ship-hold-remediate":
+        max_cycles = 2
+    acceptance_gates_by_bundle = {
+        "plan-first-build": [
+            "scope_gate",
+            "planning_pack_gate",
+            "dependency_gate",
+            "role_separation_gate",
+            "delivery_cycle_report_gate",
+        ],
+        "product-spec-deliver": [
+            "scope_gate",
+            "acceptance_criteria_gate",
+            "frontend_backend_contract_gate",
+            "role_separation_gate",
+            "delivery_cycle_report_gate",
+        ],
+        "quick-slice-deliver": [
+            "scope_gate",
+            "acceptance_criteria_gate",
+            "tests_or_verification_gate",
+            "role_separation_gate",
+            "delivery_cycle_report_gate",
+        ],
+        "audit-fix-deliver": [
+            "finding_evidence_gate",
+            "severity_gate",
+            "remediation_patch_gate",
+            "false_positive_risk_gate",
+            "role_separation_gate",
+        ],
+        "govern-change-safely": [
+            "owner_gate",
+            "stop_condition_gate",
+            "rollback_gate",
+            "verification_evidence_gate",
+            "role_separation_gate",
+        ],
+        "root-cause-remediate": [
+            "reproduction_or_evidence_gate",
+            "single_hypothesis_gate",
+            "remediation_patch_gate",
+            "rollback_decision_gate",
+            "role_separation_gate",
+        ],
+        "ship-hold-remediate": [
+            "release_gate_result_gate",
+            "blocking_issue_gate",
+            "rollback_gate",
+            "post_release_feedback_gate",
+            "ship_hold_evidence_gate",
+        ],
+    }
+    gates = acceptance_gates_by_bundle.get(
+        bundle_name,
+        ["scope_gate", "verification_evidence_gate", "role_separation_gate"],
+    )
+    worker_role = "implementation-worker"
+    if lead_agent == "Code Audit Council":
+        worker_role = "remediation-worker"
+    elif lead_agent == "World-Class Product Architect":
+        worker_role = "product-delivery-worker"
+    elif lead_agent == "Git Workflow Guardian":
+        worker_role = "delivery-governance-worker"
+    verifier_role = "delivery-verifier"
+    if lead_agent == "Code Audit Council":
+        verifier_role = "audit-verifier"
+    elif bundle_name == "ship-hold-remediate":
+        verifier_role = "release-verifier"
+
+    return {
+        "required": required,
+        "reference": TEAM_ENGINE_REFERENCE,
+        "cycle_reference": WORKER_VERIFIER_REFERENCE,
+        "workflow_bundle": bundle_name,
+        "state_machine": [
+            "planned",
+            "spawned",
+            "running",
+            "produced",
+            "verifying",
+            "retrying",
+            "passed",
+            "failed",
+            "hold",
+            "escalated",
+            "accepted",
+        ],
+        "work_order_contract": "WorkOrder",
+        "worker_output_contract": "ImplementationOutput",
+        "verifier_output_contract": "VerificationReport",
+        "remediation_patch_contract": "RemediationPatch",
+        "cycle_report_contract": "DeliveryCycleReport",
+        "lead_role": lead_agent,
+        "worker_role": worker_role,
+        "verifier_role": verifier_role,
+        "assistants": assistants,
+        "max_cycles": max_cycles,
+        "acceptance_gates": gates,
+        "producer_can_self_pass": False,
+        "leader_accept_requires_cycle_report": True,
+        "verifier_fail_requires_remediation_patch": True,
+        "runtime_claim": "soft_orchestration_only",
+        "team_engine_closure_verdict": "pass_with_watch" if required else "optional",
+        "reason": (
+            "This route needs independent Worker/Verifier evidence before Lead acceptance."
+            if required
+            else "This route can stay lightweight unless it turns into code, release, Git, or user-visible delivery."
+        ),
+    }
+
+
+def build_external_agent_backend_plan(
+    *,
+    workflow_bundle: dict[str, object],
+    lead_agent: str,
+    team_engine_gate: dict[str, object],
+) -> dict[str, object]:
+    bundle_name = str(workflow_bundle.get("name", "direct-execution"))
+    worker_role = str(team_engine_gate.get("worker_role", "implementation-worker"))
+    verifier_role = str(team_engine_gate.get("verifier_role", "delivery-verifier"))
+    task_id = bundle_name.replace("-", "_") + "_task"
+    return {
+        "enabled": bool(team_engine_gate.get("required")),
+        "reference": EXTERNAL_AGENT_BACKEND_REFERENCE,
+        "orchestration_mode": "soft_external_backend",
+        "runtime_claim": "soft_orchestration_only",
+        "task_id": task_id,
+        "objective": str(workflow_bundle.get("reason", "coordinate delivery through role-separated soft orchestration")),
+        "backend_matrix": {
+            "lead": {
+                "backend_id": "lead-session-001",
+                "provider": "codex",
+                "role": "lead",
+                "context_policy": "summary_plus_artifact",
+                "output_contract": "WorkOrder",
+                "can_write_artifact": False,
+                "can_write_verdict": False,
+                "can_accept_task": False,
+            },
+            "worker": {
+                "backend_id": "worker-session-001",
+                "provider": "codex",
+                "role": worker_role,
+                "context_policy": "task_only",
+                "output_contract": "ImplementationOutput",
+                "can_write_artifact": True,
+                "can_write_verdict": False,
+                "can_accept_task": False,
+            },
+            "verifier": {
+                "backend_id": "verifier-session-001",
+                "provider": "codex",
+                "role": verifier_role,
+                "context_policy": "artifact_only",
+                "output_contract": "VerificationReport + RemediationPatch",
+                "can_write_artifact": False,
+                "can_write_verdict": True,
+                "can_accept_task": False,
+            },
+        },
+        "isolation_contract": {
+            "shared_full_context_allowed": False,
+            "worker_reads_verifier_private_reasoning": False,
+            "verifier_reads_worker_private_reasoning": False,
+            "user_messages_route_to": "lead",
+        },
+        "fallback_policy": {
+            "unavailable_backend": "downgrade to single_thread_simulated and mark backend_orchestration_verdict = simulated",
+            "malformed_output": "request structured repair once, then hold",
+            "role_boundary_violation": "hold and regenerate WorkOrder with stricter role boundaries",
+            "max_cycles_exhausted": "escalate to human decision",
+        },
+        "required_outputs": [
+            "WorkOrder",
+            "ImplementationOutput",
+            "VerificationReport",
+            "RemediationPatch",
+            "DeliveryCycleReport",
+        ],
+        "backend_orchestration_verdict": "simulated",
+        "team_engine_closure_verdict": str(team_engine_gate.get("team_engine_closure_verdict", "pass_with_watch")),
+        "boundary_note": (
+            f"{lead_agent} remains the semantic lead, but acceptance requires DeliveryCycleReport evidence."
+        ),
+    }
+
+
 def build_assistant_delta_contract(
     lead_agent: str, assistants: list[str], workflow_bundle: str | None
 ) -> dict[str, object]:
@@ -2707,6 +2961,19 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         assistants=assistants,
         request_text=routed_text,
     )
+    team_engine_gate = build_team_engine_gate(
+        workflow_bundle=workflow_bundle,
+        lead_agent=lead_agent,
+        assistants=assistants,
+        needs_release_gate=needs_release_gate,
+        needs_git_workflow=needs_git_workflow,
+        needs_iteration=needs_iteration,
+    )
+    external_agent_backend_plan = build_external_agent_backend_plan(
+        workflow_bundle=workflow_bundle,
+        lead_agent=lead_agent,
+        team_engine_gate=team_engine_gate,
+    )
     assistant_delta_contract = build_assistant_delta_contract(
         lead_agent=lead_agent,
         assistants=assistants,
@@ -2750,6 +3017,9 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "workflow_bundle_reason": workflow_bundle.get("reason"),
         "quality_gate_reference": quality_gate.get("reference"),
         "harness_constraint_reference": harness_constraint_gate.get("reference"),
+        "team_engine_reference": team_engine_gate.get("reference"),
+        "worker_verifier_reference": team_engine_gate.get("cycle_reference"),
+        "external_agent_backend_reference": external_agent_backend_plan.get("reference"),
         "assistant_delta_contract_enabled": assistant_delta_contract.get("enabled"),
         "auto_mode": auto_run_profile,
     }
@@ -2795,6 +3065,8 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "workflow_reason": workflow_bundle.get("reason"),
         "quality_gate": quality_gate,
         "harness_constraint_gate": harness_constraint_gate,
+        "team_engine_gate": team_engine_gate,
+        "external_agent_backend_plan": external_agent_backend_plan,
         "progress_anchor_recommended": workflow_bundle.get("progress_anchor_recommended"),
         "resume_artifacts": workflow_bundle.get("resume_artifacts", []),
         "workflow_bundle_bootstrap": workflow_bundle_bootstrap,
