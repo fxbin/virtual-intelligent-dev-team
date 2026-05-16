@@ -12,7 +12,7 @@ Route complex software work into the smallest defensible delivery workflow, keep
 
 This skill is not only an expert router. It is a bounded work-loop skill for complex tasks.
 
-It has six practical closure layers:
+It has seven practical closure layers:
 
 1. `Planning closure`
    - Large rewrites, migrations, and project-wide transformations get a lightweight analysis / plan / progress pack before implementation.
