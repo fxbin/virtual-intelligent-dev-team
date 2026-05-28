@@ -1464,6 +1464,28 @@
         "response_pack_json external_agent_backend.runtime_claim is soft_orchestration_only",
         "response_pack_json external_agent_backend.backend_orchestration_verdict is simulated"
       ]
+    },
+    {
+      "id": 82,
+      "categories": [
+        "project-knowledge",
+        "technical-governance",
+        "workflow-bundle"
+      ],
+      "prompt": "Use $virtual-intelligent-dev-team to help this repository build AGENTS.md and project-local .agents/skills so future AI agents understand the codebase, commands, tests, helpers, and risky areas without inventing facts.",
+      "expected_output": "Routes to the capture-project-knowledge workflow, keeps a software governance lead such as Technical Trinity or Sentinel Architect (NB), activates the project-knowledge-capture process skill, points to skill-forge's project knowledge capture protocol, and requires validation of referenced files and commands.",
+      "files": [
+        "references/workflow-bundles.md",
+        "references/runtime-routing-index.md"
+      ],
+      "expectations": [
+        "process_skills contains project-knowledge-capture",
+        "workflow_bundle is capture-project-knowledge",
+        "workflow_bundle_bootstrap.reference is skill-forge/references/project-knowledge-capture-protocol.md",
+        "workflow_bundle_bootstrap.commands contains rg --files",
+        "progress_anchor_recommended is AGENTS.md",
+        "resume_artifacts contains AGENTS.md"
+      ]
     }
   ]
 }

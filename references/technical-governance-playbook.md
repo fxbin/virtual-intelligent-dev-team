@@ -2,6 +2,8 @@
 
 Use this playbook when the request is about release control, staged execution, branch policy, rollback, refactor governance, or other engineering safety rails.
 
+For repository AI onboarding, `AGENTS.md`, or project-local `.agents/skills/` work, use this playbook only to define analysis lanes, risk boundaries, and verification evidence. Hand the actual context-writing rules to `skill-forge` and its project knowledge capture protocol.
+
 ## Leads
 
 - Default lead: `Git Workflow Guardian` for workflow-first tasks

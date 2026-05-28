@@ -1,8 +1,8 @@
 {
   "meta": {
     "author": "fxbin",
-    "version": "v4.59.0",
-    "updated": "2026-05-16"
+    "version": "v4.60.0",
+    "updated": "2026-05-28"
   },
   "thresholds": {
     "max_agent_score": 20,
@@ -117,6 +117,7 @@
   "process_skill_lead_agents": {
     "pre-development-planning": "Technical Trinity",
     "bounded-iteration": "Technical Trinity",
+    "project-knowledge-capture": "Technical Trinity",
     "release-gate": "Technical Trinity",
     "git-workflow": "Git Workflow Guardian",
     "using-git-worktrees": "Git Workflow Guardian"
@@ -1706,6 +1707,76 @@
       },
       {
         "keyword": "这版能发吗",
+        "score": 1
+      }
+    ],
+    "project-knowledge-capture": [
+      {
+        "keyword": "AGENTS.md",
+        "score": 1
+      },
+      {
+        "keyword": ".agents/skills",
+        "score": 1
+      },
+      {
+        "keyword": "project-local skills",
+        "score": 1
+      },
+      {
+        "keyword": "AI development context",
+        "score": 1
+      },
+      {
+        "keyword": "AI onboarding",
+        "score": 1
+      },
+      {
+        "keyword": "codebase knowledge",
+        "score": 1
+      },
+      {
+        "keyword": "project knowledge",
+        "score": 1
+      },
+      {
+        "keyword": "future AI agents",
+        "score": 1
+      },
+      {
+        "keyword": "项目知识",
+        "score": 1
+      },
+      {
+        "keyword": "AI 开发上下文",
+        "score": 1
+      },
+      {
+        "keyword": "AI开发上下文",
+        "score": 1
+      },
+      {
+        "keyword": "项目本地 skill",
+        "score": 1
+      },
+      {
+        "keyword": "项目本地 skills",
+        "score": 1
+      },
+      {
+        "keyword": "代码库知识",
+        "score": 1
+      },
+      {
+        "keyword": "后续 AI",
+        "score": 1
+      },
+      {
+        "keyword": "避免重复造轮子",
+        "score": 1
+      },
+      {
+        "keyword": "补 AGENTS",
         "score": 1
       }
     ],

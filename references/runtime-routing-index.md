@@ -48,6 +48,8 @@
 - `technical-governance-playbook.md`
   - 风险控制、发布控制、Git 治理的默认打法
 
+如果请求目标是为现有代码库补 `AGENTS.md`、项目本地 `.agents/skills/` 或 AI 开发上下文，路由到 `capture-project-knowledge` bundle：先用本 skill 判断软件风险、分析 lane 和治理边界，再交给 `skill-forge/references/project-knowledge-capture-protocol.md` 负责上下文写入规则。
+
 ## 二、路由与协作
 
 请求在“谁做 lead、要不要 assistant、怎么 handoff”上不明确时，读这一组：

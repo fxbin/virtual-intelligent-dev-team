@@ -46,6 +46,7 @@ Route complex software requests into the smallest defensible workflow bundle, ke
 - staged beta validation or rollout risk control
 - release readiness / ship-hold decisions
 - git workflow, rollback, or governance-sensitive delivery
+- repository AI onboarding, `AGENTS.md`, or project-local `.agents/skills/` context capture
 
 ## When to use
 
@@ -83,13 +84,14 @@ If the task is simple and clearly single-domain, keep routing lightweight.
 5. Add one or two assistant agents only when they add clear value.
 6. Enable governance or process guardrails only when needed.
 7. Use a compact handoff when lead and assistants need structured coordination.
-8. Apply execution-quality guardrails: surface route-changing assumptions, keep the smallest defensible bundle, limit scope surgically, and define verifiable closure.
-9. For code-facing routes, apply the Harness constraint gate before implementation: create or refresh `.skill-harness/engineering-constraints.md`.
-10. For code-facing, release-facing, Git-facing, or remediation routes, apply Team Engine Lite: Worker can produce, Verifier can pass/fail/hold, and Lead can accept only after a DeliveryCycleReport.
-11. If external Agent backends are available, treat them as soft backend sessions under the same role boundary; do not claim true async multi-process runtime without runtime evidence.
-12. If the user asks for optimization, repeated improvement, benchmark comparison, or another round, enter bounded iteration instead of open-ended self-looping.
-13. If the user asks whether the current version can ship, submit, or pass formal acceptance, run the release gate instead of answering from a benchmark summary alone.
-14. Produce one unified response instead of disconnected role fragments.
+8. If the request is primarily about building AI-readable project context, route execution to `skill-forge` and its project knowledge capture protocol after the software-risk lanes are identified.
+9. Apply execution-quality guardrails: surface route-changing assumptions, keep the smallest defensible bundle, limit scope surgically, and define verifiable closure.
+10. For code-facing routes, apply the Harness constraint gate before implementation: create or refresh `.skill-harness/engineering-constraints.md`.
+11. For code-facing, release-facing, Git-facing, or remediation routes, apply Team Engine Lite: Worker can produce, Verifier can pass/fail/hold, and Lead can accept only after a DeliveryCycleReport.
+12. If external Agent backends are available, treat them as soft backend sessions under the same role boundary; do not claim true async multi-process runtime without runtime evidence.
+13. If the user asks for optimization, repeated improvement, benchmark comparison, or another round, enter bounded iteration instead of open-ended self-looping.
+14. If the user asks whether the current version can ship, submit, or pass formal acceptance, run the release gate instead of answering from a benchmark summary alone.
+15. Produce one unified response instead of disconnected role fragments.
 
 ## Output template
 

@@ -411,7 +411,7 @@ def should_suppress_git_agent_scoring(
 
 def detect_process_skills(
     text: str, config: dict[str, object]
-) -> tuple[bool, bool, bool, bool, bool, list[str], dict[str, list[str]]]:
+) -> tuple[bool, bool, bool, bool, bool, bool, list[str], dict[str, list[str]]]:
     lowered = text.lower()
     process_rules = config.get("process_skill_rules", {})
     if not isinstance(process_rules, dict):
@@ -466,6 +466,7 @@ def detect_process_skills(
 
     needs_pre_development_planning = "pre-development-planning" in process_hits
     needs_iteration = "bounded-iteration" in process_hits
+    needs_project_knowledge_capture = "project-knowledge-capture" in process_hits
     needs_worktree = "using-git-worktrees" in process_hits
     needs_release_gate = "release-gate" in process_hits
     needs_git_workflow = "git-workflow" in process_hits
@@ -474,6 +475,7 @@ def detect_process_skills(
         for skill in (
             "pre-development-planning",
             "bounded-iteration",
+            "project-knowledge-capture",
             "using-git-worktrees",
             "release-gate",
             "git-workflow",
@@ -483,6 +485,7 @@ def detect_process_skills(
     return (
         needs_pre_development_planning,
         needs_iteration,
+        needs_project_knowledge_capture,
         needs_worktree,
         needs_release_gate,
         needs_git_workflow,
@@ -1343,6 +1346,7 @@ def build_governance_plan(
 def build_process_plan(
     needs_pre_development_planning: bool = False,
     needs_iteration: bool = False,
+    needs_project_knowledge_capture: bool = False,
     needs_worktree: bool = False,
     needs_release_gate: bool = False,
     needs_git_workflow: bool = False,
@@ -1468,6 +1472,36 @@ def build_process_plan(
                 "resume_artifacts": [
                     ".skill-iterations/current-round-memory.md",
                     ".skill-iterations/distilled-patterns.md",
+                ],
+            }
+        )
+    if needs_project_knowledge_capture:
+        plan.append(
+            {
+                "skill": "project-knowledge-capture",
+                "reference": "skill-forge/references/project-knowledge-capture-protocol.md",
+                "steps": [
+                    "先盘点现有 AGENTS.md、.agents/skills、README、docs、配置、入口文件、测试与脚本",
+                    "只在代码库足够大时拆分独立分析 lanes，且每条 lane 必须有明确范围和预期产出",
+                    "将 lane 结果汇总去重，删除无法由仓库事实验证的泛泛建议",
+                    "把仓库级短规则写入 AGENTS.md，把可重复开发场景写成项目本地 .agents/skills",
+                    "确认所有引用路径、命令、目录和文件名真实存在，未确认信息必须显式标注",
+                ],
+                "commands": [
+                    "rg --files",
+                    "find . -maxdepth 3 -name AGENTS.md -o -path '*/.agents/skills/*'",
+                    "git diff -- AGENTS.md .agents/skills",
+                    "python validate.py --repo-only",
+                ],
+                "artifacts": [
+                    "AGENTS.md",
+                    ".agents/skills/",
+                    "skill-forge/references/project-knowledge-capture-protocol.md",
+                ],
+                "resume_anchor": "AGENTS.md",
+                "resume_artifacts": [
+                    "AGENTS.md",
+                    ".agents/skills/",
                 ],
             }
         )
@@ -1735,6 +1769,7 @@ def build_workflow_bundle(
     lead_agent: str,
     needs_pre_development_planning: bool,
     needs_iteration: bool,
+    needs_project_knowledge_capture: bool,
     needs_release_gate: bool,
     needs_git_workflow: bool,
     sentinel_overlay: bool,
@@ -1831,6 +1866,27 @@ def build_workflow_bundle(
         "提交流程",
         "分支策略",
     ]
+
+    if needs_project_knowledge_capture:
+        return {
+            "name": "capture-project-knowledge",
+            "confidence": 0.94,
+            "source": "process-skill",
+            "reason": "The request is repository AI onboarding or project-local skill capture, so software-risk lanes should be identified first and context writing should follow skill-forge's project knowledge capture protocol.",
+            "steps": [
+                "inventory existing project guidance, docs, config, tests, scripts, and entrypoints",
+                "split only independent codebase analysis lanes and avoid duplicated subagent work",
+                "synthesize verified facts into concise AGENTS.md guidance",
+                "create or update only scenario-specific project-local .agents/skills",
+                "validate referenced files, commands, and remaining unknowns before handoff",
+            ],
+            "progress_anchor_recommended": "AGENTS.md",
+            "resume_artifacts": [
+                "AGENTS.md",
+                ".agents/skills/",
+                "skill-forge/references/project-knowledge-capture-protocol.md",
+            ],
+        }
 
     if needs_release_gate:
         return {
@@ -2106,6 +2162,21 @@ def build_workflow_bundle_bootstrap(bundle_name: str) -> dict[str, object]:
             ],
             "resume_anchor": ".skill-post-release/triage-summary.md",
         }
+    if bundle_name == "capture-project-knowledge":
+        return {
+            "required": True,
+            "reference": "skill-forge/references/project-knowledge-capture-protocol.md",
+            "commands": [
+                "rg --files",
+                "find . -maxdepth 3 -name AGENTS.md -o -path '*/.agents/skills/*'",
+                "python validate.py --repo-only",
+            ],
+            "artifacts": [
+                "AGENTS.md",
+                ".agents/skills/",
+            ],
+            "resume_anchor": "AGENTS.md",
+        }
     return {
         "required": False,
         "reference": None,
@@ -2147,6 +2218,8 @@ def build_quality_gate(
         verification = "release gate returns ship or hold and preserves the follow-up artifact"
     elif bundle_name == "post-release-close-loop":
         verification = "post-release signals are triaged into monitor, iterate, or escalate"
+    elif bundle_name == "capture-project-knowledge":
+        verification = "AGENTS.md and any project-local .agents/skills contain only repository-verified facts and validated references"
     else:
         verification = "the lead can name the smallest next action and observable result"
 
@@ -2763,6 +2836,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
     (
         needs_pre_development_planning,
         needs_iteration,
+        needs_project_knowledge_capture,
         needs_worktree,
         needs_release_gate,
         needs_git_workflow,
@@ -2942,6 +3016,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         lead_agent=lead_agent,
         needs_pre_development_planning=needs_pre_development_planning,
         needs_iteration=needs_iteration,
+        needs_project_knowledge_capture=needs_project_knowledge_capture,
         needs_release_gate=needs_release_gate,
         needs_git_workflow=needs_git_workflow,
         sentinel_overlay=sentinel_overlay,
@@ -2993,6 +3068,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
     process_plan = build_process_plan(
         needs_pre_development_planning=needs_pre_development_planning,
         needs_iteration=needs_iteration,
+        needs_project_knowledge_capture=needs_project_knowledge_capture,
         needs_worktree=needs_worktree,
         needs_release_gate=needs_release_gate,
         needs_git_workflow=needs_git_workflow,
@@ -3031,6 +3107,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "needs_pre_development_planning": needs_pre_development_planning,
         "language_routing": language_routing,
         "needs_iteration": needs_iteration,
+        "needs_project_knowledge_capture": needs_project_knowledge_capture,
         "needs_worktree": needs_worktree,
         "needs_release_gate": needs_release_gate,
         "needs_git_workflow": needs_git_workflow,

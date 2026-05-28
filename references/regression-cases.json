@@ -721,6 +721,34 @@
         ],
         "priority_agent": null
       }
+    },
+    {
+      "name": "project_knowledge_capture_agents_context",
+      "text": "帮当前代码库补 AGENTS.md 和项目本地 .agents/skills，让后续 AI agents 理解架构、命令、测试、复用点和高风险区域，避免重复造轮子。",
+      "expect": {
+        "lead_agent": "Sentinel Architect (NB)",
+        "assistant_agents": [],
+        "needs_git_workflow": false,
+        "process_skills": [
+          "project-knowledge-capture"
+        ],
+        "workflow_bundle": "capture-project-knowledge",
+        "progress_anchor_recommended": "AGENTS.md",
+        "bundle_bootstrap_commands_contains": [
+          "rg --files",
+          "python validate.py --repo-only"
+        ],
+        "bundle_bootstrap_artifacts_contains": [
+          "AGENTS.md",
+          ".agents/skills/"
+        ],
+        "resume_artifacts_contains": [
+          "AGENTS.md",
+          ".agents/skills/",
+          "skill-forge/references/project-knowledge-capture-protocol.md"
+        ],
+        "priority_agent": null
+      }
     }
   ],
   "process_plan_cases": [

@@ -200,6 +200,24 @@ existing routing, planning, iteration, release, and Git rules.
   - `.skill-post-release/triage-summary.md`
   - `.skill-post-release/current-signals.json`
 
+## 10. `capture-project-knowledge`
+
+- Use when:
+  - the request is to create or improve `AGENTS.md`
+  - the request is to create project-local `.agents/skills/`
+  - the user wants AI onboarding or codebase knowledge capture for future development agents
+- Default sequence:
+  1. inventory existing guidance, docs, config, tests, scripts, and entrypoints
+  2. split only independent analysis lanes and avoid duplicated subagent work
+  3. synthesize verified repository facts into concise `AGENTS.md` guidance
+  4. create or update only scenario-specific project-local `.agents/skills/`
+  5. validate referenced paths, commands, and remaining unknowns
+- Primary references:
+  - `skill-forge/references/project-knowledge-capture-protocol.md`
+- Default resume anchors:
+  - `AGENTS.md`
+  - `.agents/skills/`
+
 ## Bundle Contract
 
 Every bundle should expose:
