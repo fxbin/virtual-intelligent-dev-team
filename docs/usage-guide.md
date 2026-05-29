@@ -4,7 +4,7 @@
 
 `virtual-intelligent-dev-team` 适合接管复杂软件工作，把“专家路由 + 计划 + 执行 + 迭代 + beta + release + feedback”收拢成一个统一闭环。
 
-## 三种最常见入口
+## 四种最常见入口
 
 你通常会从下面三类入口进入：
 

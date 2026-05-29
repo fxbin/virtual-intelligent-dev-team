@@ -61,7 +61,7 @@
 - `小切片交付`
   - 小型功能或 bugfix 默认保留 quick slice brief、project context、delivery status 和验证证据。
 - `Team Engine Lite`
-  - 代码交付、审计修复、release gate remediation 与 Git 治理路线默认保留 Worker / Verifier 分离、max-cycle retry、RemediationPatch 和 DeliveryCycleReport。
+  - code-facing、release-facing、Git-facing 与 remediation 路线默认保留 Worker / Verifier 分离、max-cycle retry、RemediationPatch 和 DeliveryCycleReport。
 - `外部 Agent 后端软编排`
   - 可以把 Codex / Claude Code / OpenCode 当作角色后端，但默认只声明 `soft_orchestration_only`，不虚假声称真实异步多进程 runtime。
 - `有边界的迭代优化`
@@ -172,38 +172,67 @@ virtual-intelligent-dev-team/
 
 ```mermaid
 flowchart TD
-    A[收到复杂任务] --> B{是否显式输入 /auto}
-    B -- 否 --> C[手动模式]
-    B -- 是 --> D["/auto setup"]
-    D --> E[建立自动化状态]
-    E --> F["/auto go"]
-    F --> G[自动执行]
+    A[收到复杂软件任务] --> B{是否显式输入 /auto}
+    B -->|否| C[手动模式]
+    B -->|是| D["/auto setup"]
+    D --> E[建立 automation state]
+    E --> F["/auto go 或 resume"]
+    F --> G[自动执行入口]
 
-    C --> H[任务识别与路由]
+    C --> H[识别任务类型 / 风险 / 技术栈 / Git 与 process 信号]
     G --> H
 
-    H --> I[选择主负责人]
-    I --> J{是否需要协同或治理}
-    J -- 是 --> K[加载协同与治理轨道]
-    J -- 否 --> L[直接进入执行]
-    K --> L
+    H --> I{是否大型改造 / 迁移 / 先规划}
+    I -->|是| J["plan-first-build 前置规划和 progress anchor"]
+    J --> H
+    I -->|否| K{是否窄实现或 bugfix}
+    K -->|是| L[quick-slice-deliver]
+    K -->|否| M[选择一个 lead agent]
 
-    L --> M{进入哪条闭环}
-    M -- 大型改造 --> N[前置规划]
-    M -- 小切片实现 --> T[Quick Slice 交付]
-    M -- 多轮优化 --> O[迭代优化]
-    M -- 分轮内测 --> P[Beta 验证]
-    M -- 发版判断 --> Q[发布门禁]
-    M -- 上线后反馈 --> R[反馈闭环]
-    M -- 常规复杂任务 --> S[执行与验证]
+    M --> N{是否需要 assistant / governance / Git guardrail}
+    N -->|是| O[加载协同治理或 Git 轨道]
+    N -->|否| P[保持轻量路由]
+    O --> Q{选择最小 workflow bundle}
+    P --> Q
+    L --> Q
 
-    N --> Y[形成结果与下一步]
-    T --> Y
-    O --> Y
-    P --> Y
-    Q --> Y
-    R --> Y
-    S --> Y
+    Q -->|产品定义到交付| R[product-spec-deliver]
+    Q -->|多轮优化或候选比较| S[bounded iteration]
+    Q -->|反复失败或根因排查| T[root-cause-remediate]
+    Q -->|分轮内测或用户递增| U[beta-feedback-ramp]
+    Q -->|发版提交或正式验收| V[ship-hold-remediate]
+    Q -->|已发布反馈回流| W[post-release-close-loop]
+    Q -->|审计后修复| X[audit-fix-deliver]
+    Q -->|发布安全回滚分支策略| Y[govern-change-safely]
+    Q -->|AGENTS 或项目知识沉淀| Z[capture-project-knowledge]
+    Q -->|常规复杂任务| AA[统一执行与验证]
+
+    R --> AB{是否面向 code release Git remediation}
+    S --> AB
+    T --> AB
+    U --> AB
+    V --> AC{release gate 结论}
+    W --> AB
+    X --> AB
+    Y --> AB
+    AA --> AB
+    Z --> AK[统一输出 + evidence + next step + resume anchor]
+
+    AC -->|ship| W
+    AC -->|hold| AD[生成 remediation brief 或 next iteration brief]
+    AD --> AB
+
+    AB -->|是| AE[Harness constraint gate]
+    AE --> AF[Team Engine Lite]
+    AF --> AG[DeliveryCycleReport]
+    AG --> AH{Verifier verdict}
+    AH -->|pass| AK
+    AH -->|fail| AI[RemediationPatch 加有界重试]
+    AI --> AF
+    AH -->|hold| AJ[升级给 Lead 或 Human 决策]
+    AJ --> AK
+
+    AB -->|否| AK
 ```
 
 ## 如何调用

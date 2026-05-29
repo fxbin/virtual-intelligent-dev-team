@@ -32,7 +32,7 @@
 
 ---
 
-## 2. 当前已经形成的 6 层闭环
+## 2. 当前已经形成的 7 层闭环
 
 ### 2.1 规划闭环
 
@@ -137,6 +137,20 @@ release gate 的输出不是笼统结论，而是明确二分：
 - `release-gate hold -> bootstrap -> auto-run`
 
 这意味着它不是停留在文档概念上，而是已经把核心闭环路径做了真实演练。
+
+### 2.7 Team Engine Lite 闭环
+
+当路线涉及 code-facing、release-facing、Git-facing 或 remediation 工作时，它不把 Worker 的自报完成当成最终验收。
+
+这条闭环要求：
+
+- Lead 创建 WorkOrder 并控制边界
+- Worker 负责产出实现、修复、文档或计划
+- Verifier 独立输出 `VerificationReport`
+- `fail` 必须带出 `RemediationPatch`
+- Lead 只能基于 `DeliveryCycleReport` 接受结果
+
+它的目的不是制造更多角色文本，而是避免同一个角色既生产又给自己放行。
 
 ---
 
@@ -316,7 +330,8 @@ release gate 的输出不是笼统结论，而是明确二分：
 2. 能把“继续优化”变成带证据的 bounded iteration  
 3. 能把“能不能发版”变成 formal release gate 判断  
 4. 能在 `hold` 之后继续自动铺设下一轮修复起点  
-5. 能通过 offline drill 证明关键闭环路径没有只停留在纸面
+5. 能用 Team Engine Lite 把 Worker / Verifier / Lead 的职责分开  
+6. 能通过 offline drill 证明关键闭环路径没有只停留在纸面
 
 如果要用一句话总结它当前的效果，可以写成：
 

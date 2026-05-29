@@ -8,9 +8,9 @@
 
 ---
 
-## 1. 总览：它有 6 条主路径
+## 1. 总览：它有 6 条主路径和 1 个交付验收门禁
 
-`virtual-intelligent-dev-team` 的常见执行路径，可以粗分为 6 类：
+`virtual-intelligent-dev-team` 的常见执行路径，可以粗分为 6 类，并在 code / release / Git / remediation 类工作上叠加 Team Engine Lite 验收门禁：
 
 1. **开发前规划路径**
    - 大规模改造先产出 analysis / plan / progress，再回到执行
@@ -24,6 +24,8 @@
    - 已经 `ship` 之后，把真实反馈、telemetry 和治理回写重新接回下一轮
 6. **显式自动运行路径**
    - 用户明确写 `/auto` 后，先 setup，再 go，把 root-cause / release / post-release 三条链路自动接起来
+7. **Team Engine Lite 交付验收门禁**
+   - 对 code-facing、release-facing、Git-facing 或 remediation 路线，要求 Worker / Verifier 分离、RemediationPatch 和 DeliveryCycleReport
 
 可以用一个简化图来理解：
 
@@ -34,7 +36,10 @@ flowchart TD
     P --> C[专家路由与协作]
 
     B -->|单轮可交付| C
-    C --> D[统一结果输出]
+    C --> T{是否需要 Team Engine Lite}
+    T -->|否| D[统一结果输出]
+    T -->|是| V[Worker / Verifier 验收]
+    V --> D
 
     B -->|需要继续优化| E[bounded iteration]
     E --> F{round decision}
@@ -101,6 +106,7 @@ skill 不应该直接跳到实现或迭代，而应该先进入轻量 planning b
 -> 选择 lead
 -> 视情况添加 assistant
 -> 必要时挂 governance / git/process guardrail
+-> code / release / Git / remediation 路线进入 Team Engine Lite
 -> 输出统一结论与下一步动作
 ```
 
@@ -336,6 +342,8 @@ hold = 下一轮修复闭环的入口
 > `virtual-intelligent-dev-team` 会先完成专家路由；如果任务进入多轮优化，则切换到 bounded iteration；如果任务进入正式验收，则切换到 release gate，并在 `hold` 时自动铺设下一轮修复路径。
 
 如果版本已经 `ship`，下一条链路就是 post-release feedback loop：把真实世界里的反馈、监控和治理变化再接回下一轮。
+
+如果路线涉及 code、release、Git 或 remediation，还会叠加 Team Engine Lite：Worker 产出，Verifier 验收，Lead 只能基于 DeliveryCycleReport 接受。
 
 ---
 
