@@ -31,6 +31,7 @@
 - 可选：`engineering_constraints`
 - 可选：`team_engine`
 - 可选：`external_agent_backend`
+- 可选：`real_subagent_runtime`
 - 可选：`planning_pack`
 - 可选：`optimization_loop`
 - 可选：`auto_run`
@@ -133,6 +134,40 @@
 - `team_engine_closure_verdict`
 - `required_outputs`
 - `boundary_note`
+
+## `real_subagent_runtime`
+
+- `eligible`
+- `reference`
+- `runtime_claim`
+- `candidate_runtime_claim`
+- `runtime_evidence_required`
+- `activation_reason`
+- `workflow_bundle`
+- `max_subagents`
+- `spawn_policy`
+- `agents`
+- `merge_policy`
+- `fallback`
+
+`spawn_policy`:
+
+- `user_explicit_or_auto_required`
+- `no_default_swarm`
+- `blocking_work_stays_local`
+- `parallel_tasks_must_be_independent`
+- `code_workers_need_disjoint_write_scopes`
+
+`agents[]`:
+
+- `role`
+- `task`
+- `write_scope`
+- `context_policy`
+- `output_contract`
+- `can_write_artifact`
+- `can_write_verdict`
+- `mapped_role`
 
 ## `beta_program`
 

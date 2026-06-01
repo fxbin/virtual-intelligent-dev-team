@@ -51,12 +51,17 @@ After routing, answer with one unified structure. The lead agent owns the respon
    - Runtime claim
    - Backend orchestration verdict
    - Required output contracts
-10. `Planning Pack` when pre-development planning is active
+10. `Real Subagent Runtime` when the route is eligible for controlled real subagent execution
+   - Eligibility and activation reason
+   - Current runtime claim and candidate runtime claim
+   - Whether runtime evidence is still required
+   - Max subagents, spawn policy, merge policy, and fallback
+11. `Planning Pack` when pre-development planning is active
    - Confirmed transformation scope, target, and constraints
    - Analysis artifacts to create or refresh
    - Phase plan, lane notes, and merge-risk guidance
    - Progress anchor and resume point
-11. `Optimization Loop` when bounded iteration is active
+12. `Optimization Loop` when bounded iteration is active
    - Objective and baseline
    - Current round and evidence source
    - Active owner, round memory, and self-feedback chain

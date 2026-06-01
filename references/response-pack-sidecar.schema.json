@@ -70,6 +70,9 @@
     "external_agent_backend": {
       "$ref": "#/$defs/external_agent_backend"
     },
+    "real_subagent_runtime": {
+      "$ref": "#/$defs/real_subagent_runtime"
+    },
     "beta_program": {
       "$ref": "#/$defs/beta_program"
     },
@@ -432,6 +435,169 @@
         },
         "boundary_note": {
           "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "real_subagent_runtime_agent": {
+      "type": "object",
+      "required": [
+        "role",
+        "task",
+        "write_scope",
+        "context_policy",
+        "output_contract",
+        "can_write_artifact",
+        "can_write_verdict",
+        "mapped_role"
+      ],
+      "properties": {
+        "role": {
+          "type": "string"
+        },
+        "task": {
+          "type": "string"
+        },
+        "write_scope": {
+          "type": "string"
+        },
+        "context_policy": {
+          "type": "string"
+        },
+        "output_contract": {
+          "type": "string"
+        },
+        "can_write_artifact": {
+          "type": "boolean"
+        },
+        "can_write_verdict": {
+          "type": "boolean"
+        },
+        "mapped_role": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "real_subagent_runtime": {
+      "type": "object",
+      "required": [
+        "eligible",
+        "reference",
+        "runtime_claim",
+        "candidate_runtime_claim",
+        "runtime_evidence_required",
+        "activation_reason",
+        "workflow_bundle",
+        "max_subagents",
+        "spawn_policy",
+        "agents",
+        "merge_policy",
+        "fallback"
+      ],
+      "properties": {
+        "eligible": {
+          "type": "boolean"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "runtime_claim": {
+          "type": "string"
+        },
+        "candidate_runtime_claim": {
+          "type": "string"
+        },
+        "runtime_evidence_required": {
+          "type": "boolean"
+        },
+        "activation_reason": {
+          "type": "string"
+        },
+        "workflow_bundle": {
+          "type": "string"
+        },
+        "max_subagents": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "spawn_policy": {
+          "type": "object",
+          "required": [
+            "user_explicit_or_auto_required",
+            "no_default_swarm",
+            "blocking_work_stays_local",
+            "parallel_tasks_must_be_independent",
+            "code_workers_need_disjoint_write_scopes"
+          ],
+          "properties": {
+            "user_explicit_or_auto_required": {
+              "type": "boolean"
+            },
+            "no_default_swarm": {
+              "type": "boolean"
+            },
+            "blocking_work_stays_local": {
+              "type": "boolean"
+            },
+            "parallel_tasks_must_be_independent": {
+              "type": "boolean"
+            },
+            "code_workers_need_disjoint_write_scopes": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "agents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/real_subagent_runtime_agent"
+          }
+        },
+        "merge_policy": {
+          "type": "object",
+          "required": [
+            "lead_merges_only",
+            "verifier_before_acceptance",
+            "delivery_cycle_report_required",
+            "conflict_resolution"
+          ],
+          "properties": {
+            "lead_merges_only": {
+              "type": "boolean"
+            },
+            "verifier_before_acceptance": {
+              "type": "boolean"
+            },
+            "delivery_cycle_report_required": {
+              "type": "boolean"
+            },
+            "conflict_resolution": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "fallback": {
+          "type": "object",
+          "required": [
+            "unavailable_runtime",
+            "malformed_output",
+            "role_boundary_violation"
+          ],
+          "properties": {
+            "unavailable_runtime": {
+              "type": "string"
+            },
+            "malformed_output": {
+              "type": "string"
+            },
+            "role_boundary_violation": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false

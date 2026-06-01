@@ -154,6 +154,7 @@ python scripts/init_quick_slice.py --root . --pretty
 - release gate 后的 remediation
 - Git 交付或高风险技术治理
 - 需要外部 Agent 后端软编排的任务
+- 显式要求 multi-agent / subagent / parallel agent，且需要受控 Worker / Verifier / Explorer 分工的任务
 
 关键规则：
 
@@ -161,7 +162,8 @@ python scripts/init_quick_slice.py --root . --pretty
 - Verifier 必须独立输出 `VerificationReport`
 - Verifier `fail` 必须给 `RemediationPatch`
 - Lead 只能在 `DeliveryCycleReport.next_state = accepted` 后接受结果
-- 默认 `runtime_claim = soft_orchestration_only`，不声称真实异步多进程 runtime
+- 显式 subagent 请求会生成 `SubagentRuntimePlan`，但默认 `runtime_claim = soft_orchestration_only`
+- 只有宿主提供 spawn / wait / merge 运行证据时，才允许升级为 `real_subagent_runtime`
 
 离线检查：
 

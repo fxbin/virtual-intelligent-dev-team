@@ -25,6 +25,8 @@
   - Worker / Verifier 角色分离、状态机、max cycles、DeliveryCycleReport 和 soft runtime claim
 - `worker-verifier-cycle-protocol.md`
   - implementation output、verification report、remediation patch 与 stop/retry 规则
+- `real-subagent-runtime-protocol.md`
+  - 当用户显式要求 multi-agent / subagent / parallel agent，或 `/auto` 命中合格 workflow 且宿主有 spawn / wait / merge 工具时，如何升级到受控真实 subagent runtime
 - `external-agent-backend-orchestration-protocol.md`
   - Codex / Claude Code / OpenCode 等外部后端只能作为软编排角色会话，不得虚假声称真实异步多进程 runtime
 - `auto-run-playbook.md`

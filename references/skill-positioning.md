@@ -149,6 +149,7 @@ release gate 的输出不是笼统结论，而是明确二分：
 - Verifier 独立输出 `VerificationReport`
 - `fail` 必须带出 `RemediationPatch`
 - Lead 只能基于 `DeliveryCycleReport` 接受结果
+- 显式 multi-agent / subagent 请求可生成 `SubagentRuntimePlan`，但真实 runtime claim 需要宿主 spawn / wait / merge 证据
 
 它的目的不是制造更多角色文本，而是避免同一个角色既生产又给自己放行。
 

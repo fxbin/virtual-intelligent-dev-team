@@ -303,6 +303,9 @@ def build_response_pack_payload(
     external_agent_backend_plan = result.get("external_agent_backend_plan", {})
     if not isinstance(external_agent_backend_plan, dict):
         external_agent_backend_plan = {}
+    real_subagent_runtime = result.get("real_subagent_runtime", {})
+    if not isinstance(real_subagent_runtime, dict):
+        real_subagent_runtime = {}
     beta_validation_plan = result.get("beta_validation_plan", {})
     if not isinstance(beta_validation_plan, dict):
         beta_validation_plan = {}
@@ -574,6 +577,29 @@ def build_response_pack_payload(
                 selected_language,
             ),
         }
+    if bool(real_subagent_runtime):
+        payload["real_subagent_runtime"] = {
+            "eligible": bool(real_subagent_runtime.get("eligible")),
+            "reference": format_missing(real_subagent_runtime.get("reference", ""), selected_language),
+            "runtime_claim": format_missing(real_subagent_runtime.get("runtime_claim", ""), selected_language),
+            "candidate_runtime_claim": format_missing(
+                real_subagent_runtime.get("candidate_runtime_claim", ""),
+                selected_language,
+            ),
+            "runtime_evidence_required": bool(real_subagent_runtime.get("runtime_evidence_required")),
+            "activation_reason": format_missing(
+                real_subagent_runtime.get("activation_reason", ""),
+                selected_language,
+            ),
+            "workflow_bundle": format_missing(real_subagent_runtime.get("workflow_bundle", ""), selected_language),
+            "max_subagents": int(real_subagent_runtime.get("max_subagents", 0)),
+            "spawn_policy": real_subagent_runtime.get("spawn_policy", {}),
+            "agents": [
+                item for item in real_subagent_runtime.get("agents", []) if isinstance(item, dict)
+            ],
+            "merge_policy": real_subagent_runtime.get("merge_policy", {}),
+            "fallback": real_subagent_runtime.get("fallback", {}),
+        }
     if bool(bundle_bootstrap.get("required")):
         payload["bundle_bootstrap"] = {
             "required": True,
@@ -752,6 +778,9 @@ def build_response_pack(
     team_engine = payload["team_engine"] if isinstance(payload.get("team_engine"), dict) else None
     external_agent_backend = (
         payload["external_agent_backend"] if isinstance(payload.get("external_agent_backend"), dict) else None
+    )
+    real_subagent_runtime = (
+        payload["real_subagent_runtime"] if isinstance(payload.get("real_subagent_runtime"), dict) else None
     )
     bundle_bootstrap = payload["bundle_bootstrap"] if isinstance(payload.get("bundle_bootstrap"), dict) else None
     beta_program = payload["beta_program"] if isinstance(payload.get("beta_program"), dict) else None
@@ -954,6 +983,36 @@ def build_response_pack(
                     f"- Runtime claim: {external_agent_backend.get('runtime_claim', 'n/a')}",
                     f"- Backend verdict: {external_agent_backend.get('backend_orchestration_verdict', 'n/a')}",
                     f"- Boundary note: {external_agent_backend.get('boundary_note', 'n/a')}",
+                    "",
+                ]
+            )
+
+    if isinstance(real_subagent_runtime, dict):
+        if selected_language == "zh":
+            lines.extend(
+                [
+                    "## 真实 Subagent Runtime",
+                    f"- 是否符合条件：{format_bool(real_subagent_runtime.get('eligible'), selected_language)}",
+                    f"- Runtime claim：{real_subagent_runtime.get('runtime_claim', '无')}",
+                    f"- 候选 runtime claim：{real_subagent_runtime.get('candidate_runtime_claim', '无')}",
+                    f"- 是否需要 runtime evidence：{format_bool(real_subagent_runtime.get('runtime_evidence_required'), selected_language)}",
+                    f"- 参考协议：{real_subagent_runtime.get('reference', '无')}",
+                    f"- 激活原因：{real_subagent_runtime.get('activation_reason', '无')}",
+                    f"- 最大 subagent 数：{real_subagent_runtime.get('max_subagents', 0)}",
+                    "",
+                ]
+            )
+        else:
+            lines.extend(
+                [
+                    "## Real Subagent Runtime",
+                    f"- Eligible: {format_bool(real_subagent_runtime.get('eligible'), selected_language)}",
+                    f"- Runtime claim: {real_subagent_runtime.get('runtime_claim', 'n/a')}",
+                    f"- Candidate runtime claim: {real_subagent_runtime.get('candidate_runtime_claim', 'n/a')}",
+                    f"- Runtime evidence required: {format_bool(real_subagent_runtime.get('runtime_evidence_required'), selected_language)}",
+                    f"- Reference: {real_subagent_runtime.get('reference', 'n/a')}",
+                    f"- Activation reason: {real_subagent_runtime.get('activation_reason', 'n/a')}",
+                    f"- Max subagents: {real_subagent_runtime.get('max_subagents', 0)}",
                     "",
                 ]
             )

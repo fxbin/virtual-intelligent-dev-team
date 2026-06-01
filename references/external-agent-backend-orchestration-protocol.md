@@ -4,6 +4,8 @@ This protocol defines how `virtual-intelligent-dev-team` can use Codex, Claude C
 
 It is a soft orchestration contract, not a real async runtime implementation.
 
+If the host exposes real subagent spawn / wait / merge primitives, route through `real-subagent-runtime-protocol.md` first. Use this protocol as the fallback when those primitives are unavailable, unproven, or too weak to preserve Worker / Verifier boundaries.
+
 ## Boundary
 
 External Agent backends may execute one role at a time:

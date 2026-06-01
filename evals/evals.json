@@ -1468,6 +1468,42 @@
     {
       "id": 82,
       "categories": [
+        "multi-agent",
+        "real-subagent-runtime",
+        "contract-output"
+      ],
+      "prompt": "Use real subagents in parallel to implement this risky payment API refactor and independently verify it.",
+      "expected_output": "Explicit real-subagent requests should expose controlled runtime eligibility, keep the current route soft until runtime evidence exists, and require Lead-owned merge plus verifier evidence.",
+      "files": [
+        "references/real-subagent-runtime-protocol.md",
+        "references/team-engine-lite-protocol.md",
+        "references/worker-verifier-cycle-protocol.md"
+      ],
+      "expectations": [
+        "workflow_bundle is quick-slice-deliver",
+        "team_engine_gate.required is true",
+        "real_subagent_runtime.eligible is true",
+        "real_subagent_runtime.reference is references/real-subagent-runtime-protocol.md",
+        "real_subagent_runtime.runtime_claim is soft_orchestration_only",
+        "real_subagent_runtime.candidate_runtime_claim is real_subagent_runtime",
+        "real_subagent_runtime.runtime_evidence_required is true",
+        "real_subagent_runtime.max_subagents >= 2",
+        "real_subagent_runtime.spawn_policy.user_explicit_or_auto_required is true",
+        "real_subagent_runtime.spawn_policy.no_default_swarm is true",
+        "real_subagent_runtime.spawn_policy.blocking_work_stays_local is true",
+        "real_subagent_runtime.spawn_policy.code_workers_need_disjoint_write_scopes is true",
+        "real_subagent_runtime.merge_policy.lead_merges_only is true",
+        "real_subagent_runtime.merge_policy.verifier_before_acceptance is true",
+        "real_subagent_runtime.merge_policy.delivery_cycle_report_required is true",
+        "response_pack_json real_subagent_runtime.eligible is true",
+        "response_pack_json real_subagent_runtime.runtime_claim is soft_orchestration_only",
+        "response_pack_json real_subagent_runtime.candidate_runtime_claim is real_subagent_runtime",
+        "response_pack_json real_subagent_runtime.runtime_evidence_required is true"
+      ]
+    },
+    {
+      "id": 83,
+      "categories": [
         "project-knowledge",
         "technical-governance",
         "workflow-bundle"

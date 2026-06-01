@@ -46,6 +46,7 @@ BENCHMARK_RUN_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-ru
 TEAM_ENGINE_REFERENCE_PATH = SKILL_DIR / "references" / "team-engine-lite-protocol.md"
 WORKER_VERIFIER_REFERENCE_PATH = SKILL_DIR / "references" / "worker-verifier-cycle-protocol.md"
 EXTERNAL_AGENT_BACKEND_REFERENCE_PATH = SKILL_DIR / "references" / "external-agent-backend-orchestration-protocol.md"
+REAL_SUBAGENT_RUNTIME_REFERENCE_PATH = SKILL_DIR / "references" / "real-subagent-runtime-protocol.md"
 TEAM_WORK_ORDER_TEMPLATE_PATH = SKILL_DIR / "assets" / "team-work-order-template.json"
 DELIVERY_CYCLE_REPORT_TEMPLATE_PATH = SKILL_DIR / "assets" / "delivery-cycle-report-template.json"
 EXTERNAL_AGENT_BACKEND_PLAN_TEMPLATE_PATH = SKILL_DIR / "assets" / "external-agent-backend-plan-template.json"
@@ -131,6 +132,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
     team_engine_reference_path = resolved_skill_dir / "references" / "team-engine-lite-protocol.md"
     worker_verifier_reference_path = resolved_skill_dir / "references" / "worker-verifier-cycle-protocol.md"
     external_agent_backend_reference_path = resolved_skill_dir / "references" / "external-agent-backend-orchestration-protocol.md"
+    real_subagent_runtime_reference_path = resolved_skill_dir / "references" / "real-subagent-runtime-protocol.md"
     team_work_order_template_path = resolved_skill_dir / "assets" / "team-work-order-template.json"
     delivery_cycle_report_template_path = resolved_skill_dir / "assets" / "delivery-cycle-report-template.json"
     external_agent_backend_plan_template_path = resolved_skill_dir / "assets" / "external-agent-backend-plan-template.json"
@@ -377,6 +379,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
         team_engine_reference_path,
         worker_verifier_reference_path,
         external_agent_backend_reference_path,
+        real_subagent_runtime_reference_path,
         team_work_order_template_path,
         delivery_cycle_report_template_path,
         external_agent_backend_plan_template_path,
@@ -582,6 +585,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
         )
         team_engine_gate = sample_route.get("team_engine_gate", {})
         external_backend_plan = sample_route.get("external_agent_backend_plan", {})
+        real_subagent_runtime = sample_route.get("real_subagent_runtime", {})
         if not isinstance(team_engine_gate, dict) or not team_engine_gate.get("required"):
             team_engine_failures.append("route_request did not emit required team_engine_gate for quick-slice delivery")
         else:
@@ -595,12 +599,47 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             team_engine_failures.append("external_agent_backend_plan must declare soft_orchestration_only")
         if isinstance(external_backend_plan, dict) and external_backend_plan.get("backend_orchestration_verdict") != "simulated":
             team_engine_failures.append("external_agent_backend_plan must not claim real backend execution by default")
+        if not isinstance(real_subagent_runtime, dict):
+            team_engine_failures.append("route_request must emit real_subagent_runtime plan")
+        else:
+            if real_subagent_runtime.get("eligible") is not False:
+                team_engine_failures.append("real_subagent_runtime must not be eligible for default quick-slice delivery")
+            if real_subagent_runtime.get("runtime_claim") != "soft_orchestration_only":
+                team_engine_failures.append("real_subagent_runtime runtime_claim must stay soft without runtime evidence")
+            if real_subagent_runtime.get("candidate_runtime_claim") != "soft_orchestration_only":
+                team_engine_failures.append("real_subagent_runtime candidate claim must stay soft when not eligible")
+        explicit_route = local_route_request.route_request(
+            text=(
+                "Use real subagents in parallel: one worker implements this risky checkout API refactor "
+                "and one verifier independently checks it."
+            ),
+            config=config,
+            repo_path=resolved_skill_dir.parent,
+        )
+        explicit_runtime = explicit_route.get("real_subagent_runtime", {})
+        if not isinstance(explicit_runtime, dict) or explicit_runtime.get("eligible") is not True:
+            team_engine_failures.append("explicit subagent request must set real_subagent_runtime.eligible=true")
+        else:
+            if explicit_runtime.get("runtime_claim") != "soft_orchestration_only":
+                team_engine_failures.append("explicit subagent route must still require runtime evidence before claiming real execution")
+            if explicit_runtime.get("candidate_runtime_claim") != "real_subagent_runtime":
+                team_engine_failures.append("explicit subagent route must expose candidate real_subagent_runtime claim")
+            if explicit_runtime.get("runtime_evidence_required") is not True:
+                team_engine_failures.append("explicit subagent route must require runtime evidence")
+            if int(explicit_runtime.get("max_subagents", 0)) < 2:
+                team_engine_failures.append("explicit subagent route must allow at least Worker and Verifier subagents")
         if callable(build_payload):
             sidecar = build_payload(sample_route)
             if "team_engine" not in sidecar:
                 team_engine_failures.append("response pack sidecar missing team_engine section")
             if "external_agent_backend" not in sidecar:
                 team_engine_failures.append("response pack sidecar missing external_agent_backend section")
+            if "real_subagent_runtime" not in sidecar:
+                team_engine_failures.append("response pack sidecar missing real_subagent_runtime section")
+            explicit_sidecar = build_payload(explicit_route)
+            explicit_sidecar_runtime = explicit_sidecar.get("real_subagent_runtime", {})
+            if not isinstance(explicit_sidecar_runtime, dict) or explicit_sidecar_runtime.get("eligible") is not True:
+                team_engine_failures.append("response pack sidecar must expose explicit real_subagent_runtime eligibility")
     except Exception as exc:
         team_engine_failures.append(f"team engine route contract failed: {exc}")
     if local_team_engine_drill is not None:
@@ -625,6 +664,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 "reference": str(team_engine_reference_path),
                 "worker_verifier_reference": str(worker_verifier_reference_path),
                 "external_backend_reference": str(external_agent_backend_reference_path),
+                "real_subagent_runtime_reference": str(real_subagent_runtime_reference_path),
             },
         }
     )

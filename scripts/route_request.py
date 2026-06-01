@@ -32,6 +32,7 @@ HARNESS_CONSTRAINT_REFERENCE = "references/harness-engineering-constraint-protoc
 TEAM_ENGINE_REFERENCE = "references/team-engine-lite-protocol.md"
 WORKER_VERIFIER_REFERENCE = "references/worker-verifier-cycle-protocol.md"
 EXTERNAL_AGENT_BACKEND_REFERENCE = "references/external-agent-backend-orchestration-protocol.md"
+REAL_SUBAGENT_RUNTIME_REFERENCE = "references/real-subagent-runtime-protocol.md"
 HARNESS_CONSTRAINT_ARTIFACT = ".skill-harness/engineering-constraints.md"
 HARNESS_CONSTRAINT_COMMAND = "python scripts/init_harness_constraints.py --root . --summary \"<task summary>\" --pretty"
 HARNESS_CONSTRAINT_WORKFLOWS = {
@@ -52,6 +53,34 @@ TEAM_ENGINE_REQUIRED_WORKFLOWS = {
     "root-cause-remediate",
     "ship-hold-remediate",
 }
+REAL_SUBAGENT_TRIGGER_KEYWORDS = [
+    "multi-agent",
+    "multi agent",
+    "subagent",
+    "sub-agent",
+    "subagents",
+    "sub-agents",
+    "parallel agent",
+    "parallel agents",
+    "spawn agent",
+    "spawn agents",
+    "agent team",
+    "agent teams",
+    "separate agents",
+    "dynamic workflow",
+    "dynamic workflows",
+    "claude code dynamic workflow",
+    "多 agent",
+    "多agent",
+    "多智能体",
+    "并行 agent",
+    "并行agent",
+    "并行智能体",
+    "自主唤起",
+    "唤起多",
+    "分头执行",
+    "分头查",
+]
 
 
 def load_module(name: str, path: Path):
@@ -2493,6 +2522,103 @@ def build_external_agent_backend_plan(
     }
 
 
+def build_real_subagent_runtime_plan(
+    *,
+    text: str,
+    workflow_bundle: dict[str, object],
+    lead_agent: str,
+    assistants: list[str],
+    team_engine_gate: dict[str, object],
+    auto_run_profile: dict[str, object],
+) -> dict[str, object]:
+    bundle_name = str(workflow_bundle.get("name", "direct-execution"))
+    explicit_request = text_has_any_keyword(text, REAL_SUBAGENT_TRIGGER_KEYWORDS)
+    auto_supported = bool(auto_run_profile.get("enabled")) and bool(auto_run_profile.get("workflow_supported"))
+    high_risk_team_route = bool(team_engine_gate.get("required")) and bundle_name in {
+        "plan-first-build",
+        "audit-fix-deliver",
+        "govern-change-safely",
+        "root-cause-remediate",
+        "ship-hold-remediate",
+    }
+    eligible = explicit_request or auto_supported
+    activation_reason = "not requested"
+    if explicit_request:
+        activation_reason = "user explicitly requested multi-agent or subagent execution"
+    elif auto_supported:
+        activation_reason = "explicit /auto request is on an auto-run eligible workflow"
+    elif high_risk_team_route:
+        activation_reason = "high-risk route should propose subagents only after lead explains why local execution is insufficient"
+
+    worker_role = str(team_engine_gate.get("worker_role", "implementation-worker"))
+    verifier_role = str(team_engine_gate.get("verifier_role", "delivery-verifier"))
+    agents = [
+        {
+            "role": "worker",
+            "task": "produce the scoped implementation or artifact from the WorkOrder",
+            "write_scope": "assigned files only; must be disjoint when multiple Workers are spawned",
+            "context_policy": "task_only",
+            "output_contract": "ImplementationOutput",
+            "can_write_artifact": True,
+            "can_write_verdict": False,
+            "mapped_role": worker_role,
+        },
+        {
+            "role": "verifier",
+            "task": "check Worker output against acceptance gates and return pass/fail/hold evidence",
+            "write_scope": "verification report and remediation patch only",
+            "context_policy": "artifact_only",
+            "output_contract": "VerificationReport + RemediationPatch",
+            "can_write_artifact": False,
+            "can_write_verdict": True,
+            "mapped_role": verifier_role,
+        },
+    ]
+    if assistants:
+        agents.append(
+            {
+                "role": "explorer",
+                "task": "answer bounded sidecar questions for the Lead without editing files",
+                "write_scope": "none",
+                "context_policy": "summary_plus_artifact",
+                "output_contract": "AssistantDelta",
+                "can_write_artifact": False,
+                "can_write_verdict": False,
+                "mapped_role": assistants[0],
+            }
+        )
+
+    return {
+        "eligible": eligible,
+        "reference": REAL_SUBAGENT_RUNTIME_REFERENCE,
+        "runtime_claim": "soft_orchestration_only",
+        "candidate_runtime_claim": "real_subagent_runtime" if eligible else "soft_orchestration_only",
+        "runtime_evidence_required": bool(eligible),
+        "activation_reason": activation_reason,
+        "workflow_bundle": bundle_name,
+        "max_subagents": 3 if eligible else 0,
+        "spawn_policy": {
+            "user_explicit_or_auto_required": True,
+            "no_default_swarm": True,
+            "blocking_work_stays_local": True,
+            "parallel_tasks_must_be_independent": True,
+            "code_workers_need_disjoint_write_scopes": True,
+        },
+        "agents": agents if eligible else [],
+        "merge_policy": {
+            "lead_merges_only": True,
+            "verifier_before_acceptance": bool(team_engine_gate.get("required")),
+            "delivery_cycle_report_required": bool(team_engine_gate.get("required")),
+            "conflict_resolution": "hold unless objective evidence resolves Worker/Verifier disagreement",
+        },
+        "fallback": {
+            "unavailable_runtime": "downgrade to external-agent-backend soft orchestration",
+            "malformed_output": "request one structured repair, then hold",
+            "role_boundary_violation": "close or ignore violating subagent output and regenerate WorkOrder",
+        },
+    }
+
+
 def build_assistant_delta_contract(
     lead_agent: str, assistants: list[str], workflow_bundle: str | None
 ) -> dict[str, object]:
@@ -3065,6 +3191,14 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         iteration_profile=iteration_profile,
         repo_root=repo_path,
     )
+    real_subagent_runtime_plan = build_real_subagent_runtime_plan(
+        text=routed_text,
+        workflow_bundle=workflow_bundle,
+        lead_agent=lead_agent,
+        assistants=assistants,
+        team_engine_gate=team_engine_gate,
+        auto_run_profile=auto_run_profile,
+    )
     process_plan = build_process_plan(
         needs_pre_development_planning=needs_pre_development_planning,
         needs_iteration=needs_iteration,
@@ -3096,6 +3230,8 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "team_engine_reference": team_engine_gate.get("reference"),
         "worker_verifier_reference": team_engine_gate.get("cycle_reference"),
         "external_agent_backend_reference": external_agent_backend_plan.get("reference"),
+        "real_subagent_runtime_reference": real_subagent_runtime_plan.get("reference"),
+        "real_subagent_runtime_eligible": real_subagent_runtime_plan.get("eligible"),
         "assistant_delta_contract_enabled": assistant_delta_contract.get("enabled"),
         "auto_mode": auto_run_profile,
     }
@@ -3144,6 +3280,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "harness_constraint_gate": harness_constraint_gate,
         "team_engine_gate": team_engine_gate,
         "external_agent_backend_plan": external_agent_backend_plan,
+        "real_subagent_runtime": real_subagent_runtime_plan,
         "progress_anchor_recommended": workflow_bundle.get("progress_anchor_recommended"),
         "resume_artifacts": workflow_bundle.get("resume_artifacts", []),
         "workflow_bundle_bootstrap": workflow_bundle_bootstrap,

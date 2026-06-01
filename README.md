@@ -45,6 +45,7 @@
 - release gate 与 post-release feedback loop
 - 显式 `/auto` 自动运行与状态优先恢复
 - Team Engine Lite 的 Worker / Verifier 分离、RemediationPatch 和 DeliveryCycleReport
+- 受控真实 Subagent runtime eligibility：显式 multi-agent/subagent 请求或合格 `/auto` 工作流可生成 `SubagentRuntimePlan`，但只有宿主提供 spawn / wait / merge 证据时才声明真实 runtime
 
 ## 核心能力
 
@@ -62,6 +63,8 @@
   - 小型功能或 bugfix 默认保留 quick slice brief、project context、delivery status 和验证证据。
 - `Team Engine Lite`
   - code-facing、release-facing、Git-facing 与 remediation 路线默认保留 Worker / Verifier 分离、max-cycle retry、RemediationPatch 和 DeliveryCycleReport。
+- `受控真实 Subagent runtime eligibility`
+  - 显式 multi-agent / subagent / parallel agent 请求会生成受控计划、角色边界、spawn policy、merge policy 和 fallback；没有宿主 runtime evidence 时仍保持 `soft_orchestration_only`。
 - `外部 Agent 后端软编排`
   - 可以把 Codex / Claude Code / OpenCode 当作角色后端，但默认只声明 `soft_orchestration_only`，不虚假声称真实异步多进程 runtime。
 - `有边界的迭代优化`
@@ -82,6 +85,7 @@
 | 上线后闭环 | post-release feedback loop | 很少覆盖上线后的反馈回写 |
 | 产品协同 | 支持产品、研发、技术治理联动 | 容易偏单一研发视角 |
 | Beta 验证 | 分轮内测、模拟用户、cohort ramp、反馈门禁 | 通常只有静态测试计划，没有结构化分轮验证 |
+| Subagent runtime | 显式请求时输出受控计划，真实执行必须有宿主 spawn / wait / merge 证据 | 容易把角色扮演误称为真实多 Agent runtime |
 | 离线验证 | offline loop drill 验证回滚与恢复路径 | 很少验证关键闭环路径是否真的跑通 |
 
 ## 快速开始

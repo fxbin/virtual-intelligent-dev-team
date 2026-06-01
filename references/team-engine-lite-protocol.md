@@ -2,7 +2,9 @@
 
 This protocol turns virtual software-team coordination from role routing into a replayable delivery contract.
 
-It does not claim a real async multi-process runtime. It defines the soft orchestration layer this skill can enforce inside a host such as Codex, Claude Code, OpenCode, or a manual bridge.
+It does not claim a real async multi-process runtime by itself. It defines the delivery contract this skill can enforce inside a host such as Codex, Claude Code, OpenCode, or a manual bridge.
+
+When the host exposes actual spawn / wait / merge primitives and the task is eligible, Team Engine Lite may be upgraded through `real-subagent-runtime-protocol.md`. Without that runtime evidence, the route must keep `runtime_claim: soft_orchestration_only`.
 
 ## Purpose
 

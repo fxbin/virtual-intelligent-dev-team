@@ -27,7 +27,7 @@ It has seven practical closure layers:
 6. `Drill closure`
    - Offline drills verify rollback, resume, and release-gate bootstrap paths.
 7. `Team Engine Lite closure`
-   - Code-facing delivery now carries Worker / Verifier separation, max-cycle retry, remediation patch, external-agent soft orchestration boundaries, and a DeliveryCycleReport before Lead acceptance.
+   - Code-facing delivery now carries Worker / Verifier separation, max-cycle retry, remediation patch, controlled real subagent runtime eligibility, external-agent soft orchestration fallback, and a DeliveryCycleReport before Lead acceptance.
 
 Runtime rule:
 
@@ -88,10 +88,11 @@ If the task is simple and clearly single-domain, keep routing lightweight.
 9. Apply execution-quality guardrails: surface route-changing assumptions, keep the smallest defensible bundle, limit scope surgically, and define verifiable closure.
 10. For code-facing routes, apply the Harness constraint gate before implementation: create or refresh `.skill-harness/engineering-constraints.md`.
 11. For code-facing, release-facing, Git-facing, or remediation routes, apply Team Engine Lite: Worker can produce, Verifier can pass/fail/hold, and Lead can accept only after a DeliveryCycleReport.
-12. If external Agent backends are available, treat them as soft backend sessions under the same role boundary; do not claim true async multi-process runtime without runtime evidence.
-13. If the user asks for optimization, repeated improvement, benchmark comparison, or another round, enter bounded iteration instead of open-ended self-looping.
-14. If the user asks whether the current version can ship, submit, or pass formal acceptance, run the release gate instead of answering from a benchmark summary alone.
-15. Produce one unified response instead of disconnected role fragments.
+12. If the user explicitly asks for multi-agent / subagent / parallel agent execution, or `/auto` reaches an eligible workflow, build a controlled real subagent runtime plan; only claim actual real subagent execution when the host exposes spawn / wait / merge runtime evidence.
+13. If external Agent backends are available but real subagent runtime is not proven, treat them as soft backend sessions under the same role boundary; do not claim true async multi-process runtime without runtime evidence.
+14. If the user asks for optimization, repeated improvement, benchmark comparison, or another round, enter bounded iteration instead of open-ended self-looping.
+15. If the user asks whether the current version can ship, submit, or pass formal acceptance, run the release gate instead of answering from a benchmark summary alone.
+16. Produce one unified response instead of disconnected role fragments.
 
 ## Output template
 
@@ -154,9 +155,10 @@ Read indexes first; do not flatten the whole skill into this file.
   [references/execution-quality-guardrails.md](references/execution-quality-guardrails.md)
 - Harness engineering constraint gate:
   [references/harness-engineering-constraint-protocol.md](references/harness-engineering-constraint-protocol.md)
-- Team Engine Lite, Worker / Verifier cycle, and external Agent backend soft orchestration:
+- Team Engine Lite, Worker / Verifier cycle, controlled real subagent runtime, and external Agent backend soft orchestration:
   [references/team-engine-lite-protocol.md](references/team-engine-lite-protocol.md),
-  [references/worker-verifier-cycle-protocol.md](references/worker-verifier-cycle-protocol.md), and
+  [references/worker-verifier-cycle-protocol.md](references/worker-verifier-cycle-protocol.md),
+  [references/real-subagent-runtime-protocol.md](references/real-subagent-runtime-protocol.md), and
   [references/external-agent-backend-orchestration-protocol.md](references/external-agent-backend-orchestration-protocol.md)
 - Scripts, templates, validation, and command entrypoints:
   [references/tooling-command-index.md](references/tooling-command-index.md)
