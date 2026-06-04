@@ -312,6 +312,27 @@ def validate_verify_action_cases(
     return results
 
 
+def validate_workflow_quality_cases(cases: list[dict[str, object]]) -> list[dict[str, object]]:
+    results: list[dict[str, object]] = []
+    for case in cases:
+        name = str(case.get("name", "unnamed"))
+        path = SKILL_DIR / str(case.get("path", ""))
+        expect = case.get("expect", {})
+        if not isinstance(expect, dict):
+            raise AssertionError(f"{name}: expect must be an object")
+        check(path.exists(), f"{name}: missing path {path}")
+        text = path.read_text(encoding="utf-8")
+
+        for needle in expect.get("contains", []):
+            check(isinstance(needle, str), f"{name}: contains entries must be strings")
+            check(needle in text, f"{name}: expected {needle!r} in {path}")
+        for needle in expect.get("not_contains", []):
+            check(isinstance(needle, str), f"{name}: not_contains entries must be strings")
+            check(needle not in text, f"{name}: did not expect {needle!r} in {path}")
+        results.append({"name": name, "status": "passed"})
+    return results
+
+
 def validate_contract_lint() -> list[dict[str, object]]:
     result = contract_lint.lint_contract(SKILL_DIR)
     errors = result.get("errors", [])
@@ -341,10 +362,12 @@ def validate() -> dict[str, object]:
     routing_cases = cases.get("routing_cases", [])
     process_plan_cases = cases.get("process_plan_cases", [])
     guardrail_cases = cases.get("guardrail_cases", [])
+    workflow_quality_cases = cases.get("workflow_quality_cases", [])
     verify_action_cases = cases.get("verify_action_cases", [])
     check(isinstance(routing_cases, list), "routing_cases must be a list")
     check(isinstance(process_plan_cases, list), "process_plan_cases must be a list")
     check(isinstance(guardrail_cases, list), "guardrail_cases must be a list")
+    check(isinstance(workflow_quality_cases, list), "workflow_quality_cases must be a list")
     check(isinstance(verify_action_cases, list), "verify_action_cases must be a list")
 
     sections = {
@@ -353,6 +376,7 @@ def validate() -> dict[str, object]:
         "routing_cases": validate_routing_cases(config, routing_cases),
         "process_plan_cases": validate_process_plan_cases(process_plan_cases),
         "guardrail_cases": validate_guardrail_cases(guardrail_cases),
+        "workflow_quality_cases": validate_workflow_quality_cases(workflow_quality_cases),
         "verify_action_cases": validate_verify_action_cases(config, verify_action_cases),
     }
     total_passed = sum(len(items) for items in sections.values())

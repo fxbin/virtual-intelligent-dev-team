@@ -15,6 +15,12 @@
   - 中文流程 walkthrough
 - `execution-quality-guardrails.md`
   - 假设显性化、最小 bundle、外科手术式范围、可验证闭环的通用执行护栏
+- `workflow-quality-baseline.md`
+  - trigger accuracy、fast-path cheapness、output compactness、evidence freshness、artifact laziness 与 authority boundary 的质量回归基线
+- `trigger-health-baseline.md`
+  - skill 没触发、误触发、路由过重或执行深度不足时的分层诊断
+- `goal-framing-protocol.md`
+  - 宽目标、重复失败、release、beta、multi-agent 或容易漂移任务的 goal / success evidence / stop condition / non-goals 边界
 - `runtime-operation-contract.md`
   - 边界、路由默认、协同、治理、planning、iteration、root-cause、Git 与轻量规则
 - `output-contract.md`
@@ -25,6 +31,8 @@
   - Worker / Verifier 角色分离、状态机、max cycles、DeliveryCycleReport 和 soft runtime claim
 - `worker-verifier-cycle-protocol.md`
   - implementation output、verification report、remediation patch 与 stop/retry 规则
+- `anti-entropy-governance.md`
+  - duplicate owner、fallback growth、adapter / guard 膨胀、delete vs compat、persistent-state 删除边界的反熵治理 overlay
 - `real-subagent-runtime-protocol.md`
   - 当用户显式要求 multi-agent / subagent / parallel agent，或 `/auto` 命中合格 workflow 且宿主有 spawn / wait / merge 工具时，如何升级到受控真实 subagent runtime
 - `external-agent-backend-orchestration-protocol.md`
@@ -55,6 +63,10 @@
 ## 二、路由与协作
 
 请求在“谁做 lead、要不要 assistant、怎么 handoff”上不明确时，读这一组：
+
+如果问题是“为什么这个 skill 没触发 / 误触发 / 触发后流程太重”，先读 `trigger-health-baseline.md`，再改路由配置或示例。
+
+如果改动会影响常见 workflow 的输出深度、证据、workspace 创建时机或 authority wording，先读 `workflow-quality-baseline.md`，再补回归样本。
 
 - `agent-catalog.md`
   - 详细触发器、anti-pattern
@@ -101,6 +113,8 @@
 - High-risk production change
 - Repeated-failure or root-cause debugging
 - Evidence-driven iteration
+- Goal framing for drift-prone work
+- Anti-entropy cleanup / fallback retirement / duplicate-owner collapse
 
 如果不仅要知道“谁做 lead”，还要知道“默认走哪条交付旅程、恢复点在哪”，补读：
 
@@ -156,6 +170,11 @@
 - Git / worktree
   - `git-workflow-playbook.md`
   - `using-git-worktrees-playbook.md`
+- anti-entropy / delete vs compat / duplicate owner
+  - `anti-entropy-governance.md`
+- trigger or workflow quality regression
+  - `trigger-health-baseline.md`
+  - `workflow-quality-baseline.md`
 
 执行前如果不确定“该不该开某个 process lane / release gate / iteration / lead 组合”，先回到：
 

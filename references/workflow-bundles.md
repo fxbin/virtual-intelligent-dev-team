@@ -53,10 +53,12 @@ existing routing, planning, iteration, release, and Git rules.
   - the route needs enough structure to avoid drift but does not need a full product brief, planning branch, or iteration loop
 - Default sequence:
   1. clarify only route-changing gaps
-  2. record intent, non-goals, acceptance criteria, and verification evidence
-  3. create or refresh durable project context when needed
-  4. implement the smallest coherent change
-  5. run targeted verification and self-review before presenting
+  2. use `references/goal-framing-protocol.md` when the slice has drift-prone success evidence or explicit non-goals
+  3. record intent, non-goals, acceptance criteria, and verification evidence
+  4. create or refresh durable project context when needed
+  5. implement the smallest coherent change
+  6. use `references/anti-entropy-governance.md` when the fix adds guards, fallbacks, adapters, or retires an old owner
+  7. run targeted verification and self-review before presenting
 - Primary references:
   - `references/quick-slice-delivery-playbook.md`
   - `assets/quick-slice-brief-template.md`
@@ -131,7 +133,8 @@ existing routing, planning, iteration, release, and Git rules.
   1. define owner, execution mode, and stop conditions
   2. lock the smallest safe next action
   3. define verification evidence and rollback conditions
-  4. only then enter Git or release actions
+  4. classify delete / compatibility / source-of-truth risk with `references/anti-entropy-governance.md` when old paths, fallbacks, duplicate owners, schema, persistence, or source-of-truth surfaces are touched
+  5. only then enter Git or release actions
 - Primary references:
   - `references/technical-governance-playbook.md`
   - `assets/technical-governance-change-plan-template.md`
@@ -149,10 +152,12 @@ existing routing, planning, iteration, release, and Git rules.
   - bounded iteration is needed to compare evidence-backed fixes
 - Default sequence:
   1. freeze guesswork
-  2. collect missing evidence
-  3. validate the smallest hypothesis
-  4. remediate safely
-  5. keep or rollback based on evidence
+  2. frame success evidence and stop conditions when previous attempts drifted
+  3. collect missing evidence
+  4. validate the smallest hypothesis
+  5. prefer owner correction or path retirement over fallback growth when evidence supports it
+  6. remediate safely
+  7. keep or rollback based on evidence
 - Primary references:
   - `references/root-cause-escalation-playbook.md`
   - `references/iteration-protocol.md`
@@ -230,6 +235,7 @@ Every bundle should expose:
 - `workflow_bundle_bootstrap`
 - `progress_anchor_recommended`
 - `resume_artifacts`
+- `workflow_quality_checks`
 
 When a bundle needs workspace initialization before real delivery starts, the
 bootstrap contract should make three things explicit:
@@ -251,6 +257,10 @@ Code-facing bundles also inherit the Harness engineering constraint protocol in
 create or refresh `.skill-harness/engineering-constraints.md` and treat it as the
 current constraint source for scope, forbidden changes, verification evidence,
 and rollback or stop conditions.
+
+Bundles also inherit `references/workflow-quality-baseline.md`: keep fast paths
+cheap, create artifacts lazily, preserve fresh evidence before completion
+claims, and state authority boundaries for host-dependent runtime claims.
 
 ## Auto Overlay
 

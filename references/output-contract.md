@@ -23,6 +23,13 @@ After routing, answer with one unified structure. The lead agent owns the respon
    - Workflow source explanation
    - Process skills in effect
    - Assistant delta contract when assistants are active
+   - Completion evidence slots before any `done`, `fixed`, `ready`, `ship`, `commit`, `merge`, or handoff claim:
+     - evidence action / check performed
+     - result / exit status
+     - covered scope
+     - uncovered scope
+     - residual risk
+     - confidence grade: `A | B | C`
 4. `Next Action`
    - Smallest executable action
    - Current owner
@@ -46,6 +53,7 @@ After routing, answer with one unified structure. The lead agent owns the respon
    - Max cycles and acceptance gates
    - Whether Worker can self-pass
    - Runtime claim and closure verdict
+   - DeliveryCycleReport evidence before Lead acceptance
 9. `External Agent Backend` when soft backend orchestration is active
    - Orchestration mode
    - Runtime claim
@@ -67,6 +75,47 @@ After routing, answer with one unified structure. The lead agent owns the respon
    - Active owner, round memory, and self-feedback chain
    - Decision: `keep`, `retry`, `rollback`, or `stop`
    - Next round or closure action
+13. `Goal Frame` when `references/goal-framing-protocol.md` is active
+   - Requested outcome
+   - Success evidence
+   - Stop condition
+   - Non-goals
+   - Current stop state: `done | blocked | needs-verification | scope-exceeded`
+14. `Anti-Entropy` when `references/anti-entropy-governance.md` is active
+   - Deletion class
+   - Old path or object
+   - New canonical owner
+   - Decision: `delete-first | compat-exception | confirmation-first`
+   - Retired behavior and preserved behavior
+   - Remaining entropy or retirement follow-up
+
+## Completion Evidence Rule
+
+Do not claim a task is complete from routing output, worker self-report, stale
+logs, or partial checks.
+
+For non-trivial work, completion output must preserve these semantic slots even
+when written in natural prose:
+
+```yaml
+completion_evidence:
+  evidence_action:
+  result:
+  covered_scope:
+  uncovered_scope:
+  residual_risk:
+  confidence_grade: "A | B | C"
+```
+
+Confidence grades:
+
+- `A`: direct check plus relevant regression evidence, no known unresolved
+  scope.
+- `B`: direct check with bounded residual risk.
+- `C`: partial evidence only; do not present as closed.
+
+When Team Engine Lite is active, `A` or `B` also requires Verifier evidence and
+Lead acceptance through a DeliveryCycleReport.
 
 ## Response Pack
 

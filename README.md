@@ -43,6 +43,9 @@
 - 多轮优化、benchmark、回滚、resume
 - 产品定义、验收标准、分轮 beta 内测
 - release gate 与 post-release feedback loop
+- trigger health 与 workflow quality baseline，避免该触发不触发、误触发、过度流程化或 completion claim 证据不足
+- goal framing：对宽目标、重复失败、release、beta、multi-agent 等任务先锁定 success evidence、stop condition 和 non-goals
+- anti-entropy governance：对 fallback growth、duplicate owner、adapter / guard 膨胀、delete vs compat 和 source-of-truth 删除边界做治理
 - 显式 `/auto` 自动运行与状态优先恢复
 - Team Engine Lite 的 Worker / Verifier 分离、RemediationPatch 和 DeliveryCycleReport
 - 受控真实 Subagent runtime eligibility：显式 multi-agent/subagent 请求或合格 `/auto` 工作流可生成 `SubagentRuntimePlan`，但只有宿主提供 spawn / wait / merge 证据时才声明真实 runtime
@@ -61,6 +64,12 @@
   - 恢复优先读取机器可读的 automation state，而不是靠对话猜测上下文。
 - `小切片交付`
   - 小型功能或 bugfix 默认保留 quick slice brief、project context、delivery status 和验证证据。
+- `目标边界`
+  - 对容易漂移的任务先形成 goal frame，明确 success evidence、stop condition、non-goals 和当前 stop state。
+- `工作流质量基线`
+  - 用 trigger accuracy、fast-path cheapness、output compactness、evidence freshness、artifact laziness 和 authority boundary 约束 skill 迭代。
+- `反熵治理`
+  - 遇到 duplicate owner、fallback、adapter、guard 或兼容路径增长时，先判断旧路径该删除、保留兼容，还是需要用户确认。
 - `Team Engine Lite`
   - code-facing、release-facing、Git-facing 与 remediation 路线默认保留 Worker / Verifier 分离、max-cycle retry、RemediationPatch 和 DeliveryCycleReport。
 - `受控真实 Subagent runtime eligibility`
@@ -85,6 +94,8 @@
 | 上线后闭环 | post-release feedback loop | 很少覆盖上线后的反馈回写 |
 | 产品协同 | 支持产品、研发、技术治理联动 | 容易偏单一研发视角 |
 | Beta 验证 | 分轮内测、模拟用户、cohort ramp、反馈门禁 | 通常只有静态测试计划，没有结构化分轮验证 |
+| 工作流质量 | 触发健康、快路径廉价、证据新鲜度、artifact 懒创建、authority boundary | 容易越改越重，或把方法建议误说成最终权威 |
+| 反熵治理 | delete-first / compat-exception / confirmation-first 路径选择 | 常见做法是不断加 fallback 或 guard |
 | Subagent runtime | 显式请求时输出受控计划，真实执行必须有宿主 spawn / wait / merge 证据 | 容易把角色扮演误称为真实多 Agent runtime |
 | 离线验证 | offline loop drill 验证回滚与恢复路径 | 很少验证关键闭环路径是否真的跑通 |
 

@@ -877,6 +877,81 @@
       "type": "g3_behind_should_report_sync"
     }
   ],
+  "workflow_quality_cases": [
+    {
+      "name": "runtime_index_links_quality_protocols",
+      "path": "references/runtime-routing-index.md",
+      "expect": {
+        "contains": [
+          "workflow-quality-baseline.md",
+          "trigger-health-baseline.md",
+          "goal-framing-protocol.md",
+          "anti-entropy-governance.md"
+        ]
+      }
+    },
+    {
+      "name": "output_contract_requires_completion_evidence",
+      "path": "references/output-contract.md",
+      "expect": {
+        "contains": [
+          "Completion Evidence Rule",
+          "covered_scope",
+          "uncovered_scope",
+          "confidence_grade",
+          "Goal Frame",
+          "Anti-Entropy"
+        ]
+      }
+    },
+    {
+      "name": "workflow_bundles_activate_goal_and_anti_entropy",
+      "path": "references/workflow-bundles.md",
+      "expect": {
+        "contains": [
+          "goal-framing-protocol.md",
+          "anti-entropy-governance.md",
+          "workflow-quality-baseline.md",
+          "workflow_quality_checks"
+        ]
+      }
+    },
+    {
+      "name": "technical_governance_blocks_entropy_growth",
+      "path": "references/technical-governance-playbook.md",
+      "expect": {
+        "contains": [
+          "anti-entropy-governance.md",
+          "Do not add another fallback",
+          "Do not execute irreversible persistent-state deletion"
+        ]
+      }
+    },
+    {
+      "name": "workflow_quality_preserves_authority_boundary",
+      "path": "references/workflow-quality-baseline.md",
+      "expect": {
+        "contains": [
+          "Fast-Path Cheapness",
+          "Evidence Freshness",
+          "Artifact Laziness",
+          "Authority Boundary",
+          "It cannot produce host-independent final authority"
+        ]
+      }
+    },
+    {
+      "name": "trigger_health_keeps_entry_light",
+      "path": "references/trigger-health-baseline.md",
+      "expect": {
+        "contains": [
+          "False Positive Control",
+          "Repair Rule",
+          "Do not fix trigger problems by making `SKILL.md` longer by default"
+        ]
+      }
+    }
+  ],
   "verify_action_cases": [
     {
       "name": "verify_pre_development_planning_allowed",
