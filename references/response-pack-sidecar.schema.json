@@ -10,6 +10,7 @@
     "team_dispatch",
     "execution_result",
     "evidence",
+    "micro_practices",
     "next_action",
     "resume",
     "git_workflow",
@@ -45,6 +46,9 @@
     },
     "evidence": {
       "$ref": "#/$defs/evidence"
+    },
+    "micro_practices": {
+      "$ref": "#/$defs/micro_practices"
     },
     "next_action": {
       "$ref": "#/$defs/next_action"
@@ -186,6 +190,49 @@
             }
           },
           "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "micro_practice_item": {
+      "type": "object",
+      "required": [
+        "name",
+        "reference",
+        "reason",
+        "evidence"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "micro_practices": {
+      "type": "object",
+      "required": [
+        "names",
+        "items"
+      ],
+      "properties": {
+        "names": {
+          "$ref": "#/$defs/string_array"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/micro_practice_item"
+          }
         }
       },
       "additionalProperties": false

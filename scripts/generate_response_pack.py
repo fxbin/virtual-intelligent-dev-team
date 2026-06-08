@@ -79,6 +79,63 @@ def format_missing(value: object, language: str) -> str:
     return "无" if language == "zh" else "n/a"
 
 
+def normalize_micro_practices(result: dict[str, object], language: str) -> dict[str, object]:
+    raw_items = result.get("micro_practices", [])
+    raw_names = result.get("micro_practice_names", [])
+    items: list[dict[str, object]] = []
+    names: list[str] = []
+
+    if not isinstance(raw_items, list):
+        raw_items = []
+    if not isinstance(raw_names, list):
+        raw_names = []
+
+    for raw_item in raw_items:
+        if isinstance(raw_item, dict):
+            name = str(raw_item.get("name", "")).strip()
+            if not name:
+                continue
+            evidence = raw_item.get("evidence", [])
+            if not isinstance(evidence, list):
+                evidence = []
+            items.append(
+                {
+                    "name": name,
+                    "reference": format_missing(raw_item.get("reference", ""), language),
+                    "reason": format_missing(raw_item.get("reason", ""), language),
+                    "evidence": [str(item) for item in evidence if str(item).strip()],
+                }
+            )
+            if name not in names:
+                names.append(name)
+        else:
+            name = str(raw_item).strip()
+            if name and name not in names:
+                names.append(name)
+
+    for raw_name in raw_names:
+        name = str(raw_name).strip()
+        if name and name not in names:
+            names.append(name)
+
+    known_item_names = {str(item.get("name", "")).strip() for item in items}
+    for name in names:
+        if name not in known_item_names:
+            items.append(
+                {
+                    "name": name,
+                    "reference": format_missing("", language),
+                    "reason": format_missing("", language),
+                    "evidence": [],
+                }
+            )
+
+    return {
+        "names": names,
+        "items": items,
+    }
+
+
 def build_automation_resume_block(
     *,
     result: dict[str, object],
@@ -353,6 +410,7 @@ def build_response_pack_payload(
         [str(item) for item in workflow_steps],
         selected_language,
     )
+    micro_practices = normalize_micro_practices(result, selected_language)
     none_text = "无" if selected_language == "zh" else "none"
     not_required_text = "当前不需要" if selected_language == "zh" else "not required"
     direct_step_text = (
@@ -501,6 +559,7 @@ def build_response_pack_payload(
                 "summary": assistant_contract_summary,
             },
         },
+        "micro_practices": micro_practices,
         "next_action": {
             "smallest_executable_action": next_action_text,
             "current_owner": lead,
@@ -766,6 +825,7 @@ def build_response_pack(
     team_dispatch = payload["team_dispatch"] if isinstance(payload.get("team_dispatch"), dict) else {}
     execution_result = payload["execution_result"] if isinstance(payload.get("execution_result"), dict) else {}
     evidence = payload["evidence"] if isinstance(payload.get("evidence"), dict) else {}
+    micro_practices = payload["micro_practices"] if isinstance(payload.get("micro_practices"), dict) else {}
     next_action = payload["next_action"] if isinstance(payload.get("next_action"), dict) else {}
     resume = payload["resume"] if isinstance(payload.get("resume"), dict) else {}
     git_workflow = payload["git_workflow"] if isinstance(payload.get("git_workflow"), dict) else {}
@@ -811,6 +871,17 @@ def build_response_pack(
             "",
         ]
 
+    micro_practice_names = (
+        micro_practices.get("names", [])
+        if isinstance(micro_practices.get("names"), list)
+        else []
+    )
+    micro_practice_items = (
+        micro_practices.get("items", [])
+        if isinstance(micro_practices.get("items"), list)
+        else []
+    )
+
     if selected_language == "zh":
         lines.extend(
             [
@@ -829,6 +900,52 @@ def build_response_pack(
                 f"- Main risks: {execution_result.get('main_risks', '')}",
             ]
         )
+
+    if micro_practice_names or micro_practice_items:
+        if selected_language == "zh":
+            lines.extend(
+                [
+                    "",
+                    "## 工程微实践",
+                    f"- 已激活：{', '.join(str(item) for item in micro_practice_names) if micro_practice_names else none_text}",
+                ]
+            )
+            for item in micro_practice_items:
+                if not isinstance(item, dict):
+                    continue
+                evidence_items = item.get("evidence", [])
+                if not isinstance(evidence_items, list):
+                    evidence_items = []
+                lines.extend(
+                    [
+                        f"- {item.get('name', '')}：{item.get('reason', '')}",
+                        f"  参考：{item.get('reference', '无')}",
+                        f"  证据：{', '.join(str(value) for value in evidence_items) if evidence_items else none_text}",
+                    ]
+                )
+            lines.append("")
+        else:
+            lines.extend(
+                [
+                    "",
+                    "## Engineering Micro-Practices",
+                    f"- Active: {', '.join(str(item) for item in micro_practice_names) if micro_practice_names else none_text}",
+                ]
+            )
+            for item in micro_practice_items:
+                if not isinstance(item, dict):
+                    continue
+                evidence_items = item.get("evidence", [])
+                if not isinstance(evidence_items, list):
+                    evidence_items = []
+                lines.extend(
+                    [
+                        f"- {item.get('name', '')}: {item.get('reason', '')}",
+                        f"  Reference: {item.get('reference', 'n/a')}",
+                        f"  Evidence: {', '.join(str(value) for value in evidence_items) if evidence_items else none_text}",
+                    ]
+                )
+            lines.append("")
 
     if selected_language == "zh":
         lines.extend(

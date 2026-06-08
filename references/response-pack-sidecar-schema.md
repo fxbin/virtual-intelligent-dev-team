@@ -22,6 +22,7 @@
 - `team_dispatch`
 - `execution_result`
 - `evidence`
+- `micro_practices`
 - `next_action`
 - `resume`
 - `git_workflow`
@@ -64,6 +65,18 @@
 
 - `enabled`
 - `summary`
+
+## `micro_practices`
+
+- `names`
+- `items`
+
+`items[]`:
+
+- `name`
+- `reference`
+- `reason`
+- `evidence`
 
 ## `next_action`
 

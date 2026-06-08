@@ -33,6 +33,11 @@ TEAM_ENGINE_REFERENCE = "references/team-engine-lite-protocol.md"
 WORKER_VERIFIER_REFERENCE = "references/worker-verifier-cycle-protocol.md"
 EXTERNAL_AGENT_BACKEND_REFERENCE = "references/external-agent-backend-orchestration-protocol.md"
 REAL_SUBAGENT_RUNTIME_REFERENCE = "references/real-subagent-runtime-protocol.md"
+SHARED_LANGUAGE_REFERENCE = "references/shared-language-and-decision-capture.md"
+FEEDBACK_LOOP_FIRST_REFERENCE = "references/feedback-loop-first-protocol.md"
+VERTICAL_SLICE_REFERENCE = "references/vertical-slice-delivery-protocol.md"
+SYSTEM_MAP_REFERENCE = "references/system-map-protocol.md"
+ARCHITECTURE_DEEPENING_REFERENCE = "references/architecture-deepening-protocol.md"
 HARNESS_CONSTRAINT_ARTIFACT = ".skill-harness/engineering-constraints.md"
 HARNESS_CONSTRAINT_COMMAND = "python scripts/init_harness_constraints.py --root . --summary \"<task summary>\" --pretty"
 HARNESS_CONSTRAINT_WORKFLOWS = {
@@ -1792,6 +1797,207 @@ def text_has_any_keyword(text: str, keywords: list[str]) -> bool:
     return any(keyword_matches(lowered, keyword.lower()) for keyword in keywords)
 
 
+def build_micro_practices(
+    *,
+    text: str,
+    workflow_bundle: dict[str, object],
+    lead_agent: str,
+    needs_pre_development_planning: bool,
+    needs_iteration: bool,
+) -> list[dict[str, object]]:
+    lowered = text.lower()
+    bundle_name = str(workflow_bundle.get("name", "direct-execution"))
+    active: list[dict[str, object]] = []
+
+    def add(name: str, reference: str, reason: str, evidence: list[str]) -> None:
+        if any(item.get("name") == name for item in active):
+            return
+        active.append(
+            {
+                "name": name,
+                "reference": reference,
+                "reason": reason,
+                "evidence": evidence,
+            }
+        )
+
+    shared_language_keywords = [
+        "acceptance criteria",
+        "user flow",
+        "api contract",
+        "domain",
+        "glossary",
+        "ubiquitous language",
+        "terminology",
+        "prd",
+        "需求",
+        "验收标准",
+        "用户流",
+        "接口契约",
+        "术语",
+        "领域语言",
+    ]
+    feedback_keywords = [
+        "bug",
+        "fix",
+        "fails",
+        "failed",
+        "still fails",
+        "regression",
+        "repro",
+        "root cause",
+        "debug",
+        "diagnose",
+        "logs",
+        "trace",
+        "排查",
+        "复现",
+        "根因",
+        "日志",
+        "回归",
+    ]
+    vertical_slice_keywords = [
+        "vertical slice",
+        "tracer bullet",
+        "acceptance criteria",
+        "backend contract",
+        "api contract",
+        "end-to-end",
+        "e2e",
+        "afk",
+        "hitl",
+        "issue",
+        "ticket",
+        "切片",
+        "纵向",
+        "验收标准",
+        "接口契约",
+    ]
+    system_map_keywords = [
+        "zoom out",
+        "map the code",
+        "module map",
+        "callers",
+        "callee",
+        "call graph",
+        "entry points",
+        "data flow",
+        "event flow",
+        "seam",
+        "seams",
+        "adapter",
+        "adapters",
+        "模块地图",
+        "调用链",
+        "入口",
+        "调用方",
+    ]
+    architecture_deepening_keywords = [
+        "architecture",
+        "architectural",
+        "shallow module",
+        "deep module",
+        "deepening",
+        "seam",
+        "seams",
+        "adapter",
+        "adapters",
+        "locality",
+        "leverage",
+        "testability",
+        "refactor opportunity",
+        "架构",
+        "模块",
+        "接口",
+        "适配器",
+        "可测试",
+    ]
+
+    if bundle_name == "product-spec-deliver" or text_has_any_keyword(lowered, shared_language_keywords):
+        add(
+            "shared-language-and-decision-capture",
+            SHARED_LANGUAGE_REFERENCE,
+            "Product, contract, or domain terms should be sharpened before implementation.",
+            [
+                "confirm or add stable vocabulary",
+                "record only hard-to-reverse decisions",
+                "use accepted terms in acceptance criteria and slice names",
+            ],
+        )
+
+    if bundle_name in {"quick-slice-deliver", "root-cause-remediate"} and text_has_any_keyword(
+        lowered, feedback_keywords
+    ):
+        add(
+            "feedback-loop-first",
+            FEEDBACK_LOOP_FIRST_REFERENCE,
+            "Bug or root-cause work needs a runnable pass/fail signal before patching.",
+            [
+                "feedback loop type",
+                "repro command or evidence source",
+                "failure before fix and verification after fix",
+            ],
+        )
+
+    if bundle_name in {"plan-first-build", "product-spec-deliver"} or text_has_any_keyword(
+        lowered, vertical_slice_keywords
+    ):
+        add(
+            "vertical-slice-delivery",
+            VERTICAL_SLICE_REFERENCE,
+            "Planning or product delivery should split into demoable vertical slices rather than horizontal layers.",
+            [
+                "AFK/HITL classification",
+                "dependencies",
+                "acceptance and verification evidence per slice",
+            ],
+        )
+
+    if needs_pre_development_planning or text_has_any_keyword(lowered, system_map_keywords):
+        add(
+            "system-map",
+            SYSTEM_MAP_REFERENCE,
+            "The team should zoom out to modules, callers, data flow, and seams before changing code.",
+            [
+                "entry points",
+                "modules and callers",
+                "seams and unknowns",
+            ],
+        )
+
+    if (
+        lead_agent == "Technical Trinity"
+        and text_has_any_keyword(lowered, architecture_deepening_keywords)
+    ) or (
+        bundle_name in {"plan-first-build", "govern-change-safely"}
+        and text_has_any_keyword(lowered, architecture_deepening_keywords)
+    ):
+        add(
+            "architecture-deepening",
+            ARCHITECTURE_DEEPENING_REFERENCE,
+            "Architecture work should evaluate depth, locality, leverage, seams, and adapter evidence.",
+            [
+                "deletion test",
+                "adapter reality test",
+                "test surface and locality evidence",
+            ],
+        )
+
+    if needs_iteration and text_has_any_keyword(lowered, feedback_keywords):
+        add(
+            "feedback-loop-first",
+            FEEDBACK_LOOP_FIRST_REFERENCE,
+            "Iteration on a regression needs a stable signal before comparing candidates.",
+            [
+                "baseline failure signal",
+                "candidate verification command",
+                "keep/retry/rollback/stop evidence",
+            ],
+        )
+
+    return active
+
+
 def build_workflow_bundle(
     *,
     text: str,
@@ -1944,7 +2150,9 @@ def build_workflow_bundle(
             "reason": "The request is rewrite/migration/plan-first shaped, so planning pack and durable progress anchor come before execution.",
             "steps": [
                 "lock transformation scope, target, and constraints",
+                "create a compact system map when module ownership or callers are unclear",
                 "generate the planning pack",
+                "split execution into AFK/HITL vertical slices",
                 "create or refresh the progress anchor",
                 "return to normal delivery routing only after the planning pack exists",
             ],
@@ -1988,6 +2196,7 @@ def build_workflow_bundle(
             "reason": "The request needs evidence-backed diagnosis or bounded remediation, so the loop should preserve validating evidence and rollback decisions.",
             "steps": [
                 "freeze guesswork and summarize what is already known",
+                "establish the smallest reliable feedback loop",
                 "collect the missing evidence or run the next validating check",
                 "test one remediation hypothesis at a time",
                 "keep, retry, rollback, or stop based on evidence",
@@ -2047,8 +2256,10 @@ def build_workflow_bundle(
             "reason": "The request is product-definition or UX-delivery shaped, so the journey should lock scope, user flow, acceptance criteria, and frontend/backend contract questions before implementation drifts.",
             "steps": [
                 "define the target user, outcome, and smallest acceptable scope",
+                "sharpen shared language for ambiguous product, state, or contract terms",
                 "write the core user flow and key failure states",
                 "turn the request into acceptance criteria the team can verify",
+                "split multi-layer work into AFK/HITL vertical slices when needed",
                 "surface frontend/backend contract questions before coding",
             ],
             "progress_anchor_recommended": ".skill-product/current-slice.md",
@@ -2090,6 +2301,7 @@ def build_workflow_bundle(
             "reason": "The request is a narrow implementation or bug-fix slice, so it should keep a small delivery brief, durable project context, targeted verification, and self-review without expanding into a full planning or product workflow.",
             "steps": [
                 "clarify only route-changing gaps",
+                "build or name the feedback loop first when the slice is a bug or regression",
                 "record intent, non-goals, acceptance criteria, and verification evidence",
                 "create or refresh durable project context when needed",
                 "implement the smallest coherent change and self-review it",
@@ -2346,7 +2558,9 @@ def build_team_engine_gate(
         ],
         "product-spec-deliver": [
             "scope_gate",
+            "shared_language_gate",
             "acceptance_criteria_gate",
+            "vertical_slice_gate",
             "frontend_backend_contract_gate",
             "role_separation_gate",
             "delivery_cycle_report_gate",
@@ -2354,6 +2568,7 @@ def build_team_engine_gate(
         "quick-slice-deliver": [
             "scope_gate",
             "acceptance_criteria_gate",
+            "feedback_loop_gate",
             "tests_or_verification_gate",
             "role_separation_gate",
             "delivery_cycle_report_gate",
@@ -2374,6 +2589,7 @@ def build_team_engine_gate(
         ],
         "root-cause-remediate": [
             "reproduction_or_evidence_gate",
+            "feedback_loop_gate",
             "single_hypothesis_gate",
             "remediation_patch_gate",
             "rollback_decision_gate",
@@ -3150,6 +3366,18 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
     workflow_bundle_bootstrap = build_workflow_bundle_bootstrap(
         str(workflow_bundle.get("name", "direct-execution"))
     )
+    micro_practices = build_micro_practices(
+        text=routed_text,
+        workflow_bundle=workflow_bundle,
+        lead_agent=lead_agent,
+        needs_pre_development_planning=needs_pre_development_planning,
+        needs_iteration=needs_iteration,
+    )
+    micro_practice_names = [
+        str(item.get("name", ""))
+        for item in micro_practices
+        if str(item.get("name", "")).strip()
+    ]
     quality_gate = build_quality_gate(
         lead_agent=lead_agent,
         assistants=assistants,
@@ -3233,6 +3461,8 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "real_subagent_runtime_reference": real_subagent_runtime_plan.get("reference"),
         "real_subagent_runtime_eligible": real_subagent_runtime_plan.get("eligible"),
         "assistant_delta_contract_enabled": assistant_delta_contract.get("enabled"),
+        "micro_practices": micro_practices,
+        "micro_practice_names": micro_practice_names,
         "auto_mode": auto_run_profile,
     }
 
@@ -3276,6 +3506,8 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "workflow_bundle_source": workflow_bundle.get("source"),
         "workflow_steps": workflow_bundle.get("steps", []),
         "workflow_reason": workflow_bundle.get("reason"),
+        "micro_practices": micro_practices,
+        "micro_practice_names": micro_practice_names,
         "quality_gate": quality_gate,
         "harness_constraint_gate": harness_constraint_gate,
         "team_engine_gate": team_engine_gate,
