@@ -771,11 +771,10 @@
         "git-workflow"
       ],
       "prompt": "This is a production-critical payment migration. Research first, stage it, define rollback, and handle the PR safely.",
-      "expected_output": "High-risk production change scenarios should attach Sentinel Architect (NB) and Git Workflow Guardian while keeping the owning specialist in charge.",
+      "expected_output": "High-risk production migration scenarios without a concrete language stack should keep Sentinel Architect (NB) as lead and attach Git Workflow Guardian.",
       "files": [],
       "expectations": [
-        "lead_agent is Java Virtuoso",
-        "assistant_agents contains Sentinel Architect (NB)",
+        "lead_agent is Sentinel Architect (NB)",
         "assistant_agents contains Git Workflow Guardian",
         "needs_git_workflow is true",
         "governance_plan.privy_council.selected_track is regular track",
@@ -1252,11 +1251,56 @@
         "offline_drill_passed": true,
         "overall_passed": true
       },
+      "release_gate_completion_evidence": {
+        "status": "passed",
+        "confidence_grade": "B",
+        "covered_scope": [
+          "green release fixture"
+        ],
+        "uncovered_scope": [
+          "none"
+        ],
+        "residual_risk": [
+          "none"
+        ],
+        "evidence_refs": [
+          "release gate eval fixture evidence"
+        ]
+      },
       "expectations": [
         "decision is ship",
         "release_gate_json ok is true",
+        "release_gate_json completion_evidence.completion_allowed is true",
         "release_gate_json follow_up.post_release_bootstrap.resume_anchor contains .skill-post-release/triage-summary.md",
         "release_gate_json follow_up.post_release_bootstrap.signal_report contains .skill-post-release/current-signals.json"
+      ]
+    },
+    {
+      "id": 89,
+      "runner": "release_gate",
+      "categories": [
+        "release-gate",
+        "completion-evidence",
+        "contract-output"
+      ],
+      "prompt": "Release gate fixture: green benchmark without completion evidence should still hold.",
+      "expected_output": "release_gate should refuse ship when completion evidence is missing, even if benchmark, offline drill, and beta conditions are green.",
+      "files": [],
+      "release_gate_summary": {
+        "tests_passed": true,
+        "validator_passed": true,
+        "evals_passed": true,
+        "offline_drill_enabled": true,
+        "offline_drill_passed": true,
+        "overall_passed": true
+      },
+      "expectations": [
+        "decision is hold",
+        "release_gate_json ok is false",
+        "release_gate_json summary.completion_evidence_passed is false",
+        "release_gate_json completion_evidence.decision is missing",
+        "release_gate_json follow_up.blockers contains completion evidence is missing",
+        "release_gate_json explanation_card.route_evidence contains completion-evidence=FAIL"
       ]
     },
     {

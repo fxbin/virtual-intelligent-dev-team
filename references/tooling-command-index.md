@@ -57,7 +57,7 @@ python scripts/verify_action.py --text "<user request>" --check micro-practice-l
 ```
 
 ```bash
-python scripts/verify_action.py --text "<user request>" --check completion-evidence --pretty
+python scripts/verify_action.py --text "<user request>" --check completion-evidence --completion-evidence .skill-evidence/completion-evidence.json --pretty
 ```
 
 - `workflow-bundle` 校验现在会返回：
@@ -297,7 +297,7 @@ python scripts/verify_completion_evidence.py --evidence .skill-evidence/completi
 也可以通过动作前校验统一检查：
 
 ```bash
-python scripts/verify_action.py --text "<user request>" --check completion-evidence --pretty
+python scripts/verify_action.py --text "<user request>" --check completion-evidence --completion-evidence .skill-evidence/completion-evidence.json --pretty
 ```
 
 契约：
@@ -649,6 +649,12 @@ python scripts/run_offline_loop_drill.py --workspace .tmp-offline-loop-drill --p
 python scripts/run_release_gate.py --output-dir evals/release-gate --pretty
 ```
 
+`release_gate` 默认会读取 `.skill-evidence/completion-evidence.json`；如果完成证据在别处：
+
+```bash
+python scripts/run_release_gate.py --output-dir evals/release-gate --completion-evidence .skill-evidence/release/completion-evidence.json --pretty
+```
+
 ```bash
 python scripts/run_release_gate.py --output-dir evals/release-gate --beta-decision-dir .skill-beta/round-decisions --pretty
 ```
@@ -659,6 +665,10 @@ python scripts/run_release_gate.py --output-dir evals/release-gate --beta-report
 
 - `run_release_gate.py` 的 JSON 结果契约见：
   - `references/release-gate-result.schema.json`
+- `run_release_gate.py` 会把 `completion-evidence` 当作 `ship` 前置门禁：
+  - 缺失、无效、失败、partial、`confidence_grade=C`、未覆盖范围或剩余风险都会得到 `hold`
+  - `summary.completion_evidence_*` 和 `completion_evidence` 会进入 JSON 报告
+  - `next-iteration-brief.json` 会把完成证据修复命令列入 recommended commands
 - 当 `--beta-decision-dir` 指向的最新 beta gate 已经产出 `next-round-remediation-brief.json` 时：
   - `run_release_gate.py` 会把该 brief 的 blockers 吸收到 release blockers
   - `next-iteration-brief.json` 会继承 beta brief 的 `required_evidence`

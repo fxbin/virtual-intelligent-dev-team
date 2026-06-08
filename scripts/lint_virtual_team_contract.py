@@ -814,6 +814,30 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             try:
                 with tempfile.TemporaryDirectory() as tmp:
                     output_dir = Path(tmp) / sample_name
+                    if sample_name == "ship":
+                        evidence_dir = Path(tmp) / ".skill-evidence"
+                        evidence_dir.mkdir(parents=True, exist_ok=True)
+                        evidence_payload = {
+                            "schema_version": "completion-evidence/v1",
+                            "generated_at": "2026-04-08T12:00:00Z",
+                            "source_request": "release gate contract lint sample",
+                            "evidence_action": "release gate contract lint sample",
+                            "result": {
+                                "status": "passed",
+                                "summary": "release gate contract lint sample passed",
+                                "exit_code": 0,
+                            },
+                            "covered_scope": ["release gate contract lint sample"],
+                            "uncovered_scope": ["none"],
+                            "residual_risk": ["none"],
+                            "confidence_grade": "B",
+                            "evidence_refs": ["release gate contract lint sample"],
+                        }
+                        local_response_contract.validate_completion_evidence(evidence_payload)
+                        (evidence_dir / "completion-evidence.json").write_text(
+                            json.dumps(evidence_payload, ensure_ascii=False, indent=2) + "\n",
+                            encoding="utf-8",
+                        )
                     benchmark_output = output_dir / "benchmark-results.json"
                     benchmark_report = output_dir / "benchmark-report.md"
                     with mock.patch.object(

@@ -4706,6 +4706,31 @@ class ValidatorScriptTests(unittest.TestCase):
             self.assertEqual("B", result["details"]["verification"]["confidence_grade"])
             response_contract.validate_verify_action_result(result)
 
+    def test_verify_action_completion_evidence_accepts_custom_path(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            evidence_path = write_completion_evidence_fixture(root)
+            custom_dir = root / ".skill-evidence" / "release"
+            custom_dir.mkdir(parents=True, exist_ok=True)
+            custom_path = custom_dir / "completion-evidence.json"
+            shutil.move(str(evidence_path), custom_path)
+
+            result = verify_action.verify_action(
+                text="Fix the checkout API regression by first reproducing it with a failing test.",
+                config=load_config(),
+                repo_path=root,
+                check="completion-evidence",
+                completion_evidence=Path(".skill-evidence/release/completion-evidence.json"),
+            )
+
+            self.assertTrue(result["allowed"])
+            self.assertEqual(".skill-evidence/release/completion-evidence.json", result["details"]["evidence_path"])
+            self.assertIn(
+                ".skill-evidence/release/completion-evidence.json",
+                result["details"]["verify_command"],
+            )
+            response_contract.validate_verify_action_result(result)
+
     def test_verify_action_completion_evidence_blocks_uncovered_scope(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
@@ -5368,6 +5393,47 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
             self.assertEqual("hold", result["beta_gate"]["decision"])
             self.assertTrue(Path(result["beta_gate"]["json_report"]).exists())
 
+    def test_release_gate_holds_when_completion_evidence_is_missing(self) -> None:
+        with make_tempdir() as tmp:
+            output_dir = Path(tmp) / "release-gate-output"
+
+            with mock.patch.object(
+                release_gate.benchmark_runner,
+                "run_benchmark_suite",
+                return_value={
+                    "summary": {
+                        "tests_passed": True,
+                        "validator_passed": True,
+                        "evals_passed": True,
+                        "offline_drill_enabled": True,
+                        "offline_drill_passed": True,
+                        "overall_passed": True,
+                    },
+                    "json_report": str(output_dir / "benchmark-results.json"),
+                    "markdown_report": str(output_dir / "benchmark-report.md"),
+                    "offline_drill_run": {
+                        "markdown_report": str(output_dir / "offline-loop-drill-report.md"),
+                    },
+                },
+            ):
+                result = release_gate.run_release_gate(output_dir=output_dir)
+
+            response_contract.validate_release_gate_result(result)
+            self.assertFalse(result["ok"])
+            self.assertEqual("hold", result["decision"])
+            self.assertEqual("completion evidence gate is `missing`", result["reason"])
+            self.assertFalse(result["summary"]["completion_evidence_passed"])
+            self.assertEqual("missing", result["summary"]["completion_evidence_decision"])
+            self.assertEqual("missing", result["completion_evidence"]["decision"])
+            brief = baseline_registry.load_json(Path(result["follow_up"]["brief_json"]))
+            self.assertIn(
+                "completion evidence is missing",
+                " ".join(item["label"] for item in brief["blockers"]),
+            )
+            self.assertTrue(
+                any("completion-evidence-template.json" in item for item in brief["recommended_commands"])
+            )
+
     def test_release_gate_hold_absorbs_beta_remediation_brief(self) -> None:
         with make_tempdir() as tmp:
             output_dir = Path(tmp) / "release-gate-output"
@@ -5779,6 +5845,7 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
             output_dir = Path(tmp) / "release-gate-output"
             workspace = Path(tmp) / "rounds"
             workspace.mkdir(parents=True, exist_ok=True)
+            write_completion_evidence_fixture(Path(tmp))
             benchmark_output = output_dir / "benchmark-results.json"
             benchmark_report = output_dir / "benchmark-report.md"
             benchmark_output.parent.mkdir(parents=True, exist_ok=True)
@@ -5843,6 +5910,9 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
             response_contract.validate_release_gate_result(result)
             self.assertTrue(result["ok"])
             self.assertEqual("ship", result["decision"])
+            self.assertTrue(result["summary"]["completion_evidence_passed"])
+            self.assertEqual("complete", result["completion_evidence"]["decision"])
+            self.assertIn("completion-evidence=PASS", result["explanation_card"]["route_evidence"])
             self.assertEqual("closed", result["follow_up"]["loop_state"])
             self.assertEqual("v4.20.0", result["follow_up"]["release_label"])
             self.assertTrue(Path(result["follow_up"]["closure_json"]).exists())
@@ -7348,6 +7418,7 @@ class AutomationStateInspectorTests(unittest.TestCase):
         with make_tempdir() as tmp:
             root = Path(tmp)
             output_dir = root / "evals" / "release-gate"
+            write_completion_evidence_fixture(root)
 
             with mock.patch.object(
                 release_gate.benchmark_runner,

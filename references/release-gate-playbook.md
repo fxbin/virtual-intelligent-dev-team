@@ -8,6 +8,12 @@ Use this playbook when the question is no longer “does the skill benchmark pas
 python scripts/run_release_gate.py --output-dir evals/release-gate --pretty
 ```
 
+如果完成证据不在默认路径：
+
+```bash
+python scripts/run_release_gate.py --output-dir evals/release-gate --completion-evidence .skill-evidence/release/completion-evidence.json --pretty
+```
+
 当发布判断必须受最近一轮 beta round gate 约束时：
 
 ```bash
@@ -39,6 +45,7 @@ python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-w
 - eval prompt suite passes
 - real offline loop drill passes
 - if staged beta validation is in scope, the latest beta round gate must be `advance`
+- structured completion evidence exists, passes `references/completion-evidence.schema.json`, has result `passed`, confidence `A | B`, and leaves no uncovered scope or residual risk
 
 ## Why This Is Separate From Benchmark
 
@@ -47,6 +54,7 @@ The benchmark gate should stay useful for fast iteration.
 The release gate is stricter:
 
 - it always includes the real offline loop drill
+- it requires structured completion evidence before `ship`, so benchmark green alone cannot become a completion claim
 - it emits a ship-or-hold decision
 - it writes dedicated release gate artifacts
 - it can consume the latest beta round gate result and block ship when beta is still `hold` or `escalate`
@@ -74,11 +82,13 @@ The release gate is stricter:
 - `ship`
   - all benchmark checks and offline drill checks passed
   - if beta evidence is enabled, the latest beta round gate is `advance`
+  - completion evidence is complete and supports the release claim
   - if an iteration workspace is provided, the gate can archive a reusable release-ready baseline and sync distilled patterns
   - the gate should also bootstrap `.skill-post-release/` so telemetry and real-user feedback can reopen the next loop without inventing a new structure later
 - `hold`
   - any gate failed
   - beta `hold` or `escalate` is a first-class release blocker, even when benchmark evidence is green
+  - missing, invalid, partial, failed, or risky completion evidence is a first-class release blocker, even when benchmark and beta gates are green
   - the gate should emit a next-iteration brief that states blockers, objective hints, evidence requirements, persona / scenario blocker slices when beta evidence exists, and the recommended rerun path back into bounded iteration
   - if the latest beta gate already emitted a remediation brief, the release `hold` brief should inherit its required evidence, recommended commands, and resume artifacts instead of recomputing a generic retry path
   - if an iteration workspace is provided, the gate can bootstrap a runnable iteration plan, a blocker-specific mutation catalog, and a copied candidate repo, then optionally execute it immediately
