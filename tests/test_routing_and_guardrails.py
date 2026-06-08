@@ -44,6 +44,7 @@ INIT_TECHNICAL_GOVERNANCE_SCRIPT = SKILL_DIR / "scripts" / "init_technical_gover
 INIT_POST_RELEASE_FEEDBACK_SCRIPT = SKILL_DIR / "scripts" / "init_post_release_feedback.py"
 EVALUATE_POST_RELEASE_FEEDBACK_SCRIPT = SKILL_DIR / "scripts" / "evaluate_post_release_feedback.py"
 INIT_MICRO_PRACTICES_SCRIPT = SKILL_DIR / "scripts" / "init_micro_practices.py"
+UPDATE_MICRO_PRACTICES_SCRIPT = SKILL_DIR / "scripts" / "update_micro_practices.py"
 EVALUATE_MICRO_PRACTICES_SCRIPT = SKILL_DIR / "scripts" / "evaluate_micro_practices.py"
 RUN_AUTO_WORKFLOW_SCRIPT = SKILL_DIR / "scripts" / "run_auto_workflow.py"
 INSPECT_AUTOMATION_STATE_SCRIPT = SKILL_DIR / "scripts" / "inspect_automation_state.py"
@@ -97,6 +98,7 @@ technical_governance_init = load_module("virtual_intelligent_dev_team_technical_
 post_release_feedback_init = load_module("virtual_intelligent_dev_team_post_release_feedback_init", INIT_POST_RELEASE_FEEDBACK_SCRIPT)
 post_release_feedback_evaluator = load_module("virtual_intelligent_dev_team_post_release_feedback_evaluator", EVALUATE_POST_RELEASE_FEEDBACK_SCRIPT)
 micro_practices_init = load_module("virtual_intelligent_dev_team_micro_practices_init", INIT_MICRO_PRACTICES_SCRIPT)
+micro_practices_updater = load_module("virtual_intelligent_dev_team_micro_practices_updater", UPDATE_MICRO_PRACTICES_SCRIPT)
 micro_practices_evaluator = load_module("virtual_intelligent_dev_team_micro_practices_evaluator", EVALUATE_MICRO_PRACTICES_SCRIPT)
 auto_workflow = load_module("virtual_intelligent_dev_team_auto_workflow", RUN_AUTO_WORKFLOW_SCRIPT)
 automation_state_inspector = load_module(
@@ -524,6 +526,74 @@ class RoutingTests(unittest.TestCase):
             self.assertIn("vertical-slice-delivery", practice_names)
             self.assertIn("Micro-Practice Ledger", markdown_path.read_text(encoding="utf-8"))
 
+    def test_micro_practice_updater_marks_practice_satisfied_with_evidence(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            micro_practices_init.init_micro_practices(
+                root=root,
+                text="Turn this signup revamp into AFK/HITL vertical slices with acceptance criteria and backend contract questions.",
+            )
+            ledger_path = root / ".skill-practices" / "micro-practice-ledger.json"
+
+            result = micro_practices_updater.update_micro_practice(
+                ledger_path=ledger_path,
+                name="vertical-slice-delivery",
+                status="satisfied",
+                evidence=["Implemented signup slice with acceptance checks"],
+            )
+
+            self.assertTrue(result["ok"])
+            self.assertEqual("active", result["previous_status"])
+            self.assertEqual("satisfied", result["status"])
+            self.assertIn("Implemented signup slice with acceptance checks", result["evidence"])
+            ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+            response_contract.validate_micro_practice_ledger(ledger)
+            practice = next(item for item in ledger["active_practices"] if item["name"] == "vertical-slice-delivery")
+            self.assertEqual("satisfied", practice["status"])
+            markdown = (root / ".skill-practices" / "micro-practice-ledger.md").read_text(encoding="utf-8")
+            self.assertIn("Implemented signup slice with acceptance checks", markdown)
+
+    def test_micro_practice_updater_rejects_satisfied_without_evidence(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            micro_practices_init.init_micro_practices(
+                root=root,
+                text="Fix the checkout API regression by first reproducing it with a failing test.",
+            )
+
+            with self.assertRaisesRegex(ValueError, "satisfied micro-practice"):
+                micro_practices_updater.update_micro_practice(
+                    ledger_path=root / ".skill-practices" / "micro-practice-ledger.json",
+                    name="feedback-loop-first",
+                    status="satisfied",
+                    evidence=[],
+                    replace_evidence=True,
+                )
+
+    def test_micro_practice_updater_marks_blocked_and_evaluator_blocks(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            micro_practices_init.init_micro_practices(
+                root=root,
+                text="Fix the checkout API regression by first reproducing it with a failing test.",
+            )
+            ledger_path = root / ".skill-practices" / "micro-practice-ledger.json"
+
+            update_result = micro_practices_updater.update_micro_practice(
+                ledger_path=ledger_path,
+                name="feedback-loop-first",
+                status="blocked",
+                evidence=["The failing reproduction cannot run because the fixture is missing"],
+                next_check="Restore the fixture or stop the workflow.",
+            )
+            evaluation = micro_practices_evaluator.evaluate_micro_practices(ledger_path)
+
+            self.assertTrue(update_result["ok"])
+            self.assertEqual("blocked", update_result["status"])
+            self.assertFalse(evaluation["ok"])
+            self.assertEqual("blocked", evaluation["decision"])
+            self.assertEqual(1, evaluation["status_counts"]["blocked"])
+
     def test_micro_practice_evaluator_continues_when_practices_are_active(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
@@ -917,6 +987,10 @@ class RoutingTests(unittest.TestCase):
         self.assertIn(
             "python scripts/init_micro_practices.py --root . --text \"<user request>\" --pretty",
             result["workflow_bundle_bootstrap"]["commands"],
+        )
+        self.assertIn(
+            "update_micro_practices.py",
+            result["workflow_bundle_bootstrap"]["micro_practice_ledger"]["update_command"],
         )
         self.assertIn(
             "evaluate_micro_practices.py",
@@ -7279,6 +7353,10 @@ class ResponsePackTests(unittest.TestCase):
             payload["micro_practices"]["ledger"]["command"],
         )
         self.assertIn(
+            "update_micro_practices.py",
+            payload["micro_practices"]["ledger"]["update_command"],
+        )
+        self.assertIn(
             "evaluate_micro_practices.py",
             payload["micro_practices"]["ledger"]["evaluation_command"],
         )
@@ -7473,6 +7551,7 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("references/vertical-slice-delivery-protocol.md", markdown)
         self.assertIn("Ledger: .skill-practices/micro-practice-ledger.json", markdown)
         self.assertIn("Init command: python scripts/init_micro_practices.py", markdown)
+        self.assertIn("Update command: python scripts/update_micro_practices.py", markdown)
         self.assertIn("Evaluation command: python scripts/evaluate_micro_practices.py", markdown)
 
     def test_generate_response_pack_renders_beta_program(self) -> None:
