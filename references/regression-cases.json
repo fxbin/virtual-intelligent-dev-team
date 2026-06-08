@@ -598,9 +598,8 @@
       "name": "high_risk_production_change_shape",
       "text": "This is a production-critical payment migration. Research first, stage it, define rollback, and handle the PR safely.",
       "expect": {
-        "lead_agent": "Java Virtuoso",
+        "lead_agent": "Sentinel Architect (NB)",
         "assistant_agents_contains": [
-          "Sentinel Architect (NB)",
           "Git Workflow Guardian"
         ],
         "needs_git_workflow": true,
@@ -723,11 +722,49 @@
       }
     },
     {
+      "name": "bug_slice_feedback_loop_first_micro_practice",
+      "text": "Fix the checkout API regression by first reproducing it with a failing test.",
+      "expect": {
+        "lead_agent": "Technical Trinity",
+        "needs_git_workflow": false,
+        "workflow_bundle": "root-cause-remediate",
+        "priority_agent": null
+      }
+    },
+    {
+      "name": "product_vertical_slice_micro_practices",
+      "text": "Turn this signup revamp into AFK/HITL vertical slices with acceptance criteria and backend contract questions.",
+      "expect": {
+        "lead_agent": "World-Class Product Architect",
+        "assistant_agents_contains": [
+          "Technical Trinity"
+        ],
+        "workflow_bundle": "product-spec-deliver",
+        "priority_agent": null
+      }
+    },
+    {
+      "name": "architecture_migration_system_map_practices",
+      "text": "Before planning this migration, zoom out and map the relevant modules, callers, and seams.",
+      "expect": {
+        "lead_agent": "Technical Trinity",
+        "needs_git_workflow": false,
+        "process_skills": [
+          "pre-development-planning"
+        ],
+        "workflow_bundle": "plan-first-build",
+        "progress_anchor_recommended": "docs/progress/MASTER.md",
+        "resume_artifacts_contains": [
+          "docs/progress/MASTER.md"
+        ],
+        "priority_agent": null
+      }
+    },
+    {
       "name": "project_knowledge_capture_agents_context",
       "text": "帮当前代码库补 AGENTS.md 和项目本地 .agents/skills，让后续 AI agents 理解架构、命令、测试、复用点和高风险区域，避免重复造轮子。",
       "expect": {
         "lead_agent": "Sentinel Architect (NB)",
-        "assistant_agents": [],
         "needs_git_workflow": false,
         "process_skills": [
           "project-knowledge-capture"
@@ -747,7 +784,10 @@
           ".agents/skills/",
           "skill-forge/references/project-knowledge-capture-protocol.md"
         ],
-        "priority_agent": null
+        "priority_agent": null,
+        "assistant_agents_contains": [
+          "Technical Trinity"
+        ]
       }
     }
   ],

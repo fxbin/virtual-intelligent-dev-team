@@ -434,6 +434,51 @@ class RoutingTests(unittest.TestCase):
         self.assertIn(".skill-delivery/current-slice.md", result["resume_artifacts"])
         self.assertIn(".skill-context/project-context.md", result["resume_artifacts"])
 
+    def test_bug_slice_activates_feedback_loop_first_micro_practice(self) -> None:
+        result = route_request.route_request(
+            "Fix the checkout API regression by first reproducing it with a failing test.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertEqual("root-cause-remediate", result["workflow_bundle"])
+        practice_names = [item["name"] for item in result["micro_practices"]]
+        self.assertIn("feedback-loop-first", practice_names)
+        self.assertIn("feedback_loop_gate", result["team_engine_gate"]["acceptance_gates"])
+        self.assertEqual(
+            "references/feedback-loop-first-protocol.md",
+            next(item["reference"] for item in result["micro_practices"] if item["name"] == "feedback-loop-first"),
+        )
+
+    def test_product_delivery_activates_shared_language_and_vertical_slices(self) -> None:
+        result = route_request.route_request(
+            "Turn this signup revamp into AFK/HITL vertical slices with acceptance criteria and backend contract questions.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertEqual("product-spec-deliver", result["workflow_bundle"])
+        practice_names = [item["name"] for item in result["micro_practices"]]
+        self.assertIn("shared-language-and-decision-capture", practice_names)
+        self.assertIn("vertical-slice-delivery", practice_names)
+        self.assertIn("shared_language_gate", result["team_engine_gate"]["acceptance_gates"])
+        self.assertIn("vertical_slice_gate", result["team_engine_gate"]["acceptance_gates"])
+
+    def test_architecture_migration_routes_to_technical_trinity_with_map_practices(self) -> None:
+        result = route_request.route_request(
+            "Before planning this migration, zoom out and map the relevant modules, callers, and seams.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertEqual("Technical Trinity", result["lead_agent"])
+        self.assertEqual("plan-first-build", result["workflow_bundle"])
+        self.assertTrue(result["needs_pre_development_planning"])
+        practice_names = [item["name"] for item in result["micro_practices"]]
+        self.assertIn("system-map", practice_names)
+        self.assertIn("architecture-deepening", practice_names)
+        self.assertIn("vertical-slice-delivery", practice_names)
+
     def test_quick_slice_initializer_creates_delivery_anchors(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
@@ -4287,6 +4332,24 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
 
         self.assertTrue(ok, detail)
 
+    def test_benchmark_expectation_supports_response_pack_json_micro_practices(self) -> None:
+        result = route_request.route_request(
+            "Turn this signup revamp into AFK/HITL vertical slices with acceptance criteria and backend contract questions.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+        markdown = response_pack.build_response_pack(result)
+        payload = response_pack.build_response_pack_payload(result)
+
+        ok, detail = benchmark_runner.parse_expectation(
+            "response_pack_json micro_practices.names contains vertical-slice-delivery",
+            result,
+            markdown,
+            payload,
+        )
+
+        self.assertTrue(ok, detail)
+
     def test_benchmark_expectation_supports_verify_action_json(self) -> None:
         result = verify_action.verify_action(
             text="Refactor this Flask service and then commit and push the branch.",
@@ -7052,6 +7115,34 @@ class ResponsePackTests(unittest.TestCase):
             payload["bundle_bootstrap"]["commands"],
         )
 
+    def test_generate_response_pack_payload_includes_micro_practices(self) -> None:
+        result = route_request.route_request(
+            "Turn this signup revamp into AFK/HITL vertical slices with acceptance criteria and backend contract questions.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        payload = response_pack.build_response_pack_payload(result)
+
+        self.assertIn("micro_practices", payload)
+        self.assertIn(
+            "shared-language-and-decision-capture",
+            payload["micro_practices"]["names"],
+        )
+        self.assertIn(
+            "vertical-slice-delivery",
+            payload["micro_practices"]["names"],
+        )
+        self.assertEqual(
+            "references/shared-language-and-decision-capture.md",
+            next(
+                item["reference"]
+                for item in payload["micro_practices"]["items"]
+                if item["name"] == "shared-language-and-decision-capture"
+            ),
+        )
+        response_contract.validate_response_pack_payload(payload)
+
     def test_generate_response_pack_payload_includes_harness_constraints_for_code_route(self) -> None:
         result = route_request.route_request(
             "Implement the checkout API fix and verify the regression test.",
@@ -7221,6 +7312,20 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("## Bundle Bootstrap", markdown)
         self.assertIn("python scripts/init_product_delivery.py --root . --pretty", markdown)
         self.assertIn(".skill-product/current-slice.md", markdown)
+
+    def test_generate_response_pack_renders_micro_practices(self) -> None:
+        result = route_request.route_request(
+            "Turn this signup revamp into AFK/HITL vertical slices with acceptance criteria and backend contract questions.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        markdown = response_pack.build_response_pack(result)
+
+        self.assertIn("## Engineering Micro-Practices", markdown)
+        self.assertIn("shared-language-and-decision-capture", markdown)
+        self.assertIn("vertical-slice-delivery", markdown)
+        self.assertIn("references/vertical-slice-delivery-protocol.md", markdown)
 
     def test_generate_response_pack_renders_beta_program(self) -> None:
         result = route_request.route_request(

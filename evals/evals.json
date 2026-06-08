@@ -1522,6 +1522,82 @@
         "progress_anchor_recommended is AGENTS.md",
         "resume_artifacts contains AGENTS.md"
       ]
+    },
+    {
+      "id": 84,
+      "categories": [
+        "feedback-loop-first",
+        "quick-slice",
+        "team-engine-lite"
+      ],
+      "prompt": "Fix the checkout API regression by first reproducing it with a failing test.",
+      "expected_output": "Regression fixes should activate feedback-loop-first evidence and Team Engine feedback loop gate, even when routed through bounded/root-cause remediation.",
+      "files": [
+        "references/feedback-loop-first-protocol.md",
+        "references/quick-slice-delivery-playbook.md"
+      ],
+      "expectations": [
+        "workflow_bundle is root-cause-remediate",
+        "micro_practice_names contains feedback-loop-first",
+        "response_pack_json micro_practices.names contains feedback-loop-first",
+        "response_pack contains ## Engineering Micro-Practices",
+        "team_engine_gate.acceptance_gates contains feedback_loop_gate",
+        "reason.micro_practice_names contains feedback-loop-first"
+      ]
+    },
+    {
+      "id": 85,
+      "categories": [
+        "product-delivery",
+        "vertical-slice",
+        "shared-language"
+      ],
+      "prompt": "Turn this signup revamp into AFK/HITL vertical slices with acceptance criteria and backend contract questions.",
+      "expected_output": "Product delivery should activate shared-language and vertical-slice micro-practices while preserving the product-spec-deliver bundle.",
+      "files": [
+        "references/shared-language-and-decision-capture.md",
+        "references/vertical-slice-delivery-protocol.md",
+        "references/product-delivery-playbook.md"
+      ],
+      "expectations": [
+        "lead_agent is World-Class Product Architect",
+        "assistant_agents contains Technical Trinity",
+        "workflow_bundle is product-spec-deliver",
+        "micro_practice_names contains shared-language-and-decision-capture",
+        "micro_practice_names contains vertical-slice-delivery",
+        "response_pack_json micro_practices.names contains shared-language-and-decision-capture",
+        "response_pack_json micro_practices.names contains vertical-slice-delivery",
+        "response_pack contains ## Engineering Micro-Practices",
+        "team_engine_gate.acceptance_gates contains shared_language_gate",
+        "team_engine_gate.acceptance_gates contains vertical_slice_gate"
+      ]
+    },
+    {
+      "id": 86,
+      "categories": [
+        "planning",
+        "system-map",
+        "architecture-deepening"
+      ],
+      "prompt": "Before planning this migration, zoom out and map the relevant modules, callers, and seams.",
+      "expected_output": "Generic migration planning should route to Technical Trinity, not Java Virtuoso, and activate system-map plus architecture-deepening micro-practices.",
+      "files": [
+        "references/system-map-protocol.md",
+        "references/architecture-deepening-protocol.md",
+        "references/pre-development-planning-playbook.md"
+      ],
+      "expectations": [
+        "lead_agent is Technical Trinity",
+        "needs_pre_development_planning is true",
+        "workflow_bundle is plan-first-build",
+        "micro_practice_names contains system-map",
+        "micro_practice_names contains architecture-deepening",
+        "micro_practice_names contains vertical-slice-delivery",
+        "response_pack_json micro_practices.names contains system-map",
+        "response_pack_json micro_practices.names contains architecture-deepening",
+        "response_pack contains ## Engineering Micro-Practices",
+        "progress_anchor_recommended is docs/progress/MASTER.md"
+      ]
     }
   ]
 }
