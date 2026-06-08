@@ -431,6 +431,11 @@ def evaluate_evals(config: dict[str, object]) -> dict[str, object]:
             beta_gate_config = item.get("release_gate_beta")
             if beta_gate_config is not None and not isinstance(beta_gate_config, dict):
                 raise RuntimeError(f"release_gate eval {item.get('id')} must provide release_gate_beta object when present")
+            completion_evidence_config = item.get("release_gate_completion_evidence")
+            if completion_evidence_config is not None and not isinstance(completion_evidence_config, dict):
+                raise RuntimeError(
+                    f"release_gate eval {item.get('id')} must provide release_gate_completion_evidence object when present"
+                )
             release_gate_module = load_module(
                 f"virtual_team_release_gate_benchmark_eval_{item.get('id')}",
                 RELEASE_GATE_SCRIPT,
@@ -537,10 +542,47 @@ def evaluate_evals(config: dict[str, object]) -> dict[str, object]:
                     response_contract.validate_beta_round_gate_result(beta_payload)
                     beta_result_path.write_text(json.dumps(beta_payload, ensure_ascii=False, indent=2), encoding="utf-8")
                     beta_gate_result = beta_result_path
+                completion_evidence_path = None
+                if isinstance(completion_evidence_config, dict):
+                    completion_evidence_dir = temp_root / ".skill-evidence"
+                    completion_evidence_dir.mkdir(parents=True, exist_ok=True)
+                    completion_status = str(completion_evidence_config.get("status", "passed")).strip() or "passed"
+                    completion_payload = {
+                        "schema_version": "completion-evidence/v1",
+                        "generated_at": "2026-04-08T12:00:00Z",
+                        "source_request": prompt,
+                        "evidence_action": "release gate eval fixture evidence",
+                        "result": {
+                            "status": completion_status,
+                            "summary": "release gate eval fixture completion evidence",
+                            "exit_code": 0 if completion_status == "passed" else 1,
+                        },
+                        "covered_scope": completion_evidence_config.get(
+                            "covered_scope",
+                            ["release gate eval fixture"],
+                        ),
+                        "uncovered_scope": completion_evidence_config.get("uncovered_scope", ["none"]),
+                        "residual_risk": completion_evidence_config.get("residual_risk", ["none"]),
+                        "confidence_grade": str(
+                            completion_evidence_config.get("confidence_grade", "B")
+                        ).strip()
+                        or "B",
+                        "evidence_refs": completion_evidence_config.get(
+                            "evidence_refs",
+                            ["release gate eval fixture evidence"],
+                        ),
+                    }
+                    response_contract.validate_completion_evidence(completion_payload)
+                    completion_evidence_path = completion_evidence_dir / "completion-evidence.json"
+                    completion_evidence_path.write_text(
+                        json.dumps(completion_payload, ensure_ascii=False, indent=2) + "\n",
+                        encoding="utf-8",
+                    )
                 result = release_gate_module.run_release_gate(
                     output_dir=temp_root / "release-gate-output",
                     benchmark_fixture=fixture_path,
                     beta_gate_result=beta_gate_result,
+                    completion_evidence=completion_evidence_path,
                 )
             extra_payloads["release_gate_json"] = result
         else:

@@ -16,6 +16,7 @@
     "benchmark_markdown",
     "offline_drill_report",
     "beta_gate",
+    "completion_evidence",
     "explanation_card",
     "automation_state",
     "json_report",
@@ -70,6 +71,9 @@
           "type": "null"
         }
       ]
+    },
+    "completion_evidence": {
+      "$ref": "#/$defs/completion_evidence"
     },
     "explanation_card": {
       "$ref": "#/$defs/explanation_card"
@@ -181,7 +185,11 @@
         "beta_gate_enabled",
         "beta_gate_passed",
         "beta_gate_decision",
-        "beta_gate_round_id"
+        "beta_gate_round_id",
+        "completion_evidence_required",
+        "completion_evidence_passed",
+        "completion_evidence_decision",
+        "completion_evidence_path"
       ],
       "properties": {
         "tests_passed": {
@@ -225,6 +233,113 @@
             "string",
             "null"
           ]
+        },
+        "completion_evidence_required": {
+          "type": "boolean"
+        },
+        "completion_evidence_passed": {
+          "type": "boolean"
+        },
+        "completion_evidence_decision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "completion_evidence_path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "completion_evidence": {
+      "type": "object",
+      "required": [
+        "required",
+        "source_gate",
+        "ok",
+        "decision",
+        "reason",
+        "completion_allowed",
+        "evidence_path",
+        "evidence_exists",
+        "template",
+        "schema",
+        "verify_command",
+        "recommended_commands"
+      ],
+      "properties": {
+        "required": {
+          "const": true
+        },
+        "source_gate": {
+          "const": "completion-evidence"
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "decision": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "completion_allowed": {
+          "type": "boolean"
+        },
+        "evidence_path": {
+          "type": "string"
+        },
+        "evidence_exists": {
+          "type": "boolean"
+        },
+        "template": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "init_command": {
+          "type": "string"
+        },
+        "verify_command": {
+          "type": "string"
+        },
+        "status": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "confidence_grade": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "covered_scope": {
+          "$ref": "#/$defs/string_array"
+        },
+        "uncovered_scope": {
+          "$ref": "#/$defs/string_array"
+        },
+        "residual_risk": {
+          "$ref": "#/$defs/string_array"
+        },
+        "evidence_refs": {
+          "$ref": "#/$defs/string_array"
+        },
+        "verification_error": {
+          "type": "string"
+        },
+        "follow_up": {
+          "type": "object"
+        },
+        "recommended_commands": {
+          "$ref": "#/$defs/string_array"
         }
       },
       "additionalProperties": true

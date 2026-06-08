@@ -112,6 +112,39 @@
       },
       "additionalProperties": false
     },
+    "release_gate_completion_evidence": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "passed",
+            "failed",
+            "partial",
+            "not_run"
+          ]
+        },
+        "confidence_grade": {
+          "enum": [
+            "A",
+            "B",
+            "C"
+          ]
+        },
+        "covered_scope": {
+          "$ref": "#/$defs/string_array"
+        },
+        "uncovered_scope": {
+          "$ref": "#/$defs/string_array"
+        },
+        "residual_risk": {
+          "$ref": "#/$defs/string_array"
+        },
+        "evidence_refs": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
     "eval_case": {
       "type": "object",
       "required": [
@@ -186,6 +219,9 @@
         },
         "release_gate_beta": {
           "$ref": "#/$defs/release_gate_beta"
+        },
+        "release_gate_completion_evidence": {
+          "$ref": "#/$defs/release_gate_completion_evidence"
         }
       },
       "allOf": [

@@ -674,13 +674,35 @@ def _verify_micro_practice_ledger(result: dict[str, object], repo_path: Path) ->
     }
 
 
-def _verify_completion_evidence(result: dict[str, object], repo_path: Path) -> dict[str, object]:
-    evidence_rel = ".skill-evidence/completion-evidence.json"
-    evidence_path = (repo_path / evidence_rel).resolve()
+def _repo_relative(path: Path, repo_path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(repo_path.resolve()))
+    except ValueError:
+        return str(path.resolve())
+
+
+def _verify_completion_evidence(
+    result: dict[str, object],
+    repo_path: Path,
+    completion_evidence: Path | None = None,
+) -> dict[str, object]:
+    default_evidence_rel = ".skill-evidence/completion-evidence.json"
+    requested_path = completion_evidence or Path(default_evidence_rel)
+    evidence_path = (
+        requested_path.resolve()
+        if requested_path.is_absolute()
+        else (repo_path / requested_path).resolve()
+    )
+    evidence_rel = _repo_relative(evidence_path, repo_path)
     evidence_exists = evidence_path.exists()
     template = "assets/completion-evidence-template.json"
     schema = "references/completion-evidence.schema.json"
-    init_command = "mkdir -p .skill-evidence && cp assets/completion-evidence-template.json .skill-evidence/completion-evidence.json"
+    parent_rel = str(Path(evidence_rel).parent)
+    init_command = (
+        f"mkdir -p {parent_rel} && cp assets/completion-evidence-template.json {evidence_rel}"
+        if parent_rel not in {"", "."}
+        else f"cp assets/completion-evidence-template.json {evidence_rel}"
+    )
     verify_command = (
         f"python scripts/verify_completion_evidence.py --evidence {evidence_rel} --pretty"
     )
@@ -760,6 +782,7 @@ def verify_action(
     process_skill: str | None = None,
     lead_agent: str | None = None,
     assistant_agents: list[str] | None = None,
+    completion_evidence: Path | None = None,
 ) -> dict[str, object]:
     if assistant_agents is None:
         assistant_agents = []
@@ -792,7 +815,7 @@ def verify_action(
     elif check == "micro-practice-ledger":
         outcome = _verify_micro_practice_ledger(result, repo_path)
     elif check == "completion-evidence":
-        outcome = _verify_completion_evidence(result, repo_path)
+        outcome = _verify_completion_evidence(result, repo_path, completion_evidence)
     else:
         raise ValueError(f"Unsupported check: {check}")
 
@@ -884,6 +907,10 @@ def parse_args() -> argparse.Namespace:
         help="Path to routing config JSON.",
     )
     parser.add_argument("--repo", default=".", help="Repository path for strategy detection.")
+    parser.add_argument(
+        "--completion-evidence",
+        help="Path to completion evidence JSON for check=completion-evidence.",
+    )
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON output.")
     return parser.parse_args()
 
@@ -899,6 +926,7 @@ def main() -> None:
             process_skill=args.process_skill,
             lead_agent=args.lead_agent,
             assistant_agents=list(args.assistant_agent),
+            completion_evidence=Path(args.completion_evidence) if args.completion_evidence else None,
         )
         exit_code = 0
     except Exception as exc:

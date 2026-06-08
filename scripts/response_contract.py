@@ -389,6 +389,7 @@ def build_release_gate_explanation_card(
     summary: dict[str, object],
     follow_up: dict[str, object],
     beta_gate: dict[str, object] | None = None,
+    completion_evidence: dict[str, object] | None = None,
 ) -> dict[str, object]:
     resume_artifacts: list[str] = []
     for key in ("brief_json", "brief_markdown", "closure_json", "closure_markdown"):
@@ -428,6 +429,10 @@ def build_release_gate_explanation_card(
                 value = str(item).strip()
                 if value:
                     resume_artifacts.append(value)
+    if isinstance(completion_evidence, dict):
+        evidence_path = str(completion_evidence.get("evidence_path", "")).strip()
+        if evidence_path and bool(completion_evidence.get("evidence_exists")):
+            resume_artifacts.append(evidence_path)
 
     progress_anchor = (
         str(follow_up.get("brief_markdown", "")).strip()
@@ -441,13 +446,20 @@ def build_release_gate_explanation_card(
             f"beta={'PASS' if beta_gate.get('ok') else 'FAIL'}"
             f" ({beta_gate.get('decision')} / {beta_gate.get('round_id')})"
         )
+    completion_summary = "completion-evidence=FAIL"
+    if isinstance(completion_evidence, dict):
+        completion_summary = (
+            f"completion-evidence={'PASS' if completion_evidence.get('completion_allowed') else 'FAIL'}"
+            f" ({completion_evidence.get('decision')})"
+        )
     route_evidence = (
         f"Release gate decision is `{decision}` because {reason}. "
         f"tests={'PASS' if summary.get('tests_passed') else 'FAIL'}, "
         f"validator={'PASS' if summary.get('validator_passed') else 'FAIL'}, "
         f"evals={'PASS' if summary.get('evals_passed') else 'FAIL'}, "
         f"offline-drill={'PASS' if summary.get('offline_drill_passed') else 'FAIL'}, "
-        f"{beta_summary}."
+        f"{beta_summary}, "
+        f"{completion_summary}."
     )
     next_action = str(follow_up.get("next_action", "")).strip()
     if next_action == "":

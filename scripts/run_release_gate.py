@@ -23,8 +23,10 @@ AUTOMATION_STATE_SCRIPT = SCRIPT_DIR / "automation_state.py"
 EVALUATE_BETA_ROUND_SCRIPT = SCRIPT_DIR / "evaluate_beta_round.py"
 INIT_POST_RELEASE_FEEDBACK_SCRIPT = SCRIPT_DIR / "init_post_release_feedback.py"
 SKILL_SNAPSHOT_SCRIPT = SCRIPT_DIR / "skill_snapshot.py"
+VERIFY_COMPLETION_EVIDENCE_SCRIPT = SCRIPT_DIR / "verify_completion_evidence.py"
 DEFAULT_OUTPUT_DIR = SKILL_DIR / "evals" / "release-gate"
 DEFAULT_ITERATION_WORKSPACE = SKILL_DIR / ".skill-iterations"
+DEFAULT_COMPLETION_EVIDENCE_PATH = Path(".skill-evidence") / "completion-evidence.json"
 LABEL_SAFE_CHARS = re.compile(r"[^A-Za-z0-9._-]+")
 BETA_GATE_RESULT_FILENAME = "beta-round-gate-result.json"
 
@@ -53,6 +55,10 @@ post_release_feedback_init = load_module(
     INIT_POST_RELEASE_FEEDBACK_SCRIPT,
 )
 skill_snapshot = load_module("virtual_team_release_gate_skill_snapshot", SKILL_SNAPSHOT_SCRIPT)
+completion_evidence_verifier = load_module(
+    "virtual_team_release_gate_completion_evidence_verifier",
+    VERIFY_COMPLETION_EVIDENCE_SCRIPT,
+)
 
 
 def load_json(path: Path) -> dict[str, object]:
@@ -111,6 +117,102 @@ def find_latest_file(paths: list[Path]) -> Path | None:
     if not paths:
         return None
     return max(paths, key=lambda item: (item.stat().st_mtime, str(item)))
+
+
+def repo_relative(path: Path, repo_root: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(repo_root.resolve()))
+    except ValueError:
+        return str(path.resolve())
+
+
+def completion_evidence_init_command(evidence_rel: str) -> str:
+    parent_rel = str(Path(evidence_rel).parent)
+    if parent_rel in {"", "."}:
+        return f"cp assets/completion-evidence-template.json {evidence_rel}"
+    return f"mkdir -p {parent_rel} && cp assets/completion-evidence-template.json {evidence_rel}"
+
+
+def resolve_completion_evidence(
+    *,
+    completion_evidence: Path | None,
+    repo_root: Path,
+) -> dict[str, object]:
+    requested = completion_evidence or DEFAULT_COMPLETION_EVIDENCE_PATH
+    evidence_path = requested.resolve() if requested.is_absolute() else (repo_root / requested).resolve()
+    evidence_rel = repo_relative(evidence_path, repo_root)
+    verify_command = f"python scripts/verify_completion_evidence.py --evidence {evidence_rel} --pretty"
+    base = {
+        "required": True,
+        "source_gate": "completion-evidence",
+        "evidence_path": evidence_rel,
+        "evidence_exists": evidence_path.exists(),
+        "template": "assets/completion-evidence-template.json",
+        "schema": "references/completion-evidence.schema.json",
+        "init_command": completion_evidence_init_command(evidence_rel),
+        "verify_command": verify_command,
+    }
+    if not evidence_path.exists():
+        return {
+            **base,
+            "ok": False,
+            "decision": "missing",
+            "reason": "completion evidence is missing",
+            "completion_allowed": False,
+            "status": "missing",
+            "confidence_grade": None,
+            "covered_scope": [],
+            "uncovered_scope": [],
+            "residual_risk": [],
+            "evidence_refs": [],
+            "recommended_commands": [str(base["init_command"]), verify_command],
+        }
+    try:
+        verification = completion_evidence_verifier.evaluate_completion_evidence(evidence_path)
+    except Exception as exc:
+        return {
+            **base,
+            "ok": False,
+            "decision": "invalid",
+            "reason": "completion evidence could not be evaluated",
+            "completion_allowed": False,
+            "status": "invalid",
+            "confidence_grade": None,
+            "covered_scope": [],
+            "uncovered_scope": [],
+            "residual_risk": [],
+            "evidence_refs": [],
+            "verification_error": str(exc),
+            "recommended_commands": [verify_command],
+        }
+    follow_up = verification.get("follow_up", {})
+    raw_commands = follow_up.get("recommended_commands", []) if isinstance(follow_up, dict) else []
+    recommended_commands = (
+        [str(command).strip() for command in raw_commands if str(command).strip()]
+        if isinstance(raw_commands, list)
+        else [verify_command]
+    )
+    return {
+        **base,
+        **verification,
+        "required": True,
+        "evidence_path": evidence_rel,
+        "evidence_exists": True,
+        "template": "assets/completion-evidence-template.json",
+        "schema": "references/completion-evidence.schema.json",
+        "init_command": str(base["init_command"]),
+        "verify_command": verify_command,
+        "recommended_commands": recommended_commands or [verify_command],
+    }
+
+
+def build_completion_evidence_summary(completion_evidence: dict[str, object]) -> dict[str, object]:
+    return {
+        "completion_evidence_required": True,
+        "completion_evidence_passed": bool(completion_evidence.get("completion_allowed")),
+        "completion_evidence_decision": str(completion_evidence.get("decision", "")).strip() or None,
+        "completion_evidence_path": str(completion_evidence.get("evidence_path", "")).strip() or None,
+    }
 
 
 def resolve_beta_gate(
@@ -245,6 +347,7 @@ def derive_release_gate_reason(
     *,
     summary: dict[str, object],
     beta_gate: dict[str, object] | None,
+    completion_evidence: dict[str, object],
 ) -> str:
     beta_snapshot = beta_gate_snapshot(beta_gate)
     benchmark_ok = benchmark_checks_passed(summary)
@@ -266,10 +369,17 @@ def derive_release_gate_reason(
             f"latest beta round gate is `{beta_snapshot.get('decision')}`"
             f" for `{beta_snapshot.get('round_id')}`"
         )
-    return "all benchmark, offline drill, and beta gates passed"
+    if not bool(completion_evidence.get("completion_allowed")):
+        decision = str(completion_evidence.get("decision", "missing")).strip() or "missing"
+        return f"completion evidence gate is `{decision}`"
+    return "all benchmark, offline drill, beta, and completion evidence gates passed"
 
 
-def blocker_specs(summary: dict[str, object], beta_gate: dict[str, object] | None = None) -> list[dict[str, object]]:
+def blocker_specs(
+    summary: dict[str, object],
+    beta_gate: dict[str, object] | None = None,
+    completion_evidence: dict[str, object] | None = None,
+) -> list[dict[str, object]]:
     specs: list[dict[str, object]] = []
     if not bool(summary.get("tests_passed")):
         specs.append(
@@ -346,6 +456,31 @@ def blocker_specs(summary: dict[str, object], beta_gate: dict[str, object] | Non
                             "evidence_required": evidence_required or f"python scripts/evaluate_beta_round.py --report .skill-beta/reports/{round_id}.json --pretty",
                         }
                     )
+    if isinstance(completion_evidence, dict) and not bool(completion_evidence.get("completion_allowed")):
+        decision = str(completion_evidence.get("decision", "missing")).strip() or "missing"
+        if decision == "missing":
+            label = "completion evidence is missing"
+            objective_hint = "补全结构化完成证据，再重新运行 release gate"
+        elif decision == "invalid":
+            label = "completion evidence is invalid"
+            objective_hint = "修复完成证据 JSON schema 或字段内容，再重新验收"
+        elif decision == "blocked":
+            label = "completion evidence blocks completion"
+            objective_hint = "修复失败或结构性不完整的完成证据，再重新验收"
+        else:
+            label = "completion evidence is incomplete"
+            objective_hint = "关闭未覆盖范围或剩余风险，并把证据等级提升到 A/B 后再重新验收"
+        evidence_required = str(completion_evidence.get("verify_command", "")).strip() or (
+            "python scripts/verify_completion_evidence.py --evidence .skill-evidence/completion-evidence.json --pretty"
+        )
+        specs.append(
+            {
+                "id": "completion-evidence",
+                "label": label,
+                "objective_hint": objective_hint,
+                "evidence_required": evidence_required,
+            }
+        )
     return specs
 
 
@@ -531,6 +666,21 @@ def blocker_profile(blocker_id: str) -> dict[str, object]:
                 "python scripts/run_release_gate.py --output-dir evals/release-gate --beta-decision-dir .skill-beta/round-decisions --pretty",
             ],
         },
+        "completion-evidence": {
+            "focus": "capture structured completion evidence so release readiness cannot be claimed from benchmark status alone",
+            "target_files": [
+                ".skill-evidence/completion-evidence.json",
+                "assets/completion-evidence-template.json",
+                "references/completion-evidence.schema.json",
+                "scripts/verify_completion_evidence.py",
+                "scripts/run_release_gate.py",
+            ],
+            "preferred_mutation_ops": ["write_file", "replace_text"],
+            "acceptance_commands": [
+                "python scripts/verify_completion_evidence.py --evidence .skill-evidence/completion-evidence.json --pretty",
+                "python scripts/run_release_gate.py --output-dir evals/release-gate --pretty",
+            ],
+        },
     }
     return profiles.get(
         blocker_id,
@@ -619,6 +769,9 @@ def blocker_evidence_snapshot(blocker: dict[str, object], brief: dict[str, objec
         return payload if isinstance(payload, dict) else {}
     if blocker_id == "beta-round-gate":
         payload = brief.get("beta_gate_context", {})
+        return payload if isinstance(payload, dict) else {}
+    if blocker_id == "completion-evidence":
+        payload = brief.get("completion_evidence_context", {})
         return payload if isinstance(payload, dict) else {}
     return {}
 
@@ -710,9 +863,16 @@ def beta_breakdown_lines(beta_context: dict[str, object]) -> list[str]:
 def render_hold_benchmark_signals(brief: dict[str, object]) -> list[str]:
     benchmark_context = brief.get("benchmark_context", {})
     beta_context = brief.get("beta_gate_context", {})
+    completion_context = brief.get("completion_evidence_context", {})
     if not isinstance(beta_context, dict):
         beta_context = {}
-    if (not isinstance(benchmark_context, dict) or len(benchmark_context) == 0) and len(beta_context) == 0:
+    if not isinstance(completion_context, dict):
+        completion_context = {}
+    if (
+        (not isinstance(benchmark_context, dict) or len(benchmark_context) == 0)
+        and len(beta_context) == 0
+        and len(completion_context) == 0
+    ):
         return []
 
     lines = [
@@ -770,6 +930,12 @@ def render_hold_benchmark_signals(brief: dict[str, object]) -> list[str]:
                 lines.append(
                     f"  - top scenario slice: `{by_scenario[0].get('label')}` blockers={by_scenario[0].get('blocker_issue_count')}"
                 )
+
+    if completion_context:
+        lines.append(f"- Completion evidence decision: `{completion_context.get('decision')}`")
+        lines.append(f"  - allowed: `{completion_context.get('completion_allowed')}`")
+        lines.append(f"  - path: `{completion_context.get('evidence_path')}`")
+        lines.append(f"  - reason: {completion_context.get('reason')}")
 
     lines.append("")
     return lines
@@ -862,6 +1028,11 @@ def render_hold_targets_content(brief: dict[str, object]) -> str:
             limit=200,
         ),
         "beta_gate_context": brief.get("beta_gate_context", {}) if isinstance(brief.get("beta_gate_context"), dict) else {},
+        "completion_evidence_context": (
+            brief.get("completion_evidence_context", {})
+            if isinstance(brief.get("completion_evidence_context"), dict)
+            else {}
+        ),
     }
     return json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
 
@@ -1285,11 +1456,12 @@ def build_hold_follow_up(
     benchmark_markdown: str,
     offline_drill_report: str | None,
     beta_gate: dict[str, object] | None,
+    completion_evidence: dict[str, object],
     iteration_workspace: Path | None,
     auto_run_next_iteration_on_hold: bool,
     hold_loop_max_rounds: int,
 ) -> dict[str, object]:
-    blockers = blocker_specs(summary, beta_gate)
+    blockers = blocker_specs(summary, beta_gate, completion_evidence)
     workspace = iteration_workspace or DEFAULT_ITERATION_WORKSPACE
     beta_snapshot = beta_gate_snapshot(beta_gate)
     blocker_labels = [str(item["label"]) for item in blockers]
@@ -1298,6 +1470,7 @@ def build_hold_follow_up(
     beta_resume_artifacts: list[str] = []
     beta_required_evidence: list[str] = []
     beta_recommended_commands: list[str] = []
+    completion_recommended_commands: list[str] = []
     if isinstance(beta_snapshot, dict):
         raw_resume_artifacts = beta_snapshot.get("resume_artifacts", [])
         if isinstance(raw_resume_artifacts, list):
@@ -1310,6 +1483,11 @@ def build_hold_follow_up(
             raw_commands = remediation_brief.get("recommended_commands", [])
             if isinstance(raw_commands, list):
                 beta_recommended_commands = [str(item) for item in raw_commands if str(item).strip()]
+    raw_completion_commands = completion_evidence.get("recommended_commands", [])
+    if isinstance(raw_completion_commands, list):
+        completion_recommended_commands = [
+            str(item).strip() for item in raw_completion_commands if str(item).strip()
+        ]
     objective = (
         "恢复 release gate 就绪状态，清除以下阻塞："
         + ("；".join(blocker_labels) if blocker_labels else reason)
@@ -1326,6 +1504,7 @@ def build_hold_follow_up(
         "blockers": blockers,
         "benchmark_context": build_benchmark_context(benchmark_result),
         "beta_gate_context": beta_gate_snapshot(beta_gate),
+        "completion_evidence_context": completion_evidence,
         "hold_benchmark_command_template": (
             str(benchmark_result.get("hold_benchmark_command_template", "")).strip() or None
         ),
@@ -1350,6 +1529,8 @@ def build_hold_follow_up(
         )
     if beta_recommended_commands:
         brief["recommended_commands"] = beta_recommended_commands + brief["recommended_commands"]
+    if completion_recommended_commands:
+        brief["recommended_commands"] = completion_recommended_commands + brief["recommended_commands"]
     if beta_resume_artifacts:
         brief["resume_artifacts"] = beta_resume_artifacts
     json_path = output_dir / "next-iteration-brief.json"
@@ -1390,6 +1571,17 @@ def build_hold_follow_up(
     if beta_resume_artifacts:
         markdown_lines.extend(["", "## Beta Resume Artifacts", ""])
         markdown_lines.extend([f"- `{item}`" for item in beta_resume_artifacts])
+    markdown_lines.extend(
+        [
+            "",
+            "## Completion Evidence",
+            "",
+            f"- Decision: `{completion_evidence.get('decision')}`",
+            f"- Completion allowed: `{completion_evidence.get('completion_allowed')}`",
+            f"- Evidence path: `{completion_evidence.get('evidence_path')}`",
+            f"- Reason: {completion_evidence.get('reason')}",
+        ]
+    )
     markdown_lines.extend(
         [
             "",
@@ -1453,6 +1645,7 @@ def build_ship_follow_up(
     benchmark_json: Path,
     benchmark_markdown: str,
     beta_gate: dict[str, object] | None,
+    completion_evidence: dict[str, object],
     release_label: str,
     iteration_workspace: Path | None,
 ) -> dict[str, object]:
@@ -1469,6 +1662,7 @@ def build_ship_follow_up(
         "benchmark_report": str(benchmark_json),
         "benchmark_markdown": benchmark_markdown,
         "beta_gate_report": beta_snapshot["json_report"] if beta_snapshot else None,
+        "completion_evidence": completion_evidence,
         "post_release_bootstrap": post_release_bootstrap,
     }
     if iteration_workspace is not None:
@@ -1508,6 +1702,7 @@ def build_ship_follow_up(
         f"- Benchmark JSON: `{closure['benchmark_report']}`",
         f"- Benchmark Markdown: `{closure['benchmark_markdown']}`",
         f"- Beta gate JSON: `{closure.get('beta_gate_report')}`",
+        f"- Completion evidence: `{completion_evidence.get('evidence_path')}`",
         "",
         "## Archive Actions",
         "",
@@ -1572,6 +1767,7 @@ def render_markdown(result: dict[str, object]) -> str:
         f"- Eval prompts: `{'PASS' if result['summary'].get('evals_passed') else 'FAIL'}`",
         f"- Offline loop drill: `{'PASS' if result['summary'].get('offline_drill_passed') else 'FAIL'}`",
         f"- Beta gate: `{'PASS' if result['summary'].get('beta_gate_passed') else 'SKIP' if result['summary'].get('beta_gate_passed') is None else 'FAIL'}`",
+        f"- Completion evidence: `{'PASS' if result['summary'].get('completion_evidence_passed') else 'FAIL'}`",
         "",
         "## Artifacts",
         "",
@@ -1580,6 +1776,7 @@ def render_markdown(result: dict[str, object]) -> str:
         f"- Offline drill report: `{result.get('offline_drill_report')}`",
         f"- Beta gate JSON: `{result.get('beta_gate', {}).get('json_report') if isinstance(result.get('beta_gate'), dict) else None}`",
         f"- Beta gate Markdown: `{result.get('beta_gate', {}).get('markdown_report') if isinstance(result.get('beta_gate'), dict) else None}`",
+        f"- Completion evidence: `{result.get('completion_evidence', {}).get('evidence_path') if isinstance(result.get('completion_evidence'), dict) else None}`",
         "",
         "## Decision",
         "",
@@ -1593,7 +1790,7 @@ def render_markdown(result: dict[str, object]) -> str:
             "",
             f"- Route evidence: {explanation_card.get('route_evidence', result['reason'])}",
             f"- Workflow source explanation: {explanation_card.get('workflow_source_explanation', 'Release gate is the active acceptance lane for this decision.')}",
-            f"- Gate status summary: tests=`{'PASS' if result['summary'].get('tests_passed') else 'FAIL'}`, validator=`{'PASS' if result['summary'].get('validator_passed') else 'FAIL'}`, evals=`{'PASS' if result['summary'].get('evals_passed') else 'FAIL'}`, offline-drill=`{'PASS' if result['summary'].get('offline_drill_passed') else 'FAIL'}`, beta=`{'PASS' if result['summary'].get('beta_gate_passed') else 'SKIP' if result['summary'].get('beta_gate_passed') is None else 'FAIL'}`",
+            f"- Gate status summary: tests=`{'PASS' if result['summary'].get('tests_passed') else 'FAIL'}`, validator=`{'PASS' if result['summary'].get('validator_passed') else 'FAIL'}`, evals=`{'PASS' if result['summary'].get('evals_passed') else 'FAIL'}`, offline-drill=`{'PASS' if result['summary'].get('offline_drill_passed') else 'FAIL'}`, beta=`{'PASS' if result['summary'].get('beta_gate_passed') else 'SKIP' if result['summary'].get('beta_gate_passed') is None else 'FAIL'}`, completion-evidence=`{'PASS' if result['summary'].get('completion_evidence_passed') else 'FAIL'}`",
             "",
             "## Next Action",
             "",
@@ -1653,6 +1850,7 @@ def run_release_gate(
     beta_gate_result: Path | None = None,
     beta_decision_dir: Path | None = None,
     beta_report_dir: Path | None = None,
+    completion_evidence: Path | None = None,
 ) -> dict[str, object]:
     output_dir.mkdir(parents=True, exist_ok=True)
     resolved_iteration_workspace = iteration_workspace.resolve() if iteration_workspace else None
@@ -1676,13 +1874,24 @@ def run_release_gate(
         beta_decision_dir=beta_decision_dir,
         beta_report_dir=beta_report_dir,
     )
+    completion_evidence_snapshot = resolve_completion_evidence(
+        completion_evidence=completion_evidence,
+        repo_root=repo_root,
+    )
     summary.update(build_beta_gate_summary(beta_gate))
+    summary.update(build_completion_evidence_summary(completion_evidence_snapshot))
     summary["overall_passed"] = bool(summary.get("overall_passed")) and (
         summary.get("beta_gate_passed") is not False
+    ) and bool(
+        summary.get("completion_evidence_passed")
     )
     ok = bool(summary.get("overall_passed"))
     decision = "ship" if ok else "hold"
-    reason = derive_release_gate_reason(summary=summary, beta_gate=beta_gate)
+    reason = derive_release_gate_reason(
+        summary=summary,
+        beta_gate=beta_gate,
+        completion_evidence=completion_evidence_snapshot,
+    )
     resolved_release_label = normalize_label(release_label, "release-ready")
     follow_up = (
         build_ship_follow_up(
@@ -1690,6 +1899,7 @@ def run_release_gate(
             benchmark_json=Path(benchmark_result["json_report"]).resolve(),
             benchmark_markdown=benchmark_result["markdown_report"],
             beta_gate=beta_gate,
+            completion_evidence=completion_evidence_snapshot,
             release_label=resolved_release_label,
             iteration_workspace=resolved_iteration_workspace,
         )
@@ -1703,6 +1913,7 @@ def run_release_gate(
             benchmark_markdown=benchmark_result["markdown_report"],
             offline_drill_report=benchmark_result.get("offline_drill_run", {}).get("markdown_report"),
             beta_gate=beta_gate,
+            completion_evidence=completion_evidence_snapshot,
             iteration_workspace=resolved_iteration_workspace,
             auto_run_next_iteration_on_hold=auto_run_next_iteration_on_hold,
             hold_loop_max_rounds=hold_loop_max_rounds,
@@ -1722,6 +1933,7 @@ def run_release_gate(
         "benchmark_markdown": benchmark_result["markdown_report"],
         "offline_drill_report": benchmark_result.get("offline_drill_run", {}).get("markdown_report"),
         "beta_gate": beta_gate_snapshot(beta_gate),
+        "completion_evidence": completion_evidence_snapshot,
     }
     result["explanation_card"] = response_contract.build_release_gate_explanation_card(
         decision=decision,
@@ -1729,6 +1941,7 @@ def run_release_gate(
         summary=summary,
         follow_up=follow_up if isinstance(follow_up, dict) else {},
         beta_gate=result["beta_gate"] if isinstance(result.get("beta_gate"), dict) else None,
+        completion_evidence=completion_evidence_snapshot,
     )
     json_path = output_dir / "release-gate-results.json"
     markdown_path = output_dir / "release-gate-report.md"
@@ -1760,6 +1973,7 @@ def run_release_gate(
             str(markdown_path),
             str(benchmark_result["json_report"]),
             str(benchmark_result["markdown_report"]),
+            str(completion_evidence_snapshot.get("evidence_path", "")),
         ],
         upstream_dependencies=[
             str(item)
@@ -1768,6 +1982,7 @@ def run_release_gate(
                 benchmark_result.get("markdown_report"),
                 benchmark_result.get("offline_drill_run", {}).get("markdown_report"),
                 (result.get("beta_gate") or {}).get("json_report") if isinstance(result.get("beta_gate"), dict) else None,
+                completion_evidence_snapshot.get("evidence_path"),
             ]
             if str(item).strip()
         ],
@@ -1775,6 +1990,7 @@ def run_release_gate(
             "ok": ok,
             "auto_run_next_iteration_on_hold": auto_run_next_iteration_on_hold,
             "hold_loop_max_rounds": hold_loop_max_rounds,
+            "completion_evidence_decision": completion_evidence_snapshot.get("decision"),
         },
     )
     response_contract.validate_release_gate_result(result)
@@ -1816,6 +2032,10 @@ def parse_args() -> argparse.Namespace:
         "--beta-report-dir",
         help="Directory containing beta round reports; the latest valid report is evaluated and enforced before ship.",
     )
+    parser.add_argument(
+        "--completion-evidence",
+        help="Path to completion evidence JSON. Defaults to .skill-evidence/completion-evidence.json under the inferred repo root.",
+    )
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON summary to stdout")
     return parser.parse_args()
 
@@ -1834,6 +2054,7 @@ def main() -> None:
         beta_gate_result=Path(args.beta_gate_result).resolve() if args.beta_gate_result else None,
         beta_decision_dir=Path(args.beta_decision_dir).resolve() if args.beta_decision_dir else None,
         beta_report_dir=Path(args.beta_report_dir).resolve() if args.beta_report_dir else None,
+        completion_evidence=Path(args.completion_evidence) if args.completion_evidence else None,
     )
     stdout_payload = {
         "ok": result["ok"],
@@ -1847,6 +2068,7 @@ def main() -> None:
         "benchmark_markdown": result["benchmark_markdown"],
         "offline_drill_report": result["offline_drill_report"],
         "beta_gate": result["beta_gate"],
+        "completion_evidence": result["completion_evidence"],
     }
     if args.pretty:
         print(json.dumps(stdout_payload, ensure_ascii=False, indent=2))
