@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:micro-practice-ledger.schema",
+  "title": "Virtual Intelligent Dev Team Micro-Practice Ledger",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "workflow_bundle",
+    "source_request",
+    "active_practices",
+    "resume_hint"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "micro-practice-ledger/v1"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "workflow_bundle": {
+      "type": "string"
+    },
+    "source_request": {
+      "type": "string"
+    },
+    "active_practices": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/micro_practice"
+      }
+    },
+    "resume_hint": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "string_array": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "micro_practice": {
+      "type": "object",
+      "required": [
+        "name",
+        "reference",
+        "reason",
+        "evidence",
+        "status",
+        "next_check"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/$defs/string_array"
+        },
+        "status": {
+          "enum": [
+            "active",
+            "satisfied",
+            "blocked"
+          ]
+        },
+        "next_check": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

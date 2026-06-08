@@ -828,6 +828,37 @@
         },
         "resume_anchor": {
           "$ref": "#/$defs/string_or_null"
+        },
+        "micro_practice_ledger": {
+          "$ref": "#/$defs/micro_practice_ledger"
+        }
+      },
+      "additionalProperties": false
+    },
+    "micro_practice_ledger": {
+      "type": "object",
+      "required": [
+        "required",
+        "active_practices",
+        "command",
+        "resume_anchor",
+        "schema"
+      ],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "active_practices": {
+          "$ref": "#/$defs/string_array"
+        },
+        "command": {
+          "type": "string"
+        },
+        "resume_anchor": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
         }
       },
       "additionalProperties": false

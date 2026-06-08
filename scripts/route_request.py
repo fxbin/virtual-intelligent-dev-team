@@ -2328,9 +2328,39 @@ def build_workflow_bundle(
     }
 
 
-def build_workflow_bundle_bootstrap(bundle_name: str) -> dict[str, object]:
+def build_workflow_bundle_bootstrap(
+    bundle_name: str,
+    micro_practice_names: list[str] | None = None,
+) -> dict[str, object]:
+    active_practice_names = [name for name in (micro_practice_names or []) if str(name).strip()]
+
+    def with_micro_practices(block: dict[str, object]) -> dict[str, object]:
+        if not active_practice_names:
+            return block
+        commands = block.get("commands", [])
+        artifacts = block.get("artifacts", [])
+        if not isinstance(commands, list):
+            commands = []
+        if not isinstance(artifacts, list):
+            artifacts = []
+        practice_command = 'python scripts/init_micro_practices.py --root . --text "<user request>" --pretty'
+        practice_artifacts = [
+            ".skill-practices/micro-practice-ledger.json",
+            ".skill-practices/micro-practice-ledger.md",
+        ]
+        block["commands"] = [*commands, practice_command]
+        block["artifacts"] = [*artifacts, *practice_artifacts]
+        block["micro_practice_ledger"] = {
+            "required": True,
+            "active_practices": active_practice_names,
+            "command": practice_command,
+            "resume_anchor": ".skill-practices/micro-practice-ledger.json",
+            "schema": "references/micro-practice-ledger.schema.json",
+        }
+        return block
+
     if bundle_name == "beta-feedback-ramp":
-        return {
+        return with_micro_practices({
             "required": True,
             "reference": "references/beta-validation-playbook.md",
             "commands": [
@@ -2345,9 +2375,9 @@ def build_workflow_bundle_bootstrap(bundle_name: str) -> dict[str, object]:
                 ".skill-beta/simulation-configs/round-0.json",
             ],
             "resume_anchor": ".skill-beta/program-overview.md",
-        }
+        })
     if bundle_name == "product-spec-deliver":
-        return {
+        return with_micro_practices({
             "required": True,
             "reference": "references/product-delivery-playbook.md",
             "commands": [
@@ -2359,9 +2389,9 @@ def build_workflow_bundle_bootstrap(bundle_name: str) -> dict[str, object]:
                 ".skill-product/contract-questions.md",
             ],
             "resume_anchor": ".skill-product/current-slice.md",
-        }
+        })
     if bundle_name == "quick-slice-deliver":
-        return {
+        return with_micro_practices({
             "required": True,
             "reference": "references/quick-slice-delivery-playbook.md",
             "commands": [
@@ -2374,9 +2404,9 @@ def build_workflow_bundle_bootstrap(bundle_name: str) -> dict[str, object]:
                 ".skill-delivery/status.yaml",
             ],
             "resume_anchor": ".skill-delivery/current-slice.md",
-        }
+        })
     if bundle_name == "govern-change-safely":
-        return {
+        return with_micro_practices({
             "required": True,
             "reference": "references/technical-governance-playbook.md",
             "commands": [
@@ -2387,9 +2417,9 @@ def build_workflow_bundle_bootstrap(bundle_name: str) -> dict[str, object]:
                 ".skill-governance/release-checklist.md",
             ],
             "resume_anchor": ".skill-governance/change-plan.md",
-        }
+        })
     if bundle_name == "post-release-close-loop":
-        return {
+        return with_micro_practices({
             "required": True,
             "reference": "references/post-release-feedback-playbook.md",
             "commands": [
@@ -2402,9 +2432,9 @@ def build_workflow_bundle_bootstrap(bundle_name: str) -> dict[str, object]:
                 ".skill-post-release/triage-summary.md",
             ],
             "resume_anchor": ".skill-post-release/triage-summary.md",
-        }
+        })
     if bundle_name == "capture-project-knowledge":
-        return {
+        return with_micro_practices({
             "required": True,
             "reference": "skill-forge/references/project-knowledge-capture-protocol.md",
             "commands": [
@@ -2417,14 +2447,14 @@ def build_workflow_bundle_bootstrap(bundle_name: str) -> dict[str, object]:
                 ".agents/skills/",
             ],
             "resume_anchor": "AGENTS.md",
-        }
-    return {
+        })
+    return with_micro_practices({
         "required": False,
         "reference": None,
         "commands": [],
         "artifacts": [],
         "resume_anchor": None,
-    }
+    })
 
 
 def build_quality_gate(
@@ -3363,9 +3393,6 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         needs_git_workflow=needs_git_workflow,
         sentinel_overlay=sentinel_overlay,
     )
-    workflow_bundle_bootstrap = build_workflow_bundle_bootstrap(
-        str(workflow_bundle.get("name", "direct-execution"))
-    )
     micro_practices = build_micro_practices(
         text=routed_text,
         workflow_bundle=workflow_bundle,
@@ -3378,6 +3405,19 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         for item in micro_practices
         if str(item.get("name", "")).strip()
     ]
+    workflow_bundle_bootstrap = build_workflow_bundle_bootstrap(
+        str(workflow_bundle.get("name", "direct-execution")),
+        micro_practice_names=micro_practice_names,
+    )
+    resume_artifacts = [
+        str(item)
+        for item in workflow_bundle.get("resume_artifacts", [])
+        if str(item).strip()
+    ]
+    for item in workflow_bundle_bootstrap.get("artifacts", []):
+        artifact = str(item).strip()
+        if artifact and artifact.startswith(".skill-practices/") and artifact not in resume_artifacts:
+            resume_artifacts.append(artifact)
     quality_gate = build_quality_gate(
         lead_agent=lead_agent,
         assistants=assistants,
@@ -3514,7 +3554,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "external_agent_backend_plan": external_agent_backend_plan,
         "real_subagent_runtime": real_subagent_runtime_plan,
         "progress_anchor_recommended": workflow_bundle.get("progress_anchor_recommended"),
-        "resume_artifacts": workflow_bundle.get("resume_artifacts", []),
+        "resume_artifacts": resume_artifacts,
         "workflow_bundle_bootstrap": workflow_bundle_bootstrap,
         "beta_validation_plan": beta_validation_plan,
         "assistant_delta_contract": assistant_delta_contract,

@@ -82,6 +82,12 @@ def format_missing(value: object, language: str) -> str:
 def normalize_micro_practices(result: dict[str, object], language: str) -> dict[str, object]:
     raw_items = result.get("micro_practices", [])
     raw_names = result.get("micro_practice_names", [])
+    bootstrap = result.get("workflow_bundle_bootstrap", {})
+    if not isinstance(bootstrap, dict):
+        bootstrap = {}
+    raw_ledger = bootstrap.get("micro_practice_ledger", {})
+    if not isinstance(raw_ledger, dict):
+        raw_ledger = {}
     items: list[dict[str, object]] = []
     names: list[str] = []
 
@@ -133,6 +139,18 @@ def normalize_micro_practices(result: dict[str, object], language: str) -> dict[
     return {
         "names": names,
         "items": items,
+        "ledger": {
+            "required": bool(raw_ledger.get("required")) if raw_ledger else bool(names),
+            "command": format_missing(raw_ledger.get("command", ""), language),
+            "resume_anchor": format_missing(
+                raw_ledger.get("resume_anchor", ".skill-practices/micro-practice-ledger.json" if names else ""),
+                language,
+            ),
+            "schema": format_missing(
+                raw_ledger.get("schema", "references/micro-practice-ledger.schema.json" if names else ""),
+                language,
+            ),
+        },
     }
 
 
@@ -881,6 +899,11 @@ def build_response_pack(
         if isinstance(micro_practices.get("items"), list)
         else []
     )
+    micro_practice_ledger = (
+        micro_practices.get("ledger", {})
+        if isinstance(micro_practices.get("ledger"), dict)
+        else {}
+    )
 
     if selected_language == "zh":
         lines.extend(
@@ -908,6 +931,8 @@ def build_response_pack(
                     "",
                     "## 工程微实践",
                     f"- 已激活：{', '.join(str(item) for item in micro_practice_names) if micro_practice_names else none_text}",
+                    f"- Ledger：{micro_practice_ledger.get('resume_anchor', '无')}",
+                    f"- 初始化命令：{micro_practice_ledger.get('command', '无')}",
                 ]
             )
             for item in micro_practice_items:
@@ -930,6 +955,8 @@ def build_response_pack(
                     "",
                     "## Engineering Micro-Practices",
                     f"- Active: {', '.join(str(item) for item in micro_practice_names) if micro_practice_names else none_text}",
+                    f"- Ledger: {micro_practice_ledger.get('resume_anchor', 'n/a')}",
+                    f"- Init command: {micro_practice_ledger.get('command', 'n/a')}",
                 ]
             )
             for item in micro_practice_items:

@@ -224,6 +224,24 @@ python scripts/init_quick_slice.py --root . --pretty
 
 - `references/quick-slice-delivery-playbook.md`
 
+## 一点八、工程微实践 Ledger
+
+当路由结果带出 `micro_practices` 时，初始化轻量 ledger：
+
+```bash
+python scripts/init_micro_practices.py --root . --text "<user request>" --pretty
+```
+
+默认产物：
+
+- `.skill-practices/micro-practice-ledger.json`
+- `.skill-practices/micro-practice-ledger.md`
+
+契约：
+
+- `references/micro-practice-ledger.schema.json`
+- `assets/micro-practice-ledger-template.json`
+
 ## 二、开发前规划资产
 
 模板：

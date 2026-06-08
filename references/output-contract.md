@@ -22,6 +22,7 @@ After routing, answer with one unified structure. The lead agent owns the respon
    - Route evidence
    - Workflow source explanation
    - Process skills in effect
+   - Active engineering micro-practices and their ledger anchor when any micro-practice is active
    - Assistant delta contract when assistants are active
    - Completion evidence slots before any `done`, `fixed`, `ready`, `ship`, `commit`, `merge`, or handoff claim:
      - evidence action / check performed
@@ -88,6 +89,24 @@ After routing, answer with one unified structure. The lead agent owns the respon
    - Decision: `delete-first | compat-exception | confirmation-first`
    - Retired behavior and preserved behavior
    - Remaining entropy or retirement follow-up
+
+## Engineering Micro-Practices
+
+When route output activates `micro_practices`, preserve them as a small local
+ledger instead of treating them as another workflow bundle.
+
+The user-facing response should expose:
+
+- active practice names
+- the reference for each practice
+- the evidence the practice expects
+- the ledger resume anchor, usually `.skill-practices/micro-practice-ledger.json`
+
+The ledger can be initialized with:
+
+```bash
+python scripts/init_micro_practices.py --root . --text "<user request>" --pretty
+```
 
 ## Completion Evidence Rule
 

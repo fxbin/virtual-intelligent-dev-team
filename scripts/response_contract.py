@@ -37,6 +37,7 @@ BETA_SIMULATION_TRACE_CATALOG_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "sim
 BETA_SIMULATION_SCENARIO_PACKS_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "simulation-scenario-packs.schema.json"
 BENCHMARK_EVALS_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-evals.schema.json"
 BENCHMARK_RUN_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-run-result.schema.json"
+MICRO_PRACTICE_LEDGER_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "micro-practice-ledger.schema.json"
 
 
 @lru_cache(maxsize=None)
@@ -74,6 +75,14 @@ def validate_response_pack_payload(payload: dict[str, object]) -> None:
         payload,
         schema_path=SIDECAR_SCHEMA_JSON_PATH,
         label="response-pack sidecar",
+    )
+
+
+def validate_micro_practice_ledger(payload: dict[str, object]) -> None:
+    validate_payload_against_schema(
+        payload,
+        schema_path=MICRO_PRACTICE_LEDGER_SCHEMA_JSON_PATH,
+        label="micro-practice ledger",
     )
 
 

@@ -1,0 +1,8 @@
+{
+  "schema_version": "micro-practice-ledger/v1",
+  "generated_at": "1970-01-01T00:00:00Z",
+  "workflow_bundle": "direct-execution",
+  "source_request": "",
+  "active_practices": [],
+  "resume_hint": "Use this ledger to keep lightweight engineering practices visible across sessions."
+}

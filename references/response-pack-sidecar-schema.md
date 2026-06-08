@@ -70,6 +70,7 @@
 
 - `names`
 - `items`
+- `ledger`
 
 `items[]`:
 
@@ -77,6 +78,13 @@
 - `reference`
 - `reason`
 - `evidence`
+
+`ledger`:
+
+- `required`
+- `command`
+- `resume_anchor`
+- `schema`
 
 ## `next_action`
 

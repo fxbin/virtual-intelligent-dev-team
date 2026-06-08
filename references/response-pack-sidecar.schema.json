@@ -222,7 +222,8 @@
       "type": "object",
       "required": [
         "names",
-        "items"
+        "items",
+        "ledger"
       ],
       "properties": {
         "names": {
@@ -233,6 +234,30 @@
           "items": {
             "$ref": "#/$defs/micro_practice_item"
           }
+        },
+        "ledger": {
+          "type": "object",
+          "required": [
+            "required",
+            "command",
+            "resume_anchor",
+            "schema"
+          ],
+          "properties": {
+            "required": {
+              "type": "boolean"
+            },
+            "command": {
+              "type": "string"
+            },
+            "resume_anchor": {
+              "type": "string"
+            },
+            "schema": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
