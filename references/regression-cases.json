@@ -1140,6 +1140,22 @@
       }
     },
     {
+      "name": "verify_completion_evidence_missing_blocks_completion",
+      "text": "Fix the checkout API regression by first reproducing it with a failing test.",
+      "check": "completion-evidence",
+      "expect": {
+        "allowed": false,
+        "summary_contains": "missing",
+        "recommended_next_step_contains": "Create completion evidence",
+        "detail_equals": {
+          "completion_evidence_required": true,
+          "evidence_exists": false,
+          "decision": "missing",
+          "completion_allowed": false
+        }
+      }
+    },
+    {
       "name": "verify_wrong_lead_rejected",
       "text": "Review this Django API for security issues.",
       "check": "lead-assignment",

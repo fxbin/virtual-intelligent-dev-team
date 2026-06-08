@@ -166,7 +166,8 @@
             "bundle-bootstrap",
             "assistant-delta-contract",
             "auto-mode",
-            "micro-practice-ledger"
+            "micro-practice-ledger",
+            "completion-evidence"
           ]
         },
         "process_skill": {

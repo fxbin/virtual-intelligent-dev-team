@@ -1648,6 +1648,30 @@
         "verify_action_json details.active_practices contains feedback-loop-first",
         "verify_action_json details.recommended_commands contains python scripts/init_micro_practices.py --root . --text \"<user request>\" --pretty"
       ]
+    },
+    {
+      "id": 88,
+      "runner": "verify_action",
+      "check": "completion-evidence",
+      "categories": [
+        "completion-evidence",
+        "completion-gate",
+        "contract-output"
+      ],
+      "prompt": "Fix the checkout API regression by first reproducing it with a failing test.",
+      "expected_output": "Completion preflight should block done/ready/handoff claims until structured completion evidence exists.",
+      "files": [
+        "references/completion-evidence.schema.json",
+        "assets/completion-evidence-template.json"
+      ],
+      "expectations": [
+        "allowed is false",
+        "verify_action_json details.completion_evidence_required is true",
+        "verify_action_json details.evidence_exists is false",
+        "verify_action_json details.decision is missing",
+        "verify_action_json details.template is assets/completion-evidence-template.json",
+        "verify_action_json details.verify_command contains verify_completion_evidence.py"
+      ]
     }
   ]
 }

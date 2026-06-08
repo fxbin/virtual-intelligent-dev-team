@@ -46,6 +46,7 @@ EVALUATE_POST_RELEASE_FEEDBACK_SCRIPT = SKILL_DIR / "scripts" / "evaluate_post_r
 INIT_MICRO_PRACTICES_SCRIPT = SKILL_DIR / "scripts" / "init_micro_practices.py"
 UPDATE_MICRO_PRACTICES_SCRIPT = SKILL_DIR / "scripts" / "update_micro_practices.py"
 EVALUATE_MICRO_PRACTICES_SCRIPT = SKILL_DIR / "scripts" / "evaluate_micro_practices.py"
+VERIFY_COMPLETION_EVIDENCE_SCRIPT = SKILL_DIR / "scripts" / "verify_completion_evidence.py"
 RUN_AUTO_WORKFLOW_SCRIPT = SKILL_DIR / "scripts" / "run_auto_workflow.py"
 INSPECT_AUTOMATION_STATE_SCRIPT = SKILL_DIR / "scripts" / "inspect_automation_state.py"
 RESUME_FROM_AUTOMATION_STATE_SCRIPT = SKILL_DIR / "scripts" / "resume_from_automation_state.py"
@@ -100,6 +101,7 @@ post_release_feedback_evaluator = load_module("virtual_intelligent_dev_team_post
 micro_practices_init = load_module("virtual_intelligent_dev_team_micro_practices_init", INIT_MICRO_PRACTICES_SCRIPT)
 micro_practices_updater = load_module("virtual_intelligent_dev_team_micro_practices_updater", UPDATE_MICRO_PRACTICES_SCRIPT)
 micro_practices_evaluator = load_module("virtual_intelligent_dev_team_micro_practices_evaluator", EVALUATE_MICRO_PRACTICES_SCRIPT)
+completion_evidence_verifier = load_module("virtual_intelligent_dev_team_completion_evidence_verifier", VERIFY_COMPLETION_EVIDENCE_SCRIPT)
 auto_workflow = load_module("virtual_intelligent_dev_team_auto_workflow", RUN_AUTO_WORKFLOW_SCRIPT)
 automation_state_inspector = load_module(
     "virtual_intelligent_dev_team_inspect_automation_state",
@@ -240,6 +242,37 @@ def write_beta_gate_fixture(
     (output_dir / "beta-round-gate-report.md").write_text("# Beta Gate\n", encoding="utf-8")
     response_contract.validate_beta_round_gate_result(payload)
     return fixture_path
+
+
+def write_completion_evidence_fixture(
+    root: Path,
+    *,
+    status: str = "passed",
+    confidence_grade: str = "B",
+    uncovered_scope: list[str] | None = None,
+    residual_risk: list[str] | None = None,
+) -> Path:
+    evidence_dir = root / ".skill-evidence"
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema_version": "completion-evidence/v1",
+        "generated_at": "2026-04-08T12:00:00Z",
+        "source_request": "Fix checkout API regression.",
+        "evidence_action": "python -m unittest tests.checkout",
+        "result": {
+            "status": status,
+            "summary": "checkout regression evidence captured",
+            "exit_code": 0 if status == "passed" else 1,
+        },
+        "covered_scope": ["checkout API regression"],
+        "uncovered_scope": uncovered_scope or ["none"],
+        "residual_risk": residual_risk or ["none"],
+        "confidence_grade": confidence_grade,
+        "evidence_refs": ["python -m unittest tests.checkout"],
+    }
+    path = evidence_dir / "completion-evidence.json"
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return path
 
 
 def copy_skill_fixture(target_dir: Path) -> Path:
@@ -696,6 +729,61 @@ class RoutingTests(unittest.TestCase):
                 any("update_micro_practices.py" in command for command in result["follow_up"]["recommended_commands"])
             )
             response_contract.validate_micro_practice_evaluation(result)
+
+    def test_completion_evidence_schema_accepts_template_shape(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            evidence_path = write_completion_evidence_fixture(root)
+            payload = json.loads(evidence_path.read_text(encoding="utf-8"))
+
+            response_contract.validate_completion_evidence(payload)
+
+    def test_completion_evidence_schema_rejects_missing_confidence_grade(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            evidence_path = write_completion_evidence_fixture(root)
+            payload = json.loads(evidence_path.read_text(encoding="utf-8"))
+            payload.pop("confidence_grade")
+
+            with self.assertRaisesRegex(ValueError, "confidence_grade"):
+                response_contract.validate_completion_evidence(payload)
+
+    def test_completion_evidence_verifier_allows_complete_evidence(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            evidence_path = write_completion_evidence_fixture(root, confidence_grade="A")
+
+            result = completion_evidence_verifier.evaluate_completion_evidence(evidence_path)
+
+            self.assertTrue(result["ok"])
+            self.assertEqual("complete", result["decision"])
+            self.assertTrue(result["completion_allowed"])
+            self.assertEqual("A", result["confidence_grade"])
+
+    def test_completion_evidence_verifier_continues_on_uncovered_scope(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            evidence_path = write_completion_evidence_fixture(
+                root,
+                uncovered_scope=["mobile browser not checked"],
+            )
+
+            result = completion_evidence_verifier.evaluate_completion_evidence(evidence_path)
+
+            self.assertFalse(result["ok"])
+            self.assertEqual("continue", result["decision"])
+            self.assertIn("uncovered_scope", result["reason"])
+
+    def test_completion_evidence_verifier_blocks_failed_result(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            evidence_path = write_completion_evidence_fixture(root, status="failed")
+
+            result = completion_evidence_verifier.evaluate_completion_evidence(evidence_path)
+
+            self.assertFalse(result["ok"])
+            self.assertEqual("blocked", result["decision"])
+            self.assertIn("failed", result["reason"])
 
     def test_ui_review_stays_with_product_architect(self) -> None:
         result = route_request.route_request(
@@ -4283,6 +4371,11 @@ class ValidatorScriptTests(unittest.TestCase):
                 "Fix the checkout API regression by first reproducing it with a failing test.",
                 {},
             ),
+            (
+                "completion-evidence",
+                "Fix the checkout API regression by first reproducing it with a failing test.",
+                {},
+            ),
         ]
 
         for check, text, kwargs in cases:
@@ -4546,6 +4639,58 @@ class ValidatorScriptTests(unittest.TestCase):
             self.assertTrue(
                 any("--overwrite" in command for command in result["details"]["recommended_commands"])
             )
+            response_contract.validate_verify_action_result(result)
+
+    def test_verify_action_completion_evidence_requires_file(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+
+            result = verify_action.verify_action(
+                text="Fix the checkout API regression by first reproducing it with a failing test.",
+                config=load_config(),
+                repo_path=root,
+                check="completion-evidence",
+            )
+
+            self.assertFalse(result["allowed"])
+            self.assertEqual("missing", result["details"]["decision"])
+            self.assertFalse(result["details"]["evidence_exists"])
+            self.assertIn("completion-evidence-template.json", result["details"]["init_command"])
+            response_contract.validate_verify_action_result(result)
+
+    def test_verify_action_completion_evidence_allows_complete_file(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            write_completion_evidence_fixture(root)
+
+            result = verify_action.verify_action(
+                text="Fix the checkout API regression by first reproducing it with a failing test.",
+                config=load_config(),
+                repo_path=root,
+                check="completion-evidence",
+            )
+
+            self.assertTrue(result["allowed"])
+            self.assertEqual("complete", result["details"]["decision"])
+            self.assertTrue(result["details"]["completion_allowed"])
+            self.assertEqual("B", result["details"]["verification"]["confidence_grade"])
+            response_contract.validate_verify_action_result(result)
+
+    def test_verify_action_completion_evidence_blocks_uncovered_scope(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            write_completion_evidence_fixture(root, uncovered_scope=["manual QA not run"])
+
+            result = verify_action.verify_action(
+                text="Fix the checkout API regression by first reproducing it with a failing test.",
+                config=load_config(),
+                repo_path=root,
+                check="completion-evidence",
+            )
+
+            self.assertFalse(result["allowed"])
+            self.assertEqual("continue", result["details"]["decision"])
+            self.assertIn("uncovered_scope", result["details"]["verification"]["reason"])
             response_contract.validate_verify_action_result(result)
 
     def test_contract_lint_passes(self) -> None:
@@ -7476,6 +7621,15 @@ class ResponsePackTests(unittest.TestCase):
         self.assertEqual("release", payload["template"])
         self.assertEqual("ship-hold-remediate", payload["team_dispatch"]["workflow_bundle"])
         self.assertIn("primary execution journey", payload["evidence"]["workflow_source_explanation"])
+        self.assertTrue(payload["completion_evidence"]["required"])
+        self.assertEqual(
+            "references/completion-evidence.schema.json",
+            payload["completion_evidence"]["schema"],
+        )
+        self.assertIn(
+            "verify_completion_evidence.py",
+            payload["completion_evidence"]["verify_command"],
+        )
         self.assertIn("run the release gate first", payload["next_action"]["smallest_executable_action"])
         self.assertEqual("evals/release-gate/release-gate-report.md", payload["resume"]["progress_anchor"])
 
@@ -7706,6 +7860,8 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("Bundle confidence: 0.96 (process-skill)", markdown)
         self.assertIn("Workflow source explanation: This bundle is activated by an explicit process skill, so it should be treated as the primary execution journey.", markdown)
         self.assertIn("## Evidence", markdown)
+        self.assertIn("## Completion Evidence", markdown)
+        self.assertIn("Verify command: python scripts/verify_completion_evidence.py", markdown)
         self.assertIn("## Next Action", markdown)
         self.assertIn("## Resume", markdown)
         self.assertIn("Smallest executable action: lock transformation scope, target, and constraints", markdown)
