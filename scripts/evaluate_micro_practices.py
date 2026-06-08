@@ -54,6 +54,10 @@ def compact_string_list(values: object) -> list[str]:
     return [str(item).strip() for item in values if str(item).strip()]
 
 
+def quote_cli_arg(value: str) -> str:
+    return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
 def summarize_practices(ledger: dict[str, object]) -> list[dict[str, object]]:
     raw_practices = ledger.get("active_practices", [])
     if not isinstance(raw_practices, list):
@@ -105,6 +109,43 @@ def decide(status_counts: dict[str, int]) -> tuple[str, str, bool, str]:
         True,
         "use the ledger evaluation as completion evidence",
     )
+
+
+def build_recommended_commands(
+    *,
+    practices: list[dict[str, object]],
+    decision: str,
+    ledger_rel: str,
+) -> list[str]:
+    commands: list[str] = []
+    if decision in {"continue", "blocked"}:
+        target_status = "active" if decision == "continue" else "blocked"
+        evidence_hint = "<evidence>" if decision == "continue" else "<blocker resolution evidence>"
+        for item in practices:
+            if str(item.get("status", "")).strip() != target_status:
+                continue
+            name = str(item.get("name", "")).strip()
+            if not name:
+                continue
+            commands.append(
+                "python scripts/update_micro_practices.py"
+                f" --ledger {ledger_rel}"
+                f" --name {quote_cli_arg(name)}"
+                " --status satisfied"
+                f" --evidence {quote_cli_arg(evidence_hint)}"
+                " --pretty"
+            )
+        if not commands:
+            commands.append(
+                "python scripts/update_micro_practices.py"
+                f" --ledger {ledger_rel}"
+                " --name <practice-name>"
+                " --status satisfied"
+                f" --evidence {quote_cli_arg(evidence_hint)}"
+                " --pretty"
+            )
+    commands.append(f"python scripts/evaluate_micro_practices.py --ledger {ledger_rel} --pretty")
+    return commands
 
 
 def render_markdown(result: dict[str, object]) -> str:
@@ -207,9 +248,11 @@ def evaluate_micro_practices(
             "next_action": next_action,
             "resume_anchor": ledger_rel,
             "resume_artifacts": [ledger_rel, json_rel, markdown_rel],
-            "recommended_commands": [
-                f"python scripts/evaluate_micro_practices.py --ledger {ledger_rel} --pretty",
-            ],
+            "recommended_commands": build_recommended_commands(
+                practices=practices,
+                decision=decision,
+                ledger_rel=ledger_rel,
+            ),
         },
         "json_report": json_rel,
         "markdown_report": markdown_rel,

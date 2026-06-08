@@ -1001,6 +1001,41 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             "json_report": ".skill-practices/micro-practice-evaluation.json",
             "markdown_report": ".skill-practices/micro-practice-evaluation.md",
         }
+        sample_continue_evaluation = {
+            **sample_evaluation,
+            "ok": False,
+            "decision": "continue",
+            "reason": "one or more micro-practices still need concrete evidence",
+            "status_counts": {
+                "total": 1,
+                "active": 1,
+                "satisfied": 0,
+                "blocked": 0,
+            },
+            "practices": [
+                {
+                    "name": "vertical-slice-delivery",
+                    "reference": "references/vertical-slice-delivery-protocol.md",
+                    "status": "active",
+                    "evidence": ["slice acceptance criteria"],
+                    "next_check": "Capture concrete evidence before completion.",
+                }
+            ],
+            "follow_up": {
+                "completion_allowed": False,
+                "next_action": "capture evidence and update active practices to satisfied or blocked",
+                "resume_anchor": ".skill-practices/micro-practice-ledger.json",
+                "resume_artifacts": [
+                    ".skill-practices/micro-practice-ledger.json",
+                    ".skill-practices/micro-practice-evaluation.json",
+                    ".skill-practices/micro-practice-evaluation.md",
+                ],
+                "recommended_commands": [
+                    "python scripts/update_micro_practices.py --ledger .skill-practices/micro-practice-ledger.json --name \"vertical-slice-delivery\" --status satisfied --evidence \"<evidence>\" --pretty",
+                    "python scripts/evaluate_micro_practices.py --ledger .skill-practices/micro-practice-ledger.json --pretty",
+                ],
+            },
+        }
         try:
             local_response_contract.validate_micro_practice_ledger(sample_ledger)
         except Exception as exc:
@@ -1009,6 +1044,10 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             local_response_contract.validate_micro_practice_evaluation(sample_evaluation)
         except Exception as exc:
             micro_practice_contract_failures.append(f"evaluation: {exc}")
+        try:
+            local_response_contract.validate_micro_practice_evaluation(sample_continue_evaluation)
+        except Exception as exc:
+            micro_practice_contract_failures.append(f"continue evaluation: {exc}")
     else:
         micro_practice_contract_failures.append("response_contract.py module missing")
     _check(
