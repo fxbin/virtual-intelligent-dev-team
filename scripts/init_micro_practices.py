@@ -84,13 +84,15 @@ def render_markdown(ledger: dict[str, object]) -> str:
         evidence = item.get("evidence", [])
         if not isinstance(evidence, list):
             evidence = []
+        status = str(item.get("status", "active"))
+        evidence_label = "Evidence needed" if status == "active" else "Evidence captured"
         lines.extend(
             [
                 f"- {item.get('name', '')}",
                 f"  - Reference: {item.get('reference', '')}",
                 f"  - Reason: {item.get('reason', '')}",
-                f"  - Evidence needed: {', '.join(str(value) for value in evidence) if evidence else 'none'}",
-                f"  - Status: {item.get('status', 'active')}",
+                f"  - {evidence_label}: {', '.join(str(value) for value in evidence) if evidence else 'none'}",
+                f"  - Status: {status}",
                 f"  - Next check: {item.get('next_check', '')}",
             ]
         )
