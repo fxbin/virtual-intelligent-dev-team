@@ -14,6 +14,7 @@ SKILL_DIR = SCRIPT_DIR.parent
 ROUTE_SCRIPT = SCRIPT_DIR / "route_request.py"
 RESPONSE_PACK_SCRIPT = SCRIPT_DIR / "generate_response_pack.py"
 RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
+EVALUATE_MICRO_PRACTICES_SCRIPT = SCRIPT_DIR / "evaluate_micro_practices.py"
 DEFAULT_CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 
 
@@ -29,6 +30,10 @@ def load_module(name: str, path: Path):
 route_request = load_module("virtual_team_verify_action_route_request", ROUTE_SCRIPT)
 response_pack = load_module("virtual_team_verify_action_response_pack", RESPONSE_PACK_SCRIPT)
 response_contract = load_module("virtual_team_verify_action_response_contract", RESPONSE_CONTRACT_SCRIPT)
+micro_practice_evaluator = load_module(
+    "virtual_team_verify_action_evaluate_micro_practices",
+    EVALUATE_MICRO_PRACTICES_SCRIPT,
+)
 
 
 def load_config(config_path: Path) -> dict[str, object]:
@@ -526,6 +531,144 @@ def _verify_auto_mode(result: dict[str, object], repo_path: Path) -> dict[str, o
     }
 
 
+def _micro_practice_names(result: dict[str, object]) -> list[str]:
+    names = result.get("micro_practice_names", [])
+    if isinstance(names, list):
+        compact_names = [str(item).strip() for item in names if str(item).strip()]
+        if compact_names:
+            return compact_names
+
+    practices = result.get("micro_practices", [])
+    if not isinstance(practices, list):
+        return []
+    compact_names = []
+    for item in practices:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("name", "")).strip()
+        if name:
+            compact_names.append(name)
+    return compact_names
+
+
+def _micro_practice_ledger_contract(result: dict[str, object]) -> dict[str, object]:
+    bootstrap = result.get("workflow_bundle_bootstrap", {})
+    if not isinstance(bootstrap, dict):
+        bootstrap = {}
+    ledger = bootstrap.get("micro_practice_ledger", {})
+    return ledger if isinstance(ledger, dict) else {}
+
+
+def _verify_micro_practice_ledger(result: dict[str, object], repo_path: Path) -> dict[str, object]:
+    names = _micro_practice_names(result)
+    ledger_contract = _micro_practice_ledger_contract(result)
+    ledger_required = bool(ledger_contract.get("required")) or len(names) > 0
+    ledger_rel = str(ledger_contract.get("resume_anchor", "")).strip() or ".skill-practices/micro-practice-ledger.json"
+    ledger_path = (repo_path / ledger_rel).resolve()
+    ledger_exists = ledger_path.exists()
+    init_command = str(ledger_contract.get("command", "")).strip() or (
+        'python scripts/init_micro_practices.py --root . --text "<user request>" --pretty'
+    )
+    evaluation_command = str(ledger_contract.get("evaluation_command", "")).strip() or (
+        f"python scripts/evaluate_micro_practices.py --ledger {ledger_rel} --pretty"
+    )
+
+    evaluation: dict[str, object] | None = None
+    evaluation_error = ""
+    decision = "not-required"
+    status_counts = {"total": 0, "active": 0, "satisfied": 0, "blocked": 0}
+    completion_allowed = not ledger_required
+    recommended_commands: list[str] = []
+    missing_required_practices: list[str] = []
+
+    if ledger_required and not ledger_exists:
+        decision = "missing"
+        recommended_commands = [init_command, evaluation_command]
+        summary = "Micro-practice ledger is required for this request but is missing."
+        next_step = "Initialize the micro-practice ledger, capture practice evidence, then re-run this check before claiming completion."
+    elif ledger_required:
+        try:
+            evaluation = micro_practice_evaluator.evaluate_micro_practices(
+                ledger_path,
+                write_reports=False,
+            )
+            decision = str(evaluation.get("decision", "")).strip()
+            raw_counts = evaluation.get("status_counts", {})
+            if isinstance(raw_counts, dict):
+                status_counts = {
+                    "total": int(raw_counts.get("total", 0)),
+                    "active": int(raw_counts.get("active", 0)),
+                    "satisfied": int(raw_counts.get("satisfied", 0)),
+                    "blocked": int(raw_counts.get("blocked", 0)),
+                }
+            follow_up = evaluation.get("follow_up", {})
+            if isinstance(follow_up, dict):
+                completion_allowed = bool(follow_up.get("completion_allowed"))
+                raw_commands = follow_up.get("recommended_commands", [])
+                if isinstance(raw_commands, list):
+                    recommended_commands = [
+                        str(command).strip()
+                        for command in raw_commands
+                        if str(command).strip()
+                    ]
+            practices = evaluation.get("practices", [])
+            evaluated_names = {
+                str(item.get("name", "")).strip()
+                for item in practices
+                if isinstance(item, dict) and str(item.get("name", "")).strip()
+            } if isinstance(practices, list) else set()
+            missing_required_practices = [
+                name for name in names if name not in evaluated_names
+            ]
+            if missing_required_practices:
+                decision = "mismatch"
+                completion_allowed = False
+                recommended_commands = [f"{init_command} --overwrite", evaluation_command]
+            if completion_allowed:
+                summary = "Micro-practice ledger is complete; completion can use it as evidence."
+                next_step = "Use the ledger evaluation as completion evidence and keep the ledger path in the handoff or commit evidence."
+            elif missing_required_practices:
+                summary = "Micro-practice ledger exists but does not cover the practices required by this route."
+                next_step = "Reinitialize the ledger for the current request, then update and evaluate the required practices before completion."
+            elif decision == "blocked":
+                summary = "Micro-practice ledger has blocked practices; completion is not allowed yet."
+                next_step = "Resolve or reclassify blocked practices, update the ledger with evidence, then re-run the ledger evaluation."
+            else:
+                summary = "Micro-practice ledger still has active practices; completion is not allowed yet."
+                next_step = "Capture concrete evidence for active practices, update the ledger, then re-run the ledger evaluation."
+        except Exception as exc:
+            decision = "invalid"
+            evaluation_error = str(exc)
+            completion_allowed = False
+            recommended_commands = [evaluation_command]
+            summary = "Micro-practice ledger exists but could not be evaluated."
+            next_step = "Repair the ledger so it matches references/micro-practice-ledger.schema.json, then re-run evaluation."
+    else:
+        summary = "No micro-practice ledger is required for this request."
+        next_step = "Keep the completion path lightweight; do not force a ledger when the router did not activate micro-practices."
+
+    return {
+        "allowed": completion_allowed,
+        "summary": summary,
+        "details": {
+            "micro_practice_required": ledger_required,
+            "active_practices": names,
+            "ledger_path": ledger_rel,
+            "ledger_exists": ledger_exists,
+            "decision": decision,
+            "completion_allowed": completion_allowed,
+            "status_counts": status_counts,
+            "evaluation": evaluation,
+            "evaluation_error": evaluation_error,
+            "missing_required_practices": missing_required_practices,
+            "init_command": init_command,
+            "evaluation_command": evaluation_command,
+            "recommended_commands": recommended_commands,
+        },
+        "recommended_next_step": next_step,
+    }
+
+
 def _build_explanation_card(result: dict[str, object]) -> dict[str, object]:
     payload = response_pack.build_response_pack_payload(result)
     return response_contract.build_explanation_card_from_payload(payload)
@@ -569,6 +712,8 @@ def verify_action(
         outcome = _verify_assistant_delta_contract(result)
     elif check == "auto-mode":
         outcome = _verify_auto_mode(result, repo_path)
+    elif check == "micro-practice-ledger":
+        outcome = _verify_micro_practice_ledger(result, repo_path)
     else:
         raise ValueError(f"Unsupported check: {check}")
 
@@ -594,6 +739,7 @@ def verify_action(
             "progress_anchor_recommended": result.get("progress_anchor_recommended"),
             "resume_artifacts": result.get("resume_artifacts"),
             "workflow_bundle_bootstrap": result.get("workflow_bundle_bootstrap"),
+            "micro_practice_names": result.get("micro_practice_names"),
             "auto_run_profile": {
                 "auto_mode_enabled": bool((result.get("auto_run_profile") or {}).get("enabled")),
                 "trigger": str((result.get("auto_run_profile") or {}).get("trigger", "none")),
@@ -640,6 +786,7 @@ def parse_args() -> argparse.Namespace:
             "bundle-bootstrap",
             "assistant-delta-contract",
             "auto-mode",
+            "micro-practice-ledger",
         ],
         help="What to verify before taking action.",
     )

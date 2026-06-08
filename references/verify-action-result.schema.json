@@ -28,7 +28,8 @@
         "workflow-bundle",
         "bundle-bootstrap",
         "assistant-delta-contract",
-        "auto-mode"
+        "auto-mode",
+        "micro-practice-ledger"
       ]
     },
     "allowed": {
@@ -210,6 +211,22 @@
           }
         }
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "check": {
+            "const": "micro-practice-ledger"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "details": {
+            "$ref": "#/$defs/micro_practice_ledger_details"
+          }
+        }
+      }
     }
   ],
   "additionalProperties": false,
@@ -386,6 +403,9 @@
         },
         "workflow_bundle_bootstrap": {
           "$ref": "#/$defs/workflow_bundle_bootstrap"
+        },
+        "micro_practice_names": {
+          "$ref": "#/$defs/string_array"
         },
         "auto_run_profile": {
           "$ref": "#/$defs/auto_mode_details"
@@ -871,6 +891,101 @@
         },
         "evaluation_schema": {
           "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "micro_practice_status_counts": {
+      "type": "object",
+      "required": [
+        "total",
+        "active",
+        "satisfied",
+        "blocked"
+      ],
+      "properties": {
+        "total": {
+          "type": "integer"
+        },
+        "active": {
+          "type": "integer"
+        },
+        "satisfied": {
+          "type": "integer"
+        },
+        "blocked": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "micro_practice_ledger_details": {
+      "type": "object",
+      "required": [
+        "micro_practice_required",
+        "active_practices",
+        "ledger_path",
+        "ledger_exists",
+        "decision",
+        "completion_allowed",
+        "status_counts",
+        "evaluation",
+        "evaluation_error",
+        "missing_required_practices",
+        "init_command",
+        "evaluation_command",
+        "recommended_commands"
+      ],
+      "properties": {
+        "micro_practice_required": {
+          "type": "boolean"
+        },
+        "active_practices": {
+          "$ref": "#/$defs/string_array"
+        },
+        "ledger_path": {
+          "type": "string"
+        },
+        "ledger_exists": {
+          "type": "boolean"
+        },
+        "decision": {
+          "enum": [
+            "not-required",
+            "missing",
+            "invalid",
+            "mismatch",
+            "continue",
+            "blocked",
+            "complete"
+          ]
+        },
+        "completion_allowed": {
+          "type": "boolean"
+        },
+        "status_counts": {
+          "$ref": "#/$defs/micro_practice_status_counts"
+        },
+        "evaluation": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "evaluation_error": {
+          "type": "string"
+        },
+        "missing_required_practices": {
+          "$ref": "#/$defs/string_array"
+        },
+        "init_command": {
+          "type": "string"
+        },
+        "evaluation_command": {
+          "type": "string"
+        },
+        "recommended_commands": {
+          "$ref": "#/$defs/string_array"
         }
       },
       "additionalProperties": false

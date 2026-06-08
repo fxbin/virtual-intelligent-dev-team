@@ -214,12 +214,14 @@ def evaluate_micro_practices(
     ledger_path: Path,
     *,
     output_dir: Path | None = None,
+    write_reports: bool = True,
 ) -> dict[str, object]:
     resolved_ledger = ledger_path.resolve()
     ledger = load_ledger(resolved_ledger)
     repo_root = repo_root_from_ledger(resolved_ledger)
     resolved_output_dir = output_dir.resolve() if output_dir is not None else repo_root / DEFAULT_OUTPUT_DIR
-    resolved_output_dir.mkdir(parents=True, exist_ok=True)
+    if write_reports:
+        resolved_output_dir.mkdir(parents=True, exist_ok=True)
 
     practices = summarize_practices(ledger)
     status_counts = build_status_counts(practices)
@@ -258,8 +260,9 @@ def evaluate_micro_practices(
         "markdown_report": markdown_rel,
     }
     response_contract.validate_micro_practice_evaluation(result)
-    json_report.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    markdown_report.write_text(render_markdown(result), encoding="utf-8")
+    if write_reports:
+        json_report.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        markdown_report.write_text(render_markdown(result), encoding="utf-8")
     return result
 
 

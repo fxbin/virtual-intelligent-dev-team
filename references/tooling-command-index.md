@@ -52,6 +52,10 @@ python scripts/verify_action.py --text "<user request>" --check bundle-bootstrap
 python scripts/verify_action.py --text "/auto <user request>" --check auto-mode --pretty
 ```
 
+```bash
+python scripts/verify_action.py --text "<user request>" --check micro-practice-ledger --pretty
+```
+
 - `workflow-bundle` 校验现在会返回：
   - `workflow_bundle_source`
   - `workflow_bundle_source_explanation`
@@ -68,6 +72,11 @@ python scripts/verify_action.py --text "/auto <user request>" --check auto-mode 
   - 当前 workflow 是否在自动白名单里
   - 如果是 `go`，本地是否已经存在 `.skill-auto/auto-run-plan.json`
   - `safe / background / resume` 子协议是否已经落成 machine-readable profile
+- `micro-practice-ledger` 校验会额外确认：
+  - 当前路由是否真的启用了工程微实践
+  - 必要时 `.skill-practices/micro-practice-ledger.json` 是否存在
+  - ledger 是否覆盖当前路由要求的实践名
+  - active / blocked / complete 状态是否允许进入完成、提交或交付声明
 
 ```bash
 python scripts/verify_action.py --text "<user request>" --check assistant-delta-contract --pretty
@@ -242,6 +251,12 @@ python scripts/update_micro_practices.py --ledger .skill-practices/micro-practic
 
 ```bash
 python scripts/evaluate_micro_practices.py --ledger .skill-practices/micro-practice-ledger.json --pretty
+```
+
+完成、提交或交付声明前做只读门禁：
+
+```bash
+python scripts/verify_action.py --text "<user request>" --check micro-practice-ledger --pretty
 ```
 
 默认产物：
