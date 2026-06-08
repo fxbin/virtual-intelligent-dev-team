@@ -738,6 +738,21 @@ class RoutingTests(unittest.TestCase):
 
             response_contract.validate_completion_evidence(payload)
 
+    def test_completion_evidence_template_does_not_allow_completion(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            evidence_dir = root / ".skill-evidence"
+            evidence_dir.mkdir(parents=True, exist_ok=True)
+            evidence_path = evidence_dir / "completion-evidence.json"
+            shutil.copyfile(SKILL_DIR / "assets" / "completion-evidence-template.json", evidence_path)
+
+            result = completion_evidence_verifier.evaluate_completion_evidence(evidence_path)
+
+            self.assertFalse(result["ok"])
+            self.assertEqual("continue", result["decision"])
+            self.assertIn("placeholder", result["reason"])
+            self.assertIn("confidence grade C", result["reason"])
+
     def test_completion_evidence_schema_rejects_missing_confidence_grade(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
@@ -759,6 +774,21 @@ class RoutingTests(unittest.TestCase):
             self.assertEqual("complete", result["decision"])
             self.assertTrue(result["completion_allowed"])
             self.assertEqual("A", result["confidence_grade"])
+
+    def test_completion_evidence_verifier_rejects_placeholders_even_if_status_passed(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            evidence_path = write_completion_evidence_fixture(root, confidence_grade="B")
+            payload = json.loads(evidence_path.read_text(encoding="utf-8"))
+            payload["evidence_action"] = "<command or check performed>"
+            payload["evidence_refs"] = ["<test output, report, ledger, artifact, or command transcript>"]
+            evidence_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+            result = completion_evidence_verifier.evaluate_completion_evidence(evidence_path)
+
+            self.assertFalse(result["ok"])
+            self.assertEqual("continue", result["decision"])
+            self.assertIn("placeholder", result["reason"])
 
     def test_completion_evidence_verifier_continues_on_uncovered_scope(self) -> None:
         with make_tempdir() as tmp:

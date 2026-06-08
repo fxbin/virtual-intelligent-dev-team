@@ -4,20 +4,20 @@
   "source_request": "",
   "evidence_action": "<command or check performed>",
   "result": {
-    "status": "passed",
+    "status": "not_run",
     "summary": "<result or exit status summary>",
-    "exit_code": 0
+    "exit_code": null
   },
   "covered_scope": [
     "<what the evidence directly covers>"
   ],
   "uncovered_scope": [
-    "none"
+    "<uncovered scope, or none>"
   ],
   "residual_risk": [
-    "none"
+    "<residual risk, or none>"
   ],
-  "confidence_grade": "B",
+  "confidence_grade": "C",
   "evidence_refs": [
     "<test output, report, ledger, artifact, or command transcript>"
   ]

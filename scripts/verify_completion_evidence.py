@@ -50,6 +50,15 @@ def is_effectively_none(values: list[str]) -> bool:
     return all(value.lower() in {"none", "n/a", "not applicable"} for value in values)
 
 
+def is_placeholder(value: str) -> bool:
+    stripped = value.strip()
+    return stripped.startswith("<") and stripped.endswith(">")
+
+
+def placeholder_values(values: list[str]) -> list[str]:
+    return [value for value in values if is_placeholder(value)]
+
+
 def build_recommended_commands(evidence_rel: str, decision: str) -> list[str]:
     commands = []
     if decision != "complete":
@@ -93,8 +102,17 @@ def evaluate_completion_evidence(evidence_path: Path) -> dict[str, object]:
         blockers.append("evidence result status is failed")
     elif status in {"partial", "not_run"}:
         warnings.append(f"evidence result status is {status}")
+    action = str(payload.get("evidence_action", "")).strip()
+    summary = str(result.get("summary", "")).strip()
+    if is_placeholder(action):
+        warnings.append("evidence_action still contains a template placeholder")
+    if is_placeholder(summary):
+        warnings.append("result.summary still contains a template placeholder")
     if grade == "C":
         warnings.append("confidence grade C cannot support a completion claim")
+    placeholder_scope = placeholder_values(covered_scope + uncovered_scope + residual_risk + evidence_refs)
+    if placeholder_scope:
+        warnings.append("completion evidence still contains template placeholders")
     if not is_effectively_none(uncovered_scope):
         warnings.append("uncovered_scope contains non-empty residual scope")
     if not is_effectively_none(residual_risk):
