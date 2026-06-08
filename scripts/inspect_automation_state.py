@@ -158,7 +158,8 @@ def recommend_resume_command(payload: dict[str, object]) -> str:
     if state_kind == "release-gate-result":
         return (
             "python scripts/run_release_gate.py --output-dir evals/release-gate "
-            "--iteration-workspace .skill-iterations --pretty"
+            "--iteration-workspace .skill-iterations "
+            "--completion-evidence .skill-evidence/completion-evidence.json --pretty"
         )
     if state_kind == "post-release-feedback-result":
         return (

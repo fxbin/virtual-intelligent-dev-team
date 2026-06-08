@@ -211,6 +211,7 @@ def workflow_setup_actions(bundle: str) -> list[str]:
     if bundle == "ship-hold-remediate":
         return [
             "persist the explicit auto-run plan",
+            "prepare .skill-evidence/completion-evidence.json before go",
             "prepare evals/release-gate as the release workspace",
             "keep hold remediation bounded via --auto-run-next-iteration-on-hold",
         ]
@@ -230,7 +231,7 @@ def workflow_go_actions(bundle: str) -> list[str]:
         ]
     if bundle == "ship-hold-remediate":
         return [
-            "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --auto-run-next-iteration-on-hold --hold-loop-max-rounds 3 --pretty",
+            "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --completion-evidence .skill-evidence/completion-evidence.json --auto-run-next-iteration-on-hold --hold-loop-max-rounds 3 --pretty",
         ]
     if bundle == "post-release-close-loop":
         return [
@@ -571,6 +572,7 @@ def run_release_go(repo_root: Path, plan: dict[str, object]) -> dict[str, object
     result = release_gate.run_release_gate(
         output_dir=output_dir,
         iteration_workspace=iteration_workspace,
+        completion_evidence=repo_root / ".skill-evidence" / "completion-evidence.json",
         auto_run_next_iteration_on_hold=not safe_mode,
         hold_loop_max_rounds=max(int(plan.get("stop_caps", {}).get("release_hold_loop_max_rounds", 3)), 1),
     )
