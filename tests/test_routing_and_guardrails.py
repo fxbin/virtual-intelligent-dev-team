@@ -524,7 +524,9 @@ class RoutingTests(unittest.TestCase):
             practice_names = [item["name"] for item in ledger["active_practices"]]
             self.assertIn("shared-language-and-decision-capture", practice_names)
             self.assertIn("vertical-slice-delivery", practice_names)
-            self.assertIn("Micro-Practice Ledger", markdown_path.read_text(encoding="utf-8"))
+            markdown = markdown_path.read_text(encoding="utf-8")
+            self.assertIn("Micro-Practice Ledger", markdown)
+            self.assertIn("Evidence needed:", markdown)
 
     def test_micro_practice_updater_marks_practice_satisfied_with_evidence(self) -> None:
         with make_tempdir() as tmp:
@@ -551,6 +553,7 @@ class RoutingTests(unittest.TestCase):
             practice = next(item for item in ledger["active_practices"] if item["name"] == "vertical-slice-delivery")
             self.assertEqual("satisfied", practice["status"])
             markdown = (root / ".skill-practices" / "micro-practice-ledger.md").read_text(encoding="utf-8")
+            self.assertIn("Evidence captured:", markdown)
             self.assertIn("Implemented signup slice with acceptance checks", markdown)
 
     def test_micro_practice_updater_rejects_satisfied_without_evidence(self) -> None:
