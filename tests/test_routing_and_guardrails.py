@@ -614,6 +614,12 @@ class RoutingTests(unittest.TestCase):
                 ".skill-practices/micro-practice-evaluation.json",
                 result["follow_up"]["resume_artifacts"],
             )
+            self.assertTrue(
+                any("update_micro_practices.py" in command for command in result["follow_up"]["recommended_commands"])
+            )
+            self.assertTrue(
+                any("vertical-slice-delivery" in command for command in result["follow_up"]["recommended_commands"])
+            )
             self.assertTrue((root / ".skill-practices" / "micro-practice-evaluation.json").exists())
             self.assertTrue((root / ".skill-practices" / "micro-practice-evaluation.md").exists())
             response_contract.validate_micro_practice_evaluation(result)
@@ -638,6 +644,9 @@ class RoutingTests(unittest.TestCase):
             self.assertEqual("complete", result["decision"])
             self.assertEqual(2, result["status_counts"]["satisfied"])
             self.assertTrue(result["follow_up"]["completion_allowed"])
+            self.assertFalse(
+                any("update_micro_practices.py" in command for command in result["follow_up"]["recommended_commands"])
+            )
             response_contract.validate_micro_practice_evaluation(result)
 
     def test_micro_practice_evaluator_blocks_when_any_practice_is_blocked(self) -> None:
@@ -659,6 +668,9 @@ class RoutingTests(unittest.TestCase):
             self.assertEqual("blocked", result["decision"])
             self.assertEqual(1, result["status_counts"]["blocked"])
             self.assertIn("resolve blocked micro-practices", result["follow_up"]["next_action"])
+            self.assertTrue(
+                any("update_micro_practices.py" in command for command in result["follow_up"]["recommended_commands"])
+            )
             response_contract.validate_micro_practice_evaluation(result)
 
     def test_ui_review_stays_with_product_architect(self) -> None:
