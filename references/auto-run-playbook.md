@@ -72,7 +72,9 @@
 - 调用：
   - `scripts/run_release_gate.py`
 - 默认带：
+  - `--completion-evidence .skill-evidence/completion-evidence.json`
   - `--auto-run-next-iteration-on-hold`
+- go 前应补全 `.skill-evidence/completion-evidence.json`；否则 release gate 会按 `hold` 处理，而不是把 benchmark 全绿误判成 `ship`
 
 ### `post-release-close-loop`
 

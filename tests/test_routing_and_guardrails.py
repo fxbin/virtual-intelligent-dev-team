@@ -1078,7 +1078,15 @@ class RoutingTests(unittest.TestCase):
         commands = plan[0]["commands"]
 
         self.assertIn(
+            "python scripts/verify_completion_evidence.py --evidence .skill-evidence/completion-evidence.json --pretty",
+            commands,
+        )
+        self.assertIn(
             "python scripts/run_release_gate.py --output-dir evals/release-gate --pretty",
+            commands,
+        )
+        self.assertIn(
+            "python scripts/run_release_gate.py --output-dir evals/release-gate --completion-evidence .skill-evidence/completion-evidence.json --pretty",
             commands,
         )
         self.assertIn(
@@ -1095,6 +1103,7 @@ class RoutingTests(unittest.TestCase):
         )
         self.assertEqual("evals/release-gate/release-gate-report.md", plan[0]["resume_anchor"])
         self.assertIn("evals/release-gate/next-iteration-brief.json", plan[0]["resume_artifacts"])
+        self.assertIn(".skill-evidence/completion-evidence.json", plan[0]["artifacts"])
 
     def test_pre_development_plan_initializes_project_memory_anchor(self) -> None:
         plan = route_request.build_process_plan(
@@ -7348,6 +7357,10 @@ class AutoWorkflowTests(unittest.TestCase):
             self.assertEqual("hold", result["decision"])
             release_gate_mock.assert_called_once()
             self.assertFalse(release_gate_mock.call_args.kwargs["auto_run_next_iteration_on_hold"])
+            self.assertEqual(
+                root / ".skill-evidence" / "completion-evidence.json",
+                release_gate_mock.call_args.kwargs["completion_evidence"],
+            )
 
     def test_auto_workflow_go_runs_post_release_bundle(self) -> None:
         with make_tempdir() as tmp:
@@ -7450,6 +7463,7 @@ class AutomationStateInspectorTests(unittest.TestCase):
             self.assertEqual("workflow", result["selection_mode"])
             self.assertEqual("release-gate-result", result["selected_state"]["state_kind"])
             self.assertIn("run_release_gate.py", result["recommended_resume_command"])
+            self.assertIn("--completion-evidence .skill-evidence/completion-evidence.json", result["recommended_resume_command"])
             self.assertEqual(
                 "release-ship-continue-post-release",
                 result["decision_card"]["decision_id"],

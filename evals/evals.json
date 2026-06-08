@@ -924,6 +924,7 @@
         "needs_release_gate is true",
         "needs_git_workflow is false",
         "process_skills contains release-gate",
+        "process_plan first commands contain python scripts/verify_completion_evidence.py --evidence .skill-evidence/completion-evidence.json --pretty",
         "process_plan first commands contain python scripts/run_release_gate.py --output-dir evals/release-gate --pretty"
       ]
     },
@@ -945,6 +946,7 @@
         "needs_release_gate is true",
         "needs_git_workflow is false",
         "process_skills contains release-gate",
+        "process_plan first commands contain python scripts/verify_completion_evidence.py --evidence .skill-evidence/completion-evidence.json --pretty",
         "process_plan first commands contain python scripts/run_release_gate.py --output-dir evals/release-gate --pretty"
       ]
     },
