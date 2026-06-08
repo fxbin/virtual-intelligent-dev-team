@@ -638,6 +638,7 @@ class RoutingTests(unittest.TestCase):
             ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
             for item in ledger["active_practices"]:
                 item["status"] = "satisfied"
+                item["evidence"] = [f"{item['name']} evidence captured"]
                 item["next_check"] = "Evidence captured in the completion summary."
             ledger_path.write_text(json.dumps(ledger, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
@@ -650,6 +651,26 @@ class RoutingTests(unittest.TestCase):
             self.assertFalse(
                 any("update_micro_practices.py" in command for command in result["follow_up"]["recommended_commands"])
             )
+            response_contract.validate_micro_practice_evaluation(result)
+
+    def test_micro_practice_evaluator_can_run_without_writing_reports(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            micro_practices_init.init_micro_practices(
+                root=root,
+                text="Fix the checkout API regression by first reproducing it with a failing test.",
+            )
+            ledger_path = root / ".skill-practices" / "micro-practice-ledger.json"
+
+            result = micro_practices_evaluator.evaluate_micro_practices(
+                ledger_path,
+                write_reports=False,
+            )
+
+            self.assertFalse(result["ok"])
+            self.assertEqual("continue", result["decision"])
+            self.assertFalse((root / ".skill-practices" / "micro-practice-evaluation.json").exists())
+            self.assertFalse((root / ".skill-practices" / "micro-practice-evaluation.md").exists())
             response_contract.validate_micro_practice_evaluation(result)
 
     def test_micro_practice_evaluator_blocks_when_any_practice_is_blocked(self) -> None:
@@ -4257,6 +4278,11 @@ class ValidatorScriptTests(unittest.TestCase):
                 "/auto fix this repeated regression until stable and keep benchmark evidence",
                 {},
             ),
+            (
+                "micro-practice-ledger",
+                "Fix the checkout API regression by first reproducing it with a failing test.",
+                {},
+            ),
         ]
 
         for check, text, kwargs in cases:
@@ -4373,6 +4399,154 @@ class ValidatorScriptTests(unittest.TestCase):
             "references/automation-state.schema.json",
             result["details"]["automation_state_schema"],
         )
+
+    def test_verify_action_micro_practice_ledger_not_required_for_plain_route(self) -> None:
+        result = verify_action.verify_action(
+            text="Just format this Python file.",
+            config=load_config(),
+            repo_path=REPO_ROOT,
+            check="micro-practice-ledger",
+        )
+
+        self.assertTrue(result["allowed"])
+        self.assertFalse(result["details"]["micro_practice_required"])
+        self.assertEqual("not-required", result["details"]["decision"])
+        self.assertEqual([], result["details"]["active_practices"])
+        response_contract.validate_verify_action_result(result)
+
+    def test_verify_action_micro_practice_ledger_requires_initialization(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+
+            result = verify_action.verify_action(
+                text="Fix the checkout API regression by first reproducing it with a failing test.",
+                config=load_config(),
+                repo_path=root,
+                check="micro-practice-ledger",
+            )
+
+            self.assertFalse(result["allowed"])
+            self.assertTrue(result["details"]["micro_practice_required"])
+            self.assertFalse(result["details"]["ledger_exists"])
+            self.assertEqual("missing", result["details"]["decision"])
+            self.assertIn("feedback-loop-first", result["details"]["active_practices"])
+            self.assertTrue(
+                any("init_micro_practices.py" in command for command in result["details"]["recommended_commands"])
+            )
+            response_contract.validate_verify_action_result(result)
+
+    def test_verify_action_micro_practice_ledger_blocks_active_practices(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            micro_practices_init.init_micro_practices(
+                root=root,
+                text="Fix the checkout API regression by first reproducing it with a failing test.",
+            )
+
+            result = verify_action.verify_action(
+                text="Fix the checkout API regression by first reproducing it with a failing test.",
+                config=load_config(),
+                repo_path=root,
+                check="micro-practice-ledger",
+            )
+
+            self.assertFalse(result["allowed"])
+            self.assertEqual("continue", result["details"]["decision"])
+            self.assertEqual(1, result["details"]["status_counts"]["active"])
+            self.assertFalse((root / ".skill-practices" / "micro-practice-evaluation.json").exists())
+            self.assertTrue(
+                any("update_micro_practices.py" in command for command in result["details"]["recommended_commands"])
+            )
+            response_contract.validate_verify_action_result(result)
+
+    def test_verify_action_micro_practice_ledger_allows_satisfied_practices(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            micro_practices_init.init_micro_practices(
+                root=root,
+                text="Fix the checkout API regression by first reproducing it with a failing test.",
+            )
+            micro_practices_updater.update_micro_practice(
+                ledger_path=root / ".skill-practices" / "micro-practice-ledger.json",
+                name="feedback-loop-first",
+                status="satisfied",
+                evidence=["Failing regression test was added before the patch and now passes."],
+            )
+
+            result = verify_action.verify_action(
+                text="Fix the checkout API regression by first reproducing it with a failing test.",
+                config=load_config(),
+                repo_path=root,
+                check="micro-practice-ledger",
+            )
+
+            self.assertTrue(result["allowed"])
+            self.assertEqual("complete", result["details"]["decision"])
+            self.assertEqual(1, result["details"]["status_counts"]["satisfied"])
+            self.assertTrue(result["details"]["completion_allowed"])
+            self.assertFalse(
+                any("update_micro_practices.py" in command for command in result["details"]["recommended_commands"])
+            )
+            response_contract.validate_verify_action_result(result)
+
+    def test_verify_action_micro_practice_ledger_blocks_blocked_practices(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            micro_practices_init.init_micro_practices(
+                root=root,
+                text="Fix the checkout API regression by first reproducing it with a failing test.",
+            )
+            micro_practices_updater.update_micro_practice(
+                ledger_path=root / ".skill-practices" / "micro-practice-ledger.json",
+                name="feedback-loop-first",
+                status="blocked",
+                evidence=["Cannot reproduce because the checkout fixture is unavailable."],
+            )
+
+            result = verify_action.verify_action(
+                text="Fix the checkout API regression by first reproducing it with a failing test.",
+                config=load_config(),
+                repo_path=root,
+                check="micro-practice-ledger",
+            )
+
+            self.assertFalse(result["allowed"])
+            self.assertEqual("blocked", result["details"]["decision"])
+            self.assertEqual(1, result["details"]["status_counts"]["blocked"])
+            self.assertIn("Resolve", result["recommended_next_step"])
+            response_contract.validate_verify_action_result(result)
+
+    def test_verify_action_micro_practice_ledger_rejects_route_mismatch(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            micro_practices_init.init_micro_practices(
+                root=root,
+                text="Fix the checkout API regression by first reproducing it with a failing test.",
+            )
+            micro_practices_updater.update_micro_practice(
+                ledger_path=root / ".skill-practices" / "micro-practice-ledger.json",
+                name="feedback-loop-first",
+                status="satisfied",
+                evidence=["Regression loop evidence captured."],
+            )
+
+            result = verify_action.verify_action(
+                text="Turn this signup revamp into AFK/HITL vertical slices with acceptance criteria and backend contract questions.",
+                config=load_config(),
+                repo_path=root,
+                check="micro-practice-ledger",
+            )
+
+            self.assertFalse(result["allowed"])
+            self.assertEqual("mismatch", result["details"]["decision"])
+            self.assertIn(
+                "shared-language-and-decision-capture",
+                result["details"]["missing_required_practices"],
+            )
+            self.assertTrue(
+                any("--overwrite" in command for command in result["details"]["recommended_commands"])
+            )
+            response_contract.validate_verify_action_result(result)
 
     def test_contract_lint_passes(self) -> None:
         result = contract_lint.lint_contract(SKILL_DIR)

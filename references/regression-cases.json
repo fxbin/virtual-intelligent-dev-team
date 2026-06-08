@@ -1124,6 +1124,22 @@
       }
     },
     {
+      "name": "verify_micro_practice_ledger_missing_blocks_completion",
+      "text": "Fix the checkout API regression by first reproducing it with a failing test.",
+      "check": "micro-practice-ledger",
+      "expect": {
+        "allowed": false,
+        "summary_contains": "missing",
+        "recommended_next_step_contains": "Initialize the micro-practice ledger",
+        "detail_equals": {
+          "micro_practice_required": true,
+          "ledger_exists": false,
+          "decision": "missing",
+          "completion_allowed": false
+        }
+      }
+    },
+    {
       "name": "verify_wrong_lead_rejected",
       "text": "Review this Django API for security issues.",
       "check": "lead-assignment",

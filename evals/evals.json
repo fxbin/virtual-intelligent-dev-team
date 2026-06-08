@@ -1623,6 +1623,31 @@
         "response_pack contains Evaluation command: python scripts/evaluate_micro_practices.py",
         "progress_anchor_recommended is docs/progress/MASTER.md"
       ]
+    },
+    {
+      "id": 87,
+      "runner": "verify_action",
+      "check": "micro-practice-ledger",
+      "categories": [
+        "micro-practices",
+        "completion-gate",
+        "contract-output"
+      ],
+      "prompt": "Fix the checkout API regression by first reproducing it with a failing test.",
+      "expected_output": "Completion preflight should block routes with active micro-practices until the micro-practice ledger exists and has been evaluated.",
+      "files": [
+        "references/feedback-loop-first-protocol.md",
+        "references/micro-practice-ledger.schema.json",
+        "references/micro-practice-evaluation.schema.json"
+      ],
+      "expectations": [
+        "allowed is false",
+        "verify_action_json details.micro_practice_required is true",
+        "verify_action_json details.ledger_exists is false",
+        "verify_action_json details.decision is missing",
+        "verify_action_json details.active_practices contains feedback-loop-first",
+        "verify_action_json details.recommended_commands contains python scripts/init_micro_practices.py --root . --text \"<user request>\" --pretty"
+      ]
     }
   ]
 }

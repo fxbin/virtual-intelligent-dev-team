@@ -165,7 +165,8 @@
             "workflow-bundle",
             "bundle-bootstrap",
             "assistant-delta-contract",
-            "auto-mode"
+            "auto-mode",
+            "micro-practice-ledger"
           ]
         },
         "process_skill": {
