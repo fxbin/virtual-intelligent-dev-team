@@ -142,6 +142,7 @@ completion_evidence:
   uncovered_scope:
   residual_risk:
   confidence_grade: "A | B | C"
+  evidence_refs:
 ```
 
 Confidence grades:
@@ -164,13 +165,15 @@ python scripts/verify_completion_evidence.py --evidence .skill-evidence/completi
 The action preflight equivalent is:
 
 ```bash
-python scripts/verify_action.py --text "<user request>" --check completion-evidence --pretty
+python scripts/verify_action.py --text "<user request>" --check completion-evidence --completion-evidence .skill-evidence/completion-evidence.json --pretty
 ```
 
 Contract:
 
 - `references/completion-evidence.schema.json`
 - `assets/completion-evidence-template.json`
+- `evidence_refs` must include at least one verifiable command or an existing
+  local artifact path; purely descriptive notes do not support completion.
 
 ## Response Pack
 

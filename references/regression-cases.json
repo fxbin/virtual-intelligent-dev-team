@@ -964,6 +964,8 @@
           "covered_scope",
           "uncovered_scope",
           "confidence_grade",
+          "evidence_refs",
+          "--completion-evidence .skill-evidence/completion-evidence.json",
           "Goal Frame",
           "Anti-Entropy"
         ]

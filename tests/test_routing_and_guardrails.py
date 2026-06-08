@@ -7800,6 +7800,10 @@ class ResponsePackTests(unittest.TestCase):
         self.assertEqual("ship-hold-remediate", payload["team_dispatch"]["workflow_bundle"])
         self.assertIn("primary execution journey", payload["evidence"]["workflow_source_explanation"])
         self.assertTrue(payload["completion_evidence"]["required"])
+        self.assertIn(
+            "evidence_refs",
+            payload["completion_evidence"]["required_fields"],
+        )
         self.assertEqual(
             "references/completion-evidence.schema.json",
             payload["completion_evidence"]["schema"],
