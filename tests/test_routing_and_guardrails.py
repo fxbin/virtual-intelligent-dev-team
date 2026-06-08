@@ -748,11 +748,14 @@ class RoutingTests(unittest.TestCase):
             shutil.copyfile(SKILL_DIR / "assets" / "completion-evidence-template.json", evidence_path)
 
             result = completion_evidence_verifier.evaluate_completion_evidence(evidence_path)
+            payload = json.loads(evidence_path.read_text(encoding="utf-8"))
 
             self.assertFalse(result["ok"])
             self.assertEqual("continue", result["decision"])
             self.assertIn("placeholder", result["reason"])
             self.assertIn("confidence grade C", result["reason"])
+            self.assertIn("verifiable command", payload["evidence_refs"][0])
+            self.assertIn("existing local artifact path", payload["evidence_refs"][0])
 
     def test_completion_evidence_schema_rejects_missing_confidence_grade(self) -> None:
         with make_tempdir() as tmp:

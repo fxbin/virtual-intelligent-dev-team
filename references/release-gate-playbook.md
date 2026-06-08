@@ -45,7 +45,7 @@ python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-w
 - eval prompt suite passes
 - real offline loop drill passes
 - if staged beta validation is in scope, the latest beta round gate must be `advance`
-- structured completion evidence exists, passes `references/completion-evidence.schema.json`, has result `passed`, confidence `A | B`, and leaves no uncovered scope or residual risk
+- structured completion evidence exists, passes `references/completion-evidence.schema.json`, has result `passed`, confidence `A | B`, leaves no uncovered scope or residual risk, and includes `evidence_refs` with at least one verifiable command or existing local artifact path
 
 ## Why This Is Separate From Benchmark
 
@@ -82,7 +82,7 @@ The release gate is stricter:
 - `ship`
   - all benchmark checks and offline drill checks passed
   - if beta evidence is enabled, the latest beta round gate is `advance`
-  - completion evidence is complete and supports the release claim
+  - completion evidence is complete and supports the release claim, including verifiable `evidence_refs`
   - if an iteration workspace is provided, the gate can archive a reusable release-ready baseline and sync distilled patterns
   - the gate should also bootstrap `.skill-post-release/` so telemetry and real-user feedback can reopen the next loop without inventing a new structure later
 - `hold`

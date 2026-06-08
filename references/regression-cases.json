@@ -972,6 +972,26 @@
       }
     },
     {
+      "name": "release_gate_requires_verifiable_completion_refs",
+      "path": "references/release-gate-playbook.md",
+      "expect": {
+        "contains": [
+          "evidence_refs",
+          "verifiable command",
+          "existing local artifact path"
+        ]
+      }
+    },
+    {
+      "name": "runtime_contract_uses_explicit_completion_evidence_path",
+      "path": "references/runtime-operation-contract.md",
+      "expect": {
+        "contains": [
+          "--check completion-evidence --completion-evidence .skill-evidence/completion-evidence.json --pretty"
+        ]
+      }
+    },
+    {
       "name": "workflow_bundles_activate_goal_and_anti_entropy",
       "path": "references/workflow-bundles.md",
       "expect": {

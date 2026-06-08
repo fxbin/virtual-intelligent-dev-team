@@ -19,6 +19,6 @@
   ],
   "confidence_grade": "C",
   "evidence_refs": [
-    "<test output, report, ledger, artifact, or command transcript>"
+    "<verifiable command, or existing local artifact path such as reports/checks.md>"
   ]
 }
