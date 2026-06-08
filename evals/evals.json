@@ -1540,6 +1540,7 @@
         "workflow_bundle is root-cause-remediate",
         "micro_practice_names contains feedback-loop-first",
         "response_pack_json micro_practices.names contains feedback-loop-first",
+        "response_pack_json micro_practices.ledger.resume_anchor is .skill-practices/micro-practice-ledger.json",
         "response_pack contains ## Engineering Micro-Practices",
         "team_engine_gate.acceptance_gates contains feedback_loop_gate",
         "reason.micro_practice_names contains feedback-loop-first"
@@ -1567,6 +1568,9 @@
         "micro_practice_names contains vertical-slice-delivery",
         "response_pack_json micro_practices.names contains shared-language-and-decision-capture",
         "response_pack_json micro_practices.names contains vertical-slice-delivery",
+        "response_pack_json micro_practices.ledger.resume_anchor is .skill-practices/micro-practice-ledger.json",
+        "workflow_bundle_bootstrap.commands contains python scripts/init_micro_practices.py --root . --text \"<user request>\" --pretty",
+        "resume_artifacts contains .skill-practices/micro-practice-ledger.json",
         "response_pack contains ## Engineering Micro-Practices",
         "team_engine_gate.acceptance_gates contains shared_language_gate",
         "team_engine_gate.acceptance_gates contains vertical_slice_gate"
@@ -1595,6 +1599,8 @@
         "micro_practice_names contains vertical-slice-delivery",
         "response_pack_json micro_practices.names contains system-map",
         "response_pack_json micro_practices.names contains architecture-deepening",
+        "response_pack_json micro_practices.ledger.resume_anchor is .skill-practices/micro-practice-ledger.json",
+        "resume_artifacts contains .skill-practices/micro-practice-ledger.json",
         "response_pack contains ## Engineering Micro-Practices",
         "progress_anchor_recommended is docs/progress/MASTER.md"
       ]

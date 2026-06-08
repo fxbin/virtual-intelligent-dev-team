@@ -728,6 +728,15 @@
         "lead_agent": "Technical Trinity",
         "needs_git_workflow": false,
         "workflow_bundle": "root-cause-remediate",
+        "resume_artifacts_contains": [
+          ".skill-practices/micro-practice-ledger.json"
+        ],
+        "bundle_bootstrap_commands_contains": [
+          "python scripts/init_micro_practices.py --root . --text \"<user request>\" --pretty"
+        ],
+        "bundle_bootstrap_artifacts_contains": [
+          ".skill-practices/micro-practice-ledger.json"
+        ],
         "priority_agent": null
       }
     },
@@ -740,6 +749,15 @@
           "Technical Trinity"
         ],
         "workflow_bundle": "product-spec-deliver",
+        "resume_artifacts_contains": [
+          ".skill-practices/micro-practice-ledger.json"
+        ],
+        "bundle_bootstrap_commands_contains": [
+          "python scripts/init_micro_practices.py --root . --text \"<user request>\" --pretty"
+        ],
+        "bundle_bootstrap_artifacts_contains": [
+          ".skill-practices/micro-practice-ledger.json"
+        ],
         "priority_agent": null
       }
     },
@@ -755,7 +773,14 @@
         "workflow_bundle": "plan-first-build",
         "progress_anchor_recommended": "docs/progress/MASTER.md",
         "resume_artifacts_contains": [
-          "docs/progress/MASTER.md"
+          "docs/progress/MASTER.md",
+          ".skill-practices/micro-practice-ledger.json"
+        ],
+        "bundle_bootstrap_commands_contains": [
+          "python scripts/init_micro_practices.py --root . --text \"<user request>\" --pretty"
+        ],
+        "bundle_bootstrap_artifacts_contains": [
+          ".skill-practices/micro-practice-ledger.json"
         ],
         "priority_agent": null
       }

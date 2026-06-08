@@ -43,6 +43,7 @@ EVALUATE_BETA_ROUND_SCRIPT = SKILL_DIR / "scripts" / "evaluate_beta_round.py"
 INIT_TECHNICAL_GOVERNANCE_SCRIPT = SKILL_DIR / "scripts" / "init_technical_governance.py"
 INIT_POST_RELEASE_FEEDBACK_SCRIPT = SKILL_DIR / "scripts" / "init_post_release_feedback.py"
 EVALUATE_POST_RELEASE_FEEDBACK_SCRIPT = SKILL_DIR / "scripts" / "evaluate_post_release_feedback.py"
+INIT_MICRO_PRACTICES_SCRIPT = SKILL_DIR / "scripts" / "init_micro_practices.py"
 RUN_AUTO_WORKFLOW_SCRIPT = SKILL_DIR / "scripts" / "run_auto_workflow.py"
 INSPECT_AUTOMATION_STATE_SCRIPT = SKILL_DIR / "scripts" / "inspect_automation_state.py"
 RESUME_FROM_AUTOMATION_STATE_SCRIPT = SKILL_DIR / "scripts" / "resume_from_automation_state.py"
@@ -94,6 +95,7 @@ beta_round_evaluator = load_module("virtual_intelligent_dev_team_beta_round_eval
 technical_governance_init = load_module("virtual_intelligent_dev_team_technical_governance_init", INIT_TECHNICAL_GOVERNANCE_SCRIPT)
 post_release_feedback_init = load_module("virtual_intelligent_dev_team_post_release_feedback_init", INIT_POST_RELEASE_FEEDBACK_SCRIPT)
 post_release_feedback_evaluator = load_module("virtual_intelligent_dev_team_post_release_feedback_evaluator", EVALUATE_POST_RELEASE_FEEDBACK_SCRIPT)
+micro_practices_init = load_module("virtual_intelligent_dev_team_micro_practices_init", INIT_MICRO_PRACTICES_SCRIPT)
 auto_workflow = load_module("virtual_intelligent_dev_team_auto_workflow", RUN_AUTO_WORKFLOW_SCRIPT)
 automation_state_inspector = load_module(
     "virtual_intelligent_dev_team_inspect_automation_state",
@@ -498,6 +500,28 @@ class RoutingTests(unittest.TestCase):
             self.assertEqual(".skill-context/project-context.md", result["resume_anchor"])
             self.assertTrue((root / ".skill-context" / "project-context.md").exists())
 
+    def test_micro_practice_initializer_creates_schema_valid_ledger(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            result = micro_practices_init.init_micro_practices(
+                root=root,
+                text="Turn this signup revamp into AFK/HITL vertical slices with acceptance criteria and backend contract questions.",
+            )
+
+            self.assertTrue(result["ok"])
+            self.assertEqual(".skill-practices/micro-practice-ledger.json", result["resume_anchor"])
+            ledger_path = root / ".skill-practices" / "micro-practice-ledger.json"
+            markdown_path = root / ".skill-practices" / "micro-practice-ledger.md"
+            self.assertTrue(ledger_path.exists())
+            self.assertTrue(markdown_path.exists())
+            ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+            response_contract.validate_micro_practice_ledger(ledger)
+            self.assertEqual("product-spec-deliver", ledger["workflow_bundle"])
+            practice_names = [item["name"] for item in ledger["active_practices"]]
+            self.assertIn("shared-language-and-decision-capture", practice_names)
+            self.assertIn("vertical-slice-delivery", practice_names)
+            self.assertIn("Micro-Practice Ledger", markdown_path.read_text(encoding="utf-8"))
+
     def test_ui_review_stays_with_product_architect(self) -> None:
         result = route_request.route_request(
             "给 React 页面做 UI review",
@@ -820,6 +844,25 @@ class RoutingTests(unittest.TestCase):
         self.assertIn(
             "python scripts/init_product_delivery.py --root . --pretty",
             result["workflow_bundle_bootstrap"]["commands"],
+        )
+        self.assertIn(
+            "python scripts/init_micro_practices.py --root . --text \"<user request>\" --pretty",
+            result["workflow_bundle_bootstrap"]["commands"],
+        )
+        self.assertIn(
+            ".skill-practices/micro-practice-ledger.json",
+            result["workflow_bundle_bootstrap"]["artifacts"],
+        )
+        self.assertIn(
+            ".skill-practices/micro-practice-ledger.json",
+            result["resume_artifacts"],
+        )
+        self.assertEqual(
+            [
+                "shared-language-and-decision-capture",
+                "vertical-slice-delivery",
+            ],
+            result["workflow_bundle_bootstrap"]["micro_practice_ledger"]["active_practices"],
         )
 
     def test_beta_validation_request_routes_to_product_beta_bundle(self) -> None:
@@ -7114,6 +7157,14 @@ class ResponsePackTests(unittest.TestCase):
             "python scripts/init_product_delivery.py --root . --pretty",
             payload["bundle_bootstrap"]["commands"],
         )
+        self.assertIn(
+            "python scripts/init_micro_practices.py --root . --text \"<user request>\" --pretty",
+            payload["bundle_bootstrap"]["commands"],
+        )
+        self.assertIn(
+            ".skill-practices/micro-practice-ledger.json",
+            payload["bundle_bootstrap"]["artifacts"],
+        )
 
     def test_generate_response_pack_payload_includes_micro_practices(self) -> None:
         result = route_request.route_request(
@@ -7140,6 +7191,15 @@ class ResponsePackTests(unittest.TestCase):
                 for item in payload["micro_practices"]["items"]
                 if item["name"] == "shared-language-and-decision-capture"
             ),
+        )
+        self.assertTrue(payload["micro_practices"]["ledger"]["required"])
+        self.assertEqual(
+            ".skill-practices/micro-practice-ledger.json",
+            payload["micro_practices"]["ledger"]["resume_anchor"],
+        )
+        self.assertIn(
+            "init_micro_practices.py",
+            payload["micro_practices"]["ledger"]["command"],
         )
         response_contract.validate_response_pack_payload(payload)
 
@@ -7326,6 +7386,8 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("shared-language-and-decision-capture", markdown)
         self.assertIn("vertical-slice-delivery", markdown)
         self.assertIn("references/vertical-slice-delivery-protocol.md", markdown)
+        self.assertIn("Ledger: .skill-practices/micro-practice-ledger.json", markdown)
+        self.assertIn("Init command: python scripts/init_micro_practices.py", markdown)
 
     def test_generate_response_pack_renders_beta_program(self) -> None:
         result = route_request.route_request(
