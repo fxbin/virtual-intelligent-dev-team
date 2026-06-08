@@ -1,0 +1,220 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:micro-practice-evaluation.schema",
+  "title": "Virtual Intelligent Dev Team Micro-Practice Evaluation",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "source_gate",
+    "ok",
+    "decision",
+    "reason",
+    "workflow_bundle",
+    "ledger_path",
+    "status_counts",
+    "practices",
+    "follow_up",
+    "json_report",
+    "markdown_report"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "micro-practice-evaluation/v1"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "source_gate": {
+      "const": "micro-practice-ledger"
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "decision": {
+      "enum": [
+        "complete",
+        "continue",
+        "blocked"
+      ]
+    },
+    "reason": {
+      "type": "string"
+    },
+    "workflow_bundle": {
+      "type": "string"
+    },
+    "ledger_path": {
+      "type": "string"
+    },
+    "source_request": {
+      "type": "string"
+    },
+    "status_counts": {
+      "$ref": "#/$defs/status_counts"
+    },
+    "practices": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/practice_summary"
+      }
+    },
+    "follow_up": {
+      "$ref": "#/$defs/follow_up"
+    },
+    "json_report": {
+      "type": "string"
+    },
+    "markdown_report": {
+      "type": "string"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "const": "complete"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "ok": {
+            "const": true
+          },
+          "follow_up": {
+            "properties": {
+              "completion_allowed": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "enum": [
+              "continue",
+              "blocked"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "ok": {
+            "const": false
+          },
+          "follow_up": {
+            "properties": {
+              "completion_allowed": {
+                "const": false
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "string_array": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status_counts": {
+      "type": "object",
+      "required": [
+        "total",
+        "active",
+        "satisfied",
+        "blocked"
+      ],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "active": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "satisfied": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "blocked": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "practice_summary": {
+      "type": "object",
+      "required": [
+        "name",
+        "reference",
+        "status",
+        "evidence",
+        "next_check"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "active",
+            "satisfied",
+            "blocked"
+          ]
+        },
+        "evidence": {
+          "$ref": "#/$defs/string_array"
+        },
+        "next_check": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "follow_up": {
+      "type": "object",
+      "required": [
+        "completion_allowed",
+        "next_action",
+        "resume_anchor",
+        "resume_artifacts",
+        "recommended_commands"
+      ],
+      "properties": {
+        "completion_allowed": {
+          "type": "boolean"
+        },
+        "next_action": {
+          "type": "string"
+        },
+        "resume_anchor": {
+          "type": "string"
+        },
+        "resume_artifacts": {
+          "$ref": "#/$defs/string_array"
+        },
+        "recommended_commands": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

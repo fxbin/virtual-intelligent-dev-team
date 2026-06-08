@@ -43,6 +43,8 @@ BETA_SIMULATION_EVENT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simula
 BETA_SIMULATION_RUN_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "beta-simulation-run.schema.json"
 BENCHMARK_EVALS_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-evals.schema.json"
 BENCHMARK_RUN_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-run-result.schema.json"
+MICRO_PRACTICE_LEDGER_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "micro-practice-ledger.schema.json"
+MICRO_PRACTICE_EVALUATION_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "micro-practice-evaluation.schema.json"
 TEAM_ENGINE_REFERENCE_PATH = SKILL_DIR / "references" / "team-engine-lite-protocol.md"
 WORKER_VERIFIER_REFERENCE_PATH = SKILL_DIR / "references" / "worker-verifier-cycle-protocol.md"
 EXTERNAL_AGENT_BACKEND_REFERENCE_PATH = SKILL_DIR / "references" / "external-agent-backend-orchestration-protocol.md"
@@ -129,6 +131,8 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
     beta_simulation_run_schema_json_path = resolved_skill_dir / "references" / "beta-simulation-run.schema.json"
     benchmark_evals_schema_json_path = resolved_skill_dir / "references" / "benchmark-evals.schema.json"
     benchmark_run_result_schema_json_path = resolved_skill_dir / "references" / "benchmark-run-result.schema.json"
+    micro_practice_ledger_schema_json_path = resolved_skill_dir / "references" / "micro-practice-ledger.schema.json"
+    micro_practice_evaluation_schema_json_path = resolved_skill_dir / "references" / "micro-practice-evaluation.schema.json"
     team_engine_reference_path = resolved_skill_dir / "references" / "team-engine-lite-protocol.md"
     worker_verifier_reference_path = resolved_skill_dir / "references" / "worker-verifier-cycle-protocol.md"
     external_agent_backend_reference_path = resolved_skill_dir / "references" / "external-agent-backend-orchestration-protocol.md"
@@ -375,6 +379,16 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
         errors,
         "Missing references/benchmark-run-result.schema.json. Restore the benchmark result executable schema before release.",
     )
+    _check(
+        micro_practice_ledger_schema_json_path.exists(),
+        errors,
+        "Missing references/micro-practice-ledger.schema.json. Restore the micro-practice ledger schema before release.",
+    )
+    _check(
+        micro_practice_evaluation_schema_json_path.exists(),
+        errors,
+        "Missing references/micro-practice-evaluation.schema.json. Restore the micro-practice evaluation schema before release.",
+    )
     team_engine_files = [
         team_engine_reference_path,
         worker_verifier_reference_path,
@@ -419,6 +433,8 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 and benchmark_evals_path.exists()
                 and benchmark_evals_schema_json_path.exists()
                 and benchmark_run_result_schema_json_path.exists()
+                and micro_practice_ledger_schema_json_path.exists()
+                and micro_practice_evaluation_schema_json_path.exists()
                 and all(path.exists() for path in team_engine_files)
             ),
         }
@@ -914,6 +930,92 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             "details": {
                 "report_schema_json": str(post_release_feedback_report_schema_json_path),
                 "result_schema_json": str(post_release_feedback_result_schema_json_path),
+            },
+        }
+    )
+
+    micro_practice_contract_failures: list[str] = []
+    if local_response_contract is not None:
+        sample_ledger = {
+            "schema_version": "micro-practice-ledger/v1",
+            "generated_at": "2026-04-08T12:00:00Z",
+            "workflow_bundle": "product-spec-deliver",
+            "source_request": "Turn this signup revamp into vertical slices.",
+            "active_practices": [
+                {
+                    "name": "vertical-slice-delivery",
+                    "reference": "references/vertical-slice-delivery-protocol.md",
+                    "reason": "delivery needs a thin end-to-end slice",
+                    "evidence": ["slice acceptance criteria"],
+                    "status": "satisfied",
+                    "next_check": "Evidence captured in completion summary.",
+                }
+            ],
+            "resume_hint": "Read this ledger before completion.",
+        }
+        sample_evaluation = {
+            "schema_version": "micro-practice-evaluation/v1",
+            "generated_at": "2026-04-08T12:00:00Z",
+            "source_gate": "micro-practice-ledger",
+            "ok": True,
+            "decision": "complete",
+            "reason": "all micro-practices are satisfied",
+            "workflow_bundle": "product-spec-deliver",
+            "ledger_path": ".skill-practices/micro-practice-ledger.json",
+            "source_request": "Turn this signup revamp into vertical slices.",
+            "status_counts": {
+                "total": 1,
+                "active": 0,
+                "satisfied": 1,
+                "blocked": 0,
+            },
+            "practices": [
+                {
+                    "name": "vertical-slice-delivery",
+                    "reference": "references/vertical-slice-delivery-protocol.md",
+                    "status": "satisfied",
+                    "evidence": ["slice acceptance criteria"],
+                    "next_check": "Evidence captured in completion summary.",
+                }
+            ],
+            "follow_up": {
+                "completion_allowed": True,
+                "next_action": "use the ledger evaluation as completion evidence",
+                "resume_anchor": ".skill-practices/micro-practice-ledger.json",
+                "resume_artifacts": [
+                    ".skill-practices/micro-practice-ledger.json",
+                    ".skill-practices/micro-practice-evaluation.json",
+                    ".skill-practices/micro-practice-evaluation.md",
+                ],
+                "recommended_commands": [
+                    "python scripts/evaluate_micro_practices.py --ledger .skill-practices/micro-practice-ledger.json --pretty",
+                ],
+            },
+            "json_report": ".skill-practices/micro-practice-evaluation.json",
+            "markdown_report": ".skill-practices/micro-practice-evaluation.md",
+        }
+        try:
+            local_response_contract.validate_micro_practice_ledger(sample_ledger)
+        except Exception as exc:
+            micro_practice_contract_failures.append(f"ledger: {exc}")
+        try:
+            local_response_contract.validate_micro_practice_evaluation(sample_evaluation)
+        except Exception as exc:
+            micro_practice_contract_failures.append(f"evaluation: {exc}")
+    else:
+        micro_practice_contract_failures.append("response_contract.py module missing")
+    _check(
+        len(micro_practice_contract_failures) == 0,
+        errors,
+        "micro-practice ledger contract validation failed: " + "; ".join(micro_practice_contract_failures),
+    )
+    checks.append(
+        {
+            "name": "micro-practice-ledger-contract",
+            "passed": len(micro_practice_contract_failures) == 0,
+            "details": {
+                "ledger_schema_json": str(micro_practice_ledger_schema_json_path),
+                "evaluation_schema_json": str(micro_practice_evaluation_schema_json_path),
             },
         }
     )

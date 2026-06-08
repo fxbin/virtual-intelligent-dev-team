@@ -232,14 +232,23 @@ python scripts/init_quick_slice.py --root . --pretty
 python scripts/init_micro_practices.py --root . --text "<user request>" --pretty
 ```
 
+完成前评估 ledger：
+
+```bash
+python scripts/evaluate_micro_practices.py --ledger .skill-practices/micro-practice-ledger.json --pretty
+```
+
 默认产物：
 
 - `.skill-practices/micro-practice-ledger.json`
 - `.skill-practices/micro-practice-ledger.md`
+- `.skill-practices/micro-practice-evaluation.json`
+- `.skill-practices/micro-practice-evaluation.md`
 
 契约：
 
 - `references/micro-practice-ledger.schema.json`
+- `references/micro-practice-evaluation.schema.json`
 - `assets/micro-practice-ledger-template.json`
 
 ## 二、开发前规划资产

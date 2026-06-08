@@ -841,8 +841,10 @@
         "required",
         "active_practices",
         "command",
+        "evaluation_command",
         "resume_anchor",
-        "schema"
+        "schema",
+        "evaluation_schema"
       ],
       "properties": {
         "required": {
@@ -854,10 +856,16 @@
         "command": {
           "type": "string"
         },
+        "evaluation_command": {
+          "type": "string"
+        },
         "resume_anchor": {
           "type": "string"
         },
         "schema": {
+          "type": "string"
+        },
+        "evaluation_schema": {
           "type": "string"
         }
       },

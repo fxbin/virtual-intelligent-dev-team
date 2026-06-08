@@ -108,6 +108,18 @@ The ledger can be initialized with:
 python scripts/init_micro_practices.py --root . --text "<user request>" --pretty
 ```
 
+Before a completion claim, evaluate the ledger:
+
+```bash
+python scripts/evaluate_micro_practices.py --ledger .skill-practices/micro-practice-ledger.json --pretty
+```
+
+The evaluation decision is a small gate:
+
+- `complete`: all practices are `satisfied`
+- `continue`: one or more practices are still `active`
+- `blocked`: one or more practices are `blocked`
+
 ## Completion Evidence Rule
 
 Do not claim a task is complete from routing output, worker self-report, stale

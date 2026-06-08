@@ -83,8 +83,10 @@
 
 - `required`
 - `command`
+- `evaluation_command`
 - `resume_anchor`
 - `schema`
+- `evaluation_schema`
 
 ## `next_action`
 

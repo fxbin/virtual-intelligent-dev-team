@@ -265,7 +265,9 @@ justify why the bundle is minimal, keep scope surgical, and name the verificatio
 evidence that closes the route.
 
 When a bundle activates one of the engineering micro-practices, keep it as a
-small local discipline rather than a new workflow bundle:
+small local discipline rather than a new workflow bundle. Initialize the ledger
+with `scripts/init_micro_practices.py` and evaluate it with
+`scripts/evaluate_micro_practices.py` before claiming completion:
 
 - `references/shared-language-and-decision-capture.md`
 - `references/feedback-loop-first-protocol.md`
