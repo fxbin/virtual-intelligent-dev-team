@@ -142,6 +142,7 @@ def normalize_micro_practices(result: dict[str, object], language: str) -> dict[
         "ledger": {
             "required": bool(raw_ledger.get("required")) if raw_ledger else bool(names),
             "command": format_missing(raw_ledger.get("command", ""), language),
+            "update_command": format_missing(raw_ledger.get("update_command", ""), language),
             "evaluation_command": format_missing(raw_ledger.get("evaluation_command", ""), language),
             "resume_anchor": format_missing(
                 raw_ledger.get("resume_anchor", ".skill-practices/micro-practice-ledger.json" if names else ""),
@@ -941,6 +942,7 @@ def build_response_pack(
                     f"- 已激活：{', '.join(str(item) for item in micro_practice_names) if micro_practice_names else none_text}",
                     f"- Ledger：{micro_practice_ledger.get('resume_anchor', '无')}",
                     f"- 初始化命令：{micro_practice_ledger.get('command', '无')}",
+                    f"- 更新命令：{micro_practice_ledger.get('update_command', '无')}",
                     f"- 评估命令：{micro_practice_ledger.get('evaluation_command', '无')}",
                 ]
             )
@@ -966,6 +968,7 @@ def build_response_pack(
                     f"- Active: {', '.join(str(item) for item in micro_practice_names) if micro_practice_names else none_text}",
                     f"- Ledger: {micro_practice_ledger.get('resume_anchor', 'n/a')}",
                     f"- Init command: {micro_practice_ledger.get('command', 'n/a')}",
+                    f"- Update command: {micro_practice_ledger.get('update_command', 'n/a')}",
                     f"- Evaluation command: {micro_practice_ledger.get('evaluation_command', 'n/a')}",
                 ]
             )

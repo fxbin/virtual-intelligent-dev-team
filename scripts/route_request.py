@@ -2344,6 +2344,7 @@ def build_workflow_bundle_bootstrap(
         if not isinstance(artifacts, list):
             artifacts = []
         practice_command = 'python scripts/init_micro_practices.py --root . --text "<user request>" --pretty'
+        update_command = "python scripts/update_micro_practices.py --ledger .skill-practices/micro-practice-ledger.json --name <practice-name> --status satisfied --evidence \"<evidence>\" --pretty"
         evaluation_command = "python scripts/evaluate_micro_practices.py --ledger .skill-practices/micro-practice-ledger.json --pretty"
         practice_artifacts = [
             ".skill-practices/micro-practice-ledger.json",
@@ -2355,6 +2356,7 @@ def build_workflow_bundle_bootstrap(
             "required": True,
             "active_practices": active_practice_names,
             "command": practice_command,
+            "update_command": update_command,
             "evaluation_command": evaluation_command,
             "resume_anchor": ".skill-practices/micro-practice-ledger.json",
             "schema": "references/micro-practice-ledger.schema.json",

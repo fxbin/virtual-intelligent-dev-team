@@ -83,6 +83,7 @@
 
 - `required`
 - `command`
+- `update_command`
 - `evaluation_command`
 - `resume_anchor`
 - `schema`

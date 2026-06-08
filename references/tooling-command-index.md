@@ -232,6 +232,12 @@ python scripts/init_quick_slice.py --root . --pretty
 python scripts/init_micro_practices.py --root . --text "<user request>" --pretty
 ```
 
+记录单条实践状态与证据：
+
+```bash
+python scripts/update_micro_practices.py --ledger .skill-practices/micro-practice-ledger.json --name <practice-name> --status satisfied --evidence "<evidence>" --pretty
+```
+
 完成前评估 ledger：
 
 ```bash

@@ -108,6 +108,12 @@ The ledger can be initialized with:
 python scripts/init_micro_practices.py --root . --text "<user request>" --pretty
 ```
 
+Update one practice when evidence is captured or a blocker is found:
+
+```bash
+python scripts/update_micro_practices.py --ledger .skill-practices/micro-practice-ledger.json --name <practice-name> --status satisfied --evidence "<evidence>" --pretty
+```
+
 Before a completion claim, evaluate the ledger:
 
 ```bash

@@ -841,6 +841,7 @@
         "required",
         "active_practices",
         "command",
+        "update_command",
         "evaluation_command",
         "resume_anchor",
         "schema",
@@ -854,6 +855,9 @@
           "$ref": "#/$defs/string_array"
         },
         "command": {
+          "type": "string"
+        },
+        "update_command": {
           "type": "string"
         },
         "evaluation_command": {

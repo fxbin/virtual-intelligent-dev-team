@@ -112,6 +112,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
     verify_action_script = resolved_skill_dir / "scripts" / "verify_action.py"
     release_gate_script = resolved_skill_dir / "scripts" / "run_release_gate.py"
     team_engine_drill_script = resolved_skill_dir / "scripts" / "run_team_engine_drill.py"
+    update_micro_practices_script = resolved_skill_dir / "scripts" / "update_micro_practices.py"
     benchmark_evals_path = resolved_skill_dir / "evals" / "evals.json"
     sidecar_schema_path = resolved_skill_dir / "references" / "response-pack-sidecar-schema.md"
     sidecar_schema_json_path = resolved_skill_dir / "references" / "response-pack-sidecar.schema.json"
@@ -389,6 +390,11 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
         errors,
         "Missing references/micro-practice-evaluation.schema.json. Restore the micro-practice evaluation schema before release.",
     )
+    _check(
+        update_micro_practices_script.exists(),
+        errors,
+        "Missing scripts/update_micro_practices.py. Restore the micro-practice ledger update command before release.",
+    )
     team_engine_files = [
         team_engine_reference_path,
         worker_verifier_reference_path,
@@ -435,6 +441,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 and benchmark_run_result_schema_json_path.exists()
                 and micro_practice_ledger_schema_json_path.exists()
                 and micro_practice_evaluation_schema_json_path.exists()
+                and update_micro_practices_script.exists()
                 and all(path.exists() for path in team_engine_files)
             ),
         }

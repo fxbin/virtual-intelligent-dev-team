@@ -240,6 +240,7 @@
           "required": [
             "required",
             "command",
+            "update_command",
             "evaluation_command",
             "resume_anchor",
             "schema",
@@ -250,6 +251,9 @@
               "type": "boolean"
             },
             "command": {
+              "type": "string"
+            },
+            "update_command": {
               "type": "string"
             },
             "evaluation_command": {
