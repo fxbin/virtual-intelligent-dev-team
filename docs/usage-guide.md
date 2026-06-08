@@ -146,6 +146,27 @@ python scripts/init_quick_slice.py --root . --pretty
 - `ship` 或 `hold`
 - 如果 `hold`，要给出下一轮修复入口
 
+release gate 不会只看 benchmark 是否全绿。正式 `ship` 还要求结构化 completion evidence：
+
+- `result.status = passed`
+- `confidence_grade = A | B`
+- `uncovered_scope` 和 `residual_risk` 没有未解决内容
+- `evidence_refs` 至少包含一条可验证命令，或一条已经存在的本地 artifact 路径
+
+最小命令：
+
+```bash
+mkdir -p .skill-evidence && cp assets/completion-evidence-template.json .skill-evidence/completion-evidence.json
+python scripts/verify_completion_evidence.py --evidence .skill-evidence/completion-evidence.json --pretty
+python scripts/run_release_gate.py --output-dir evals/release-gate --completion-evidence .skill-evidence/completion-evidence.json --pretty
+```
+
+动作前预检：
+
+```bash
+python scripts/verify_action.py --text "<user request>" --check completion-evidence --completion-evidence .skill-evidence/completion-evidence.json --pretty
+```
+
 ### 5. Team Engine Lite 交付验收
 
 适合：
@@ -215,6 +236,7 @@ flowchart TD
 - `.skill-context/project-context.md`
 - `.skill-delivery/current-slice.md`
 - `.skill-delivery/status.yaml`
+- `.skill-evidence/completion-evidence.json`
 - `docs/progress/MASTER.md`
 - Team Engine Lite 的 WorkOrder / DeliveryCycleReport / backend orchestration plan
 - beta / release / feedback 相关输出

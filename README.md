@@ -43,6 +43,7 @@
 - 多轮优化、benchmark、回滚、resume
 - 产品定义、验收标准、分轮 beta 内测
 - release gate 与 post-release feedback loop
+- 完成证据门禁：`done / ready / ship / handoff` 之前必须有结构化 completion evidence，且 `evidence_refs` 要能指向可验证命令或本地 artifact
 - trigger health 与 workflow quality baseline，避免该触发不触发、误触发、过度流程化或 completion claim 证据不足
 - goal framing：对宽目标、重复失败、release、beta、multi-agent 等任务先锁定 success evidence、stop condition 和 non-goals
 - anti-entropy governance：对 fallback growth、duplicate owner、adapter / guard 膨胀、delete vs compat 和 source-of-truth 删除边界做治理
@@ -78,6 +79,8 @@
   - 可以把 Codex / Claude Code / OpenCode 当作角色后端，但默认只声明 `soft_orchestration_only`，不虚假声称真实异步多进程 runtime。
 - `有边界的迭代优化`
   - 优化循环是有边界、有证据、有回滚点的，不做无限自转。
+- `完成证据门禁`
+  - 非平凡完成声明必须保留 action、result、covered scope、uncovered scope、residual risk、confidence grade 和 evidence refs；release gate 会拒绝只有 benchmark 绿、但缺少完成证据的 `ship`。
 - `发布与反馈闭环`
   - 不只做发布前 gate，也覆盖发布后的反馈回写与下一轮修复入口。
 
@@ -90,7 +93,7 @@
 | 执行模式 | 支持手动模式与显式 `/auto` | 通常没有明确模式切换 |
 | 恢复能力 | 状态优先恢复、resume、恢复锚点 | 容易依赖上下文记忆 |
 | 迭代能力 | 有边界的多轮优化、基线、回滚决策 | 常见问题是无限"再来一轮" |
-| 发布治理 | release gate、hold 后续修复入口 | 常停留在"建议发/不发" |
+| 发布治理 | release gate、completion evidence、hold 后续修复入口 | 常停留在"建议发/不发"或只看 benchmark 结果 |
 | 上线后闭环 | post-release feedback loop | 很少覆盖上线后的反馈回写 |
 | 产品协同 | 支持产品、研发、技术治理联动 | 容易偏单一研发视角 |
 | Beta 验证 | 分轮内测、模拟用户、cohort ramp、反馈门禁 | 通常只有静态测试计划，没有结构化分轮验证 |
