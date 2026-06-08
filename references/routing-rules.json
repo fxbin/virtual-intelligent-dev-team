@@ -1,7 +1,7 @@
 {
   "meta": {
     "author": "fxbin",
-    "version": "v4.62.0",
+    "version": "v4.64.0",
     "updated": "2026-06-05"
   },
   "thresholds": {
@@ -366,10 +366,6 @@
         },
         {
           "keyword": "java 8",
-          "score": 5
-        },
-        {
-          "keyword": "migration",
           "score": 5
         }
       ],
@@ -786,6 +782,86 @@
         },
         {
           "keyword": "serde",
+          "score": 4
+        },
+        {
+          "keyword": "architecture",
+          "score": 5
+        },
+        {
+          "keyword": "system design",
+          "score": 5
+        },
+        {
+          "keyword": "module map",
+          "score": 4
+        },
+        {
+          "keyword": "zoom out",
+          "score": 4
+        },
+        {
+          "keyword": "call graph",
+          "score": 4
+        },
+        {
+          "keyword": "data flow",
+          "score": 4
+        },
+        {
+          "keyword": "seam",
+          "score": 4
+        },
+        {
+          "keyword": "adapter",
+          "score": 4
+        },
+        {
+          "keyword": "shallow module",
+          "score": 5
+        },
+        {
+          "keyword": "deep module",
+          "score": 5
+        },
+        {
+          "keyword": "deepening",
+          "score": 5
+        },
+        {
+          "keyword": "locality",
+          "score": 4
+        },
+        {
+          "keyword": "leverage",
+          "score": 4
+        },
+        {
+          "keyword": "testability",
+          "score": 4
+        },
+        {
+          "keyword": "migration",
+          "score": 4
+        },
+        {
+          "keyword": "架构",
+          "score": 5
+        },
+        {
+          "keyword": "模块地图",
+          "score": 4
+        },
+        {
+          "keyword": "调用链",
+          "score": 4
+        },
+        {
+          "keyword": "适配器",
+          "score": 4
+        },
+        {
+          "keyword": "可测试性",
           "score": 4
         }
       ],
@@ -1529,6 +1605,22 @@
       },
       {
         "keyword": "先别写代码",
+        "score": 1
+      },
+      {
+        "keyword": "migration",
+        "score": 1
+      },
+      {
+        "keyword": "system map",
+        "score": 1
+      },
+      {
+        "keyword": "module map",
+        "score": 1
+      },
+      {
+        "keyword": "zoom out before planning",
         "score": 1
       }
     ],
