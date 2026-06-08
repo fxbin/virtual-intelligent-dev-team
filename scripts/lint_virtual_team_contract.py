@@ -821,7 +821,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                             "schema_version": "completion-evidence/v1",
                             "generated_at": "2026-04-08T12:00:00Z",
                             "source_request": "release gate contract lint sample",
-                            "evidence_action": "release gate contract lint sample",
+                            "evidence_action": "python scripts/run_release_gate.py --output-dir evals/release-gate --pretty",
                             "result": {
                                 "status": "passed",
                                 "summary": "release gate contract lint sample passed",
@@ -831,7 +831,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                             "uncovered_scope": ["none"],
                             "residual_risk": ["none"],
                             "confidence_grade": "B",
-                            "evidence_refs": ["release gate contract lint sample"],
+                            "evidence_refs": ["python scripts/run_release_gate.py --output-dir evals/release-gate --pretty"],
                         }
                         local_response_contract.validate_completion_evidence(evidence_payload)
                         (evidence_dir / "completion-evidence.json").write_text(

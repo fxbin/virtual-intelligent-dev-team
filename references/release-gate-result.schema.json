@@ -332,6 +332,38 @@
         "evidence_refs": {
           "$ref": "#/$defs/string_array"
         },
+        "evidence_ref_checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "ref",
+              "kind",
+              "verifiable"
+            ],
+            "properties": {
+              "ref": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "verifiable": {
+                "type": "boolean"
+              },
+              "exists": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "resolved_path": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": true
+          }
+        },
         "verification_error": {
           "type": "string"
         },

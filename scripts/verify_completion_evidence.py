@@ -12,6 +12,48 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
 DEFAULT_EVIDENCE_PATH = Path(".skill-evidence") / "completion-evidence.json"
+COMMAND_PREFIXES = {
+    "bun",
+    "cargo",
+    "deno",
+    "git",
+    "go",
+    "gradle",
+    "java",
+    "jest",
+    "make",
+    "mvn",
+    "node",
+    "npm",
+    "npx",
+    "pnpm",
+    "playwright",
+    "pytest",
+    "python",
+    "python3",
+    "rg",
+    "ruff",
+    "tox",
+    "tsc",
+    "uv",
+    "vitest",
+    "yarn",
+}
+ARTIFACT_SUFFIXES = {
+    ".csv",
+    ".html",
+    ".json",
+    ".jsonl",
+    ".log",
+    ".md",
+    ".pdf",
+    ".png",
+    ".sarif",
+    ".txt",
+    ".xml",
+    ".yaml",
+    ".yml",
+}
 
 
 def load_module(name: str, path: Path):
@@ -59,6 +101,69 @@ def placeholder_values(values: list[str]) -> list[str]:
     return [value for value in values if is_placeholder(value)]
 
 
+def infer_repo_root(evidence_path: Path) -> Path:
+    for parent in evidence_path.parents:
+        if parent.name == ".skill-evidence":
+            return parent.parent
+    return evidence_path.parent
+
+
+def is_command_ref(value: str) -> bool:
+    stripped = value.strip()
+    if stripped == "":
+        return False
+    first = stripped.split()[0]
+    return first in COMMAND_PREFIXES
+
+
+def is_path_like_ref(value: str) -> bool:
+    stripped = value.strip()
+    if stripped == "" or "://" in stripped or "\n" in stripped:
+        return False
+    candidate = Path(stripped)
+    if stripped.startswith((".", "/", "~")) or "/" in stripped:
+        return True
+    return candidate.suffix.lower() in ARTIFACT_SUFFIXES
+
+
+def evaluate_evidence_refs(evidence_refs: list[str], repo_root: Path) -> list[dict[str, object]]:
+    checks: list[dict[str, object]] = []
+    for raw in evidence_refs:
+        value = raw.strip()
+        if is_command_ref(value):
+            checks.append(
+                {
+                    "ref": value,
+                    "kind": "command",
+                    "verifiable": True,
+                    "exists": None,
+                }
+            )
+            continue
+        if is_path_like_ref(value):
+            path = Path(value).expanduser()
+            resolved = path if path.is_absolute() else repo_root / path
+            checks.append(
+                {
+                    "ref": value,
+                    "kind": "artifact",
+                    "verifiable": resolved.exists(),
+                    "exists": resolved.exists(),
+                    "resolved_path": str(resolved),
+                }
+            )
+            continue
+        checks.append(
+            {
+                "ref": value,
+                "kind": "note",
+                "verifiable": False,
+                "exists": None,
+            }
+        )
+    return checks
+
+
 def build_recommended_commands(evidence_rel: str, decision: str) -> list[str]:
     commands = []
     if decision != "complete":
@@ -74,11 +179,7 @@ def build_recommended_commands(evidence_rel: str, decision: str) -> list[str]:
 
 def evaluate_completion_evidence(evidence_path: Path) -> dict[str, object]:
     resolved_evidence = evidence_path.resolve()
-    repo_root = (
-        resolved_evidence.parent.parent
-        if resolved_evidence.parent.name == ".skill-evidence"
-        else resolved_evidence.parent
-    )
+    repo_root = infer_repo_root(resolved_evidence)
     evidence_rel = (
         str(resolved_evidence.relative_to(repo_root))
         if resolved_evidence.is_relative_to(repo_root)
@@ -95,6 +196,7 @@ def evaluate_completion_evidence(evidence_path: Path) -> dict[str, object]:
     uncovered_scope = compact_string_list(payload.get("uncovered_scope"))
     residual_risk = compact_string_list(payload.get("residual_risk"))
     evidence_refs = compact_string_list(payload.get("evidence_refs"))
+    evidence_ref_checks = evaluate_evidence_refs(evidence_refs, repo_root)
 
     blockers: list[str] = []
     warnings: list[str] = []
@@ -121,6 +223,15 @@ def evaluate_completion_evidence(evidence_path: Path) -> dict[str, object]:
         blockers.append("covered_scope is empty")
     if len(evidence_refs) == 0:
         blockers.append("evidence_refs is empty")
+    missing_artifact_refs = [
+        str(item.get("ref", ""))
+        for item in evidence_ref_checks
+        if item.get("kind") == "artifact" and not bool(item.get("exists"))
+    ]
+    if missing_artifact_refs:
+        warnings.append("evidence_refs reference missing artifacts")
+    if evidence_refs and not any(bool(item.get("verifiable")) for item in evidence_ref_checks):
+        warnings.append("evidence_refs contain no verifiable command or existing artifact")
 
     if blockers:
         decision = "blocked"
@@ -151,6 +262,7 @@ def evaluate_completion_evidence(evidence_path: Path) -> dict[str, object]:
         "uncovered_scope": uncovered_scope,
         "residual_risk": residual_risk,
         "evidence_refs": evidence_refs,
+        "evidence_ref_checks": evidence_ref_checks,
         "follow_up": {
             "next_action": next_action,
             "resume_anchor": evidence_rel,

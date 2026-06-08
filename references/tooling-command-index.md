@@ -84,6 +84,7 @@ python scripts/verify_action.py --text "<user request>" --check completion-evide
 - `completion-evidence` 校验会额外确认：
   - `.skill-evidence/completion-evidence.json` 是否存在
   - 完成证据是否满足 action / result / covered scope / uncovered scope / residual risk / confidence grade / evidence refs
+  - `evidence_refs` 至少包含一条可验证命令，或一条存在的本地 artifact 路径
   - `A | B` 且无未覆盖范围或剩余风险时才允许完成声明
 
 ```bash
@@ -304,6 +305,7 @@ python scripts/verify_action.py --text "<user request>" --check completion-evide
 
 - `references/completion-evidence.schema.json`
 - `assets/completion-evidence-template.json`
+- `evidence_refs` 可以写命令（如 `python -m unittest ...`）或本地 artifact 路径；路径型引用必须存在，否则完成证据会保持 `continue`
 
 ## 二、开发前规划资产
 

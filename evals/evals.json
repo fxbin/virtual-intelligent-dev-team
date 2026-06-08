@@ -1266,7 +1266,7 @@
           "none"
         ],
         "evidence_refs": [
-          "release gate eval fixture evidence"
+          "python scripts/run_release_gate.py --output-dir evals/release-gate --pretty"
         ]
       },
       "expectations": [

@@ -551,7 +551,7 @@ def evaluate_evals(config: dict[str, object]) -> dict[str, object]:
                         "schema_version": "completion-evidence/v1",
                         "generated_at": "2026-04-08T12:00:00Z",
                         "source_request": prompt,
-                        "evidence_action": "release gate eval fixture evidence",
+                        "evidence_action": "python scripts/run_release_gate.py --output-dir evals/release-gate --pretty",
                         "result": {
                             "status": completion_status,
                             "summary": "release gate eval fixture completion evidence",
@@ -569,7 +569,7 @@ def evaluate_evals(config: dict[str, object]) -> dict[str, object]:
                         or "B",
                         "evidence_refs": completion_evidence_config.get(
                             "evidence_refs",
-                            ["release gate eval fixture evidence"],
+                            ["python scripts/run_release_gate.py --output-dir evals/release-gate --pretty"],
                         ),
                     }
                     response_contract.validate_completion_evidence(completion_payload)

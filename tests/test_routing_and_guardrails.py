@@ -251,6 +251,7 @@ def write_completion_evidence_fixture(
     confidence_grade: str = "B",
     uncovered_scope: list[str] | None = None,
     residual_risk: list[str] | None = None,
+    evidence_refs: list[str] | None = None,
 ) -> Path:
     evidence_dir = root / ".skill-evidence"
     evidence_dir.mkdir(parents=True, exist_ok=True)
@@ -268,7 +269,7 @@ def write_completion_evidence_fixture(
         "uncovered_scope": uncovered_scope or ["none"],
         "residual_risk": residual_risk or ["none"],
         "confidence_grade": confidence_grade,
-        "evidence_refs": ["python -m unittest tests.checkout"],
+        "evidence_refs": evidence_refs or ["python -m unittest tests.checkout"],
     }
     path = evidence_dir / "completion-evidence.json"
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -774,6 +775,68 @@ class RoutingTests(unittest.TestCase):
             self.assertEqual("complete", result["decision"])
             self.assertTrue(result["completion_allowed"])
             self.assertEqual("A", result["confidence_grade"])
+            self.assertTrue(result["evidence_ref_checks"][0]["verifiable"])
+            self.assertEqual("command", result["evidence_ref_checks"][0]["kind"])
+
+    def test_completion_evidence_verifier_allows_existing_artifact_ref(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            report_path = root / "reports" / "checkout-regression.md"
+            report_path.parent.mkdir(parents=True, exist_ok=True)
+            report_path.write_text("# Checkout Regression\n", encoding="utf-8")
+            evidence_path = write_completion_evidence_fixture(
+                root,
+                evidence_refs=["reports/checkout-regression.md"],
+            )
+
+            result = completion_evidence_verifier.evaluate_completion_evidence(evidence_path)
+
+            self.assertTrue(result["ok"])
+            self.assertEqual("complete", result["decision"])
+            self.assertTrue(result["evidence_ref_checks"][0]["exists"])
+            self.assertEqual("artifact", result["evidence_ref_checks"][0]["kind"])
+
+    def test_completion_evidence_verifier_continues_on_missing_artifact_ref(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            evidence_path = write_completion_evidence_fixture(
+                root,
+                evidence_refs=["reports/missing-checkout-regression.md"],
+            )
+
+            result = completion_evidence_verifier.evaluate_completion_evidence(evidence_path)
+
+            self.assertFalse(result["ok"])
+            self.assertEqual("continue", result["decision"])
+            self.assertIn("missing artifacts", result["reason"])
+
+    def test_completion_evidence_verifier_requires_verifiable_refs(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            evidence_path = write_completion_evidence_fixture(
+                root,
+                evidence_refs=["checkout looked good in manual review"],
+            )
+
+            result = completion_evidence_verifier.evaluate_completion_evidence(evidence_path)
+
+            self.assertFalse(result["ok"])
+            self.assertEqual("continue", result["decision"])
+            self.assertIn("no verifiable command or existing artifact", result["reason"])
+
+    def test_completion_evidence_verifier_resolves_nested_skill_evidence_root(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            evidence_path = write_completion_evidence_fixture(root)
+            nested_dir = root / ".skill-evidence" / "release"
+            nested_dir.mkdir(parents=True, exist_ok=True)
+            nested_path = nested_dir / "completion-evidence.json"
+            shutil.move(str(evidence_path), nested_path)
+
+            result = completion_evidence_verifier.evaluate_completion_evidence(nested_path)
+
+            self.assertTrue(result["ok"])
+            self.assertEqual(".skill-evidence/release/completion-evidence.json", result["evidence_path"])
 
     def test_completion_evidence_verifier_rejects_placeholders_even_if_status_passed(self) -> None:
         with make_tempdir() as tmp:
