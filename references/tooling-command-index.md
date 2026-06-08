@@ -56,6 +56,10 @@ python scripts/verify_action.py --text "/auto <user request>" --check auto-mode 
 python scripts/verify_action.py --text "<user request>" --check micro-practice-ledger --pretty
 ```
 
+```bash
+python scripts/verify_action.py --text "<user request>" --check completion-evidence --pretty
+```
+
 - `workflow-bundle` 校验现在会返回：
   - `workflow_bundle_source`
   - `workflow_bundle_source_explanation`
@@ -77,6 +81,10 @@ python scripts/verify_action.py --text "<user request>" --check micro-practice-l
   - 必要时 `.skill-practices/micro-practice-ledger.json` 是否存在
   - ledger 是否覆盖当前路由要求的实践名
   - active / blocked / complete 状态是否允许进入完成、提交或交付声明
+- `completion-evidence` 校验会额外确认：
+  - `.skill-evidence/completion-evidence.json` 是否存在
+  - 完成证据是否满足 action / result / covered scope / uncovered scope / residual risk / confidence grade / evidence refs
+  - `A | B` 且无未覆盖范围或剩余风险时才允许完成声明
 
 ```bash
 python scripts/verify_action.py --text "<user request>" --check assistant-delta-contract --pretty
@@ -271,6 +279,31 @@ python scripts/verify_action.py --text "<user request>" --check micro-practice-l
 - `references/micro-practice-ledger.schema.json`
 - `references/micro-practice-evaluation.schema.json`
 - `assets/micro-practice-ledger-template.json`
+
+## 一点九、完成证据门禁
+
+完成、提交或交付声明前，先写入结构化完成证据：
+
+```bash
+mkdir -p .skill-evidence && cp assets/completion-evidence-template.json .skill-evidence/completion-evidence.json
+```
+
+校验完成证据：
+
+```bash
+python scripts/verify_completion_evidence.py --evidence .skill-evidence/completion-evidence.json --pretty
+```
+
+也可以通过动作前校验统一检查：
+
+```bash
+python scripts/verify_action.py --text "<user request>" --check completion-evidence --pretty
+```
+
+契约：
+
+- `references/completion-evidence.schema.json`
+- `assets/completion-evidence-template.json`
 
 ## 二、开发前规划资产
 

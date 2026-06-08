@@ -29,7 +29,8 @@
         "bundle-bootstrap",
         "assistant-delta-contract",
         "auto-mode",
-        "micro-practice-ledger"
+        "micro-practice-ledger",
+        "completion-evidence"
       ]
     },
     "allowed": {
@@ -224,6 +225,22 @@
         "properties": {
           "details": {
             "$ref": "#/$defs/micro_practice_ledger_details"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "check": {
+            "const": "completion-evidence"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "details": {
+            "$ref": "#/$defs/completion_evidence_details"
           }
         }
       }
@@ -982,6 +999,71 @@
           "type": "string"
         },
         "evaluation_command": {
+          "type": "string"
+        },
+        "recommended_commands": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "completion_evidence_details": {
+      "type": "object",
+      "required": [
+        "completion_evidence_required",
+        "evidence_path",
+        "evidence_exists",
+        "decision",
+        "completion_allowed",
+        "template",
+        "schema",
+        "verification",
+        "verification_error",
+        "init_command",
+        "verify_command",
+        "recommended_commands"
+      ],
+      "properties": {
+        "completion_evidence_required": {
+          "type": "boolean"
+        },
+        "evidence_path": {
+          "type": "string"
+        },
+        "evidence_exists": {
+          "type": "boolean"
+        },
+        "decision": {
+          "enum": [
+            "missing",
+            "invalid",
+            "blocked",
+            "continue",
+            "complete"
+          ]
+        },
+        "completion_allowed": {
+          "type": "boolean"
+        },
+        "template": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "verification": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "verification_error": {
+          "type": "string"
+        },
+        "init_command": {
+          "type": "string"
+        },
+        "verify_command": {
           "type": "string"
         },
         "recommended_commands": {

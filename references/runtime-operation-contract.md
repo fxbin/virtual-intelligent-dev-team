@@ -117,6 +117,8 @@ unless the user explicitly authorizes them.
 Before opening a process lane or forcing a multi-agent execution shape for a high-risk request:
 
 - Use `verify_action.py` to confirm process-skill legality, lead assignment, git-workflow activation, worktree isolation, release-gate activation, bounded-iteration activation, or workflow-bundle bootstrap readiness.
+- Before claiming `done`, `ready`, `fixed`, `committed`, `merged`, or handoff-ready, use `verify_action.py --check completion-evidence` to confirm structured completion evidence exists and supports the claim.
+- When route output activates engineering micro-practices, use `verify_action.py --check micro-practice-ledger` before the same completion or handoff claim.
 - Use `lint_virtual_team_contract.py` as the mechanical drift check for routing indexes, plan references, and script command examples.
 
 ## Language Support

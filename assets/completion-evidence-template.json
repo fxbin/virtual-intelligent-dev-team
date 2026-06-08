@@ -1,0 +1,24 @@
+{
+  "schema_version": "completion-evidence/v1",
+  "generated_at": "",
+  "source_request": "",
+  "evidence_action": "<command or check performed>",
+  "result": {
+    "status": "passed",
+    "summary": "<result or exit status summary>",
+    "exit_code": 0
+  },
+  "covered_scope": [
+    "<what the evidence directly covers>"
+  ],
+  "uncovered_scope": [
+    "none"
+  ],
+  "residual_risk": [
+    "none"
+  ],
+  "confidence_grade": "B",
+  "evidence_refs": [
+    "<test output, report, ledger, artifact, or command transcript>"
+  ]
+}

@@ -39,6 +39,7 @@ BENCHMARK_EVALS_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-evals.s
 BENCHMARK_RUN_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-run-result.schema.json"
 MICRO_PRACTICE_LEDGER_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "micro-practice-ledger.schema.json"
 MICRO_PRACTICE_EVALUATION_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "micro-practice-evaluation.schema.json"
+COMPLETION_EVIDENCE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "completion-evidence.schema.json"
 
 
 @lru_cache(maxsize=None)
@@ -92,6 +93,14 @@ def validate_micro_practice_evaluation(payload: dict[str, object]) -> None:
         payload,
         schema_path=MICRO_PRACTICE_EVALUATION_SCHEMA_JSON_PATH,
         label="micro-practice evaluation",
+    )
+
+
+def validate_completion_evidence(payload: dict[str, object]) -> None:
+    validate_payload_against_schema(
+        payload,
+        schema_path=COMPLETION_EVIDENCE_SCHEMA_JSON_PATH,
+        label="completion evidence",
     )
 
 

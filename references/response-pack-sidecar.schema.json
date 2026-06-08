@@ -10,6 +10,7 @@
     "team_dispatch",
     "execution_result",
     "evidence",
+    "completion_evidence",
     "micro_practices",
     "next_action",
     "resume",
@@ -49,6 +50,9 @@
     },
     "micro_practices": {
       "$ref": "#/$defs/micro_practices"
+    },
+    "completion_evidence": {
+      "$ref": "#/$defs/completion_evidence"
     },
     "next_action": {
       "$ref": "#/$defs/next_action"
@@ -270,6 +274,38 @@
             }
           },
           "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "completion_evidence": {
+      "type": "object",
+      "required": [
+        "required",
+        "template",
+        "schema",
+        "default_path",
+        "verify_command",
+        "required_fields"
+      ],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "template": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "default_path": {
+          "type": "string"
+        },
+        "verify_command": {
+          "type": "string"
+        },
+        "required_fields": {
+          "$ref": "#/$defs/string_array"
         }
       },
       "additionalProperties": false

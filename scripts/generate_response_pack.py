@@ -586,6 +586,25 @@ def build_response_pack_payload(
                 "summary": assistant_contract_summary,
             },
         },
+        "completion_evidence": {
+            "required": True,
+            "template": "assets/completion-evidence-template.json",
+            "schema": "references/completion-evidence.schema.json",
+            "default_path": ".skill-evidence/completion-evidence.json",
+            "verify_command": (
+                "python scripts/verify_completion_evidence.py "
+                "--evidence .skill-evidence/completion-evidence.json --pretty"
+            ),
+            "required_fields": [
+                "evidence_action",
+                "result.status",
+                "covered_scope",
+                "uncovered_scope",
+                "residual_risk",
+                "confidence_grade",
+                "evidence_refs",
+            ],
+        },
         "micro_practices": micro_practices,
         "next_action": {
             "smallest_executable_action": next_action_text,
@@ -852,6 +871,11 @@ def build_response_pack(
     team_dispatch = payload["team_dispatch"] if isinstance(payload.get("team_dispatch"), dict) else {}
     execution_result = payload["execution_result"] if isinstance(payload.get("execution_result"), dict) else {}
     evidence = payload["evidence"] if isinstance(payload.get("evidence"), dict) else {}
+    completion_evidence = (
+        payload["completion_evidence"]
+        if isinstance(payload.get("completion_evidence"), dict)
+        else {}
+    )
     micro_practices = payload["micro_practices"] if isinstance(payload.get("micro_practices"), dict) else {}
     next_action = payload["next_action"] if isinstance(payload.get("next_action"), dict) else {}
     resume = payload["resume"] if isinstance(payload.get("resume"), dict) else {}
@@ -997,6 +1021,12 @@ def build_response_pack(
                 f"- 流程技能：{', '.join(evidence.get('process_skills', [])) if isinstance(evidence.get('process_skills'), list) and evidence.get('process_skills') else none_text}",
                 f"- Assistant delta contract：{((evidence.get('assistant_delta_contract') or {}).get('summary', '当前不需要')) if isinstance(evidence.get('assistant_delta_contract'), dict) else '当前不需要'}",
                 "",
+                "## 完成证据",
+                f"- 是否必需：{format_bool(completion_evidence.get('required', True), selected_language)}",
+                f"- 模板：{completion_evidence.get('template', '无')}",
+                f"- 默认路径：{completion_evidence.get('default_path', '无')}",
+                f"- 校验命令：{completion_evidence.get('verify_command', '无')}",
+                "",
                 "## 下一动作",
                 f"- 最小可执行动作：{next_action.get('smallest_executable_action', '')}",
                 f"- 当前主责：{next_action.get('current_owner', 'unknown')}",
@@ -1030,6 +1060,12 @@ def build_response_pack(
                 f"- Workflow source explanation: {evidence.get('workflow_source_explanation', 'No extra source explanation is available.')}",
                 f"- Process skills: {', '.join(evidence.get('process_skills', [])) if isinstance(evidence.get('process_skills'), list) and evidence.get('process_skills') else none_text}",
                 f"- Assistant delta contract: {((evidence.get('assistant_delta_contract') or {}).get('summary', 'not required')) if isinstance(evidence.get('assistant_delta_contract'), dict) else 'not required'}",
+                "",
+                "## Completion Evidence",
+                f"- Required: {format_bool(completion_evidence.get('required', True), selected_language)}",
+                f"- Template: {completion_evidence.get('template', 'n/a')}",
+                f"- Default path: {completion_evidence.get('default_path', 'n/a')}",
+                f"- Verify command: {completion_evidence.get('verify_command', 'n/a')}",
                 "",
                 "## Next Action",
                 f"- Smallest executable action: {next_action.get('smallest_executable_action', '')}",

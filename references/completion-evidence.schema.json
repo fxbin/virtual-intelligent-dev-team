@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:completion-evidence.schema",
+  "title": "Virtual Intelligent Dev Team Completion Evidence",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "evidence_action",
+    "result",
+    "covered_scope",
+    "uncovered_scope",
+    "residual_risk",
+    "confidence_grade",
+    "evidence_refs"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "completion-evidence/v1"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "source_request": {
+      "type": "string"
+    },
+    "evidence_action": {
+      "type": "string",
+      "minLength": 1
+    },
+    "result": {
+      "type": "object",
+      "required": [
+        "status",
+        "summary"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "passed",
+            "failed",
+            "partial",
+            "not_run"
+          ]
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "exit_code": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "covered_scope": {
+      "$ref": "#/$defs/non_empty_string_array"
+    },
+    "uncovered_scope": {
+      "$ref": "#/$defs/non_empty_string_array"
+    },
+    "residual_risk": {
+      "$ref": "#/$defs/non_empty_string_array"
+    },
+    "confidence_grade": {
+      "enum": [
+        "A",
+        "B",
+        "C"
+      ]
+    },
+    "evidence_refs": {
+      "$ref": "#/$defs/non_empty_string_array"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "non_empty_string_array": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

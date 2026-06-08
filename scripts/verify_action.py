@@ -15,6 +15,7 @@ ROUTE_SCRIPT = SCRIPT_DIR / "route_request.py"
 RESPONSE_PACK_SCRIPT = SCRIPT_DIR / "generate_response_pack.py"
 RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
 EVALUATE_MICRO_PRACTICES_SCRIPT = SCRIPT_DIR / "evaluate_micro_practices.py"
+VERIFY_COMPLETION_EVIDENCE_SCRIPT = SCRIPT_DIR / "verify_completion_evidence.py"
 DEFAULT_CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 
 
@@ -33,6 +34,10 @@ response_contract = load_module("virtual_team_verify_action_response_contract", 
 micro_practice_evaluator = load_module(
     "virtual_team_verify_action_evaluate_micro_practices",
     EVALUATE_MICRO_PRACTICES_SCRIPT,
+)
+completion_evidence_verifier = load_module(
+    "virtual_team_verify_action_verify_completion_evidence",
+    VERIFY_COMPLETION_EVIDENCE_SCRIPT,
 )
 
 
@@ -669,6 +674,78 @@ def _verify_micro_practice_ledger(result: dict[str, object], repo_path: Path) ->
     }
 
 
+def _verify_completion_evidence(result: dict[str, object], repo_path: Path) -> dict[str, object]:
+    evidence_rel = ".skill-evidence/completion-evidence.json"
+    evidence_path = (repo_path / evidence_rel).resolve()
+    evidence_exists = evidence_path.exists()
+    template = "assets/completion-evidence-template.json"
+    schema = "references/completion-evidence.schema.json"
+    init_command = "mkdir -p .skill-evidence && cp assets/completion-evidence-template.json .skill-evidence/completion-evidence.json"
+    verify_command = (
+        f"python scripts/verify_completion_evidence.py --evidence {evidence_rel} --pretty"
+    )
+
+    verification: dict[str, object] | None = None
+    verification_error = ""
+    if not evidence_exists:
+        allowed = False
+        decision = "missing"
+        summary = "Completion evidence is required before a done/ready/handoff claim but is missing."
+        next_step = "Create completion evidence from the template, fill direct evidence, then re-run this check."
+        recommended_commands = [init_command, verify_command]
+    else:
+        try:
+            verification = completion_evidence_verifier.evaluate_completion_evidence(evidence_path)
+            allowed = bool(verification.get("completion_allowed"))
+            decision = str(verification.get("decision", "")).strip()
+            follow_up = verification.get("follow_up", {})
+            if isinstance(follow_up, dict):
+                raw_commands = follow_up.get("recommended_commands", [])
+                recommended_commands = [
+                    str(command).strip()
+                    for command in raw_commands
+                    if str(command).strip()
+                ] if isinstance(raw_commands, list) else [verify_command]
+            else:
+                recommended_commands = [verify_command]
+            if allowed:
+                summary = "Completion evidence is present and supports the completion claim."
+                next_step = "Use the completion evidence slots in the final done/ready/handoff claim."
+            elif decision == "blocked":
+                summary = "Completion evidence is present but structurally blocks completion."
+                next_step = "Repair failed or incomplete evidence before claiming completion."
+            else:
+                summary = "Completion evidence is present but still indicates uncovered scope or residual risk."
+                next_step = "Close uncovered scope or residual risk, then re-run completion evidence verification."
+        except Exception as exc:
+            allowed = False
+            decision = "invalid"
+            verification_error = str(exc)
+            summary = "Completion evidence exists but could not be evaluated."
+            next_step = "Repair the evidence JSON so it matches references/completion-evidence.schema.json."
+            recommended_commands = [verify_command]
+
+    return {
+        "allowed": allowed,
+        "summary": summary,
+        "details": {
+            "completion_evidence_required": True,
+            "evidence_path": evidence_rel,
+            "evidence_exists": evidence_exists,
+            "decision": decision,
+            "completion_allowed": allowed,
+            "template": template,
+            "schema": schema,
+            "verification": verification,
+            "verification_error": verification_error,
+            "init_command": init_command,
+            "verify_command": verify_command,
+            "recommended_commands": recommended_commands,
+        },
+        "recommended_next_step": next_step,
+    }
+
+
 def _build_explanation_card(result: dict[str, object]) -> dict[str, object]:
     payload = response_pack.build_response_pack_payload(result)
     return response_contract.build_explanation_card_from_payload(payload)
@@ -714,6 +791,8 @@ def verify_action(
         outcome = _verify_auto_mode(result, repo_path)
     elif check == "micro-practice-ledger":
         outcome = _verify_micro_practice_ledger(result, repo_path)
+    elif check == "completion-evidence":
+        outcome = _verify_completion_evidence(result, repo_path)
     else:
         raise ValueError(f"Unsupported check: {check}")
 
@@ -787,6 +866,7 @@ def parse_args() -> argparse.Namespace:
             "assistant-delta-contract",
             "auto-mode",
             "micro-practice-ledger",
+            "completion-evidence",
         ],
         help="What to verify before taking action.",
     )

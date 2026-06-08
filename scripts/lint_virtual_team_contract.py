@@ -45,6 +45,7 @@ BENCHMARK_EVALS_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-evals.s
 BENCHMARK_RUN_RESULT_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "benchmark-run-result.schema.json"
 MICRO_PRACTICE_LEDGER_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "micro-practice-ledger.schema.json"
 MICRO_PRACTICE_EVALUATION_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "micro-practice-evaluation.schema.json"
+COMPLETION_EVIDENCE_SCHEMA_JSON_PATH = SKILL_DIR / "references" / "completion-evidence.schema.json"
 TEAM_ENGINE_REFERENCE_PATH = SKILL_DIR / "references" / "team-engine-lite-protocol.md"
 WORKER_VERIFIER_REFERENCE_PATH = SKILL_DIR / "references" / "worker-verifier-cycle-protocol.md"
 EXTERNAL_AGENT_BACKEND_REFERENCE_PATH = SKILL_DIR / "references" / "external-agent-backend-orchestration-protocol.md"
@@ -489,6 +490,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             "team_dispatch",
             "execution_result",
             "evidence",
+            "completion_evidence",
             "next_action",
             "resume",
             "git_workflow",
@@ -1062,6 +1064,45 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             "details": {
                 "ledger_schema_json": str(micro_practice_ledger_schema_json_path),
                 "evaluation_schema_json": str(micro_practice_evaluation_schema_json_path),
+            },
+        }
+    )
+
+    completion_evidence_failures: list[str] = []
+    if local_response_contract is not None:
+        sample_completion_evidence = {
+            "schema_version": "completion-evidence/v1",
+            "generated_at": "2026-04-08T12:00:00Z",
+            "source_request": "Fix checkout API regression.",
+            "evidence_action": "python -m unittest tests.checkout",
+            "result": {
+                "status": "passed",
+                "summary": "checkout regression tests passed",
+                "exit_code": 0,
+            },
+            "covered_scope": ["checkout API regression"],
+            "uncovered_scope": ["none"],
+            "residual_risk": ["none"],
+            "confidence_grade": "B",
+            "evidence_refs": ["python -m unittest tests.checkout"],
+        }
+        try:
+            local_response_contract.validate_completion_evidence(sample_completion_evidence)
+        except Exception as exc:
+            completion_evidence_failures.append(f"completion-evidence: {exc}")
+    else:
+        completion_evidence_failures.append("response_contract.py module missing")
+    _check(
+        len(completion_evidence_failures) == 0,
+        errors,
+        "completion evidence contract validation failed: " + "; ".join(completion_evidence_failures),
+    )
+    checks.append(
+        {
+            "name": "completion-evidence-contract",
+            "passed": len(completion_evidence_failures) == 0,
+            "details": {
+                "schema_json": str(COMPLETION_EVIDENCE_SCHEMA_JSON_PATH),
             },
         }
     )

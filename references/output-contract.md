@@ -154,6 +154,24 @@ Confidence grades:
 When Team Engine Lite is active, `A` or `B` also requires Verifier evidence and
 Lead acceptance through a DeliveryCycleReport.
 
+Machine-readable completion evidence should use:
+
+```bash
+mkdir -p .skill-evidence && cp assets/completion-evidence-template.json .skill-evidence/completion-evidence.json
+python scripts/verify_completion_evidence.py --evidence .skill-evidence/completion-evidence.json --pretty
+```
+
+The action preflight equivalent is:
+
+```bash
+python scripts/verify_action.py --text "<user request>" --check completion-evidence --pretty
+```
+
+Contract:
+
+- `references/completion-evidence.schema.json`
+- `assets/completion-evidence-template.json`
+
 ## Response Pack
 
 When a fast user-facing draft is needed from the router result, prefer the response-pack generator from `references/tooling-command-index.md`.
