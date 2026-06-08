@@ -33,6 +33,16 @@
   - implementation output、verification report、remediation patch 与 stop/retry 规则
 - `anti-entropy-governance.md`
   - duplicate owner、fallback growth、adapter / guard 膨胀、delete vs compat、persistent-state 删除边界的反熵治理 overlay
+- `shared-language-and-decision-capture.md`
+  - 需求术语、领域语言、重大决策轻量捕获，避免 project context 变成临时草稿
+- `feedback-loop-first-protocol.md`
+  - bug / regression / root cause 先建立可运行 pass/fail 信号，再排查或修复
+- `vertical-slice-delivery-protocol.md`
+  - planning / product / implementation 切成 AFK / HITL 的 tracer-bullet 纵向切片
+- `system-map-protocol.md`
+  - 不熟代码区、迁移、架构改造或 zoom-out 请求先画模块、调用方、seam 地图
+- `architecture-deepening-protocol.md`
+  - 用 module / interface / seam / adapter / depth / locality / leverage 语言评估架构深化机会
 - `real-subagent-runtime-protocol.md`
   - 当用户显式要求 multi-agent / subagent / parallel agent，或 `/auto` 命中合格 workflow 且宿主有 spawn / wait / merge 工具时，如何升级到受控真实 subagent runtime
 - `external-agent-backend-orchestration-protocol.md`
@@ -120,6 +130,9 @@
 
 - `workflow-bundles.md`
 - `project-memory-lite.md`
+- `shared-language-and-decision-capture.md`
+- `vertical-slice-delivery-protocol.md`
+- `system-map-protocol.md`
 - beta 分轮验证时再补读：
   - `beta-validation-playbook.md`
   - `tooling-command-index.md` 里的 round report / gate 命令
@@ -156,11 +169,13 @@
   - `rollback-and-stop-rules.md`
 - `mutation-catalog-patterns.md`
 - `project-memory-lite.md`
+- bug / regression / repeated failure 先读 `feedback-loop-first-protocol.md`
 
 ## 六、root cause / release / Git
 
 - repeated failure / 根因排查
   - `root-cause-escalation-playbook.md`
+  - `feedback-loop-first-protocol.md`
 - release gate / offline acceptance
   - `offline-loop-drill-playbook.md`
   - `release-gate-playbook.md`
@@ -172,6 +187,9 @@
   - `using-git-worktrees-playbook.md`
 - anti-entropy / delete vs compat / duplicate owner
   - `anti-entropy-governance.md`
+- architecture deepening / shallow module / seam / adapter
+  - `system-map-protocol.md`
+  - `architecture-deepening-protocol.md`
 - trigger or workflow quality regression
   - `trigger-health-baseline.md`
   - `workflow-quality-baseline.md`

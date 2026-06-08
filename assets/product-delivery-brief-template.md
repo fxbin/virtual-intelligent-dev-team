@@ -25,6 +25,12 @@
 - [ ] Criterion 2
 - [ ] Criterion 3
 
+## Vertical Slices
+
+| Slice | Type | Blocked By | Acceptance Evidence |
+|:------|:-----|:-----------|:--------------------|
+|       | AFK/HITL |            |                     |
+
 ## Frontend / Backend Contract Questions
 
 - API inputs:

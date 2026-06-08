@@ -19,12 +19,16 @@ existing routing, planning, iteration, release, and Git rules.
   - the user explicitly says "plan first", "research first", or "先规划再开发"
 - Default sequence:
   1. lock scope, target, and constraints
-  2. create the planning pack
-  3. create or refresh the progress anchor
-  4. hand back to normal implementation routing
+  2. create a compact system map when the target area is unfamiliar or multi-module
+  3. create the planning pack
+  4. split execution into vertical slices with `AFK` / `HITL` classifications
+  5. create or refresh the progress anchor
+  6. hand back to normal implementation routing
 - Primary references:
   - `references/pre-development-planning-playbook.md`
   - `references/pre-development-output-template.md`
+  - `references/system-map-protocol.md`
+  - `references/vertical-slice-delivery-protocol.md`
 - Default resume anchor:
   - `docs/progress/MASTER.md`
 
@@ -36,10 +40,14 @@ existing routing, planning, iteration, release, and Git rules.
 - Default sequence:
   1. define the target user and primary outcome
   2. lock the smallest acceptable scope
-  3. write the user flow and acceptance criteria
-  4. surface frontend/backend contract questions before implementation
+  3. sharpen shared language when product terms are ambiguous
+  4. write the user flow and acceptance criteria
+  5. split build work into vertical slices when the feature spans multiple layers
+  6. surface frontend/backend contract questions before implementation
 - Primary references:
   - `references/product-delivery-playbook.md`
+  - `references/shared-language-and-decision-capture.md`
+  - `references/vertical-slice-delivery-protocol.md`
   - `assets/product-delivery-brief-template.md`
   - `scripts/init_product_delivery.py`
 - Default resume anchors:
@@ -54,13 +62,15 @@ existing routing, planning, iteration, release, and Git rules.
 - Default sequence:
   1. clarify only route-changing gaps
   2. use `references/goal-framing-protocol.md` when the slice has drift-prone success evidence or explicit non-goals
-  3. record intent, non-goals, acceptance criteria, and verification evidence
-  4. create or refresh durable project context when needed
-  5. implement the smallest coherent change
-  6. use `references/anti-entropy-governance.md` when the fix adds guards, fallbacks, adapters, or retires an old owner
-  7. run targeted verification and self-review before presenting
+  3. build or name the feedback loop first when the slice is a bug or regression
+  4. record intent, non-goals, acceptance criteria, and verification evidence
+  5. create or refresh durable project context when needed
+  6. implement the smallest coherent change
+  7. use `references/anti-entropy-governance.md` when the fix adds guards, fallbacks, adapters, or retires an old owner
+  8. run targeted verification and self-review before presenting
 - Primary references:
   - `references/quick-slice-delivery-playbook.md`
+  - `references/feedback-loop-first-protocol.md`
   - `assets/quick-slice-brief-template.md`
   - `assets/delivery-status-template.yaml`
   - `assets/project-context-template.md`
@@ -153,13 +163,15 @@ existing routing, planning, iteration, release, and Git rules.
 - Default sequence:
   1. freeze guesswork
   2. frame success evidence and stop conditions when previous attempts drifted
-  3. collect missing evidence
-  4. validate the smallest hypothesis
-  5. prefer owner correction or path retirement over fallback growth when evidence supports it
-  6. remediate safely
-  7. keep or rollback based on evidence
+  3. establish the smallest reliable feedback loop before diagnosis
+  4. collect missing evidence
+  5. validate one falsifiable hypothesis at a time
+  6. prefer owner correction or path retirement over fallback growth when evidence supports it
+  7. remediate safely
+  8. keep or rollback based on evidence
 - Primary references:
   - `references/root-cause-escalation-playbook.md`
+  - `references/feedback-loop-first-protocol.md`
   - `references/iteration-protocol.md`
   - `references/memory-model.md`
 - Default resume anchors:
@@ -251,6 +263,15 @@ Each bundle also inherits the execution-quality guardrails in
 `references/execution-quality-guardrails.md`: expose route-changing assumptions,
 justify why the bundle is minimal, keep scope surgical, and name the verification
 evidence that closes the route.
+
+When a bundle activates one of the engineering micro-practices, keep it as a
+small local discipline rather than a new workflow bundle:
+
+- `references/shared-language-and-decision-capture.md`
+- `references/feedback-loop-first-protocol.md`
+- `references/vertical-slice-delivery-protocol.md`
+- `references/system-map-protocol.md`
+- `references/architecture-deepening-protocol.md`
 
 Code-facing bundles also inherit the Harness engineering constraint protocol in
 `references/harness-engineering-constraint-protocol.md`: before implementation,

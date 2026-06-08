@@ -22,9 +22,10 @@ Before coding starts, produce enough structure to keep the transformation stable
 
 1. lock scope, target state, constraints, and priorities
 2. analyze the current system at the level needed for planning
-3. produce a phased task breakdown with acceptance criteria
-4. note parallel lanes and merge risk when multi-agent execution is realistic
-5. create a durable progress anchor that future sessions can resume from
+3. produce a compact system map when the target area is unfamiliar or multi-module
+4. produce a phased task breakdown with vertical slices and acceptance criteria
+5. note `AFK` / `HITL` boundaries, parallel lanes, and merge risk when multi-agent execution is realistic
+6. create a durable progress anchor that future sessions can resume from
 
 ## Default Lead Shape
 
@@ -72,11 +73,13 @@ If `docs/progress/MASTER.md` already exists:
    - architecture and entry points
    - key modules and dependencies
    - major risks and coupling
+   - system map using `references/system-map-protocol.md` when module ownership or callers are unclear
 3. Produce the plan:
    - phases
-   - tasks
+   - vertical slices using `references/vertical-slice-delivery-protocol.md`
    - acceptance criteria
    - dependencies
+   - `AFK` / `HITL` classification
    - optional parallel lanes and merge-risk notes
 4. Create the progress anchor:
    - current phase
@@ -109,3 +112,5 @@ Use only the templates you need:
 - `assets/pre-development-task-breakdown-template.md`
 - `assets/pre-development-progress-master-template.md`
 - `assets/pre-development-phase-template.md`
+- `references/system-map-protocol.md`
+- `references/vertical-slice-delivery-protocol.md`

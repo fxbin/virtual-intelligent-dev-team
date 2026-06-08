@@ -21,6 +21,8 @@
 ## Implementation Notes
 
 - Current evidence:
+- Feedback loop type:
+- Repro or fixture:
 - Smallest implementation step:
 - Verification command:
 

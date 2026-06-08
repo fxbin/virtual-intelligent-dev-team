@@ -9,9 +9,9 @@
 Goal:
 Prerequisite:
 
-| Task ID | Task | Priority | Effort | Depends On | Acceptance Criteria |
-|:--------|:-----|:---------|:-------|:-----------|:--------------------|
-| P1-T1   |      | P0       | M      | --         |                     |
+| Task ID | Vertical Slice | Type | Priority | Effort | Depends On | Acceptance Criteria | Verification Evidence |
+|:--------|:---------------|:-----|:---------|:-------|:-----------|:--------------------|:----------------------|
+| P1-T1   |                | AFK/HITL | P0  | M      | --         |                     |                       |
 
 ### Optional Parallel Lanes
 | Lane | Tasks | Merge Risk | Notes |
