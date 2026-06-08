@@ -44,6 +44,7 @@ INIT_TECHNICAL_GOVERNANCE_SCRIPT = SKILL_DIR / "scripts" / "init_technical_gover
 INIT_POST_RELEASE_FEEDBACK_SCRIPT = SKILL_DIR / "scripts" / "init_post_release_feedback.py"
 EVALUATE_POST_RELEASE_FEEDBACK_SCRIPT = SKILL_DIR / "scripts" / "evaluate_post_release_feedback.py"
 INIT_MICRO_PRACTICES_SCRIPT = SKILL_DIR / "scripts" / "init_micro_practices.py"
+EVALUATE_MICRO_PRACTICES_SCRIPT = SKILL_DIR / "scripts" / "evaluate_micro_practices.py"
 RUN_AUTO_WORKFLOW_SCRIPT = SKILL_DIR / "scripts" / "run_auto_workflow.py"
 INSPECT_AUTOMATION_STATE_SCRIPT = SKILL_DIR / "scripts" / "inspect_automation_state.py"
 RESUME_FROM_AUTOMATION_STATE_SCRIPT = SKILL_DIR / "scripts" / "resume_from_automation_state.py"
@@ -96,6 +97,7 @@ technical_governance_init = load_module("virtual_intelligent_dev_team_technical_
 post_release_feedback_init = load_module("virtual_intelligent_dev_team_post_release_feedback_init", INIT_POST_RELEASE_FEEDBACK_SCRIPT)
 post_release_feedback_evaluator = load_module("virtual_intelligent_dev_team_post_release_feedback_evaluator", EVALUATE_POST_RELEASE_FEEDBACK_SCRIPT)
 micro_practices_init = load_module("virtual_intelligent_dev_team_micro_practices_init", INIT_MICRO_PRACTICES_SCRIPT)
+micro_practices_evaluator = load_module("virtual_intelligent_dev_team_micro_practices_evaluator", EVALUATE_MICRO_PRACTICES_SCRIPT)
 auto_workflow = load_module("virtual_intelligent_dev_team_auto_workflow", RUN_AUTO_WORKFLOW_SCRIPT)
 automation_state_inspector = load_module(
     "virtual_intelligent_dev_team_inspect_automation_state",
@@ -522,6 +524,73 @@ class RoutingTests(unittest.TestCase):
             self.assertIn("vertical-slice-delivery", practice_names)
             self.assertIn("Micro-Practice Ledger", markdown_path.read_text(encoding="utf-8"))
 
+    def test_micro_practice_evaluator_continues_when_practices_are_active(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            micro_practices_init.init_micro_practices(
+                root=root,
+                text="Turn this signup revamp into AFK/HITL vertical slices with acceptance criteria and backend contract questions.",
+            )
+
+            result = micro_practices_evaluator.evaluate_micro_practices(
+                root / ".skill-practices" / "micro-practice-ledger.json",
+            )
+
+            self.assertFalse(result["ok"])
+            self.assertEqual("continue", result["decision"])
+            self.assertEqual(2, result["status_counts"]["active"])
+            self.assertFalse(result["follow_up"]["completion_allowed"])
+            self.assertIn(
+                ".skill-practices/micro-practice-evaluation.json",
+                result["follow_up"]["resume_artifacts"],
+            )
+            self.assertTrue((root / ".skill-practices" / "micro-practice-evaluation.json").exists())
+            self.assertTrue((root / ".skill-practices" / "micro-practice-evaluation.md").exists())
+            response_contract.validate_micro_practice_evaluation(result)
+
+    def test_micro_practice_evaluator_completes_when_all_practices_are_satisfied(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            micro_practices_init.init_micro_practices(
+                root=root,
+                text="Turn this signup revamp into AFK/HITL vertical slices with acceptance criteria and backend contract questions.",
+            )
+            ledger_path = root / ".skill-practices" / "micro-practice-ledger.json"
+            ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+            for item in ledger["active_practices"]:
+                item["status"] = "satisfied"
+                item["next_check"] = "Evidence captured in the completion summary."
+            ledger_path.write_text(json.dumps(ledger, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+            result = micro_practices_evaluator.evaluate_micro_practices(ledger_path)
+
+            self.assertTrue(result["ok"])
+            self.assertEqual("complete", result["decision"])
+            self.assertEqual(2, result["status_counts"]["satisfied"])
+            self.assertTrue(result["follow_up"]["completion_allowed"])
+            response_contract.validate_micro_practice_evaluation(result)
+
+    def test_micro_practice_evaluator_blocks_when_any_practice_is_blocked(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            micro_practices_init.init_micro_practices(
+                root=root,
+                text="Fix the checkout API regression by first reproducing it with a failing test.",
+            )
+            ledger_path = root / ".skill-practices" / "micro-practice-ledger.json"
+            ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+            ledger["active_practices"][0]["status"] = "blocked"
+            ledger["active_practices"][0]["next_check"] = "Failing reproduction cannot be created yet."
+            ledger_path.write_text(json.dumps(ledger, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+            result = micro_practices_evaluator.evaluate_micro_practices(ledger_path)
+
+            self.assertFalse(result["ok"])
+            self.assertEqual("blocked", result["decision"])
+            self.assertEqual(1, result["status_counts"]["blocked"])
+            self.assertIn("resolve blocked micro-practices", result["follow_up"]["next_action"])
+            response_contract.validate_micro_practice_evaluation(result)
+
     def test_ui_review_stays_with_product_architect(self) -> None:
         result = route_request.route_request(
             "给 React 页面做 UI review",
@@ -848,6 +917,14 @@ class RoutingTests(unittest.TestCase):
         self.assertIn(
             "python scripts/init_micro_practices.py --root . --text \"<user request>\" --pretty",
             result["workflow_bundle_bootstrap"]["commands"],
+        )
+        self.assertIn(
+            "evaluate_micro_practices.py",
+            result["workflow_bundle_bootstrap"]["micro_practice_ledger"]["evaluation_command"],
+        )
+        self.assertEqual(
+            "references/micro-practice-evaluation.schema.json",
+            result["workflow_bundle_bootstrap"]["micro_practice_ledger"]["evaluation_schema"],
         )
         self.assertIn(
             ".skill-practices/micro-practice-ledger.json",
@@ -7201,6 +7278,14 @@ class ResponsePackTests(unittest.TestCase):
             "init_micro_practices.py",
             payload["micro_practices"]["ledger"]["command"],
         )
+        self.assertIn(
+            "evaluate_micro_practices.py",
+            payload["micro_practices"]["ledger"]["evaluation_command"],
+        )
+        self.assertEqual(
+            "references/micro-practice-evaluation.schema.json",
+            payload["micro_practices"]["ledger"]["evaluation_schema"],
+        )
         response_contract.validate_response_pack_payload(payload)
 
     def test_generate_response_pack_payload_includes_harness_constraints_for_code_route(self) -> None:
@@ -7388,6 +7473,7 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("references/vertical-slice-delivery-protocol.md", markdown)
         self.assertIn("Ledger: .skill-practices/micro-practice-ledger.json", markdown)
         self.assertIn("Init command: python scripts/init_micro_practices.py", markdown)
+        self.assertIn("Evaluation command: python scripts/evaluate_micro_practices.py", markdown)
 
     def test_generate_response_pack_renders_beta_program(self) -> None:
         result = route_request.route_request(
