@@ -163,6 +163,148 @@ def normalize_micro_practices(result: dict[str, object], language: str) -> dict[
     }
 
 
+def normalize_stage_councils(result: dict[str, object], language: str) -> dict[str, object]:
+    raw_plan = result.get("stage_council_plan", {})
+    if not isinstance(raw_plan, dict):
+        raw_plan = {}
+    raw_councils = raw_plan.get("councils", [])
+    if not isinstance(raw_councils, list):
+        raw_councils = []
+    raw_names = raw_plan.get("active_councils", result.get("active_councils", []))
+    if not isinstance(raw_names, list):
+        raw_names = []
+
+    councils: list[dict[str, object]] = []
+    names: list[str] = []
+    for raw_council in raw_councils:
+        if not isinstance(raw_council, dict):
+            continue
+        name = str(raw_council.get("name", "")).strip()
+        if not name:
+            continue
+        names.append(name)
+        roles = raw_council.get("roles", [])
+        if not isinstance(roles, list):
+            roles = []
+        sequence = raw_council.get("sequence", [])
+        if not isinstance(sequence, list):
+            sequence = []
+        quality_gates = raw_council.get("quality_gates", [])
+        if not isinstance(quality_gates, list):
+            quality_gates = []
+        output_artifacts = raw_council.get("output_artifacts", [])
+        if not isinstance(output_artifacts, list):
+            output_artifacts = []
+        councils.append(
+            {
+                "name": name,
+                "lead": format_missing(raw_council.get("lead", ""), language),
+                "activation_reason": format_missing(raw_council.get("activation_reason", ""), language),
+                "roles": [
+                    {
+                        "role": str(item.get("role", "")),
+                        "owns": [str(value) for value in item.get("owns", []) if str(value).strip()]
+                        if isinstance(item, dict) and isinstance(item.get("owns", []), list)
+                        else [],
+                    }
+                    for item in roles
+                    if isinstance(item, dict) and str(item.get("role", "")).strip()
+                ],
+                "sequence": [str(item) for item in sequence if str(item).strip()],
+                "quality_gates": [str(item) for item in quality_gates if str(item).strip()],
+                "output_artifacts": [str(item) for item in output_artifacts if str(item).strip()],
+                "resume_anchor": format_missing(raw_council.get("resume_anchor", ""), language),
+            }
+        )
+
+    for raw_name in raw_names:
+        name = str(raw_name).strip()
+        if name and name not in names:
+            names.append(name)
+
+    return {
+        "enabled": bool(raw_plan.get("enabled")) or len(names) > 0,
+        "reference": format_missing(raw_plan.get("reference", ""), language),
+        "template": format_missing(raw_plan.get("template", ""), language),
+        "workflow_bundle": format_missing(raw_plan.get("workflow_bundle", ""), language),
+        "activation_rule": format_missing(raw_plan.get("activation_rule", ""), language),
+        "explicit_team_request": bool(raw_plan.get("explicit_team_request")),
+        "active_councils": names,
+        "councils": councils,
+        "fallback": format_missing(raw_plan.get("fallback", ""), language),
+    }
+
+
+def normalize_intent_confirmation(
+    result: dict[str, object],
+    language: str,
+) -> dict[str, object] | None:
+    raw_confirmation = result.get("intent_confirmation", {})
+    if not isinstance(raw_confirmation, dict) or not bool(raw_confirmation.get("required")):
+        return None
+
+    raw_options = raw_confirmation.get("options", [])
+    if not isinstance(raw_options, list):
+        raw_options = []
+    raw_route = raw_confirmation.get("provisional_route", {})
+    if not isinstance(raw_route, dict):
+        raw_route = {}
+
+    options: list[dict[str, str]] = []
+    option_ids: list[str] = []
+    for raw_option in raw_options:
+        if not isinstance(raw_option, dict):
+            continue
+        option_id = str(raw_option.get("id", "")).strip()
+        if not option_id:
+            continue
+        option_ids.append(option_id)
+        options.append(
+            {
+                "id": option_id,
+                "label": format_missing(raw_option.get("label", ""), language),
+                "description": format_missing(raw_option.get("description", ""), language),
+                "target_lead": format_missing(raw_option.get("target_lead", ""), language),
+                "target_bundle": format_missing(raw_option.get("target_bundle", ""), language),
+                "target_council": format_missing(raw_option.get("target_council", ""), language),
+            }
+        )
+
+    raw_option_ids = raw_confirmation.get("option_ids", [])
+    if isinstance(raw_option_ids, list):
+        for raw_id in raw_option_ids:
+            option_id = str(raw_id).strip()
+            if option_id and option_id not in option_ids:
+                option_ids.append(option_id)
+
+    fuzzy_markers = raw_confirmation.get("fuzzy_markers", [])
+    if not isinstance(fuzzy_markers, list):
+        fuzzy_markers = []
+    detected_categories = raw_confirmation.get("detected_categories", [])
+    if not isinstance(detected_categories, list):
+        detected_categories = []
+    route_choice_markers = raw_confirmation.get("route_choice_markers", [])
+    if not isinstance(route_choice_markers, list):
+        route_choice_markers = []
+
+    return {
+        "required": True,
+        "reason": format_missing(raw_confirmation.get("reason", ""), language),
+        "question": format_missing(raw_confirmation.get("question", ""), language),
+        "option_ids": option_ids,
+        "options": options,
+        "provisional_route": {
+            "lead_agent": format_missing(raw_route.get("lead_agent", ""), language),
+            "workflow_bundle": format_missing(raw_route.get("workflow_bundle", ""), language),
+            "bundle_confidence": float(raw_route.get("bundle_confidence", 0.0) or 0.0),
+            "workflow_bundle_source": format_missing(raw_route.get("workflow_bundle_source", ""), language),
+        },
+        "fuzzy_markers": [str(item) for item in fuzzy_markers if str(item).strip()],
+        "detected_categories": [str(item) for item in detected_categories if str(item).strip()],
+        "route_choice_markers": [str(item) for item in route_choice_markers if str(item).strip()],
+    }
+
+
 def build_automation_resume_block(
     *,
     result: dict[str, object],
@@ -438,6 +580,8 @@ def build_response_pack_payload(
         selected_language,
     )
     micro_practices = normalize_micro_practices(result, selected_language)
+    stage_councils = normalize_stage_councils(result, selected_language)
+    intent_confirmation = normalize_intent_confirmation(result, selected_language)
     none_text = "无" if selected_language == "zh" else "none"
     not_required_text = "当前不需要" if selected_language == "zh" else "not required"
     direct_step_text = (
@@ -445,6 +589,31 @@ def build_response_pack_payload(
         if selected_language == "zh"
         else "execute the next direct step under the lead."
     )
+    if isinstance(intent_confirmation, dict):
+        pending_text = "待意图确认" if selected_language == "zh" else "pending intent confirmation"
+        progress_anchor = pending_text
+        resume_artifacts = []
+        bundle_bootstrap = {}
+        harness_constraints = {}
+        team_engine_gate = {}
+        external_agent_backend_plan = {}
+        real_subagent_runtime = {}
+        beta_validation_plan = {}
+        needs_planning = False
+        needs_iteration = False
+        micro_practices = {
+            "names": [],
+            "items": [],
+            "ledger": {
+                "required": False,
+                "command": not_required_text,
+                "update_command": not_required_text,
+                "evaluation_command": not_required_text,
+                "resume_anchor": pending_text,
+                "schema": not_required_text,
+                "evaluation_schema": not_required_text,
+            },
+        }
     assistant_contract_summary = (
         f"必填字段 {', '.join(contract.get('required_fields', []))}"
         if selected_language == "zh" and contract.get("enabled")
@@ -554,8 +723,24 @@ def build_response_pack_payload(
                 "main_risks": f"governance track `{privy.get('selected_track', 'regular track')}`, process skills `{', '.join(process_skills) if process_skills else none_text}`.",
             }
 
+    if isinstance(intent_confirmation, dict):
+        if selected_language == "zh":
+            execution_result = {
+                "key_conclusion": "先确认用户意图，再选择最终专家路线。",
+                "key_decision": f"暂不把 `{lead}` / `{workflow_bundle}` 视为已确认路线，只作为 provisional route。",
+                "main_risks": "如果跳过反问，可能把产品机会、原型探索、技术可行性、架构风险或交付计划混成同一条执行链。",
+            }
+        else:
+            execution_result = {
+                "key_conclusion": "Confirm user intent before selecting the final expert route.",
+                "key_decision": f"Treat `{lead}` / `{workflow_bundle}` as provisional, not confirmed.",
+                "main_risks": "Skipping confirmation can collapse product opportunity, prototype exploration, technical feasibility, architecture risk, and delivery planning into the wrong execution path.",
+            }
+
     next_action_text = localized_workflow_steps[0] if localized_workflow_steps else direct_step_text
-    if bool(harness_constraints.get("required")):
+    if isinstance(intent_confirmation, dict):
+        next_action_text = str(intent_confirmation.get("question", next_action_text))
+    elif bool(harness_constraints.get("required")):
         artifact = harness_constraints.get("artifact", ".skill-harness/engineering-constraints.md")
         next_action_text = (
             f"{next_action_text}；先创建或刷新 Harness 工程约束：{artifact}"
@@ -606,6 +791,7 @@ def build_response_pack_payload(
             ],
         },
         "micro_practices": micro_practices,
+        "stage_councils": stage_councils,
         "next_action": {
             "smallest_executable_action": next_action_text,
             "current_owner": lead,
@@ -628,6 +814,8 @@ def build_response_pack_payload(
             "dual_sign_required": bool(privy.get("dual_sign_required")),
         },
     }
+    if isinstance(intent_confirmation, dict):
+        payload["intent_confirmation"] = intent_confirmation
     if bool(team_engine_gate):
         payload["team_engine"] = {
             "required": bool(team_engine_gate.get("required")),
@@ -877,6 +1065,10 @@ def build_response_pack(
         else {}
     )
     micro_practices = payload["micro_practices"] if isinstance(payload.get("micro_practices"), dict) else {}
+    stage_councils = payload["stage_councils"] if isinstance(payload.get("stage_councils"), dict) else {}
+    intent_confirmation = (
+        payload["intent_confirmation"] if isinstance(payload.get("intent_confirmation"), dict) else None
+    )
     next_action = payload["next_action"] if isinstance(payload.get("next_action"), dict) else {}
     resume = payload["resume"] if isinstance(payload.get("resume"), dict) else {}
     git_workflow = payload["git_workflow"] if isinstance(payload.get("git_workflow"), dict) else {}
@@ -921,6 +1113,66 @@ def build_response_pack(
             f"- Workflow source explanation: {team_dispatch.get('workflow_source_explanation', 'No extra source explanation is available.')}",
             "",
         ]
+
+    if isinstance(intent_confirmation, dict):
+        options = intent_confirmation.get("options", [])
+        if not isinstance(options, list):
+            options = []
+        route = intent_confirmation.get("provisional_route", {})
+        if not isinstance(route, dict):
+            route = {}
+        if selected_language == "zh":
+            option_lines = [
+                (
+                    f"{item.get('id', '')}：{item.get('label', '')} "
+                    f"-> {item.get('target_lead', '')} / {item.get('target_bundle', '')}"
+                    + (
+                        f" / {item.get('target_council', '')}"
+                        if isinstance(item, dict) and str(item.get("target_council", "")).strip() not in ("", "无")
+                        else ""
+                    )
+                )
+                for item in options
+                if isinstance(item, dict)
+            ]
+            lines.extend(
+                [
+                    "## 意图确认",
+                    f"- 是否需要确认：{format_bool(intent_confirmation.get('required'), selected_language)}",
+                    f"- 原因：{intent_confirmation.get('reason', '')}",
+                    f"- 反问：{intent_confirmation.get('question', '')}",
+                    f"- 暂定路由：{route.get('lead_agent', 'unknown')} / {route.get('workflow_bundle', 'direct-execution')}",
+                    "- 选项：",
+                    _bullet_list(option_lines, none_text),
+                    "",
+                ]
+            )
+        else:
+            option_lines = [
+                (
+                    f"{item.get('id', '')}: {item.get('label', '')} "
+                    f"-> {item.get('target_lead', '')} / {item.get('target_bundle', '')}"
+                    + (
+                        f" / {item.get('target_council', '')}"
+                        if isinstance(item, dict) and str(item.get("target_council", "")).strip() not in ("", "n/a")
+                        else ""
+                    )
+                )
+                for item in options
+                if isinstance(item, dict)
+            ]
+            lines.extend(
+                [
+                    "## Intent Confirmation",
+                    f"- Required: {format_bool(intent_confirmation.get('required'), selected_language)}",
+                    f"- Reason: {intent_confirmation.get('reason', '')}",
+                    f"- Question: {intent_confirmation.get('question', '')}",
+                    f"- Provisional route: {route.get('lead_agent', 'unknown')} / {route.get('workflow_bundle', 'direct-execution')}",
+                    "- Options:",
+                    _bullet_list(option_lines, none_text),
+                    "",
+                ]
+            )
 
     micro_practice_names = (
         micro_practices.get("names", [])
@@ -1007,6 +1259,84 @@ def build_response_pack(
                         f"- {item.get('name', '')}: {item.get('reason', '')}",
                         f"  Reference: {item.get('reference', 'n/a')}",
                         f"  Evidence: {', '.join(str(value) for value in evidence_items) if evidence_items else none_text}",
+                    ]
+                )
+            lines.append("")
+
+    stage_council_names = (
+        stage_councils.get("active_councils", [])
+        if isinstance(stage_councils.get("active_councils"), list)
+        else []
+    )
+    stage_council_items = (
+        stage_councils.get("councils", [])
+        if isinstance(stage_councils.get("councils"), list)
+        else []
+    )
+    if bool(stage_councils.get("enabled")) or stage_council_names or stage_council_items:
+        if selected_language == "zh":
+            lines.extend(
+                [
+                    "",
+                    "## 阶段专家团",
+                    f"- 已激活：{', '.join(str(item) for item in stage_council_names) if stage_council_names else none_text}",
+                    f"- 参考协议：{stage_councils.get('reference', '无')}",
+                    f"- 计划模板：{stage_councils.get('template', '无')}",
+                    f"- 激活规则：{stage_councils.get('activation_rule', '无')}",
+                ]
+            )
+            for item in stage_council_items:
+                if not isinstance(item, dict):
+                    continue
+                roles = item.get("roles", [])
+                if not isinstance(roles, list):
+                    roles = []
+                gates = item.get("quality_gates", [])
+                if not isinstance(gates, list):
+                    gates = []
+                artifacts = item.get("output_artifacts", [])
+                if not isinstance(artifacts, list):
+                    artifacts = []
+                lines.extend(
+                    [
+                        f"- {item.get('name', '')}：{item.get('activation_reason', '')}",
+                        f"  角色：{', '.join(str(role.get('role', '')) for role in roles if isinstance(role, dict)) if roles else none_text}",
+                        f"  门禁：{', '.join(str(gate) for gate in gates) if gates else none_text}",
+                        f"  产物：{', '.join(str(artifact) for artifact in artifacts) if artifacts else none_text}",
+                        f"  恢复锚点：{item.get('resume_anchor', '无')}",
+                    ]
+                )
+            lines.append("")
+        else:
+            lines.extend(
+                [
+                    "",
+                    "## Stage Councils",
+                    f"- Active: {', '.join(str(item) for item in stage_council_names) if stage_council_names else none_text}",
+                    f"- Reference: {stage_councils.get('reference', 'n/a')}",
+                    f"- Plan template: {stage_councils.get('template', 'n/a')}",
+                    f"- Activation rule: {stage_councils.get('activation_rule', 'n/a')}",
+                ]
+            )
+            for item in stage_council_items:
+                if not isinstance(item, dict):
+                    continue
+                roles = item.get("roles", [])
+                if not isinstance(roles, list):
+                    roles = []
+                gates = item.get("quality_gates", [])
+                if not isinstance(gates, list):
+                    gates = []
+                artifacts = item.get("output_artifacts", [])
+                if not isinstance(artifacts, list):
+                    artifacts = []
+                lines.extend(
+                    [
+                        f"- {item.get('name', '')}: {item.get('activation_reason', '')}",
+                        f"  Roles: {', '.join(str(role.get('role', '')) for role in roles if isinstance(role, dict)) if roles else none_text}",
+                        f"  Gates: {', '.join(str(gate) for gate in gates) if gates else none_text}",
+                        f"  Artifacts: {', '.join(str(artifact) for artifact in artifacts) if artifacts else none_text}",
+                        f"  Resume anchor: {item.get('resume_anchor', 'n/a')}",
                     ]
                 )
             lines.append("")

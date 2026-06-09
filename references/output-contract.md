@@ -12,17 +12,23 @@ After routing, answer with one unified structure. The lead agent owns the respon
    - Bundle confidence
    - Workflow bundle source
    - Workflow bundle source explanation when the route is process-heavy or easy to misread
-2. `Execution Result`
+2. `Intent Confirmation` when the user gives a fuzzy idea or low-information route-changing request
+   - Confirmation question before treating the provisional route as final
+   - Stable option ids such as `product-opportunity`, `prototype-exploration`, `technical-feasibility`, `architecture-risk`, and `delivery-plan`
+   - Target lead, workflow bundle, and stage council for each option
+   - Provisional route retained only as a fallback, not as confirmed intent
+3. `Execution Result`
    - Key conclusion
    - Key decision
    - Main risks
    - Evidence delta from assistants when applicable
    - Assistant delta contract when assistants are active
-3. `Evidence`
+4. `Evidence`
    - Route evidence
    - Workflow source explanation
    - Process skills in effect
    - Active engineering micro-practices and their ledger anchor when any micro-practice is active
+   - Active stage councils when product or prototype work needs phase-level specialists
    - Assistant delta contract when assistants are active
    - Completion evidence slots before any `done`, `fixed`, `ready`, `ship`, `commit`, `merge`, or handoff claim:
      - evidence action / check performed
@@ -31,64 +37,71 @@ After routing, answer with one unified structure. The lead agent owns the respon
      - uncovered scope
      - residual risk
      - confidence grade: `A | B | C`
-4. `Next Action`
+5. `Next Action`
    - Smallest executable action
    - Current owner
    - User confirmation needed, if any
-5. `Resume`
+6. `Resume`
    - Progress anchor
    - Resume artifacts when relevant
-6. `Git Workflow`
+7. `Git Workflow`
    - Whether `using-git-worktrees` is needed
    - Whether `git-workflow` is needed
    - Whether Git lead should switch to `Git Workflow Guardian`
    - Recommended branch, commit, and PR strategy
    - Current Git stage, if relevant
-7. `Governance`
+8. `Governance`
    - Whether roundtable governance is enabled
    - Selected governance track
    - DRI, SLO, dual-sign, and post-audit requirements when relevant
-8. `Team Engine Lite` when role-separated delivery is active
+9. `Team Engine Lite` when role-separated delivery is active
    - Whether Worker / Verifier separation is required
    - Worker and Verifier roles
    - Max cycles and acceptance gates
    - Whether Worker can self-pass
    - Runtime claim and closure verdict
    - DeliveryCycleReport evidence before Lead acceptance
-9. `External Agent Backend` when soft backend orchestration is active
+10. `External Agent Backend` when soft backend orchestration is active
    - Orchestration mode
    - Runtime claim
    - Backend orchestration verdict
    - Required output contracts
-10. `Real Subagent Runtime` when the route is eligible for controlled real subagent execution
+11. `Real Subagent Runtime` when the route is eligible for controlled real subagent execution
    - Eligibility and activation reason
    - Current runtime claim and candidate runtime claim
    - Whether runtime evidence is still required
    - Max subagents, spawn policy, merge policy, and fallback
-11. `Planning Pack` when pre-development planning is active
+12. `Planning Pack` when pre-development planning is active
    - Confirmed transformation scope, target, and constraints
    - Analysis artifacts to create or refresh
    - Phase plan, lane notes, and merge-risk guidance
    - Progress anchor and resume point
-12. `Optimization Loop` when bounded iteration is active
+13. `Optimization Loop` when bounded iteration is active
    - Objective and baseline
    - Current round and evidence source
    - Active owner, round memory, and self-feedback chain
    - Decision: `keep`, `retry`, `rollback`, or `stop`
    - Next round or closure action
-13. `Goal Frame` when `references/goal-framing-protocol.md` is active
+14. `Goal Frame` when `references/goal-framing-protocol.md` is active
    - Requested outcome
    - Success evidence
    - Stop condition
    - Non-goals
    - Current stop state: `done | blocked | needs-verification | scope-exceeded`
-14. `Anti-Entropy` when `references/anti-entropy-governance.md` is active
+15. `Anti-Entropy` when `references/anti-entropy-governance.md` is active
    - Deletion class
    - Old path or object
    - New canonical owner
    - Decision: `delete-first | compat-exception | confirmation-first`
    - Retired behavior and preserved behavior
    - Remaining entropy or retirement follow-up
+16. `Stage Councils` when `references/stage-council-protocol.md` is active
+   - Active council names
+   - Lead owner
+   - Role cards
+   - Required gates
+   - Output artifacts
+   - Resume anchor
 
 ## Engineering Micro-Practices
 
@@ -125,6 +138,37 @@ The evaluation decision is a small gate:
 - `complete`: all practices are `satisfied`
 - `continue`: one or more practices are still `active`
 - `blocked`: one or more practices are `blocked`
+
+## Stage Councils
+
+Stage councils are optional overlays under the existing `product-spec-deliver`
+bundle. They do not replace the lead agent or create a new top-level skill.
+
+Expose them only when `stage_council_plan.enabled` is true:
+
+- active councils, for example `product-discovery-council` or `prototype-design-council`
+- `references/stage-council-protocol.md`
+- `assets/stage-council-plan-template.json`
+- the role cards and quality gates that changed the artifact sequence
+- the council-specific resume anchor
+
+## Intent Confirmation
+
+When the request is a fuzzy idea, low-information ask, or asks the system to
+decide between route-changing directions, ask one targeted confirmation question
+before presenting the provisional route as final.
+
+Use stable option ids so both humans and evals can reason about the choice:
+
+- `product-opportunity`
+- `prototype-exploration`
+- `technical-feasibility`
+- `architecture-risk`
+- `delivery-plan`
+
+Each option should name the target lead, workflow bundle, and stage council when
+one would be activated. Keep the provisional route visible, but mark it as
+provisional until the user confirms the intent.
 
 ## Completion Evidence Rule
 

@@ -38,6 +38,8 @@ FEEDBACK_LOOP_FIRST_REFERENCE = "references/feedback-loop-first-protocol.md"
 VERTICAL_SLICE_REFERENCE = "references/vertical-slice-delivery-protocol.md"
 SYSTEM_MAP_REFERENCE = "references/system-map-protocol.md"
 ARCHITECTURE_DEEPENING_REFERENCE = "references/architecture-deepening-protocol.md"
+STAGE_COUNCIL_REFERENCE = "references/stage-council-protocol.md"
+STAGE_COUNCIL_TEMPLATE = "assets/stage-council-plan-template.json"
 HARNESS_CONSTRAINT_ARTIFACT = ".skill-harness/engineering-constraints.md"
 HARNESS_CONSTRAINT_COMMAND = "python scripts/init_harness_constraints.py --root . --summary \"<task summary>\" --pretty"
 HARNESS_CONSTRAINT_WORKFLOWS = {
@@ -86,6 +88,120 @@ REAL_SUBAGENT_TRIGGER_KEYWORDS = [
     "分头执行",
     "分头查",
 ]
+FUZZY_INTENT_KEYWORDS = [
+    "idea",
+    "hunch",
+    "rough thought",
+    "rough idea",
+    "not sure",
+    "maybe",
+    "vague",
+    "unclear",
+    "worth doing",
+    "what should i do",
+    "figure out",
+    "where to start",
+    "direction",
+    "模糊",
+    "猜想",
+    "想法",
+    "不确定",
+    "可能",
+    "也许",
+    "大概",
+    "不知道",
+    "该怎么办",
+    "值不值得",
+    "判断方向",
+    "方向",
+    "脑子里",
+]
+ROUTE_CHOICE_KEYWORDS = [
+    "or",
+    "whether",
+    "which direction",
+    "which path",
+    "route",
+    "choose",
+    "decide",
+    "confirm intent",
+    "还是",
+    "或者",
+    "哪种",
+    "哪个方向",
+    "判断",
+    "选择",
+    "确认意图",
+]
+INTENT_CATEGORY_KEYWORDS = {
+    "product-opportunity": [
+        "product",
+        "product strategy",
+        "requirement",
+        "requirements",
+        "prd",
+        "user",
+        "market",
+        "opportunity",
+        "需求",
+        "产品",
+        "产品验证",
+        "用户",
+        "价值",
+        "机会",
+        "市场",
+    ],
+    "prototype-exploration": [
+        "prototype",
+        "mockup",
+        "ux",
+        "ui",
+        "design",
+        "high-fidelity",
+        "原型",
+        "设计",
+        "交互",
+        "高保真",
+        "页面",
+    ],
+    "technical-feasibility": [
+        "technical",
+        "feasibility",
+        "implementation",
+        "build",
+        "code",
+        "技术",
+        "可行性",
+        "实现",
+        "代码",
+        "技术可行",
+    ],
+    "architecture-risk": [
+        "architecture",
+        "refactor",
+        "migration",
+        "risk",
+        "core module",
+        "架构",
+        "重构",
+        "迁移",
+        "风险",
+        "核心模块",
+    ],
+    "delivery-plan": [
+        "plan",
+        "delivery",
+        "milestone",
+        "roadmap",
+        "break down",
+        "计划",
+        "交付",
+        "拆解",
+        "排期",
+        "里程碑",
+        "路线图",
+    ],
+}
 
 
 def load_module(name: str, path: Path):
@@ -1797,9 +1913,373 @@ def build_clarifying_question(text: str, need_clarify: bool) -> str | None:
     return "Please share tech stack, target outcome, and expected output type (code, architecture, or review)."
 
 
+def detect_intent_categories(text: str) -> list[str]:
+    categories: list[str] = []
+    for category, keywords in INTENT_CATEGORY_KEYWORDS.items():
+        if text_has_any_keyword(text, keywords):
+            categories.append(category)
+    return categories
+
+
+def is_fuzzy_intent_request(text: str) -> bool:
+    fuzzy_hits = keyword_hits(text, FUZZY_INTENT_KEYWORDS)
+    if len(fuzzy_hits) == 0:
+        return False
+    category_hits = detect_intent_categories(text)
+    choice_hits = keyword_hits(text, ROUTE_CHOICE_KEYWORDS)
+    return len(category_hits) >= 2 or len(choice_hits) > 0
+
+
+def build_intent_confirmation_options(language: str) -> list[dict[str, str]]:
+    if language == "zh":
+        return [
+            {
+                "id": "product-opportunity",
+                "label": "判断产品机会/需求价值",
+                "description": "先确认目标用户、需求强度、价值假设和是否值得进入产品切片。",
+                "target_lead": "World-Class Product Architect",
+                "target_bundle": "product-spec-deliver",
+                "target_council": "product-discovery-council",
+            },
+            {
+                "id": "prototype-exploration",
+                "label": "做原型/体验方向探索",
+                "description": "先产出交互方向、设计约束和最小可运行高保真原型。",
+                "target_lead": "World-Class Product Architect",
+                "target_bundle": "product-spec-deliver",
+                "target_council": "prototype-design-council",
+            },
+            {
+                "id": "technical-feasibility",
+                "label": "验证技术可行性/实现路径",
+                "description": "先验证技术约束、实现路径、关键风险和最小工程切片。",
+                "target_lead": "Technical Trinity",
+                "target_bundle": "quick-slice-deliver",
+                "target_council": "",
+            },
+            {
+                "id": "architecture-risk",
+                "label": "评估架构风险/治理边界",
+                "description": "先评估架构影响、迁移风险、回滚条件和是否需要治理门禁。",
+                "target_lead": "Sentinel Architect (NB)",
+                "target_bundle": "govern-change-safely",
+                "target_council": "",
+            },
+            {
+                "id": "delivery-plan",
+                "label": "拆成可执行交付计划",
+                "description": "先拆范围、里程碑、验收标准、恢复锚点和下一步执行顺序。",
+                "target_lead": "Technical Trinity",
+                "target_bundle": "plan-first-build",
+                "target_council": "",
+            },
+        ]
+    return [
+        {
+            "id": "product-opportunity",
+            "label": "Assess product opportunity / requirement value",
+            "description": "Confirm user, demand strength, value hypothesis, and whether this should enter product slicing.",
+            "target_lead": "World-Class Product Architect",
+            "target_bundle": "product-spec-deliver",
+            "target_council": "product-discovery-council",
+        },
+        {
+            "id": "prototype-exploration",
+            "label": "Explore prototype / experience direction",
+            "description": "Confirm interaction direction, design constraints, and the smallest runnable high-fidelity prototype.",
+            "target_lead": "World-Class Product Architect",
+            "target_bundle": "product-spec-deliver",
+            "target_council": "prototype-design-council",
+        },
+        {
+            "id": "technical-feasibility",
+            "label": "Validate technical feasibility / implementation path",
+            "description": "Check technical constraints, implementation path, key risks, and the smallest engineering slice.",
+            "target_lead": "Technical Trinity",
+            "target_bundle": "quick-slice-deliver",
+            "target_council": "",
+        },
+        {
+            "id": "architecture-risk",
+            "label": "Assess architecture risk / governance boundary",
+            "description": "Evaluate architecture impact, migration risk, rollback conditions, and whether governance gates are needed.",
+            "target_lead": "Sentinel Architect (NB)",
+            "target_bundle": "govern-change-safely",
+            "target_council": "",
+        },
+        {
+            "id": "delivery-plan",
+            "label": "Break this into an executable delivery plan",
+            "description": "Clarify scope, milestones, acceptance criteria, resume anchor, and next execution order.",
+            "target_lead": "Technical Trinity",
+            "target_bundle": "plan-first-build",
+            "target_council": "",
+        },
+    ]
+
+
+def build_intent_confirmation(
+    *,
+    text: str,
+    need_clarify: bool,
+    lead_agent: str,
+    workflow_bundle: dict[str, object],
+) -> dict[str, object]:
+    language = "zh" if has_cjk(text) else "en"
+    fuzzy_hits = keyword_hits(text, FUZZY_INTENT_KEYWORDS)
+    category_hits = detect_intent_categories(text)
+    route_choice_hits = keyword_hits(text, ROUTE_CHOICE_KEYWORDS)
+    required = need_clarify or is_fuzzy_intent_request(text)
+    options = build_intent_confirmation_options(language) if required else []
+    provisional_route = {
+        "lead_agent": lead_agent,
+        "workflow_bundle": str(workflow_bundle.get("name", "direct-execution")),
+        "bundle_confidence": workflow_bundle.get("confidence", 0.0),
+        "workflow_bundle_source": str(workflow_bundle.get("source", "unknown")),
+    }
+
+    if not required:
+        return {
+            "required": False,
+            "reason": "",
+            "question": None,
+            "option_ids": [],
+            "options": [],
+            "provisional_route": provisional_route,
+            "fuzzy_markers": fuzzy_hits,
+            "detected_categories": category_hits,
+            "route_choice_markers": route_choice_hits,
+        }
+
+    if language == "zh":
+        reason = (
+            "请求是低信息量或模糊猜想，且不同意图会改变 lead、workflow bundle 或阶段专家团。"
+        )
+        question = "这会影响专家路由。我先确认：你更想让我从哪个方向切入？"
+    else:
+        reason = (
+            "The request is low-information or a fuzzy idea, and different intents would change "
+            "the lead, workflow bundle, or stage council."
+        )
+        question = "This changes the expert route. Which intent should I confirm first?"
+
+    return {
+        "required": True,
+        "reason": reason,
+        "question": question,
+        "option_ids": [str(item["id"]) for item in options],
+        "options": options,
+        "provisional_route": provisional_route,
+        "fuzzy_markers": fuzzy_hits,
+        "detected_categories": category_hits,
+        "route_choice_markers": route_choice_hits,
+    }
+
+
 def text_has_any_keyword(text: str, keywords: list[str]) -> bool:
     lowered = text.lower()
     return any(keyword_matches(lowered, keyword.lower()) for keyword in keywords)
+
+
+def build_stage_council_plan(
+    *,
+    text: str,
+    lead_agent: str,
+    workflow_bundle: dict[str, object],
+) -> dict[str, object]:
+    bundle_name = str(workflow_bundle.get("name", "direct-execution"))
+    product_keywords = [
+        "product strategy",
+        "product council",
+        "product expert team",
+        "prd",
+        "feature spec",
+        "requirement analysis",
+        "requirements",
+        "user research",
+        "competitive analysis",
+        "competitor",
+        "metrics",
+        "roadmap",
+        "sprint",
+        "stakeholder",
+        "brainstorm",
+        "产品战略",
+        "产品专家团",
+        "产品团队",
+        "功能规格",
+        "需求分析",
+        "用户研究",
+        "竞品",
+        "指标",
+        "路线图",
+        "迭代规划",
+        "干系人",
+        "产品头脑风暴",
+    ]
+    prototype_keywords = [
+        "prototype",
+        "prototype design",
+        "design prototype",
+        "interactive prototype",
+        "high-fidelity",
+        "hi-fi",
+        "html prototype",
+        "design system",
+        "visual design",
+        "page design",
+        "brand tone",
+        "原型",
+        "原型设计",
+        "原型专家团",
+        "设计原型",
+        "高保真",
+        "交互原型",
+        "html 原型",
+        "可运行原型",
+        "设计系统",
+        "视觉设计",
+        "页面设计",
+        "品牌调性",
+    ]
+    explicit_team_keywords = [
+        "expert team",
+        "council",
+        "multi-role",
+        "专家团",
+        "多角色",
+        "团队协作",
+    ]
+
+    enabled = lead_agent == "World-Class Product Architect" and bundle_name == "product-spec-deliver"
+    product_active = enabled and text_has_any_keyword(text, product_keywords)
+    prototype_active = enabled and text_has_any_keyword(text, prototype_keywords)
+    explicit_team_request = text_has_any_keyword(text, explicit_team_keywords)
+    councils: list[dict[str, object]] = []
+
+    if product_active:
+        councils.append(
+            {
+                "name": "product-discovery-council",
+                "lead": "World-Class Product Architect",
+                "activation_reason": (
+                    "Product discovery, strategy, research, metrics, or roadmap signals require "
+                    "stage-level product specialists before implementation."
+                ),
+                "roles": [
+                    {
+                        "role": "requirement-analyst",
+                        "owns": ["scope", "P0/P1/P2 requirements", "acceptance criteria", "non-goals"],
+                    },
+                    {
+                        "role": "user-researcher",
+                        "owns": ["target user", "jobs-to-be-done", "research synthesis", "user risk"],
+                    },
+                    {
+                        "role": "competitive-analyst",
+                        "owns": ["competitor patterns", "differentiation", "market proof"],
+                    },
+                    {
+                        "role": "data-analyst",
+                        "owns": ["success metrics", "funnel or retention signals", "decision evidence"],
+                    },
+                    {
+                        "role": "roadmap-planner",
+                        "owns": ["sequencing", "milestones", "stakeholder update", "delivery tradeoffs"],
+                    },
+                ],
+                "sequence": [
+                    "collect current user, market, data, and constraint evidence",
+                    "synthesize P0/P1/P2 scope and non-goals",
+                    "turn the product decision into acceptance criteria and slice boundaries",
+                    "hand the accepted product slice back to product-spec-deliver",
+                ],
+                "quality_gates": [
+                    "scope_gate",
+                    "user_evidence_gate",
+                    "competitive_or_market_evidence_gate",
+                    "metric_gate",
+                    "roadmap_sequence_gate",
+                ],
+                "output_artifacts": [
+                    ".skill-product/current-slice.md",
+                    ".skill-product/acceptance-criteria.md",
+                    ".skill-product/stage-council-plan.json",
+                ],
+                "resume_anchor": ".skill-product/current-slice.md",
+            }
+        )
+
+    if prototype_active:
+        councils.append(
+            {
+                "name": "prototype-design-council",
+                "lead": "World-Class Product Architect",
+                "activation_reason": (
+                    "Prototype, design system, high-fidelity UI, or visual design signals require "
+                    "stage-level design specialists instead of a single product generalist."
+                ),
+                "roles": [
+                    {
+                        "role": "ux-discovery",
+                        "owns": ["surface", "audience", "task flow", "content scale", "interaction constraints"],
+                    },
+                    {
+                        "role": "design-system-curator",
+                        "owns": ["design system choice", "tokens", "component conventions", "brand fit"],
+                    },
+                    {
+                        "role": "prototype-builder",
+                        "owns": ["runnable prototype", "responsive states", "component composition"],
+                    },
+                    {
+                        "role": "visual-critic",
+                        "owns": ["visual hierarchy", "specificity", "restraint", "anti-generic review"],
+                    },
+                    {
+                        "role": "accessibility-reviewer",
+                        "owns": ["keyboard path", "contrast", "focus states", "mobile readability"],
+                    },
+                ],
+                "sequence": [
+                    "lock design brief and surface constraints",
+                    "select or derive design tokens before prototype work",
+                    "build the smallest runnable high-fidelity prototype",
+                    "review visual quality and accessibility before implementation handoff",
+                ],
+                "quality_gates": [
+                    "design_brief_gate",
+                    "design_token_gate",
+                    "prototype_runnable_gate",
+                    "visual_quality_gate",
+                    "accessibility_gate",
+                ],
+                "output_artifacts": [
+                    ".skill-product/prototype-design-brief.md",
+                    ".skill-product/stage-council-plan.json",
+                ],
+                "resume_anchor": ".skill-product/prototype-design-brief.md",
+            }
+        )
+
+    return {
+        "enabled": len(councils) > 0,
+        "reference": STAGE_COUNCIL_REFERENCE,
+        "template": STAGE_COUNCIL_TEMPLATE,
+        "workflow_bundle": bundle_name,
+        "lead_agent": lead_agent,
+        "activation_rule": (
+            "Only expand a stage council under product-spec-deliver when product-discovery "
+            "or prototype-design signals are explicit enough to change the artifact sequence."
+        ),
+        "explicit_team_request": explicit_team_request,
+        "active_councils": [str(item.get("name", "")) for item in councils],
+        "councils": councils,
+        "fallback": (
+            "Keep World-Class Product Architect as a single lead when no product-discovery "
+            "or prototype-design council signal is present."
+        ),
+    }
 
 
 def build_micro_practices(
@@ -3392,7 +3872,6 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         and not process_only
         and not language_only
     )
-    clarifying_question = build_clarifying_question(text=text, need_clarify=need_clarify)
     workflow_bundle = build_workflow_bundle(
         text=routed_text,
         lead_agent=lead_agent,
@@ -3403,6 +3882,33 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         needs_git_workflow=needs_git_workflow,
         sentinel_overlay=sentinel_overlay,
     )
+    intent_confirmation = build_intent_confirmation(
+        text=routed_text,
+        need_clarify=need_clarify,
+        lead_agent=lead_agent,
+        workflow_bundle=workflow_bundle,
+    )
+    intent_question = intent_confirmation.get("question")
+    if bool(intent_confirmation.get("required")) and isinstance(intent_question, str) and intent_question.strip():
+        clarifying_question = intent_question
+    else:
+        clarifying_question = build_clarifying_question(text=text, need_clarify=need_clarify)
+    stage_council_plan = build_stage_council_plan(
+        text=routed_text,
+        lead_agent=lead_agent,
+        workflow_bundle=workflow_bundle,
+    )
+    if bool(intent_confirmation.get("required")):
+        stage_council_plan = {
+            **stage_council_plan,
+            "enabled": False,
+            "active_councils": [],
+            "councils": [],
+            "fallback": (
+                "Intent confirmation is required before activating product-discovery "
+                "or prototype-design stage councils."
+            ),
+        }
     micro_practices = build_micro_practices(
         text=routed_text,
         workflow_bundle=workflow_bundle,
@@ -3510,6 +4016,10 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "external_agent_backend_reference": external_agent_backend_plan.get("reference"),
         "real_subagent_runtime_reference": real_subagent_runtime_plan.get("reference"),
         "real_subagent_runtime_eligible": real_subagent_runtime_plan.get("eligible"),
+        "intent_confirmation_required": intent_confirmation.get("required"),
+        "intent_confirmation_option_ids": intent_confirmation.get("option_ids", []),
+        "stage_council_reference": stage_council_plan.get("reference"),
+        "active_councils": stage_council_plan.get("active_councils", []),
         "assistant_delta_contract_enabled": assistant_delta_contract.get("enabled"),
         "micro_practices": micro_practices,
         "micro_practice_names": micro_practice_names,
@@ -3551,11 +4061,14 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "execution_mode": auto_run_profile.get("execution_mode"),
         "auto_run_profile": auto_run_profile,
         "clarifying_question": clarifying_question,
+        "intent_confirmation": intent_confirmation,
         "workflow_bundle": workflow_bundle.get("name"),
         "bundle_confidence": workflow_bundle.get("confidence"),
         "workflow_bundle_source": workflow_bundle.get("source"),
         "workflow_steps": workflow_bundle.get("steps", []),
         "workflow_reason": workflow_bundle.get("reason"),
+        "stage_council_plan": stage_council_plan,
+        "active_councils": stage_council_plan.get("active_councils", []),
         "micro_practices": micro_practices,
         "micro_practice_names": micro_practice_names,
         "quality_gate": quality_gate,

@@ -54,6 +54,34 @@ existing routing, planning, iteration, release, and Git rules.
   - `.skill-product/current-slice.md`
   - `.skill-product/acceptance-criteria.md`
 
+### Optional stage councils under `product-spec-deliver`
+
+Use `references/stage-council-protocol.md` when product or prototype work is too
+broad for a single product generalist but does not justify a new top-level lead.
+
+Stage councils are overlays:
+
+- they keep `World-Class Product Architect` as lead
+- they keep `product-spec-deliver` as the workflow bundle
+- they change only the phase roles, gates, and artifacts inside the product
+  delivery journey
+- they hand back into Team Engine Lite before implementation or release claims
+
+Available councils:
+
+| Council | Use when | Required handoff |
+| --- | --- | --- |
+| `product-discovery-council` | PRD, product strategy, requirements, user research, competitor analysis, metrics, roadmap, sprint, stakeholder, or brainstorm work needs phase-level specialists | accepted scope, P0/P1/P2, non-goals, acceptance criteria, roadmap or sequencing delta |
+| `prototype-design-council` | high-fidelity prototype, runnable HTML prototype, design system, visual design, page design, brand tone, accessibility, or interaction design needs phase-level specialists | design brief, design tokens or system choice, prototype readiness, visual quality and accessibility gates |
+
+Default stage council artifact:
+
+- `.skill-product/stage-council-plan.json`
+
+Template:
+
+- `assets/stage-council-plan-template.json`
+
 ## 3. `quick-slice-deliver`
 
 - Use when:

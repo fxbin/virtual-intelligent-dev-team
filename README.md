@@ -16,6 +16,8 @@
   - 例如小切片实现、大重构、迁移、跨模块联动、技术治理
 - 产品与研发协同
   - 例如需求澄清、验收标准、前后端协作、分轮 beta
+- 模糊想法分流
+  - 例如用户只给出一个猜想，不确定该做产品验证、原型探索、技术可行性、架构风险还是交付拆解
 - 版本与闭环治理
   - 例如多轮优化、release gate、post-release feedback loop、resume
 
@@ -39,9 +41,11 @@
 ## 适合解决什么问题
 
 - 复杂研发任务的 lead agent 路由与协同
+- 模糊猜想的意图确认反问：先让用户在 `product-opportunity`、`prototype-exploration`、`technical-feasibility`、`architecture-risk`、`delivery-plan` 中确认方向，确认后才把 provisional route 收敛成最终路线
 - 大型重构、迁移、拆分、技术治理
 - 多轮优化、benchmark、回滚、resume
 - 产品定义、验收标准、分轮 beta 内测
+- 产品发现专家团与原型设计专家团：在 `product-spec-deliver` 内按需展开阶段内 specialists，但不替换顶层 lead
 - release gate 与 post-release feedback loop
 - 完成证据门禁：`done / ready / ship / handoff` 之前必须有结构化 completion evidence，且 `evidence_refs` 要能指向可验证命令或本地 artifact
 - trigger health 与 workflow quality baseline，避免该触发不触发、误触发、过度流程化或 completion claim 证据不足
@@ -65,6 +69,8 @@
   - 恢复优先读取机器可读的 automation state，而不是靠对话猜测上下文。
 - `小切片交付`
   - 小型功能或 bugfix 默认保留 quick slice brief、project context、delivery status 和验证证据。
+- `意图确认`
+  - 低信息量或模糊猜想不会直接硬路由，会先给出目标 lead / workflow bundle / stage council 选项，让用户确认切入方向。
 - `目标边界`
   - 对容易漂移的任务先形成 goal frame，明确 success evidence、stop condition、non-goals 和当前 stop state。
 - `工作流质量基线`
@@ -83,6 +89,8 @@
   - 非平凡完成声明必须保留 action、result、covered scope、uncovered scope、residual risk、confidence grade 和 evidence refs；release gate 会拒绝只有 benchmark 绿、但缺少完成证据的 `ship`。
 - `发布与反馈闭环`
   - 不只做发布前 gate，也覆盖发布后的反馈回写与下一轮修复入口。
+- `阶段专家团`
+  - 产品战略、PRD、用户研究、竞品、指标、路线图等请求可激活 `product-discovery-council`；高保真原型、设计系统、可运行 HTML 原型与可访问性审查可激活 `prototype-design-council`。两者都是 `World-Class Product Architect` 下面的 overlay，不会把简单任务升级成新顶层团队。
 
 ## 能力矩阵
 
@@ -96,6 +104,7 @@
 | 发布治理 | release gate、completion evidence、hold 后续修复入口 | 常停留在"建议发/不发"或只看 benchmark 结果 |
 | 上线后闭环 | post-release feedback loop | 很少覆盖上线后的反馈回写 |
 | 产品协同 | 支持产品、研发、技术治理联动 | 容易偏单一研发视角 |
+| 阶段专家团 | 产品发现与原型设计可按需展开 council overlay | 常见做法要么单专家过载，要么所有任务都进重流程 |
 | Beta 验证 | 分轮内测、模拟用户、cohort ramp、反馈门禁 | 通常只有静态测试计划，没有结构化分轮验证 |
 | 工作流质量 | 触发健康、快路径廉价、证据新鲜度、artifact 懒创建、authority boundary | 容易越改越重，或把方法建议误说成最终权威 |
 | 反熵治理 | delete-first / compat-exception / confirmation-first 路径选择 | 常见做法是不断加 fallback 或 guard |

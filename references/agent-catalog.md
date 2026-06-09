@@ -58,3 +58,21 @@ Source of truth for each team member's scope, trigger patterns, and anti-pattern
 4. Product definition, acceptance criteria, UI/UX, and frontend-heavy work should prefer `World-Class Product Architect`.
 5. General implementation and backend design should prefer `Technical Trinity`.
 6. Add or elevate `Sentinel Architect (NB)` for high-risk or research-first work.
+
+## Stage Councils Under World-Class Product Architect
+
+Stage councils are optional overlays. They do not become top-level leads.
+
+### `product-discovery-council`
+
+- Trigger signals: `产品战略`, `产品专家团`, `PRD`, `需求分析`, `用户研究`, `竞品`, `指标`, `路线图`, `sprint`, `stakeholder`, `product strategy`, `user research`, `competitive analysis`, `metrics`, `roadmap`.
+- Roles: `requirement-analyst`, `user-researcher`, `competitive-analyst`, `data-analyst`, `roadmap-planner`.
+- Output bias: accepted scope, P0/P1/P2, non-goals, user evidence, competitor or market proof, success metrics, roadmap sequencing.
+- Avoid using for: backend-only architecture, small implementation fixes, release-only or Git-only questions.
+
+### `prototype-design-council`
+
+- Trigger signals: `原型设计`, `设计原型`, `高保真`, `HTML 原型`, `设计系统`, `视觉设计`, `页面设计`, `品牌调性`, `prototype`, `high-fidelity`, `design system`, `visual design`, `accessibility`.
+- Roles: `ux-discovery`, `design-system-curator`, `prototype-builder`, `visual-critic`, `accessibility-reviewer`.
+- Output bias: design brief, design token choice, runnable prototype readiness, visual quality gate, accessibility gate.
+- Avoid using for: product strategy without UI surface, code-only refactors, or generic redesign requests that only need quick implementation.

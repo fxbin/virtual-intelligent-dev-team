@@ -23,6 +23,8 @@
 - `execution_result`
 - `evidence`
 - `micro_practices`
+- `stage_councils`
+- 可选：`intent_confirmation`
 - `next_action`
 - `resume`
 - `git_workflow`
@@ -88,6 +90,64 @@
 - `resume_anchor`
 - `schema`
 - `evaluation_schema`
+
+## `stage_councils`
+
+- `enabled`
+- `reference`
+- `template`
+- `workflow_bundle`
+- `activation_rule`
+- `explicit_team_request`
+- `active_councils`
+- `councils`
+- `fallback`
+
+`councils[]`:
+
+- `name`
+- `lead`
+- `activation_reason`
+- `roles`
+- `sequence`
+- `quality_gates`
+- `output_artifacts`
+- `resume_anchor`
+
+`roles[]`:
+
+- `role`
+- `owns`
+
+## `intent_confirmation`
+
+仅在模糊猜想、低信息量请求，或不同切入方向会改变 lead / workflow bundle / stage council 时出现。
+
+- `required`
+- `reason`
+- `question`
+- `option_ids`
+- `options`
+- `provisional_route`
+- `fuzzy_markers`
+- `detected_categories`
+- `route_choice_markers`
+
+`options[]`:
+
+- `id`
+- `label`
+- `description`
+- `target_lead`
+- `target_bundle`
+- `target_council`
+
+`provisional_route`:
+
+- `lead_agent`
+- `workflow_bundle`
+- `bundle_confidence`
+- `workflow_bundle_source`
 
 ## `next_action`
 

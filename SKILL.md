@@ -1,7 +1,7 @@
 ---
 name: virtual-intelligent-dev-team
 archetype: router
-description: R&D / product / quick-slice / staged-beta / technical-governance router and bounded-iteration orchestrator for complex software work. Dispatch the best lead agent from Java Virtuoso, Sentinel Architect (NB), Technical Trinity, Code Audit Council, Git Workflow Guardian, and World-Class Product Architect; attach copilots only when useful; use quick slice delivery for narrow implementation or bug-fix work; enter pre-development planning for large rewrites, migrations, and project-wide transformations; enable evidence-driven iteration for optimization loops, repeated retries, benchmark comparison, or candidate evaluation; and trigger the formal release gate when the user asks whether a version is ready to ship or submit.
+description: R&D / product / quick-slice / staged-beta / technical-governance router and bounded-iteration orchestrator for complex software work. Dispatch the best lead agent from Java Virtuoso, Sentinel Architect (NB), Technical Trinity, Code Audit Council, Git Workflow Guardian, and World-Class Product Architect; attach copilots only when useful; ask a targeted intent-confirmation question for fuzzy ideas before treating a provisional route as final; expand optional product-discovery or prototype-design stage councils under product delivery when phase-level specialists materially change the artifact sequence; use quick slice delivery for narrow implementation or bug-fix work; enter pre-development planning for large rewrites, migrations, and project-wide transformations; enable evidence-driven iteration for optimization loops, repeated retries, benchmark comparison, or candidate evaluation; and trigger the formal release gate when the user asks whether a version is ready to ship or submit.
 ---
 
 # Virtual Intelligent Dev Team
@@ -12,7 +12,7 @@ Route complex software work into the smallest defensible delivery workflow, keep
 
 This skill is not only an expert router. It is a bounded work-loop skill for complex tasks.
 
-It has seven practical closure layers:
+It has eight practical closure layers:
 
 1. `Planning closure`
    - Large rewrites, migrations, and project-wide transformations get a lightweight analysis / plan / progress pack before implementation.
@@ -28,6 +28,8 @@ It has seven practical closure layers:
    - Offline drills verify rollback, resume, and release-gate bootstrap paths.
 7. `Team Engine Lite closure`
    - Code-facing delivery now carries Worker / Verifier separation, max-cycle retry, remediation patch, controlled real subagent runtime eligibility, external-agent soft orchestration fallback, and a DeliveryCycleReport before Lead acceptance.
+8. `Stage council closure`
+   - Product discovery and prototype design can expand into phase-level councils under `World-Class Product Architect` without replacing the top-level lead, workflow bundle, or Team Engine Lite verification.
 
 Runtime rule:
 
@@ -40,6 +42,7 @@ Route complex software requests into the smallest defensible workflow bundle, ke
 ## Trigger cues
 
 - multi-domain software delivery
+- fuzzy ideas where product opportunity, prototype exploration, technical feasibility, architecture risk, or delivery planning could all be plausible
 - quick implementation or bug-fix slice
 - rewrite / migration / plan-before-coding
 - repeated optimization or retry loops
@@ -85,17 +88,19 @@ If the task is simple and clearly single-domain, keep routing lightweight.
 6. Enable governance or process guardrails only when needed.
 7. Use a compact handoff when lead and assistants need structured coordination.
 8. If the request is primarily about building AI-readable project context, route execution to `skill-forge` and its project knowledge capture protocol after the software-risk lanes are identified.
-9. Apply execution-quality guardrails: surface route-changing assumptions, keep the smallest defensible bundle, limit scope surgically, and define verifiable closure.
-10. For broad, repeated-failure, release, beta, multi-agent, or drift-prone work, apply goal framing: success evidence, stop condition, and non-goals must be explicit before implementation.
-11. For code-facing routes, apply the Harness constraint gate before implementation: create or refresh `.skill-harness/engineering-constraints.md`.
-12. For changes that add or retire guards, fallbacks, adapters, duplicate owners, compatibility paths, schema, persistence, or source-of-truth behavior, apply anti-entropy governance before choosing delete, compat, or confirmation paths.
-13. For code-facing, release-facing, Git-facing, or remediation routes, apply Team Engine Lite: Worker can produce, Verifier can pass/fail/hold, and Lead can accept only after a DeliveryCycleReport.
-14. If the user explicitly asks for multi-agent / subagent / parallel agent execution, or `/auto` reaches an eligible workflow, build a controlled real subagent runtime plan; only claim actual real subagent execution when the host exposes spawn / wait / merge runtime evidence.
-15. If external Agent backends are available but real subagent runtime is not proven, treat them as soft backend sessions under the same role boundary; do not claim true async multi-process runtime without runtime evidence.
-16. If the user asks for optimization, repeated improvement, benchmark comparison, or another round, enter bounded iteration instead of open-ended self-looping.
-17. If the user asks whether the current version can ship, submit, or pass formal acceptance, run the release gate instead of answering from a benchmark summary alone.
-18. Before any completion, readiness, commit, merge, release, or handoff claim, preserve fresh evidence slots: action, result, covered scope, uncovered scope, residual risk, and confidence grade.
-19. Produce one unified response instead of disconnected role fragments.
+9. If the request is a fuzzy idea or low-information route-changing ask, ask one intent-confirmation question before treating the provisional route as final.
+10. Apply execution-quality guardrails: surface route-changing assumptions, keep the smallest defensible bundle, limit scope surgically, and define verifiable closure.
+11. For broad, repeated-failure, release, beta, multi-agent, or drift-prone work, apply goal framing: success evidence, stop condition, and non-goals must be explicit before implementation.
+12. For code-facing routes, apply the Harness constraint gate before implementation: create or refresh `.skill-harness/engineering-constraints.md`.
+13. For changes that add or retire guards, fallbacks, adapters, duplicate owners, compatibility paths, schema, persistence, or source-of-truth behavior, apply anti-entropy governance before choosing delete, compat, or confirmation paths.
+14. For code-facing, release-facing, Git-facing, or remediation routes, apply Team Engine Lite: Worker can produce, Verifier can pass/fail/hold, and Lead can accept only after a DeliveryCycleReport.
+15. If the user explicitly asks for multi-agent / subagent / parallel agent execution, or `/auto` reaches an eligible workflow, build a controlled real subagent runtime plan; only claim actual real subagent execution when the host exposes spawn / wait / merge runtime evidence.
+16. If external Agent backends are available but real subagent runtime is not proven, treat them as soft backend sessions under the same role boundary; do not claim true async multi-process runtime without runtime evidence.
+17. If the user asks for optimization, repeated improvement, benchmark comparison, or another round, enter bounded iteration instead of open-ended self-looping.
+18. If the user asks whether the current version can ship, submit, or pass formal acceptance, run the release gate instead of answering from a benchmark summary alone.
+19. If product discovery, product strategy, PRD, user research, competitor analysis, metrics, roadmap, prototype design, high-fidelity UI, design systems, or explicit expert-team phrasing would make a single product generalist too broad, apply the stage council protocol under `product-spec-deliver`.
+20. Before any completion, readiness, commit, merge, release, or handoff claim, preserve fresh evidence slots: action, result, covered scope, uncovered scope, residual risk, and confidence grade.
+21. Produce one unified response instead of disconnected role fragments.
 
 ## Output template
 
@@ -162,6 +167,8 @@ Read indexes first; do not flatten the whole skill into this file.
 - Goal framing and anti-entropy governance:
   [references/goal-framing-protocol.md](references/goal-framing-protocol.md) and
   [references/anti-entropy-governance.md](references/anti-entropy-governance.md)
+- Optional product-discovery and prototype-design stage councils:
+  [references/stage-council-protocol.md](references/stage-council-protocol.md)
 - Harness engineering constraint gate:
   [references/harness-engineering-constraint-protocol.md](references/harness-engineering-constraint-protocol.md)
 - Team Engine Lite, Worker / Verifier cycle, controlled real subagent runtime, and external Agent backend soft orchestration:

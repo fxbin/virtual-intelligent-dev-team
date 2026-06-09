@@ -51,6 +51,12 @@
     "micro_practices": {
       "$ref": "#/$defs/micro_practices"
     },
+    "stage_councils": {
+      "$ref": "#/$defs/stage_councils"
+    },
+    "intent_confirmation": {
+      "$ref": "#/$defs/intent_confirmation"
+    },
     "completion_evidence": {
       "$ref": "#/$defs/completion_evidence"
     },
@@ -274,6 +280,215 @@
             }
           },
           "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "stage_council_role": {
+      "type": "object",
+      "required": [
+        "role",
+        "owns"
+      ],
+      "properties": {
+        "role": {
+          "type": "string"
+        },
+        "owns": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "stage_council_item": {
+      "type": "object",
+      "required": [
+        "name",
+        "lead",
+        "activation_reason",
+        "roles",
+        "sequence",
+        "quality_gates",
+        "output_artifacts",
+        "resume_anchor"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "lead": {
+          "type": "string"
+        },
+        "activation_reason": {
+          "type": "string"
+        },
+        "roles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/stage_council_role"
+          }
+        },
+        "sequence": {
+          "$ref": "#/$defs/string_array"
+        },
+        "quality_gates": {
+          "$ref": "#/$defs/string_array"
+        },
+        "output_artifacts": {
+          "$ref": "#/$defs/string_array"
+        },
+        "resume_anchor": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "stage_councils": {
+      "type": "object",
+      "required": [
+        "enabled",
+        "reference",
+        "template",
+        "workflow_bundle",
+        "activation_rule",
+        "explicit_team_request",
+        "active_councils",
+        "councils",
+        "fallback"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "template": {
+          "type": "string"
+        },
+        "workflow_bundle": {
+          "type": "string"
+        },
+        "activation_rule": {
+          "type": "string"
+        },
+        "explicit_team_request": {
+          "type": "boolean"
+        },
+        "active_councils": {
+          "$ref": "#/$defs/string_array"
+        },
+        "councils": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/stage_council_item"
+          }
+        },
+        "fallback": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "intent_confirmation_option": {
+      "type": "object",
+      "required": [
+        "id",
+        "label",
+        "description",
+        "target_lead",
+        "target_bundle",
+        "target_council"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "target_lead": {
+          "type": "string"
+        },
+        "target_bundle": {
+          "type": "string"
+        },
+        "target_council": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "intent_confirmation_route": {
+      "type": "object",
+      "required": [
+        "lead_agent",
+        "workflow_bundle",
+        "bundle_confidence",
+        "workflow_bundle_source"
+      ],
+      "properties": {
+        "lead_agent": {
+          "type": "string"
+        },
+        "workflow_bundle": {
+          "type": "string"
+        },
+        "bundle_confidence": {
+          "type": "number"
+        },
+        "workflow_bundle_source": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "intent_confirmation": {
+      "type": "object",
+      "required": [
+        "required",
+        "reason",
+        "question",
+        "option_ids",
+        "options",
+        "provisional_route",
+        "fuzzy_markers",
+        "detected_categories",
+        "route_choice_markers"
+      ],
+      "properties": {
+        "required": {
+          "const": true
+        },
+        "reason": {
+          "type": "string"
+        },
+        "question": {
+          "type": "string"
+        },
+        "option_ids": {
+          "$ref": "#/$defs/string_array"
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/intent_confirmation_option"
+          }
+        },
+        "provisional_route": {
+          "$ref": "#/$defs/intent_confirmation_route"
+        },
+        "fuzzy_markers": {
+          "$ref": "#/$defs/string_array"
+        },
+        "detected_categories": {
+          "$ref": "#/$defs/string_array"
+        },
+        "route_choice_markers": {
+          "$ref": "#/$defs/string_array"
         }
       },
       "additionalProperties": false

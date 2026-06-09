@@ -102,6 +102,7 @@
         "lead_agent is World-Class Product Architect",
         "assistant_agents contains Technical Trinity",
         "workflow_bundle is product-spec-deliver",
+        "stage_council_plan.enabled is false",
         "workflow_bundle_bootstrap.required is true",
         "workflow_bundle_bootstrap.commands contains python scripts/init_product_delivery.py --root . --pretty",
         "mode is not single-agent execution"
@@ -152,6 +153,12 @@
         "confidence is 0.0",
         "assistant_agents is empty",
         "clarifying_question is not null",
+        "intent_confirmation.required is true",
+        "intent_confirmation.option_ids contains product-opportunity",
+        "intent_confirmation.option_ids contains technical-feasibility",
+        "response_pack_json intent_confirmation.required is true",
+        "response_pack_json intent_confirmation.option_ids contains delivery-plan",
+        "response_pack contains ## Intent Confirmation",
         "reason.unknown_only_fallback is true"
       ],
       "categories": [
@@ -1278,7 +1285,7 @@
       ]
     },
     {
-      "id": 89,
+      "id": 91,
       "runner": "release_gate",
       "categories": [
         "release-gate",
@@ -1717,6 +1724,80 @@
         "verify_action_json details.decision is missing",
         "verify_action_json details.template is assets/completion-evidence-template.json",
         "verify_action_json details.verify_command contains verify_completion_evidence.py"
+      ]
+    },
+    {
+      "id": 89,
+      "prompt": "用产品专家团帮我做这个 AI coding 工具的 PRD、用户研究、竞品分析和路线图。",
+      "expected_output": "Explicit product expert-team requests should keep World-Class Product Architect as lead, keep product-spec-deliver as the workflow bundle, and activate product-discovery-council as a stage overlay.",
+      "files": [
+        "references/stage-council-protocol.md",
+        "assets/stage-council-plan-template.json"
+      ],
+      "expectations": [
+        "lead_agent is World-Class Product Architect",
+        "workflow_bundle is product-spec-deliver",
+        "stage_council_plan.enabled is true",
+        "active_councils contains product-discovery-council",
+        "stage_council_plan.reference is references/stage-council-protocol.md",
+        "response_pack_json stage_councils.enabled is true",
+        "response_pack_json stage_councils.active_councils contains product-discovery-council",
+        "response_pack contains ## 阶段专家团"
+      ],
+      "categories": [
+        "product-delivery",
+        "stage-council",
+        "contract-output"
+      ]
+    },
+    {
+      "id": 92,
+      "prompt": "用原型设计专家团做一个高保真 HTML 原型，包含设计系统和可访问性审查。",
+      "expected_output": "Explicit prototype design expert-team requests should keep World-Class Product Architect as lead, keep product-spec-deliver as the workflow bundle, and activate prototype-design-council as a stage overlay.",
+      "files": [
+        "references/stage-council-protocol.md",
+        "assets/stage-council-plan-template.json"
+      ],
+      "expectations": [
+        "lead_agent is World-Class Product Architect",
+        "workflow_bundle is product-spec-deliver",
+        "stage_council_plan.enabled is true",
+        "active_councils contains prototype-design-council",
+        "stage_council_plan.reference is references/stage-council-protocol.md",
+        "response_pack_json stage_councils.enabled is true",
+        "response_pack_json stage_councils.active_councils contains prototype-design-council",
+        "response_pack contains ## 阶段专家团"
+      ],
+      "categories": [
+        "frontend",
+        "stage-council",
+        "contract-output"
+      ]
+    },
+    {
+      "id": 93,
+      "prompt": "我有个模糊猜想，不确定是该做产品验证、原型还是技术可行性，你先帮我判断方向。",
+      "expected_output": "Fuzzy idea requests that could route to product opportunity, prototype exploration, or technical feasibility should ask for intent confirmation before hard-routing the provisional expert team.",
+      "files": [
+        "references/output-contract.md",
+        "references/response-pack-sidecar.schema.json"
+      ],
+      "expectations": [
+        "intent_confirmation.required is true",
+        "intent_confirmation.option_ids contains product-opportunity",
+        "intent_confirmation.option_ids contains prototype-exploration",
+        "intent_confirmation.option_ids contains technical-feasibility",
+        "stage_council_plan.enabled is false",
+        "clarifying_question is not null",
+        "response_pack_json intent_confirmation.required is true",
+        "response_pack_json intent_confirmation.option_ids contains prototype-exploration",
+        "response_pack_json stage_councils.enabled is false",
+        "response_pack contains ## 意图确认"
+      ],
+      "categories": [
+        "clarification",
+        "product-delivery",
+        "contract-output"
       ]
     }
   ]

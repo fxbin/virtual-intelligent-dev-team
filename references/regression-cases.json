@@ -77,6 +77,32 @@
       }
     },
     {
+      "name": "product_discovery_council_overlay",
+      "text": "用产品专家团帮我做这个 AI coding 工具的 PRD、用户研究、竞品分析和路线图。",
+      "expect": {
+        "lead_agent": "World-Class Product Architect",
+        "workflow_bundle": "product-spec-deliver",
+        "stage_council_enabled": true,
+        "active_councils_contains": [
+          "product-discovery-council"
+        ],
+        "priority_agent": null
+      }
+    },
+    {
+      "name": "prototype_design_council_overlay",
+      "text": "用原型设计专家团做一个高保真 HTML 原型，包含设计系统和可访问性审查。",
+      "expect": {
+        "lead_agent": "World-Class Product Architect",
+        "workflow_bundle": "product-spec-deliver",
+        "stage_council_enabled": true,
+        "active_councils_contains": [
+          "prototype-design-council"
+        ],
+        "priority_agent": null
+      }
+    },
+    {
       "name": "governance_bundle_with_git_lead",
       "text": "Define the rollback plan and branch delivery flow for this core refactor.",
       "expect": {
@@ -206,6 +232,26 @@
       "expect": {
         "lead_agent": "Technical Trinity",
         "assistant_agents": [],
+        "intent_confirmation_required": true,
+        "intent_option_ids_contains": [
+          "product-opportunity",
+          "technical-feasibility"
+        ],
+        "priority_agent": null
+      }
+    },
+    {
+      "name": "fuzzy_idea_requires_intent_confirmation",
+      "text": "我有个模糊猜想，不确定是该做产品验证、原型还是技术可行性，你先帮我判断方向。",
+      "expect": {
+        "lead_agent": "World-Class Product Architect",
+        "intent_confirmation_required": true,
+        "intent_option_ids_contains": [
+          "product-opportunity",
+          "prototype-exploration",
+          "technical-feasibility"
+        ],
+        "stage_council_enabled": false,
         "priority_agent": null
       }
     },

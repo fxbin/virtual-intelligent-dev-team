@@ -1018,6 +1018,29 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual(0.0, result["confidence"])
         self.assertEqual("en", result["request_language"])
         self.assertIsNotNone(result["clarifying_question"])
+        self.assertTrue(result["intent_confirmation"]["required"])
+        self.assertIn("product-opportunity", result["intent_confirmation"]["option_ids"])
+        self.assertIn("technical-feasibility", result["intent_confirmation"]["option_ids"])
+
+    def test_fuzzy_idea_requires_intent_confirmation_before_hard_route(self) -> None:
+        result = route_request.route_request(
+            "我有个模糊猜想，不确定是该做产品验证、原型还是技术可行性，你先帮我判断方向。",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertTrue(result["intent_confirmation"]["required"])
+        self.assertEqual(result["clarifying_question"], result["intent_confirmation"]["question"])
+        self.assertIn("product-opportunity", result["intent_confirmation"]["option_ids"])
+        self.assertIn("prototype-exploration", result["intent_confirmation"]["option_ids"])
+        self.assertIn("technical-feasibility", result["intent_confirmation"]["option_ids"])
+        self.assertFalse(result["stage_council_plan"]["enabled"])
+        self.assertEqual([], result["active_councils"])
+        self.assertEqual(
+            result["lead_agent"],
+            result["intent_confirmation"]["provisional_route"]["lead_agent"],
+        )
+        self.assertIn("prototype-exploration", result["intent_confirmation"]["detected_categories"])
 
     def test_process_only_release_gate_low_confidence_keeps_no_assistants(self) -> None:
         result = route_request.route_request(
@@ -1244,6 +1267,43 @@ class RoutingTests(unittest.TestCase):
             ],
             result["workflow_bundle_bootstrap"]["micro_practice_ledger"]["active_practices"],
         )
+        self.assertFalse(result["stage_council_plan"]["enabled"])
+        self.assertEqual([], result["active_councils"])
+
+    def test_product_discovery_request_activates_stage_council_overlay(self) -> None:
+        result = route_request.route_request(
+            "用产品专家团帮我做这个 AI coding 工具的 PRD、用户研究、竞品分析和路线图。",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertEqual("World-Class Product Architect", result["lead_agent"])
+        self.assertEqual("product-spec-deliver", result["workflow_bundle"])
+        self.assertTrue(result["stage_council_plan"]["enabled"])
+        self.assertIn("product-discovery-council", result["active_councils"])
+        self.assertEqual(
+            "references/stage-council-protocol.md",
+            result["stage_council_plan"]["reference"],
+        )
+        self.assertEqual(
+            "assets/stage-council-plan-template.json",
+            result["stage_council_plan"]["template"],
+        )
+
+    def test_prototype_design_request_activates_stage_council_overlay(self) -> None:
+        result = route_request.route_request(
+            "用原型设计专家团做一个高保真 HTML 原型，包含设计系统和可访问性审查。",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertEqual("World-Class Product Architect", result["lead_agent"])
+        self.assertEqual("product-spec-deliver", result["workflow_bundle"])
+        self.assertTrue(result["stage_council_plan"]["enabled"])
+        self.assertIn("prototype-design-council", result["active_councils"])
+        council = result["stage_council_plan"]["councils"][0]
+        self.assertIn("visual_quality_gate", council["quality_gates"])
+        self.assertIn("accessibility_gate", council["quality_gates"])
 
     def test_beta_validation_request_routes_to_product_beta_bundle(self) -> None:
         result = route_request.route_request(
@@ -7750,6 +7810,7 @@ class ResponsePackTests(unittest.TestCase):
             "Is this version ready to ship? Do not answer from benchmark alone. Run the formal release gate.",
             "Iterate on the React dashboard UX, benchmark the variants, and keep improving until stable.",
             "这个产品开发前后都要做内测，分三轮递增用户，并模拟不同类型的内测用户来收集反馈。",
+            "用原型设计专家团做一个高保真 HTML 原型，包含设计系统和可访问性审查。",
         ]
 
         for prompt in prompts:
@@ -7761,6 +7822,41 @@ class ResponsePackTests(unittest.TestCase):
                 )
                 payload = response_pack.build_response_pack_payload(result)
                 response_contract.validate_response_pack_payload(payload)
+
+    def test_response_pack_exposes_stage_councils(self) -> None:
+        result = route_request.route_request(
+            "用原型设计专家团做一个高保真 HTML 原型，包含设计系统和可访问性审查。",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        payload = response_pack.build_response_pack_payload(result)
+        markdown = response_pack.build_response_pack(result)
+
+        response_contract.validate_response_pack_payload(payload)
+        self.assertTrue(payload["stage_councils"]["enabled"])
+        self.assertIn("prototype-design-council", payload["stage_councils"]["active_councils"])
+        self.assertIn("## 阶段专家团", markdown)
+        self.assertIn("prototype-design-council", markdown)
+
+    def test_response_pack_exposes_intent_confirmation(self) -> None:
+        result = route_request.route_request(
+            "我有个模糊猜想，不确定是该做产品验证、原型还是技术可行性，你先帮我判断方向。",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        payload = response_pack.build_response_pack_payload(result)
+        markdown = response_pack.build_response_pack(result)
+
+        response_contract.validate_response_pack_payload(payload)
+        self.assertTrue(payload["intent_confirmation"]["required"])
+        self.assertIn("product-opportunity", payload["intent_confirmation"]["option_ids"])
+        self.assertIn("prototype-exploration", payload["intent_confirmation"]["option_ids"])
+        self.assertIn("technical-feasibility", payload["intent_confirmation"]["option_ids"])
+        self.assertFalse(payload["stage_councils"]["enabled"])
+        self.assertIn("## 意图确认", markdown)
+        self.assertIn("prototype-exploration", markdown)
 
     def test_generate_response_pack_payload_schema_rejects_missing_resume(self) -> None:
         result = route_request.route_request(

@@ -35,6 +35,8 @@
   - duplicate owner、fallback growth、adapter / guard 膨胀、delete vs compat、persistent-state 删除边界的反熵治理 overlay
 - `shared-language-and-decision-capture.md`
   - 需求术语、领域语言、重大决策轻量捕获，避免 project context 变成临时草稿
+- `stage-council-protocol.md`
+  - 产品发现专家团与原型设计专家团的可选阶段内 overlay，不替换顶层 lead 和 workflow bundle
 - `feedback-loop-first-protocol.md`
   - bug / regression / root cause 先建立可运行 pass/fail 信号，再排查或修复
 - `vertical-slice-delivery-protocol.md`
@@ -119,6 +121,7 @@
 - Beta validation with staged cohorts
   - simulation persona library / cohort fixtures / scenario packs / trace catalog / config / trace
 - Frontend UX with backend coupling
+- Product discovery council / prototype design council
 - Technical governance hardening
 - High-risk production change
 - Repeated-failure or root-cause debugging

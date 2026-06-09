@@ -1,0 +1,45 @@
+{
+  "schema_version": "stage-council-plan/v1",
+  "enabled": true,
+  "workflow_bundle": "product-spec-deliver",
+  "lead_agent": "World-Class Product Architect",
+  "active_councils": [],
+  "activation_summary": "",
+  "councils": [
+    {
+      "name": "",
+      "activation_reason": "",
+      "roles": [
+        {
+          "role": "",
+          "owns": [],
+          "input_evidence": [],
+          "output_delta": ""
+        }
+      ],
+      "sequence": [],
+      "quality_gates": [
+        {
+          "gate_id": "",
+          "status": "unchecked",
+          "evidence": "",
+          "blocker": ""
+        }
+      ],
+      "output_artifacts": [],
+      "resume_anchor": ""
+    }
+  ],
+  "handoff_to_workflow_bundle": {
+    "target_bundle": "product-spec-deliver",
+    "accepted_scope": "",
+    "acceptance_criteria_delta": [],
+    "contract_questions_delta": [],
+    "implementation_readiness": "hold"
+  },
+  "closure": {
+    "lead_synthesis_done": false,
+    "team_engine_required_before_delivery": true,
+    "remaining_risks": []
+  }
+}

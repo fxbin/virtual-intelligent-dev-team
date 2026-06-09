@@ -13,6 +13,16 @@ This note keeps the router contract compact and explicit.
 | release / ship / hold | ship-hold-remediate | Technical Trinity | Git Workflow Guardian when delivery governance overtakes release evidence |
 | beta / staged validation / rollout feedback | beta-feedback-ramp | World-Class Product Architect | Technical Trinity when product signals are weak and implementation dominates |
 
+## Stage council overlays
+
+These overlays sit under `product-spec-deliver`; they do not replace the
+selected lead or workflow bundle.
+
+| Trigger family | Overlay | Lead remains |
+| --- | --- | --- |
+| PRD / product strategy / user research / competitor / metrics / roadmap / stakeholder | product-discovery-council | World-Class Product Architect |
+| high-fidelity prototype / runnable HTML prototype / design system / visual design / accessibility | prototype-design-council | World-Class Product Architect |
+
 ## Fallback rules
 
 - If explicit process skill detection is stronger than specialist routing, prefer the process route.

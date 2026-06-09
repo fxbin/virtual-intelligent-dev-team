@@ -132,6 +132,36 @@ def validate_routing_cases(config: dict[str, object], cases: list[dict[str, obje
                     artifact in result.get("resume_artifacts", []),
                     f"{name}: missing resume artifact {artifact}",
                 )
+        if "active_councils_contains" in expect:
+            expected_councils = expect["active_councils_contains"]
+            check(isinstance(expected_councils, list), f"{name}: active_councils_contains must be a list")
+            active_councils = result.get("active_councils", [])
+            check(isinstance(active_councils, list), f"{name}: active_councils must be a list")
+            for council in expected_councils:
+                check(council in active_councils, f"{name}: missing active council {council}")
+        if "stage_council_enabled" in expect:
+            stage_council_plan = result.get("stage_council_plan", {})
+            check(isinstance(stage_council_plan, dict), f"{name}: stage_council_plan must be an object")
+            check(
+                bool(stage_council_plan.get("enabled")) is bool(expect["stage_council_enabled"]),
+                f"{name}: unexpected stage council enabled flag",
+            )
+        if "intent_confirmation_required" in expect:
+            intent_confirmation = result.get("intent_confirmation", {})
+            check(isinstance(intent_confirmation, dict), f"{name}: intent_confirmation must be an object")
+            check(
+                bool(intent_confirmation.get("required")) is bool(expect["intent_confirmation_required"]),
+                f"{name}: unexpected intent confirmation required flag",
+            )
+        if "intent_option_ids_contains" in expect:
+            expected_options = expect["intent_option_ids_contains"]
+            check(isinstance(expected_options, list), f"{name}: intent_option_ids_contains must be a list")
+            intent_confirmation = result.get("intent_confirmation", {})
+            check(isinstance(intent_confirmation, dict), f"{name}: intent_confirmation must be an object")
+            option_ids = intent_confirmation.get("option_ids", [])
+            check(isinstance(option_ids, list), f"{name}: intent_confirmation.option_ids must be a list")
+            for option_id in expected_options:
+                check(option_id in option_ids, f"{name}: missing intent option {option_id}")
         if "bundle_bootstrap_commands_contains" in expect:
             expected_commands = expect["bundle_bootstrap_commands_contains"]
             commands = (result.get("workflow_bundle_bootstrap") or {}).get("commands", [])
