@@ -17,10 +17,11 @@ Use this playbook when the version has already shipped and the team needs a stru
    - `monitor`
    - `iterate`
    - `escalate`
-5. When the outcome is `iterate` or `escalate`, emit a bounded remediation brief instead of leaving the feedback as an unstructured note dump.
-6. Sync shipped feedback back into product-delivery anchors so the next slice and acceptance criteria absorb real-world evidence.
-7. Sync governance writebacks when the shipped version reveals release-process, rollback, or incident-response gaps.
-8. Reopen bounded iteration only when the shipped evidence justifies a new corrective slice.
+5. If the report has unresolved feedback but remains in `monitor` for `report_context.monitor_window_count >= report_context.monitor_escalation_threshold`, escalate the stalled monitor loop into governance instead of watching indefinitely.
+6. When the outcome is `iterate` or `escalate`, emit a bounded remediation brief instead of leaving the feedback as an unstructured note dump.
+7. Sync shipped feedback back into product-delivery anchors so the next slice and acceptance criteria absorb real-world evidence.
+8. Sync governance writebacks when the shipped version reveals release-process, rollback, incident-response gaps, or stale monitor loops.
+9. Reopen bounded iteration only when the shipped evidence justifies a new corrective slice.
 
 ## Required outputs
 
@@ -40,3 +41,4 @@ Use this playbook when the version has already shipped and the team needs a stru
 - Do not treat “some users complained” as enough evidence; severity, area, and affected-user context should stay attached.
 - Do not discard the release closure context; post-release feedback should stay linked to the shipped release label and release gate artifacts.
 - Do not let shipped feedback bypass product or governance writeback when a real remediation loop is opened.
+- Do not keep returning `monitor` once unresolved feedback has crossed the explicit monitor-window threshold.

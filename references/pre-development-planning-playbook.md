@@ -99,6 +99,7 @@ When this branch is active, the user-facing answer should include:
 2. what artifacts were created or refreshed
 3. what the first execution phase is
 4. what future sessions should read first
+5. whether `.skill-context/project-context.md` now carries the planning resume context
 
 For the user-facing answer shape, use:
 
@@ -112,5 +113,6 @@ Use only the templates you need:
 - `assets/pre-development-task-breakdown-template.md`
 - `assets/pre-development-progress-master-template.md`
 - `assets/pre-development-phase-template.md`
+- `assets/project-context-template.md`
 - `references/system-map-protocol.md`
 - `references/vertical-slice-delivery-protocol.md`

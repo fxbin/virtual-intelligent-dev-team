@@ -325,6 +325,8 @@ python scripts/init_pre_development_plan.py --root . --task-name "<task-name>" -
 
 默认会同时生成完整多阶段 planning 骨架：
 
+- `.skill-context/project-context.md`
+- `docs/progress/MASTER.md`
 - `docs/progress/phase-1-<name>.md`
 - `docs/progress/phase-2-architecture.md`
 - `docs/progress/phase-3-execution.md`
@@ -538,6 +540,10 @@ python scripts/evaluate_beta_round.py --report .skill-beta/reports/round-1.json 
   - `evidence_artifacts.cohort_plan_json`
 - `evaluate_beta_round.py` 现在也会消费 ramp plan 证据：
   - `evidence_artifacts.ramp_plan_json`
+- `evaluate_beta_round.py` 还会检查 round report 计数：
+  - `completed_sessions` 不能超过 `planned_sample_size`
+  - `task_success_count` 不能超过 `completed_sessions`
+  - fixture-backed report 的 `planned_sample_size / completed_sessions` 不能小于 resolved fixture sessions
 - 对 `round-1+`：
   - 只要 round report 带了 fixture manifest，就必须带 machine-readable cohort plan
   - cohort plan 和 resolved fixture manifest 的 `planned_sessions / persona counts / scenario coverage / trace coverage` 不一致会直接阻止 `advance`

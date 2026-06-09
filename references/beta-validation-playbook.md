@@ -20,7 +20,7 @@ Use this playbook when the request is about staged beta validation, internal tes
 8. Keep a machine-readable ramp plan so each round has an explicit planned sample size, participant mode, and expected cohort shape.
 9. Preview the resolved fixture before execution so the exact persona / scenario / trace mix is reviewable.
 10. Diff the current round against the previous manifest before execution so cohort expansion or contraction is explicit.
-11. Reconcile cohort plan, resolved fixture manifest, and ramp plan before allowing expansion so plan-vs-fixture-vs-report drift is explicit.
+11. Reconcile cohort plan, resolved fixture manifest, ramp plan, and round report counts before allowing expansion so plan-vs-fixture-vs-report drift is explicit.
 12. Capture every feedback item with scenario, severity, and proposed action, and keep the raw event trace.
 13. Sync simulation evidence back into the feedback ledger before judging the round.
 14. Expand only when the previous round's exit criteria are explicitly met.
@@ -71,6 +71,7 @@ Use this playbook when the request is about staged beta validation, internal tes
 - Do not skip the pre-build or concept-smoke round when the product promise is still unstable.
 - Do not expand cohort size before blocker-level signals are closed or explicitly accepted.
 - Do not let the report drift away from the planned ramp; sample size and participant mode should be compared against the machine-readable plan.
+- Do not let report counters drift from evidence; completed sessions must not exceed planned sample size, task successes must not exceed completed sessions, and fixture-backed reports must cover the resolved fixture sessions.
 - Do not let fixture coverage drift away from the machine-readable cohort plan; persona counts, scenario coverage, and trace coverage should reconcile before expansion.
 - Do not expand or contract fixture coverage silently; compare the manifests and explain any coverage drift.
 - Do not flatten all feedback into one list; keep round, scenario, and severity attached.

@@ -105,6 +105,19 @@ def replace_table_row(content: str, prefix: str, value: str) -> str:
     return replace_first_matching_line(content, lambda line: line.startswith(prefix), value)
 
 
+def replace_or_append_section(document: str, heading: str, section_body: str) -> str:
+    marker = f"\n{heading}\n"
+    content = document.rstrip() + "\n"
+    if marker not in content:
+        return content + "\n" + heading + "\n\n" + section_body.rstrip() + "\n"
+    before, after = content.split(marker, 1)
+    next_heading_index = after.find("\n## ")
+    if next_heading_index == -1:
+        return before.rstrip() + "\n\n" + heading + "\n\n" + section_body.rstrip() + "\n"
+    remainder = after[next_heading_index:]
+    return before.rstrip() + "\n\n" + heading + "\n\n" + section_body.rstrip() + remainder
+
+
 def fill_blank_line_after_header(content: str, header: str, value: str) -> str:
     lines = content.splitlines()
     for index, line in enumerate(lines):
@@ -262,6 +275,89 @@ def prepare_phase(
     return content
 
 
+def relative_path(path: Path, root: Path) -> str:
+    try:
+        return str(path.relative_to(root))
+    except ValueError:
+        return str(path)
+
+
+def prepare_project_context_section(
+    *,
+    root: Path,
+    task_name: str,
+    task_description: str,
+    phases: list[dict[str, str]],
+    project_overview_path: Path,
+    task_breakdown_path: Path,
+    master_path: Path,
+    phase_paths: list[str],
+) -> str:
+    phase_rows = [
+        f"- Phase {phase['index']}: {phase['name']} - {phase['task_title']}"
+        for phase in phases
+    ]
+    return "\n".join(
+        [
+            f"- Task: {task_name}",
+            f"- Target state: {task_description}",
+            f"- Resume anchor: `{relative_path(master_path, root)}`",
+            f"- Project overview: `{relative_path(project_overview_path, root)}`",
+            f"- Task breakdown: `{relative_path(task_breakdown_path, root)}`",
+            f"- Phase files: `{', '.join(relative_path(Path(item), root) for item in phase_paths)}`",
+            "",
+            "### Planning Phases",
+            "",
+            *phase_rows,
+            "",
+            "### Planning Rules",
+            "",
+            "- Read the resume anchor before implementation starts or resumes.",
+            "- Treat phase boundaries, dependencies, and acceptance criteria as the current planning source until superseded.",
+            "- Keep implementation slices aligned with the phase tracker instead of restarting context from chat history.",
+        ]
+    )
+
+
+def write_project_context_summary(
+    *,
+    root: Path,
+    task_name: str,
+    task_description: str,
+    phases: list[dict[str, str]],
+    project_overview_path: Path,
+    task_breakdown_path: Path,
+    master_path: Path,
+    phase_paths: list[str],
+    force: bool,
+) -> tuple[Path, str]:
+    project_context_path = root / ".skill-context" / "project-context.md"
+    if project_context_path.exists() and not force:
+        return project_context_path, "skipped"
+    section = prepare_project_context_section(
+        root=root,
+        task_name=task_name,
+        task_description=task_description,
+        phases=phases,
+        project_overview_path=project_overview_path,
+        task_breakdown_path=task_breakdown_path,
+        master_path=master_path,
+        phase_paths=phase_paths,
+    )
+    if project_context_path.exists():
+        base = project_context_path.read_text(encoding="utf-8")
+        status = "refreshed"
+    else:
+        base = read_text(ASSETS_DIR / "project-context-template.md")
+        status = "created"
+    updated = replace_or_append_section(base, "## Pre-Development Planning Context", section)
+    if project_context_path.exists() and updated == base:
+        return project_context_path, "skipped"
+    project_context_path.parent.mkdir(parents=True, exist_ok=True)
+    project_context_path.write_text(updated, encoding="utf-8")
+    return project_context_path, status
+
+
 def initialize_pre_development_plan(
     root: Path,
     task_name: str,
@@ -294,6 +390,7 @@ def initialize_pre_development_plan(
     task_breakdown_path = plan_dir / "task-breakdown.md"
     master_path = progress_dir / "MASTER.md"
     phase_path = progress_dir / f"phase-1-{phase_slug}.md"
+    project_context_path = root / ".skill-context" / "project-context.md"
 
     created: list[str] = []
     refreshed: list[str] = []
@@ -333,6 +430,24 @@ def initialize_pre_development_plan(
         else:
             skipped.append(str(path))
 
+    project_context_path, context_status = write_project_context_summary(
+        root=root,
+        task_name=task_name,
+        task_description=task_description,
+        phases=phase_specs,
+        project_overview_path=project_overview_path,
+        task_breakdown_path=task_breakdown_path,
+        master_path=master_path,
+        phase_paths=phase_paths,
+        force=force,
+    )
+    if context_status == "created":
+        created.append(str(project_context_path))
+    elif context_status == "refreshed":
+        refreshed.append(str(project_context_path))
+    else:
+        skipped.append(str(project_context_path))
+
     return {
         "root": str(root),
         "task_name": task_name,
@@ -344,12 +459,18 @@ def initialize_pre_development_plan(
         "refreshed": refreshed,
         "skipped": skipped,
         "resume_anchor": str(master_path),
+        "resume_artifacts": [
+            str(master_path),
+            str(project_context_path),
+            str(task_breakdown_path),
+        ],
         "artifacts": {
             "project_overview": str(project_overview_path),
             "task_breakdown": str(task_breakdown_path),
             "master": str(master_path),
             "phase": str(phase_path),
             "phase_files": phase_paths,
+            "project_context": str(project_context_path),
         },
         "phases": [
             {

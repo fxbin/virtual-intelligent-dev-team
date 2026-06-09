@@ -1946,11 +1946,13 @@ class IterationHelperTests(unittest.TestCase):
             master_path = Path(payload["artifacts"]["master"])
             overview_path = Path(payload["artifacts"]["project_overview"])
             phase_path = Path(payload["artifacts"]["phase"])
+            project_context_path = Path(payload["artifacts"]["project_context"])
             phase_files = [Path(item) for item in payload["artifacts"]["phase_files"]]
 
             self.assertTrue(master_path.exists())
             self.assertTrue(overview_path.exists())
             self.assertTrue(phase_path.exists())
+            self.assertTrue(project_context_path.exists())
             self.assertEqual(4, payload["phase_count"])
             self.assertEqual(4, len(phase_files))
             self.assertTrue(all(path.exists() for path in phase_files))
@@ -1960,6 +1962,45 @@ class IterationHelperTests(unittest.TestCase):
             self.assertIn("Rewrite the monolith into a Rust service stack.", overview_path.read_text(encoding="utf-8"))
             self.assertIn("Phase 1: Foundation", phase_path.read_text(encoding="utf-8"))
             self.assertIn("Phase 4: Cutover", phase_files[-1].read_text(encoding="utf-8"))
+            project_context = project_context_path.read_text(encoding="utf-8")
+            self.assertIn("## Pre-Development Planning Context", project_context)
+            self.assertIn("Task: Rust Rewrite", project_context)
+            self.assertIn("Resume anchor: `docs/progress/MASTER.md`", project_context)
+            self.assertIn(str(project_context_path), payload["resume_artifacts"])
+
+    def test_init_pre_development_plan_does_not_overwrite_existing_project_context_without_force(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp) / "planning-root"
+            project_context_path = root / ".skill-context" / "project-context.md"
+            project_context_path.parent.mkdir(parents=True, exist_ok=True)
+            original_context = "\n".join(
+                [
+                    "# Project Context",
+                    "",
+                    "## Pre-Development Planning Context",
+                    "",
+                    "- Manual planning note that must survive default initialization.",
+                    "",
+                    "## Verification Evidence",
+                    "",
+                    "- Existing verification rule.",
+                    "",
+                ]
+            )
+            project_context_path.write_text(original_context, encoding="utf-8")
+
+            payload = planning_init.initialize_pre_development_plan(
+                root=root,
+                task_name="Rust Rewrite",
+                task_description="Rewrite the monolith into a Rust service stack.",
+                phase_name="Foundation",
+                force=False,
+            )
+
+            self.assertEqual(original_context, project_context_path.read_text(encoding="utf-8"))
+            self.assertIn(str(project_context_path), payload["skipped"])
+            self.assertNotIn(str(project_context_path), payload["created"])
+            self.assertNotIn(str(project_context_path), payload["refreshed"])
 
     def test_init_iteration_round_creates_expected_assets(self) -> None:
         with make_tempdir() as tmp:
@@ -6632,8 +6673,113 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertEqual("passed", result["cohort_gate"]["status"])
             self.assertEqual("passed", result["ramp_gate"]["status"])
             self.assertEqual("passed", result["diff_gate"]["status"])
+            self.assertEqual("passed", result["report_gate"]["status"])
             self.assertTrue(Path(result["json_report"]).exists())
             self.assertTrue(Path(result["markdown_report"]).exists())
+            response_contract.validate_beta_round_gate_result(result)
+
+    def test_evaluate_beta_round_holds_when_report_counts_drift_from_fixture(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            report = root / ".skill-beta" / "reports" / "round-0.json"
+            report.parent.mkdir(parents=True, exist_ok=True)
+            manifest_path = write_beta_manifest(
+                root,
+                round_id="round-0",
+                phase="pre-build concept smoke",
+                objective="validate the product promise",
+                sessions=[
+                    {
+                        "session_id": "session-01",
+                        "persona_id": "first-time-novice",
+                        "persona_name": "First-Time Novice",
+                        "scenario_id": "scenario-1",
+                        "scenario_title": "first meaningful task",
+                        "trace_id": "novice-cta-hesitation",
+                        "trace_label": "Novice CTA hesitation",
+                    },
+                    {
+                        "session_id": "session-02",
+                        "persona_id": "goal-driven-power-user",
+                        "persona_name": "Goal-Driven Power User",
+                        "scenario_id": "scenario-2",
+                        "scenario_title": "resume a daily workflow",
+                        "trace_id": "power-user-fast-path-friction",
+                        "trace_label": "Power-user fast-path friction",
+                    },
+                    {
+                        "session_id": "session-03",
+                        "persona_id": "skeptical-evaluator",
+                        "persona_name": "Skeptical Evaluator",
+                        "scenario_id": "scenario-2",
+                        "scenario_title": "resume a daily workflow",
+                        "trace_id": "skeptic-trust-check",
+                        "trace_label": "Skeptic trust check",
+                    },
+                ],
+            )
+            cohort_plan_path = write_beta_cohort_plan(
+                root,
+                rounds=[
+                    {
+                        "round_id": "round-0",
+                        "fixture_id": "round-0-default",
+                        "planned_sessions": 3,
+                        "persona_targets": [
+                            {"persona_id": "first-time-novice", "session_count": 1},
+                            {"persona_id": "goal-driven-power-user", "session_count": 1},
+                            {"persona_id": "skeptical-evaluator", "session_count": 1},
+                        ],
+                        "required_scenario_ids": ["scenario-1", "scenario-2"],
+                        "required_trace_ids": [
+                            "novice-cta-hesitation",
+                            "power-user-fast-path-friction",
+                            "skeptic-trust-check",
+                        ],
+                    }
+                ],
+            )
+            payload = {
+                "schema_version": "beta-round-report/v1",
+                "round_id": "round-0",
+                "phase": "pre-build concept smoke",
+                "goal": "validate the product promise",
+                "participant_mode": "simulated target users",
+                "planned_sample_size": 5,
+                "completed_sessions": 2,
+                "task_success_count": 2,
+                "blocker_issue_count": 0,
+                "critical_issue_count": 0,
+                "high_severity_issue_count": 0,
+                "top_feedback_themes": [],
+                "exit_criteria": "coherent flow",
+                "gate_thresholds": {
+                    "min_completed_sessions": 1,
+                    "min_success_rate": 0.8,
+                    "max_blocker_issue_count": 0,
+                    "max_critical_issue_count": 0,
+                },
+                "evidence_artifacts": {
+                    "simulation_run_json": "",
+                    "simulation_run_markdown": "",
+                    "simulation_summary_json": "",
+                    "feedback_ledger_markdown": "",
+                    "fixture_manifest_json": str(manifest_path),
+                    "fixture_manifest_markdown": str(manifest_path.with_suffix(".md")),
+                    "cohort_plan_json": str(cohort_plan_path),
+                },
+                "notes": "",
+            }
+            response_contract.validate_beta_round_report(payload)
+            report.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+            result = beta_round_evaluator.evaluate_beta_round(report_path=report)
+
+            self.assertFalse(result["ok"])
+            self.assertEqual("hold", result["decision"])
+            self.assertEqual("passed", result["cohort_gate"]["status"])
+            self.assertEqual("mismatch", result["report_gate"]["status"])
+            self.assertIn("completed sessions", result["reason"].lower())
             response_contract.validate_beta_round_gate_result(result)
 
     def test_evaluate_beta_round_emits_escalate_for_critical_issues(self) -> None:
@@ -7313,6 +7459,71 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertIn("## Post-Release Feedback Writeback", current_slice)
             triage = (root / ".skill-post-release" / "triage-summary.md").read_text(encoding="utf-8")
             self.assertIn("Current decision: `iterate`", triage)
+
+    def test_evaluate_post_release_feedback_escalates_stale_monitor_windows(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            technical_governance_init.init_technical_governance(root=root, overwrite=False)
+            post_release_feedback_init.init_post_release_feedback(root=root, overwrite=False)
+            report = root / ".skill-post-release" / "current-signals.json"
+            payload = {
+                "schema_version": "post-release-feedback-report/v1",
+                "generated_at": "2026-04-08T12:00:00Z",
+                "release_label": "v4.46.0",
+                "observation_window": {
+                    "start": "2026-04-08T00:00:00Z",
+                    "end": "2026-04-09T00:00:00Z"
+                },
+                "signal_summary": {
+                    "total_feedback_items": 1,
+                    "unique_users_affected": 2,
+                    "blocker_issue_count": 0,
+                    "escalation_issue_count": 0,
+                    "telemetry_status": "green",
+                    "adoption_trend": "stable",
+                    "satisfaction_trend": "stable"
+                },
+                "feedback_items": [
+                    {
+                        "id": "feedback-monitor-001",
+                        "source": "dogfood",
+                        "severity": "medium",
+                        "status": "monitoring",
+                        "affected_area": "onboarding",
+                        "label": "onboarding copy remains unresolved",
+                        "summary": "The same medium-severity feedback remains open after repeated observation windows.",
+                        "recommended_action": "assign a close-or-accept decision",
+                        "evidence_artifacts": [
+                            ".skill-post-release/current-signals.json"
+                        ]
+                    }
+                ],
+                "report_context": {
+                    "feedback_ledger_markdown": ".skill-post-release/feedback-ledger.md",
+                    "release_closure_json": "evals/release-gate/release-closure.json",
+                    "release_gate_json": "evals/release-gate/release-gate-results.json",
+                    "monitor_window_count": 3,
+                    "monitor_escalation_threshold": 3
+                }
+            }
+            response_contract.validate_post_release_feedback_report(payload)
+            report.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+            result = post_release_feedback_evaluator.evaluate_post_release_feedback(report_path=report)
+
+            response_contract.validate_post_release_feedback_result(result)
+            self.assertFalse(result["ok"])
+            self.assertEqual("escalate", result["decision"])
+            self.assertEqual("technical-governance", result["follow_up"]["next_action"])
+            self.assertEqual(3, result["report_context"]["monitor_window_count"])
+            self.assertTrue(
+                any(
+                    "post-release feedback remained unresolved" in item
+                    for item in result["follow_up"]["blockers"]
+                )
+            )
+            change_plan = (root / ".skill-governance" / "change-plan.md").read_text(encoding="utf-8")
+            self.assertIn("## Post-Release Feedback Escalation", change_plan)
 
     def test_evaluate_post_release_feedback_escalates_and_writes_back_governance_assets(self) -> None:
         with make_tempdir() as tmp:

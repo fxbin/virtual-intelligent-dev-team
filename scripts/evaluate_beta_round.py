@@ -275,6 +275,7 @@ def build_beta_gate_blockers(
     cohort_gate: dict[str, object],
     ramp_gate: dict[str, object],
     diff_gate: dict[str, object],
+    report_gate: dict[str, object],
 ) -> list[dict[str, str]]:
     blockers: list[dict[str, str]] = []
     gate_command = f"python scripts/evaluate_beta_round.py --report .skill-beta/reports/{round_id}.json --pretty"
@@ -316,6 +317,16 @@ def build_beta_gate_blockers(
                 blocker_id=f"fixture-diff-{str(diff_gate.get('status'))}",
                 label=str(diff_gate.get("reason", "fixture diff review is still open")),
                 objective_hint="review the round-to-round fixture diff and close any unresolved expansion drift before the next rerun",
+                evidence_required=gate_command,
+            )
+        )
+
+    if str(report_gate.get("status")) == "mismatch":
+        blockers.append(
+            build_blocker(
+                blocker_id="round-report-mismatch",
+                label=str(report_gate.get("reason", "round report counts drifted from beta evidence")),
+                objective_hint="reconcile round report counts with fixture and ramp evidence before rerunning the beta gate",
                 evidence_required=gate_command,
             )
         )
@@ -434,6 +445,7 @@ def build_beta_remediation_brief(
     cohort_gate: dict[str, object],
     ramp_gate: dict[str, object],
     diff_gate: dict[str, object],
+    report_gate: dict[str, object],
     evidence_artifacts: dict[str, object],
 ) -> tuple[str, str]:
     owner = "Sentinel Architect (NB)" if bool(follow_up.get("release_governance_recommended")) else "World-Class Product Architect"
@@ -461,6 +473,7 @@ def build_beta_remediation_brief(
             "cohort_gate_status": str(cohort_gate.get("status", "")),
             "ramp_gate_status": str(ramp_gate.get("status", "")),
             "diff_gate_status": str(diff_gate.get("status", "")),
+            "report_gate_status": str(report_gate.get("status", "")),
             "continue_beta": bool(follow_up.get("continue_beta")),
             "release_governance_recommended": bool(follow_up.get("release_governance_recommended")),
             "next_round_recommended": follow_up.get("next_round_recommended"),
@@ -848,6 +861,40 @@ def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) ->
                 }
             )
 
+    expected_ramp_sample_size = ramp_gate.get("expected_sample_size")
+    expected_fixture_sessions = len(manifest_sessions) if fixture_manifest_path is not None and fixture_manifest_path.exists() else None
+    report_gate = {
+        "status": "passed",
+        "required_for_round": True,
+        "reason": "Round report counts reconcile with available ramp and fixture evidence.",
+        "observed_planned_sample_size": planned_sample_size,
+        "observed_completed_sessions": completed_sessions,
+        "observed_task_success_count": task_success_count,
+        "expected_ramp_sample_size": expected_ramp_sample_size if isinstance(expected_ramp_sample_size, int) else None,
+        "expected_fixture_sessions": expected_fixture_sessions,
+    }
+    report_mismatches: list[str] = []
+    if completed_sessions > planned_sample_size:
+        report_mismatches.append("completed sessions exceed planned sample size")
+    if task_success_count > completed_sessions:
+        report_mismatches.append("task success count exceeds completed sessions")
+    if isinstance(expected_ramp_sample_size, int) and expected_ramp_sample_size != planned_sample_size:
+        report_mismatches.append("planned sample size differs from ramp plan")
+    if expected_fixture_sessions is not None:
+        if planned_sample_size < expected_fixture_sessions:
+            report_mismatches.append("planned sample size is smaller than fixture sessions")
+        if completed_sessions < expected_fixture_sessions:
+            report_mismatches.append("completed sessions are smaller than fixture sessions")
+    if report_mismatches:
+        report_gate.update(
+            {
+                "status": "mismatch",
+                "reason": "Round report counts do not reconcile with beta evidence for "
+                + ", ".join(report_mismatches)
+                + ".",
+            }
+        )
+
     if critical_issue_count > max_critical_issue_count:
         decision = "escalate"
         reason = "Critical issues exceed the allowed threshold for this round."
@@ -880,6 +927,15 @@ def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) ->
         reason = str(diff_gate["reason"])
         follow_up = {
             "next_action": "hold expansion, review the fixture diff, and resolve coverage drift before another beta round",
+            "continue_beta": False,
+            "release_governance_recommended": False,
+            "next_round_recommended": round_id,
+        }
+    elif report_gate["status"] == "mismatch":
+        decision = "hold"
+        reason = str(report_gate["reason"])
+        follow_up = {
+            "next_action": "hold expansion, reconcile round report counts with beta evidence, and rerun the gate",
             "continue_beta": False,
             "release_governance_recommended": False,
             "next_round_recommended": round_id,
@@ -925,6 +981,7 @@ def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) ->
         cohort_gate=cohort_gate,
         ramp_gate=ramp_gate,
         diff_gate=diff_gate,
+        report_gate=report_gate,
     )
 
     result = {
@@ -954,6 +1011,7 @@ def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) ->
         "cohort_gate": cohort_gate,
         "ramp_gate": ramp_gate,
         "diff_gate": diff_gate,
+        "report_gate": report_gate,
         "json_report": "",
         "markdown_report": "",
     }
@@ -985,6 +1043,7 @@ def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) ->
             cohort_gate=cohort_gate,
             ramp_gate=ramp_gate,
             diff_gate=diff_gate,
+            report_gate=report_gate,
             evidence_artifacts=evidence_artifacts,
         )
         writeback_artifacts = sync_workspace_writebacks(
@@ -1026,6 +1085,8 @@ def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) ->
         f"- Ramp reason: {ramp_gate['reason']}",
         f"- Diff gate: {diff_gate['status']}",
         f"- Diff reason: {diff_gate['reason']}",
+        f"- Report gate: {report_gate['status']}",
+        f"- Report reason: {report_gate['reason']}",
         f"- Next action: {follow_up['next_action']}",
         f"- Next round: {follow_up['next_round_recommended'] or 'n/a'}",
     ]
@@ -1088,6 +1149,18 @@ def evaluate_beta_round(*, report_path: Path, output_dir: Path | None = None) ->
             lines.append("")
             for item in risk_notes:
                 lines.append(f"- {item}")
+    lines.extend(
+        [
+            "",
+            "## Report Count Gate",
+            "",
+            f"- Observed planned sample size: {report_gate['observed_planned_sample_size']}",
+            f"- Observed completed sessions: {report_gate['observed_completed_sessions']}",
+            f"- Observed task success count: {report_gate['observed_task_success_count']}",
+            f"- Expected ramp sample size: {report_gate['expected_ramp_sample_size']}",
+            f"- Expected fixture sessions: {report_gate['expected_fixture_sessions']}",
+        ]
+    )
     if blocker_breakdown is not None:
         by_persona = blocker_breakdown.get("by_persona", [])
         by_scenario = blocker_breakdown.get("by_scenario", [])

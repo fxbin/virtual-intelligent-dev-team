@@ -61,6 +61,9 @@
     "diff_gate": {
       "$ref": "#/$defs/diff_gate"
     },
+    "report_gate": {
+      "$ref": "#/$defs/report_gate"
+    },
     "blocker_breakdown": {
       "$ref": "#/$defs/blocker_breakdown"
     },
@@ -431,6 +434,56 @@
         },
         "observed_persona_ids": {
           "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "report_gate": {
+      "type": "object",
+      "required": [
+        "status",
+        "required_for_round",
+        "reason",
+        "observed_planned_sample_size",
+        "observed_completed_sessions",
+        "observed_task_success_count",
+        "expected_ramp_sample_size",
+        "expected_fixture_sessions"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "passed",
+            "mismatch"
+          ]
+        },
+        "required_for_round": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "observed_planned_sample_size": {
+          "type": "integer"
+        },
+        "observed_completed_sessions": {
+          "type": "integer"
+        },
+        "observed_task_success_count": {
+          "type": "integer"
+        },
+        "expected_ramp_sample_size": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "expected_fixture_sessions": {
+          "type": [
+            "integer",
+            "null"
+          ]
         }
       },
       "additionalProperties": false

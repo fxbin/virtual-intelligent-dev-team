@@ -134,6 +134,9 @@
         "diff_gate_status": {
           "type": "string"
         },
+        "report_gate_status": {
+          "type": "string"
+        },
         "continue_beta": {
           "type": "boolean"
         },

@@ -22,7 +22,7 @@ existing routing, planning, iteration, release, and Git rules.
   2. create a compact system map when the target area is unfamiliar or multi-module
   3. create the planning pack
   4. split execution into vertical slices with `AFK` / `HITL` classifications
-  5. create or refresh the progress anchor
+  5. create or refresh the progress anchor and durable `.skill-context/project-context.md` planning context
   6. hand back to normal implementation routing
 - Primary references:
   - `references/pre-development-planning-playbook.md`
@@ -31,6 +31,9 @@ existing routing, planning, iteration, release, and Git rules.
   - `references/vertical-slice-delivery-protocol.md`
 - Default resume anchor:
   - `docs/progress/MASTER.md`
+- Default resume artifacts:
+  - `docs/progress/MASTER.md`
+  - `.skill-context/project-context.md`
 
 ## 2. `product-spec-deliver`
 
@@ -234,7 +237,7 @@ Template:
 - Default sequence:
   1. initialize the post-release workspace
   2. collect structured feedback and signal evidence into the current report
-  3. evaluate whether to `monitor`, `iterate`, or `escalate`
+  3. evaluate whether to `monitor`, `iterate`, or `escalate`, including stale monitor-window escalation when unresolved feedback keeps repeating
   4. sync product or governance writebacks before reopening remediation
 - Primary references:
   - `references/post-release-feedback-playbook.md`

@@ -52,6 +52,14 @@ def compact_string_list(values: object) -> list[str]:
     return [str(item).strip() for item in values if str(item).strip()]
 
 
+def positive_int(value: object, *, default: int) -> int:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return default
+    return parsed if parsed > 0 else default
+
+
 def repo_root_from_report(report_path: Path) -> Path:
     if report_path.parent.name == ".skill-post-release":
         return report_path.parent.parent
@@ -309,11 +317,18 @@ def evaluate_post_release_feedback(report_path: Path) -> dict[str, object]:
     telemetry_status = str(signal_summary.get("telemetry_status", "unknown")).strip()
     adoption_trend = str(signal_summary.get("adoption_trend", "unknown")).strip()
     satisfaction_trend = str(signal_summary.get("satisfaction_trend", "unknown")).strip()
+    monitor_window_count = positive_int(report_context.get("monitor_window_count"), default=1)
+    monitor_escalation_threshold = positive_int(report_context.get("monitor_escalation_threshold"), default=3)
+    unresolved_monitor_item_count = len(feedback_items)
+    report_context["monitor_window_count"] = monitor_window_count
+    report_context["monitor_escalation_threshold"] = monitor_escalation_threshold
+    report_context["unresolved_monitor_item_count"] = unresolved_monitor_item_count
     critical_count = sum(1 for item in feedback_items if str(item.get("severity", "")).strip() == "critical")
     high_count = sum(1 for item in feedback_items if str(item.get("severity", "")).strip() == "high")
     blocker_issue_count = int(signal_summary.get("blocker_issue_count", 0))
     escalation_issue_count = int(signal_summary.get("escalation_issue_count", 0))
     recommended_commands = build_recommended_commands(resolved_report, "monitor", repo_root)
+    stale_monitor_escalation = False
 
     if escalation_issue_count > 0 or critical_count > 0 or telemetry_status == "critical":
         decision = "escalate"
@@ -331,6 +346,18 @@ def evaluate_post_release_feedback(report_path: Path) -> dict[str, object]:
         reason = "post-release signals show meaningful regression or adoption pressure that should reopen bounded remediation"
         objective = "close shipped blockers, tighten the current slice, and prepare a corrective iteration"
         next_action = "bounded-iteration"
+    elif unresolved_monitor_item_count > 0 and monitor_window_count >= monitor_escalation_threshold:
+        stale_monitor_escalation = True
+        decision = "escalate"
+        loop_state = "escalated"
+        owner = "Sentinel Architect (NB)"
+        ok = False
+        reason = (
+            "post-release feedback has remained open across repeated monitor windows "
+            f"({monitor_window_count}/{monitor_escalation_threshold})"
+        )
+        objective = "break the stalled monitor loop, assign governance ownership, and force a concrete close-or-accept decision"
+        next_action = "technical-governance"
     else:
         decision = "monitor"
         loop_state = "watching"
@@ -341,6 +368,15 @@ def evaluate_post_release_feedback(report_path: Path) -> dict[str, object]:
         next_action = "continue-monitoring"
 
     recommended_commands = build_recommended_commands(resolved_report, decision, repo_root)
+    if stale_monitor_escalation and not blockers:
+        blockers.append(
+            {
+                "id": "post-release-monitor-stale",
+                "label": "post-release feedback remained unresolved across repeated monitor windows",
+                "objective_hint": "convert the stale monitor items into explicit fix, accept, or rollback decisions",
+                "evidence_required": report_rel,
+            }
+        )
     follow_up: dict[str, object] = {
         "loop_state": loop_state,
         "next_action": next_action,
@@ -553,6 +589,9 @@ def evaluate_post_release_feedback(report_path: Path) -> dict[str, object]:
                 f"- Telemetry status: `{signal_summary.get('telemetry_status')}`",
                 f"- Adoption trend: `{signal_summary.get('adoption_trend')}`",
                 f"- Satisfaction trend: `{signal_summary.get('satisfaction_trend')}`",
+                f"- Monitor window count: `{report_context.get('monitor_window_count')}`",
+                f"- Monitor escalation threshold: `{report_context.get('monitor_escalation_threshold')}`",
+                f"- Unresolved monitor items: `{report_context.get('unresolved_monitor_item_count')}`",
                 "",
                 "## Next Action",
                 "",

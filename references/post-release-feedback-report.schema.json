@@ -185,6 +185,14 @@
         },
         "telemetry_snapshot_json": {
           "type": "string"
+        },
+        "monitor_window_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "monitor_escalation_threshold": {
+          "type": "integer",
+          "minimum": 1
         }
       },
       "additionalProperties": false

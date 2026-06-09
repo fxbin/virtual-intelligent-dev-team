@@ -37,7 +37,9 @@
   "report_context": {
     "feedback_ledger_markdown": ".skill-post-release/feedback-ledger.md",
     "release_closure_json": "evals/release-gate/release-closure.json",
-    "release_gate_json": "evals/release-gate/release-gate-results.json"
+    "release_gate_json": "evals/release-gate/release-gate-results.json",
+    "monitor_window_count": 1,
+    "monitor_escalation_threshold": 3
   },
   "recommended_commands": [
     "python scripts/evaluate_post_release_feedback.py --report .skill-post-release/current-signals.json --pretty"
