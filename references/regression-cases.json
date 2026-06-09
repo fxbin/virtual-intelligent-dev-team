@@ -213,6 +213,22 @@
       }
     },
     {
+      "name": "chinese_quick_fix_run_regression",
+      "text": "这个小 bug 直接修一下并跑回归。",
+      "expect": {
+        "lead_agent": "Technical Trinity",
+        "needs_iteration": false,
+        "process_skills_excludes": [
+          "bounded-iteration"
+        ],
+        "workflow_bundle": "quick-slice-deliver",
+        "micro_practice_names_contains": [
+          "feedback-loop-first"
+        ],
+        "priority_agent": null
+      }
+    },
+    {
       "name": "rewrite_plan_first_bundle",
       "text": "Rewrite this project in Rust, but plan before coding and keep a progress tracker for later sessions.",
       "expect": {

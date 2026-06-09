@@ -1471,6 +1471,28 @@
       ]
     },
     {
+      "id": 90,
+      "categories": [
+        "backend-stack",
+        "quick-slice",
+        "clarification"
+      ],
+      "prompt": "这个小 bug 直接修一下并跑回归。",
+      "expected_output": "Chinese quick-fix prompts that ask only to run regression checks should stay in quick-slice delivery instead of opening bounded iteration.",
+      "files": [
+        "scripts/route_request.py",
+        "references/regression-cases.json"
+      ],
+      "expectations": [
+        "lead_agent is Technical Trinity",
+        "needs_iteration is false",
+        "process_skills length is 0",
+        "workflow_bundle is quick-slice-deliver",
+        "micro_practice_names contains feedback-loop-first",
+        "harness_constraint_gate.required is true"
+      ]
+    },
+    {
       "id": 80,
       "categories": [
         "backend-stack",

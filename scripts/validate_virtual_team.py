@@ -113,8 +113,15 @@ def validate_routing_cases(config: dict[str, object], cases: list[dict[str, obje
             check(result["needs_git_workflow"] == expect["needs_git_workflow"], f"{name}: unexpected needs_git_workflow")
         if "needs_release_gate" in expect:
             check(result["needs_release_gate"] == expect["needs_release_gate"], f"{name}: unexpected needs_release_gate")
+        if "needs_iteration" in expect:
+            check(result["needs_iteration"] == expect["needs_iteration"], f"{name}: unexpected needs_iteration")
         if "process_skills" in expect:
             check(result["process_skills"] == expect["process_skills"], f"{name}: unexpected process_skills")
+        if "process_skills_excludes" in expect:
+            excluded_skills = expect["process_skills_excludes"]
+            check(isinstance(excluded_skills, list), f"{name}: process_skills_excludes must be a list")
+            for skill in excluded_skills:
+                check(skill not in result["process_skills"], f"{name}: unexpected process skill {skill}")
         if "workflow_bundle" in expect:
             check(result["workflow_bundle"] == expect["workflow_bundle"], f"{name}: unexpected workflow_bundle")
         if "bundle_confidence" in expect:
@@ -176,6 +183,13 @@ def validate_routing_cases(config: dict[str, object], cases: list[dict[str, obje
             check(isinstance(artifacts, list), f"{name}: workflow_bundle_bootstrap.artifacts must be a list")
             for artifact in expected_artifacts:
                 check(artifact in artifacts, f"{name}: missing bootstrap artifact {artifact}")
+        if "micro_practice_names_contains" in expect:
+            expected_practices = expect["micro_practice_names_contains"]
+            practice_names = result.get("micro_practice_names", [])
+            check(isinstance(expected_practices, list), f"{name}: micro_practice_names_contains must be a list")
+            check(isinstance(practice_names, list), f"{name}: micro_practice_names must be a list")
+            for practice in expected_practices:
+                check(practice in practice_names, f"{name}: missing micro practice {practice}")
 
         priority_agent = (result["reason"]["priority_routing"] or {}).get("agent")
         check(priority_agent == expect.get("priority_agent"), f"{name}: unexpected priority routing agent")

@@ -474,6 +474,20 @@ class RoutingTests(unittest.TestCase):
         self.assertIn(".skill-delivery/current-slice.md", result["resume_artifacts"])
         self.assertIn(".skill-context/project-context.md", result["resume_artifacts"])
 
+    def test_chinese_quick_fix_run_regression_stays_quick_slice(self) -> None:
+        result = route_request.route_request(
+            "这个小 bug 直接修一下并跑回归。",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertEqual("Technical Trinity", result["lead_agent"])
+        self.assertFalse(result["needs_iteration"])
+        self.assertNotIn("bounded-iteration", result["process_skills"])
+        self.assertEqual("quick-slice-deliver", result["workflow_bundle"])
+        practice_names = [item["name"] for item in result["micro_practices"]]
+        self.assertIn("feedback-loop-first", practice_names)
+
     def test_bug_slice_activates_feedback_loop_first_micro_practice(self) -> None:
         result = route_request.route_request(
             "Fix the checkout API regression by first reproducing it with a failing test.",
@@ -5451,6 +5465,106 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
             )
             self.assertTrue(any("beta round round-02" in item for item in result["follow_up"]["blockers"]))
             self.assertIn(str(beta_gate_result), result["explanation_card"]["resume_artifacts"])
+
+    def test_release_gate_auto_discovers_latest_beta_gate(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            output_dir = root / "release-gate-output"
+            beta_gate_result = write_beta_gate_fixture(
+                root / ".skill-beta",
+                round_id="round-02",
+                decision="hold",
+                reason="Auto-discovered beta evidence is still on hold.",
+            )
+            write_completion_evidence_fixture(root)
+
+            benchmark_payload = {
+                "summary": {
+                    "tests_passed": True,
+                    "validator_passed": True,
+                    "evals_passed": True,
+                    "offline_drill_enabled": True,
+                    "offline_drill_passed": True,
+                    "overall_passed": True,
+                },
+                "eval_run": {"passed": 56, "total": 56, "cases": [], "category_breakdown": []},
+            }
+            Path(output_dir / "benchmark-results.json").parent.mkdir(parents=True, exist_ok=True)
+            (output_dir / "benchmark-results.json").write_text(
+                json.dumps(benchmark_payload, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            (output_dir / "benchmark-report.md").write_text("# Benchmark Report\n", encoding="utf-8")
+            (output_dir / "offline-loop-drill-report.md").write_text("# Offline Loop Drill Report\n", encoding="utf-8")
+
+            with mock.patch.object(
+                release_gate.benchmark_runner,
+                "run_benchmark_suite",
+                return_value={
+                    "summary": benchmark_payload["summary"],
+                    "json_report": str(output_dir / "benchmark-results.json"),
+                    "markdown_report": str(output_dir / "benchmark-report.md"),
+                    "offline_drill_run": {
+                        "markdown_report": str(output_dir / "offline-loop-drill-report.md"),
+                    },
+                },
+            ):
+                result = release_gate.run_release_gate(output_dir=output_dir)
+
+            response_contract.validate_release_gate_result(result)
+            self.assertFalse(result["ok"])
+            self.assertEqual("hold", result["decision"])
+            self.assertEqual("auto-beta-decision-dir", result["beta_gate"]["source"])
+            self.assertEqual("round-02", result["beta_gate"]["round_id"])
+            self.assertEqual("hold", result["summary"]["beta_gate_decision"])
+            self.assertEqual(str(beta_gate_result), result["beta_gate"]["json_report"])
+
+    def test_release_gate_holds_when_beta_workspace_has_no_gate_evidence(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            output_dir = root / "release-gate-output"
+            (root / ".skill-beta").mkdir(parents=True, exist_ok=True)
+            write_completion_evidence_fixture(root)
+
+            benchmark_payload = {
+                "summary": {
+                    "tests_passed": True,
+                    "validator_passed": True,
+                    "evals_passed": True,
+                    "offline_drill_enabled": True,
+                    "offline_drill_passed": True,
+                    "overall_passed": True,
+                },
+                "eval_run": {"passed": 56, "total": 56, "cases": [], "category_breakdown": []},
+            }
+            Path(output_dir / "benchmark-results.json").parent.mkdir(parents=True, exist_ok=True)
+            (output_dir / "benchmark-results.json").write_text(
+                json.dumps(benchmark_payload, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            (output_dir / "benchmark-report.md").write_text("# Benchmark Report\n", encoding="utf-8")
+            (output_dir / "offline-loop-drill-report.md").write_text("# Offline Loop Drill Report\n", encoding="utf-8")
+
+            with mock.patch.object(
+                release_gate.benchmark_runner,
+                "run_benchmark_suite",
+                return_value={
+                    "summary": benchmark_payload["summary"],
+                    "json_report": str(output_dir / "benchmark-results.json"),
+                    "markdown_report": str(output_dir / "benchmark-report.md"),
+                    "offline_drill_run": {
+                        "markdown_report": str(output_dir / "offline-loop-drill-report.md"),
+                    },
+                },
+            ):
+                result = release_gate.run_release_gate(output_dir=output_dir)
+
+            response_contract.validate_release_gate_result(result)
+            self.assertFalse(result["ok"])
+            self.assertEqual("hold", result["decision"])
+            self.assertEqual("auto-beta-missing", result["beta_gate"]["source"])
+            self.assertEqual("missing-beta-gate", result["beta_gate"]["round_id"])
+            self.assertIn("no latest beta round gate", result["beta_gate"]["reason"])
 
     def test_release_gate_can_resolve_latest_beta_report_from_report_dir(self) -> None:
         with make_tempdir() as tmp:

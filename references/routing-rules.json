@@ -1,7 +1,7 @@
 {
   "meta": {
     "author": "fxbin",
-    "version": "v4.80.0",
+    "version": "v4.81.0",
     "updated": "2026-06-09"
   },
   "thresholds": {
@@ -683,6 +683,30 @@
         {
           "keyword": "技术债",
           "score": 4
+        },
+        {
+          "keyword": "bug",
+          "score": 2
+        },
+        {
+          "keyword": "小 bug",
+          "score": 2
+        },
+        {
+          "keyword": "小bug",
+          "score": 2
+        },
+        {
+          "keyword": "修一下",
+          "score": 2
+        },
+        {
+          "keyword": "直接修",
+          "score": 2
+        },
+        {
+          "keyword": "跑回归",
+          "score": 2
         },
         {
           "keyword": "python",

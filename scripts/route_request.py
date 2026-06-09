@@ -529,7 +529,7 @@ def should_suppress_bounded_iteration(text: str, process_hits: dict[str, list[st
     if len(iteration_hits) == 0 or len(release_hits) == 0:
         lowered = text.lower()
         normalized_iteration_hits = {normalize_process_hit(hit) for hit in iteration_hits}
-        if normalized_iteration_hits.issubset({"regression"}):
+        if normalized_iteration_hits.issubset({"regression", "回归"}):
             targeted_test_keywords = [
                 "regression test",
                 "regression tests",
@@ -1855,14 +1855,20 @@ def is_quick_slice_context(text: str) -> bool:
         "quick fix",
         "wire up",
         "hook up",
+        "bug",
         "实现",
         "开发",
         "修复",
+        "修一下",
+        "直接修",
         "小功能",
         "小改动",
+        "小 bug",
+        "小bug",
         "补一个",
         "加一个",
         "接一下",
+        "跑回归",
     ]
     return text_has_any_keyword(text, quick_slice_keywords)
 

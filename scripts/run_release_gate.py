@@ -220,6 +220,7 @@ def resolve_beta_gate(
     beta_gate_result: Path | None,
     beta_decision_dir: Path | None,
     beta_report_dir: Path | None,
+    repo_root: Path | None = None,
 ) -> dict[str, object] | None:
     if beta_gate_result is not None:
         resolved = beta_gate_result.resolve()
@@ -268,7 +269,87 @@ def resolve_beta_gate(
             "result": payload,
         }
 
+    if repo_root is not None:
+        return resolve_auto_beta_gate(repo_root=repo_root.resolve())
+
     return None
+
+
+def build_missing_beta_gate(*, beta_root: Path, reason: str) -> dict[str, object]:
+    generated_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    return {
+        "source": "auto-beta-missing",
+        "result": {
+            "generated_at": generated_at,
+            "skill_name": "virtual-intelligent-dev-team",
+            "ok": False,
+            "decision": "hold",
+            "reason": reason,
+            "round_id": "missing-beta-gate",
+            "report_path": str(beta_root / "reports" / "missing-beta-gate.json"),
+            "observed": {
+                "planned_sample_size": 0,
+                "completed_sessions": 0,
+                "success_rate": 0.0,
+                "blocker_issue_count": 1,
+                "critical_issue_count": 0,
+                "high_severity_issue_count": 0,
+                "top_feedback_themes": ["missing beta gate evidence"],
+            },
+            "thresholds": {
+                "min_completed_sessions": 1,
+                "min_success_rate": 1.0,
+                "max_blocker_issue_count": 0,
+                "max_critical_issue_count": 0,
+            },
+            "follow_up": {
+                "next_action": "produce the latest beta round gate result before release",
+                "continue_beta": False,
+                "release_governance_recommended": False,
+                "next_round_recommended": "latest-beta-round",
+            },
+            "json_report": "",
+            "markdown_report": "",
+        },
+    }
+
+
+def resolve_auto_beta_gate(*, repo_root: Path) -> dict[str, object] | None:
+    beta_root = repo_root / ".skill-beta"
+    if not beta_root.exists():
+        return None
+
+    errors: list[str] = []
+    decision_dir = beta_root / "round-decisions"
+    if decision_dir.exists():
+        try:
+            beta_gate = resolve_beta_gate(
+                beta_gate_result=None,
+                beta_decision_dir=decision_dir,
+                beta_report_dir=None,
+            )
+            if beta_gate is not None:
+                return {**beta_gate, "source": "auto-beta-decision-dir"}
+        except RuntimeError as exc:
+            errors.append(str(exc))
+
+    report_dir = beta_root / "reports"
+    if report_dir.exists():
+        try:
+            beta_gate = resolve_beta_gate(
+                beta_gate_result=None,
+                beta_decision_dir=None,
+                beta_report_dir=report_dir,
+            )
+            if beta_gate is not None:
+                return {**beta_gate, "source": "auto-beta-report-dir"}
+        except RuntimeError as exc:
+            errors.append(str(exc))
+
+    reason = "staged beta workspace exists, but no latest beta round gate result or valid beta round report was found"
+    if errors:
+        reason = f"{reason}: {'; '.join(errors)}"
+    return build_missing_beta_gate(beta_root=beta_root, reason=reason)
 
 
 def build_beta_gate_summary(beta_gate: dict[str, object] | None) -> dict[str, object]:
@@ -1873,6 +1954,7 @@ def run_release_gate(
         beta_gate_result=beta_gate_result,
         beta_decision_dir=beta_decision_dir,
         beta_report_dir=beta_report_dir,
+        repo_root=repo_root,
     )
     completion_evidence_snapshot = resolve_completion_evidence(
         completion_evidence=completion_evidence,
