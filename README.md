@@ -2,11 +2,85 @@
 
 `virtual-intelligent-dev-team` 是一个面向复杂软件工作的智能协作项目。
 
-它不只是“专家角色路由器”，而是把研发、产品、分轮内测、技术治理、发布门禁、显式 `/auto` 自动运行，以及状态驱动恢复，收拢成一个可持续迭代的闭环工作流。
+它不只是”专家角色路由器”，而是把研发、产品、分轮内测、技术治理、发布门禁、显式 `/auto` 自动运行，以及状态驱动恢复，收拢成一个可持续迭代的闭环工作流。
 
 一句话说：
 
-它适合接手“单个专家已经不够、单轮回答也不够”的复杂软件任务。
+它适合接手”单个专家已经不够、单轮回答也不够”的复杂软件任务。
+
+---
+
+## 🚀 5 分钟快速上手
+
+### 1. 最简单的使用场景（小切片交付）
+
+```bash
+# 场景：实现一个小功能或修复一个 bug
+/virtual-intelligent-dev-team 实现用户登录功能的邮箱验证
+```
+
+**会发生什么：**
+- 自动路由到 `Technical Trinity`（通用后端工程专家）
+- 生成 Quick Slice Brief（包含目标、范围、验收条件）
+- 实现代码并保留 delivery status 和完成证据
+- 给出下一步建议（测试、提交、发布门禁等）
+
+### 2. 模糊想法确认（意图确认）
+
+```bash
+# 场景：有一个想法，不确定该从产品、原型、技术还是架构入手
+/virtual-intelligent-dev-team 我想做一个用户画像功能
+```
+
+**会发生什么：**
+- 先给出 5 个确认方向选项：
+  - `product-opportunity`：产品机会验证
+  - `prototype-exploration`：原型探索
+  - `technical-feasibility`：技术可行性评估
+  - `architecture-risk`：架构风险分析
+  - `delivery-plan`：交付拆解
+- 用户选择后，路由到对应的 Lead Agent 或 Workflow Bundle
+
+### 3. 大重构规划（开发前规划）
+
+```bash
+# 场景：需要重构认证系统
+/virtual-intelligent-dev-team 重构认证系统，从 Session 改为 JWT
+```
+
+**会发生什么：**
+- 路由到 `Sentinel Architect`（高风险变更治理）
+- 激活 Pre-Development Planning Playbook
+- 生成 Planning Pack（包含阶段计划、通道笔记、进度锚点）
+- 提供多阶段执行路径和回滚点
+
+### 4. 产品定义（产品发现专家团）
+
+```bash
+# 场景：定义产品 PRD
+/virtual-intelligent-dev-team 帮我定义一个知识管理产品的 PRD
+```
+
+**会发生什么：**
+- 路由到 `World-Class Product Architect`
+- 激活 `product-discovery-council`（产品发现专家团）
+- 提供产品战略模板、用户研究模板、竞品分析模板
+- 生成结构化 PRD
+
+### 5. 自动化运行（显式 /auto）
+
+```bash
+# 场景：自动化执行多轮优化
+/virtual-intelligent-dev-team /auto 优化 API 响应时间
+```
+
+**会发生什么：**
+- 进入 Setup → Go 两阶段协议
+- 先建立 automation state（包含目标、检查点、恢复锚点）
+- 执行有边界的迭代优化
+- 保留状态文件供后续 resume
+
+---
 
 ## 项目定位
 
