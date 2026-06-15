@@ -96,7 +96,7 @@ If the task is simple and clearly single-domain, keep routing lightweight.
 14. For code-facing, release-facing, Git-facing, or remediation routes, apply Team Engine Lite: Worker can produce, Verifier can pass/fail/hold, and Lead can accept only after a DeliveryCycleReport.
 15. If the user explicitly asks for multi-agent / subagent / parallel agent execution, or `/auto` reaches an eligible workflow, build a controlled real subagent runtime plan; only claim actual real subagent execution when the host exposes spawn / wait / merge runtime evidence.
 16. If external Agent backends are available but real subagent runtime is not proven, treat them as soft backend sessions under the same role boundary; do not claim true async multi-process runtime without runtime evidence.
-17. **Real Subagent Execution Guide**: When spawning Worker/Verifier/Explorer agents, use actual Agent tool invocations with independent prompts and contexts. See [references/real-subagent-runtime-execution-guide.md](references/real-subagent-runtime-execution-guide.md) for complete execution templates including Worker-Verifier cycles, parallel implementation, and Explorer-Worker patterns.
+17. **Real Subagent Execution Guide**: When spawning Worker/Verifier/Explorer agents, use actual Agent tool invocations with independent prompts and contexts. See [references/subagent-exec-guide.md](references/subagent-exec-guide.md) for complete execution templates including Worker-Verifier cycles, parallel implementation, and Explorer-Worker patterns.
 17. If the user asks for optimization, repeated improvement, benchmark comparison, or another round, enter bounded iteration instead of open-ended self-looping.
 18. If the user asks whether the current version can ship, submit, or pass formal acceptance, run the release gate instead of answering from a benchmark summary alone.
 19. If product discovery, product strategy, PRD, user research, competitor analysis, metrics, roadmap, prototype design, high-fidelity UI, design systems, or explicit expert-team phrasing would make a single product generalist too broad, apply the stage council protocol under `product-spec-deliver`.
@@ -176,7 +176,7 @@ Read indexes first; do not flatten the whole skill into this file.
   [references/team-engine-lite-protocol.md](references/team-engine-lite-protocol.md),
   [references/worker-verifier-cycle-protocol.md](references/worker-verifier-cycle-protocol.md),
   [references/real-subagent-runtime-protocol.md](references/real-subagent-runtime-protocol.md),
-  [references/real-subagent-runtime-execution-guide.md](references/real-subagent-runtime-execution-guide.md) ⭐, and
+  [references/subagent-exec-guide.md](references/subagent-exec-guide.md) ⭐, and
   [references/external-agent-backend-orchestration-protocol.md](references/external-agent-backend-orchestration-protocol.md)
 - Scripts, templates, validation, and command entrypoints:
   [references/tooling-command-index.md](references/tooling-command-index.md)
