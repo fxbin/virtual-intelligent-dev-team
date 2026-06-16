@@ -1,5 +1,129 @@
 # Output Contract
 
+## Primary Goal
+
+**Answer the user's question directly and completely.**
+
+Process structure is a tool, not the product. When a simple technical question has a simple technical answer, give that answer without wrapping it in team-dispatch ceremony.
+
+---
+
+## Output Modes
+
+Choose the output mode based on question complexity and user needs:
+
+### Mode 1: Direct Answer (Default)
+
+**Use for:**
+- Single-domain technical questions
+- Bug fixes and debugging
+- Performance optimization
+- Code review requests
+- "How do I..." questions
+
+**Output structure:**
+```markdown
+## [直接回答标题]
+
+[技术分析]
+
+## 解决方案
+
+[具体的、可操作的方案，包含代码示例或配置]
+
+## 实施步骤
+
+1. [步骤 1 - 具体命令或操作]
+2. [步骤 2]
+3. [步骤 3]
+
+## 预期效果
+
+[量化的预期结果]
+```
+
+**Skip these sections:**
+- Team Dispatch
+- Evidence
+- Resume
+- Git Workflow (unless explicitly needed)
+- Governance
+
+**Example questions:**
+- "前端性能慢，怎么优化？"
+- "这个 bug 怎么修？"
+- "如何提升打包速度？"
+
+---
+
+### Mode 2: Expert Routing
+
+**Use when:**
+- Question needs specific expertise
+- But doesn't require full workflow orchestration
+- User wants technical depth from a specialist perspective
+
+**Output structure:**
+```markdown
+## 路由决策
+
+**专家：** [专家名称]  
+**原因：** [一句话说明为什么需要这个专家]
+
+## [专家视角的技术分析]
+
+[深入的技术分析]
+
+## 解决方案
+
+[具体方案]
+
+## 实施步骤
+
+[详细步骤]
+```
+
+**Include minimal process info:**
+- Lead agent (one line)
+- Why selected (one line)
+
+**Skip:**
+- Full Team Dispatch structure
+- Evidence sections
+- Resume anchors
+
+---
+
+### Mode 3: Full Workflow
+
+**Use when:**
+- Large refactors or migrations
+- Cross-domain coordination needed
+- Release readiness checks
+- Governance-sensitive changes
+- Multi-phase delivery
+
+**Output structure:**
+[Use all 16 sections as defined below]
+
+---
+
+## Mode Selection Rule
+
+**Default to Direct Answer Mode.**
+
+Only escalate to Expert Routing or Full Workflow when:
+- User explicitly asks for team coordination
+- Task genuinely requires cross-domain work
+- Governance or release gates are needed
+- Risk level demands formal verification
+
+**When in doubt, answer directly.** Users prefer actionable solutions over process ceremony.
+
+---
+
+## Full Workflow Output Structure
+
 After routing, answer with one unified structure. The lead agent owns the response. Assistants should only add the delta that matters.
 
 ## User-Facing Sections

@@ -81,30 +81,69 @@ If the task is simple and clearly single-domain, keep routing lightweight.
 ## Workflow
 
 1. Identify task type, risk level, language stack, and Git/process needs.
+
+**1.5. Choose Output Mode (Critical):**
+
+   **Default: Direct Answer Mode**
+   - Single-domain technical questions → Answer directly with technical depth
+   - Bug fixes, optimization, code review → Skip team ceremony, provide solution
+   - "How do I..." questions → Actionable steps and examples
+   
+   **Escalate to Expert Routing when:**
+   - Specific expertise needed (security, architecture, DB optimization)
+   - Technical depth benefits from specialist perspective
+   - Still single-domain, just needs expert lens
+   
+   **Escalate to Full Workflow when:**
+   - Large refactor / migration / multi-phase delivery
+   - Cross-domain coordination required
+   - Release readiness / governance gates needed
+   - User explicitly asks for team coordination
+   
+   **Golden Rule: When in doubt, use Direct Answer Mode.**  
+   Users prefer concrete solutions over process packaging.
+   
+   See `references/output-contract.md` for detailed output structures.
+
 2. If the request is a large rewrite, migration, overhaul, or planning-before-coding transformation, enter the pre-development planning branch first.
-3. If the request is a narrow implementation or bug fix, use quick slice delivery instead of a full product or planning workflow.
-4. Choose one lead agent.
-5. Add one or two assistant agents only when they add clear value.
-6. Enable governance or process guardrails only when needed.
-7. Use a compact handoff when lead and assistants need structured coordination.
-8. If the request is primarily about building AI-readable project context, route execution to `skill-forge` and its project knowledge capture protocol after the software-risk lanes are identified.
-9. If the request is a fuzzy idea or low-information route-changing ask, ask one intent-confirmation question before treating the provisional route as final.
-10. Apply execution-quality guardrails: surface route-changing assumptions, keep the smallest defensible bundle, limit scope surgically, and define verifiable closure.
-11. For broad, repeated-failure, release, beta, multi-agent, or drift-prone work, apply goal framing: success evidence, stop condition, and non-goals must be explicit before implementation.
-12. For code-facing routes, apply the Harness constraint gate before implementation: create or refresh `.skill-harness/engineering-constraints.md`.
-13. For changes that add or retire guards, fallbacks, adapters, duplicate owners, compatibility paths, schema, persistence, or source-of-truth behavior, apply anti-entropy governance before choosing delete, compat, or confirmation paths.
-14. For code-facing, release-facing, Git-facing, or remediation routes, apply Team Engine Lite: Worker can produce, Verifier can pass/fail/hold, and Lead can accept only after a DeliveryCycleReport.
-15. If the user explicitly asks for multi-agent / subagent / parallel agent execution, or `/auto` reaches an eligible workflow, build a controlled real subagent runtime plan; only claim actual real subagent execution when the host exposes spawn / wait / merge runtime evidence.
-16. If external Agent backends are available but real subagent runtime is not proven, treat them as soft backend sessions under the same role boundary; do not claim true async multi-process runtime without runtime evidence.
-17. **Real Subagent Execution Guide**: When spawning Worker/Verifier/Explorer agents, use actual Agent tool invocations with independent prompts and contexts. See [references/subagent-exec-guide.md](references/subagent-exec-guide.md) for complete execution templates including Worker-Verifier cycles, parallel implementation, and Explorer-Worker patterns.
-17. If the user asks for optimization, repeated improvement, benchmark comparison, or another round, enter bounded iteration instead of open-ended self-looping.
-18. If the user asks whether the current version can ship, submit, or pass formal acceptance, run the release gate instead of answering from a benchmark summary alone.
-19. If product discovery, product strategy, PRD, user research, competitor analysis, metrics, roadmap, prototype design, high-fidelity UI, design systems, or explicit expert-team phrasing would make a single product generalist too broad, apply the stage council protocol under `product-spec-deliver`.
-20. Before any completion, readiness, commit, merge, release, or handoff claim, preserve fresh evidence slots: action, result, covered scope, uncovered scope, residual risk, and confidence grade.
-21. Produce one unified response instead of disconnected role fragments.
+3. **If using Direct Answer Mode:** Skip to answering directly with technical depth. Provide: Analysis → Solution → Steps → Expected Results. Skip Team Dispatch, Evidence, and Resume sections. Exit here.
+4. If the request is a narrow implementation or bug fix, use quick slice delivery instead of a full product or planning workflow.
+5. Choose one lead agent.
+6. Add one or two assistant agents only when they add clear value.
+7. Enable governance or process guardrails only when needed.
+8. Use a compact handoff when lead and assistants need structured coordination.
+9. If the request is primarily about building AI-readable project context, route execution to `skill-forge` and its project knowledge capture protocol after the software-risk lanes are identified.
+10. If the request is a fuzzy idea or low-information route-changing ask, ask one intent-confirmation question before treating the provisional route as final.
+11. Apply execution-quality guardrails: surface route-changing assumptions, keep the smallest defensible bundle, limit scope surgically, and define verifiable closure.
+11. Apply execution-quality guardrails: surface route-changing assumptions, keep the smallest defensible bundle, limit scope surgically, and define verifiable closure.
+12. For broad, repeated-failure, release, beta, multi-agent, or drift-prone work, apply goal framing: success evidence, stop condition, and non-goals must be explicit before implementation.
+13. For code-facing routes, apply the Harness constraint gate before implementation: create or refresh `.skill-harness/engineering-constraints.md`.
+14. For changes that add or retire guards, fallbacks, adapters, duplicate owners, compatibility paths, schema, persistence, or source-of-truth behavior, apply anti-entropy governance before choosing delete, compat, or confirmation paths.
+15. For code-facing, release-facing, Git-facing, or remediation routes, apply Team Engine Lite: Worker can produce, Verifier can pass/fail/hold, and Lead can accept only after a DeliveryCycleReport.
+16. If the user explicitly asks for multi-agent / subagent / parallel agent execution, or `/auto` reaches an eligible workflow, build a controlled real subagent runtime plan; only claim actual real subagent execution when the host exposes spawn / wait / merge runtime evidence.
+17. If external Agent backends are available but real subagent runtime is not proven, treat them as soft backend sessions under the same role boundary; do not claim true async multi-process runtime without runtime evidence.
+18. **Real Subagent Execution Guide**: When spawning Worker/Verifier/Explorer agents, use actual Agent tool invocations with independent prompts and contexts. See [references/subagent-exec-guide.md](references/subagent-exec-guide.md) for complete execution templates including Worker-Verifier cycles, parallel implementation, and Explorer-Worker patterns.
+19. If the user asks for optimization, repeated improvement, benchmark comparison, or another round, enter bounded iteration instead of open-ended self-looping.
+20. If the user asks whether the current version can ship, submit, or pass formal acceptance, run the release gate instead of answering from a benchmark summary alone.
+21. If product discovery, product strategy, PRD, user research, competitor analysis, metrics, roadmap, prototype design, high-fidelity UI, design systems, or explicit expert-team phrasing would make a single product generalist too broad, apply the stage council protocol under `product-spec-deliver`.
+22. Before any completion, readiness, commit, merge, release, or handoff claim, preserve fresh evidence slots: action, result, covered scope, uncovered scope, residual risk, and confidence grade.
+23. Produce one unified response instead of disconnected role fragments.
 
 ## Output template
 
+**For Direct Answer Mode (Default):**
+- Technical Analysis
+- Solution (with code/config examples)
+- Implementation Steps
+- Expected Results
+
+**For Expert Routing Mode:**
+- Expert Selection (one line: who and why)
+- Expert's Technical Analysis
+- Solution
+- Implementation Steps
+
+**For Full Workflow Mode:**
 - `Selected route`
   - lead, assistants, workflow bundle, and why this route won
 - `Fallback`
