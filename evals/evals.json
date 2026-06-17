@@ -1538,7 +1538,8 @@
         "external_agent_backend_plan.required_outputs contains VerificationReport",
         "response_pack_json external_agent_backend.runtime_claim is soft_orchestration_only",
         "response_pack_json external_agent_backend.backend_orchestration_verdict is simulated"
-      ]
+      ],
+      "runtime_dependent": true
     },
     {
       "id": 82,
@@ -1574,7 +1575,8 @@
         "response_pack_json real_subagent_runtime.runtime_claim is soft_orchestration_only",
         "response_pack_json real_subagent_runtime.candidate_runtime_claim is real_subagent_runtime",
         "response_pack_json real_subagent_runtime.runtime_evidence_required is true"
-      ]
+      ],
+      "runtime_dependent": true
     },
     {
       "id": 83,

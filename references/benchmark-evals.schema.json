@@ -196,6 +196,10 @@
           "minLength": 1,
           "description": "Provenance of the gold answer, e.g. doc:SKILL.md#section or regression:CASE-id. Enables traceability for blind audits."
         },
+        "runtime_dependent": {
+          "type": "boolean",
+          "description": "Marks an eval whose assertions depend on host runtime capabilities (e.g. real subagent spawn, external backend availability) rather than routing correctness. Skill-forge blind audit skips these gracefully."
+        },
         "check": {
           "enum": [
             "process-skill",
