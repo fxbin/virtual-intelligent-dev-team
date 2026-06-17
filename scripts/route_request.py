@@ -526,9 +526,45 @@ def should_suppress_bounded_iteration(text: str, process_hits: dict[str, list[st
         return True
     iteration_hits = process_hits.get("bounded-iteration", [])
     release_hits = process_hits.get("release-gate", [])
+    # Suppress bounded-iteration when the only signal is a generic "优化/optimize"
+    # keyword and no other process skill (planning/release/git/iteration-loop markers)
+    # is present. This keeps simple single-domain optimization questions on the
+    # lightweight Direct Answer route instead of escalating them to a root-cause
+    # iteration loop, per the skill's "keep routing lightweight for simple
+    # single-domain tasks" rule.
+    normalized_iteration_hits = {normalize_process_hit(hit) for hit in iteration_hits}
+    if normalized_iteration_hits == {"优化"} or normalized_iteration_hits == {"optimize"}:
+        loop_intent_markers = [
+            "再来一轮",
+            "下一轮",
+            "until stable",
+            "until it is stable",
+            "迭代到稳定",
+            "多轮",
+            "multi-round",
+            "max rounds",
+            "最大轮次",
+            "benchmark loop",
+            "compare against baseline",
+            "对比基线",
+            "another round",
+        ]
+        lowered = text.lower()
+        has_loop_intent = any(keyword_matches(lowered, marker) for marker in loop_intent_markers)
+        other_process_active = any(
+            key in process_hits
+            for key in (
+                "pre-development-planning",
+                "release-gate",
+                "git-workflow",
+                "project-knowledge-capture",
+                "using-git-worktrees",
+            )
+        )
+        if not has_loop_intent and not other_process_active:
+            return True
     if len(iteration_hits) == 0 or len(release_hits) == 0:
         lowered = text.lower()
-        normalized_iteration_hits = {normalize_process_hit(hit) for hit in iteration_hits}
         if normalized_iteration_hits.issubset({"regression", "回归"}):
             targeted_test_keywords = [
                 "regression test",
@@ -540,7 +576,6 @@ def should_suppress_bounded_iteration(text: str, process_hits: dict[str, list[st
             ]
             return any(keyword_matches(lowered, keyword) for keyword in targeted_test_keywords)
         return False
-    normalized_iteration_hits = {normalize_process_hit(hit) for hit in iteration_hits}
     weak_benchmark_reference_hits = {"benchmark", "基准"}
     return len(normalized_iteration_hits) > 0 and normalized_iteration_hits.issubset(
         weak_benchmark_reference_hits
@@ -2592,6 +2627,29 @@ def build_workflow_bundle(
         "提交流程",
         "分支策略",
     ]
+    multi_expert_split_keywords = [
+        "微服务",
+        "microservice",
+        "micro-service",
+        "services split",
+        "服务拆分",
+        "服务化拆分",
+        "模块拆分",
+        "拆分迁移",
+        "monolith to",
+        "单体拆分",
+        "单体重构",
+        "decompose",
+        "解耦",
+        "多模块",
+        "多服务",
+        "多域",
+        "multi-domain",
+        "跨域",
+        "系统拆分",
+        "架构拆分",
+        "架构重构",
+    ]
 
     if needs_project_knowledge_capture:
         return {
@@ -2802,6 +2860,25 @@ def build_workflow_bundle(
                 ".skill-delivery/current-slice.md",
                 ".skill-delivery/status.yaml",
                 ".skill-context/project-context.md",
+            ],
+        }
+
+    if lead_agent == "Technical Trinity" and text_has_any_keyword(text, multi_expert_split_keywords):
+        return {
+            "name": "multi-expert-execution",
+            "confidence": 0.9,
+            "source": "lead+keyword",
+            "reason": "The request is a multi-domain architecture split or decomposition (e.g. microservices, monolith-to-services, cross-domain refactor), so multiple specialists (architecture, data/persistence, delivery/DevOps) should collaborate up front rather than a single expert defaulting to direct execution.",
+            "steps": [
+                "convene the relevant specialists: architecture, data/persistence, and delivery/DevOps",
+                "align on split boundaries, data ownership, and deployment contracts before coding",
+                "capture cross-cutting decisions and risks that no single specialist owns alone",
+                "split execution into vertical slices that respect the agreed boundaries",
+            ],
+            "progress_anchor_recommended": ".skill-architecture/split-decisions.md",
+            "resume_artifacts": [
+                ".skill-architecture/split-decisions.md",
+                ".skill-architecture/data-ownership.md",
             ],
         }
 

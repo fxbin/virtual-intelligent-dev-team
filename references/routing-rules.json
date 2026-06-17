@@ -1992,6 +1992,50 @@
       {
         "keyword": "这版能发吗",
         "score": 1
+      },
+      {
+        "keyword": "能发布吗",
+        "score": 1
+      },
+      {
+        "keyword": "能不能发布",
+        "score": 1
+      },
+      {
+        "keyword": "现在能发布",
+        "score": 1
+      },
+      {
+        "keyword": "版本能发布",
+        "score": 1
+      },
+      {
+        "keyword": "能发版吗",
+        "score": 1
+      },
+      {
+        "keyword": "上线吗",
+        "score": 1
+      },
+      {
+        "keyword": "能不能上线",
+        "score": 1
+      },
+      {
+        "keyword": "能上线吗",
+        "score": 1
+      },
+      {
+        "keyword": "现在能上线",
+        "score": 1
+      },
+      {
+        "keyword": "可以发布吗",
+        "score": 1
+      },
+      {
+        "keyword": "可以发版吗",
+        "score": 1
       }
     ],
     "project-knowledge-capture": [
