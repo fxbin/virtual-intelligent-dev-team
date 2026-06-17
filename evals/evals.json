@@ -1821,6 +1821,172 @@
         "product-delivery",
         "contract-output"
       ]
+    },
+    {
+      "id": 100,
+      "prompt": "前端页面加载很慢，怎么优化",
+      "expected_output": "Single-domain simple optimization should NOT escalate to root-cause iteration. Routes to a lightweight delivery bundle.",
+      "files": [],
+      "expectations": [
+        "needs_iteration is false",
+        "workflow_bundle is not root-cause-remediate"
+      ],
+      "categories": [
+        "blind-routing",
+        "single-domain",
+        "lightweight-route"
+      ],
+      "source": "doc:SKILL.md#quick-examples (direct answer for simple single-domain)",
+      "negative": true,
+      "runner": "route"
+    },
+    {
+      "id": 101,
+      "prompt": "微服务架构拆分规划",
+      "expected_output": "Multi-domain architecture split should trigger multi-expert collaboration, not degrade to low-confidence direct-execution.",
+      "files": [],
+      "expectations": [
+        "workflow_bundle is multi-expert-execution",
+        "bundle_confidence >= 0.85"
+      ],
+      "categories": [
+        "blind-routing",
+        "multi-expert",
+        "architecture"
+      ],
+      "source": "doc:SKILL.md#multi-expert-execution (microservices split)",
+      "runner": "route"
+    },
+    {
+      "id": 102,
+      "prompt": "先别写代码，先把这个单体拆分迁移项目规划清楚",
+      "expected_output": "Plan-first intent triggers pre-development planning bundle.",
+      "files": [],
+      "expectations": [
+        "needs_pre_development_planning is true",
+        "workflow_bundle is plan-first-build"
+      ],
+      "categories": [
+        "blind-routing",
+        "planning"
+      ],
+      "source": "doc:SKILL.md#pre-development-planning",
+      "runner": "route"
+    },
+    {
+      "id": 103,
+      "prompt": "这个小 bug 直接修一下并跑回归",
+      "expected_output": "Narrow bug-fix slice routes to quick-slice delivery.",
+      "files": [],
+      "expectations": [
+        "workflow_bundle is quick-slice-deliver"
+      ],
+      "categories": [
+        "blind-routing",
+        "quick-slice"
+      ],
+      "source": "doc:SKILL.md#quick-slice-delivery",
+      "runner": "route"
+    },
+    {
+      "id": 104,
+      "prompt": "这个版本现在能发布吗",
+      "expected_output": "Release-readiness question must trigger formal release gate (ship/hold).",
+      "files": [],
+      "expectations": [
+        "needs_release_gate is true",
+        "workflow_bundle is ship-hold-remediate"
+      ],
+      "categories": [
+        "blind-routing",
+        "release-gate"
+      ],
+      "source": "doc:SKILL.md#release-gate (formal ship/hold)",
+      "runner": "route"
+    },
+    {
+      "id": 105,
+      "prompt": "已经试过很多次了，帮我找根因",
+      "expected_output": "Repeated-failure + root-cause intent triggers root-cause remediation led by Sentinel.",
+      "files": [],
+      "expectations": [
+        "workflow_bundle is root-cause-remediate",
+        "lead_agent is Sentinel Architect (NB)"
+      ],
+      "categories": [
+        "blind-routing",
+        "root-cause"
+      ],
+      "source": "doc:SKILL.md#root-cause-discipline",
+      "runner": "route"
+    },
+    {
+      "id": 106,
+      "prompt": "多轮优化直到达标",
+      "expected_output": "Genuine iteration intent (multi-round with convergence target) must still trigger bounded-iteration.",
+      "files": [],
+      "expectations": [
+        "needs_iteration is true",
+        "process_skills contains bounded-iteration"
+      ],
+      "categories": [
+        "regression",
+        "iteration",
+        "boundary-guard"
+      ],
+      "source": "regression:CASE1-fix (suppress only single-domain optimize)",
+      "runner": "route"
+    },
+    {
+      "id": 107,
+      "prompt": "这个版本现在能发布吗，需要走提交流程",
+      "expected_output": "Release question with explicit commit workflow should still trigger release gate (higher priority than git-workflow).",
+      "files": [],
+      "expectations": [
+        "needs_release_gate is true",
+        "workflow_bundle is ship-hold-remediate"
+      ],
+      "categories": [
+        "regression",
+        "release-gate",
+        "boundary-guard"
+      ],
+      "source": "regression:CASE5-fix (release-gate beats git-workflow)",
+      "runner": "route"
+    },
+    {
+      "id": 108,
+      "prompt": "把这个函数重构一下",
+      "expected_output": "Ordinary single-function refactor must NOT be misrouted to multi-expert execution.",
+      "files": [],
+      "expectations": [
+        "workflow_bundle is not multi-expert-execution"
+      ],
+      "categories": [
+        "regression",
+        "multi-expert",
+        "boundary-guard",
+        "negative"
+      ],
+      "source": "regression:CASE2-fix (only multi-domain split triggers multi-expert)",
+      "negative": true,
+      "runner": "route"
+    },
+    {
+      "id": 109,
+      "prompt": "单体拆分成微服务",
+      "expected_output": "Monolith-to-microservices decomposition triggers multi-expert collaboration.",
+      "files": [],
+      "expectations": [
+        "workflow_bundle is multi-expert-execution"
+      ],
+      "categories": [
+        "regression",
+        "multi-expert",
+        "boundary-guard"
+      ],
+      "source": "regression:CASE2-fix (variant phrasing of split intent)",
+      "runner": "route"
     }
   ]
 }

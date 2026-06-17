@@ -187,6 +187,15 @@
           "minItems": 1,
           "uniqueItems": true
         },
+        "negative": {
+          "type": "boolean",
+          "description": "Marks a boundary-guard eval whose expectations describe what should NOT route a certain way. Used by skill-forge blind audit for grouping/reporting only."
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Provenance of the gold answer, e.g. doc:SKILL.md#section or regression:CASE-id. Enables traceability for blind audits."
+        },
         "check": {
           "enum": [
             "process-skill",

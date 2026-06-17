@@ -1,0 +1,5 @@
+{
+  "router_command": "python scripts/route_request.py --text {prompt}",
+  "expectation_prefix": "",
+  "note": "Declares this skill's deterministic router so skill-forge's blind audit (--blind) can execute eval expectations. The router emits a JSON object to stdout; expectations use the field-op-value DSL documented in skill-forge/references/evaluation-gate-protocol.md."
+}
