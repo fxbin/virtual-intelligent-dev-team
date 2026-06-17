@@ -84,29 +84,44 @@ If the task is simple and clearly single-domain, keep routing lightweight.
 
 **1.5. Choose Output Mode (Critical):**
 
-   **Default: Direct Answer Mode**
-   - Single-domain technical questions → Answer directly with technical depth
-   - Bug fixes, optimization, code review → Skip team ceremony, provide solution
-   - "How do I..." questions → Actionable steps and examples
+   **Decision Tree:**
    
-   **Escalate to Expert Routing when:**
-   - Specific expertise needed (security, architecture, DB optimization)
-   - Technical depth benefits from specialist perspective
-   - Still single-domain, just needs expert lens
+   1. **Is it a simple, single-domain question?**
+      - Yes → **Direct Answer Mode** (skip to step 3)
+        - Bug fixes, "how do I...", single optimization
+        - Answer directly with: Analysis → Solution → Steps → Results
+      - No → Continue to 2
    
-   **Escalate to Full Workflow when:**
-   - Large refactor / migration / multi-phase delivery
-   - Cross-domain coordination required
-   - Release readiness / governance gates needed
-   - User explicitly asks for team coordination
+   2. **Does it need multiple expert perspectives?**
+      - Yes → **Multi-Expert Execution Mode** ⭐ NEW
+        - Multi-domain problems (architecture + data + ops)
+        - Complex technical decisions benefiting from diverse views
+        - **Actually spawn 2-4 experts, collect outputs, synthesize**
+        - Examples: "微服务拆分规划", "React性能全面优化", "系统重构方案"
+      - No → Continue to 3
    
-   **Golden Rule: When in doubt, use Direct Answer Mode.**  
-   Users prefer concrete solutions over process packaging.
+   3. **Does it need full workflow orchestration?**
+      - Yes → **Full Workflow Mode**
+        - Large refactor / migration / multi-phase delivery
+        - Release readiness / governance gates
+      - No → **Expert Routing Mode**
+        - Single expert, deep dive
+        - Specialist perspective on focused problem
+   
+   **Golden Rule:** Multi-domain problems → Multi-Expert Execution (not Direct Answer).
    
    See `references/output-contract.md` for detailed output structures.
 
 2. If the request is a large rewrite, migration, overhaul, or planning-before-coding transformation, enter the pre-development planning branch first.
 3. **If using Direct Answer Mode:** Skip to answering directly with technical depth. Provide: Analysis → Solution → Steps → Expected Results. Skip Team Dispatch, Evidence, and Resume sections. Exit here.
+3.5. **If using Multi-Expert Execution Mode:** 
+   - Identify 2-4 relevant experts based on problem domains
+   - Spawn them in parallel using Agent tool or subagent runtime
+   - Each expert analyzes from their perspective
+   - Collect all expert outputs
+   - Synthesize into unified, comprehensive answer
+   - Output structure: Expert roster → Individual analyses → Synthesized solution
+   - Exit here (skip Full Workflow sections).
 4. If the request is a narrow implementation or bug fix, use quick slice delivery instead of a full product or planning workflow.
 5. Choose one lead agent.
 6. Add one or two assistant agents only when they add clear value.
@@ -137,6 +152,12 @@ If the task is simple and clearly single-domain, keep routing lightweight.
 - Implementation Steps
 - Expected Results
 
+**For Multi-Expert Execution Mode (NEW):**
+- Expert Team Roster (2-4 experts)
+- Individual Expert Analyses (actual execution outputs)
+- Synthesized Solution (integrated from all perspectives)
+- Implementation Steps (unified path)
+
 **For Expert Routing Mode:**
 - Expert Selection (one line: who and why)
 - Expert's Technical Analysis
@@ -155,6 +176,12 @@ For the full user-facing response contract, use `references/output-contract.md`.
 
 ## Quick examples
 
+- `前端性能慢，怎么优化？`（单域简单优化）
+  - Route into Direct Answer Mode: 给出具体优化方案，跳过团队编排。
+- `微服务架构拆分规划`（多域协作）
+  - Route into Multi-Expert Execution: 调用 Sentinel Architect（架构）+ Database Expert（数据）+ DevOps Specialist（部署），收集各自方案，综合输出。
+- `React 应用全面性能优化`（多域协作）
+  - Route into Multi-Expert Execution: 调用 Frontend Performance Expert（运行时）+ Build Tool Specialist（构建）+ Code Review Expert（代码质量），综合三方建议。
 - `评估当前项目里的版本，看看能不能继续优化`
   - Route into bounded iteration with evidence, baseline comparison, and next-round decisions.
 - `先别写代码，先把这个单体拆分迁移项目规划清楚`

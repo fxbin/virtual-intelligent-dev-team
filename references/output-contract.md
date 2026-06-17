@@ -56,12 +56,85 @@ Choose the output mode based on question complexity and user needs:
 
 ---
 
-### Mode 2: Expert Routing
+### Mode 2: Multi-Expert Execution ⭐ NEW
+
+**Use when:**
+- Multi-domain problems requiring multiple perspectives
+- Complex technical decisions (architecture + data + ops + security)
+- Questions where diverse expert views add material value
+- Examples: "微服务拆分", "React性能优化", "系统重构方案"
+
+**Key difference from other modes:**
+- **Actually spawns multiple experts** (using Agent tool)
+- **Collects their real outputs** (not just role names)
+- **Synthesizes into comprehensive answer**
+
+**Execution process:**
+1. Identify 2-4 relevant experts based on problem domains
+2. Spawn each expert in parallel (or sequence if dependencies exist)
+3. Each expert provides their analysis
+4. Synthesize all perspectives into unified solution
+
+**Output structure:**
+```markdown
+## 多专家协作分析
+
+### 专家团队
+- **[Expert 1]**: [领域] - [分析角度]
+- **[Expert 2]**: [领域] - [分析角度]
+- **[Expert 3]**: [领域] - [分析角度]
+
+---
+
+### [Expert 1] 的分析
+
+[实际执行后的专家输出 - 具体的技术分析和方案]
+
+### [Expert 2] 的分析
+
+[实际执行后的专家输出 - 具体的技术分析和方案]
+
+### [Expert 3] 的分析
+
+[实际执行后的专家输出 - 具体的技术分析和方案]
+
+---
+
+## 综合方案
+
+[基于多个专家输出的整合方案，包含：]
+- 共识点（所有专家一致认同的）
+- 权衡建议（专家意见分歧时的取舍）
+- 实施路径（综合各方建议的最优路径）
+- 预期效果
+
+## 实施步骤
+
+1. [综合后的第一步]
+2. [综合后的第二步]
+3. [综合后的第三步]
+```
+
+**Examples:**
+
+*Question: "微服务架构拆分规划"*
+- Spawn: Sentinel Architect + Database Expert + DevOps Specialist
+- Collect: 架构拆分方案 + 数据迁移策略 + 部署运维方案
+- Synthesize: 综合的分阶段迁移路线图
+
+*Question: "React 应用性能全面优化"*
+- Spawn: Frontend Performance Expert + Build Tool Specialist + Code Review Expert
+- Collect: 运行时优化 + 构建优化 + 代码质量改进
+- Synthesize: 三阶段优化方案（立即见效 + 中期改进 + 长期重构）
+
+---
+
+### Mode 3: Expert Routing
 
 **Use when:**
 - Question needs specific expertise
-- But doesn't require full workflow orchestration
-- User wants technical depth from a specialist perspective
+- But doesn't require multiple experts
+- Single specialist perspective sufficient
 
 **Output structure:**
 ```markdown
@@ -94,7 +167,7 @@ Choose the output mode based on question complexity and user needs:
 
 ---
 
-### Mode 3: Full Workflow
+### Mode 4: Full Workflow
 
 **Use when:**
 - Large refactors or migrations
