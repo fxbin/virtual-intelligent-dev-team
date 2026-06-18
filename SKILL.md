@@ -12,7 +12,7 @@ Route complex software work into the smallest defensible delivery workflow, keep
 
 This skill is not only an expert router. It is a bounded work-loop skill for complex tasks.
 
-It has eight practical closure layers:
+It has seven core closure layers plus one optional stage-council overlay:
 
 1. `Planning closure`
    - Large rewrites, migrations, and project-wide transformations get a lightweight analysis / plan / progress pack before implementation.
@@ -28,8 +28,10 @@ It has eight practical closure layers:
    - Offline drills verify rollback, resume, and release-gate bootstrap paths.
 7. `Team Engine Lite closure`
    - Code-facing delivery now carries Worker / Verifier separation, max-cycle retry, remediation patch, controlled real subagent runtime eligibility, external-agent soft orchestration fallback, and a DeliveryCycleReport before Lead acceptance.
-8. `Stage council closure`
-   - Product discovery and prototype design can expand into phase-level councils under `World-Class Product Architect` without replacing the top-level lead, workflow bundle, or Team Engine Lite verification.
+Optional overlay:
+
+- `Stage council overlay`
+  - Product discovery and prototype design can expand into phase-level councils under `World-Class Product Architect` without replacing the top-level lead, workflow bundle, or Team Engine Lite verification.
 
 Runtime rule:
 
@@ -93,10 +95,10 @@ If the task is simple and clearly single-domain, keep routing lightweight.
       - No → Continue to 2
    
    2. **Does it need multiple expert perspectives?**
-      - Yes → **Multi-Expert Execution Mode** ⭐ NEW
+      - Yes → **Multi-Expert Execution Mode**
         - Multi-domain problems (architecture + data + ops)
         - Complex technical decisions benefiting from diverse views
-        - **Actually spawn 2-4 experts, collect outputs, synthesize**
+        - Spawn 2-4 experts only when the host exposes real spawn / wait / merge runtime evidence; otherwise use soft expert orchestration and label it honestly.
         - Examples: "微服务拆分规划", "React性能全面优化", "系统重构方案"
       - No → Continue to 3
    
@@ -116,9 +118,9 @@ If the task is simple and clearly single-domain, keep routing lightweight.
 3. **If using Direct Answer Mode:** Skip to answering directly with technical depth. Provide: Analysis → Solution → Steps → Expected Results. Skip Team Dispatch, Evidence, and Resume sections. Exit here.
 3.5. **If using Multi-Expert Execution Mode:** 
    - Identify 2-4 relevant experts based on problem domains
-   - Spawn them in parallel using Agent tool or subagent runtime
-   - Each expert analyzes from their perspective
-   - Collect all expert outputs
+   - Spawn them in parallel using Agent tool or subagent runtime only when runtime evidence exists
+   - If real runtime is unavailable, keep one response, use specialist lenses, and mark the result as soft orchestration
+   - Collect real expert outputs only when real experts were actually spawned
    - Synthesize into unified, comprehensive answer
    - Output structure: Expert roster → Individual analyses → Synthesized solution
    - Exit here (skip Full Workflow sections).
@@ -129,7 +131,6 @@ If the task is simple and clearly single-domain, keep routing lightweight.
 8. Use a compact handoff when lead and assistants need structured coordination.
 9. If the request is primarily about building AI-readable project context, route execution to `skill-forge` and its project knowledge capture protocol after the software-risk lanes are identified.
 10. If the request is a fuzzy idea or low-information route-changing ask, ask one intent-confirmation question before treating the provisional route as final.
-11. Apply execution-quality guardrails: surface route-changing assumptions, keep the smallest defensible bundle, limit scope surgically, and define verifiable closure.
 11. Apply execution-quality guardrails: surface route-changing assumptions, keep the smallest defensible bundle, limit scope surgically, and define verifiable closure.
 12. For broad, repeated-failure, release, beta, multi-agent, or drift-prone work, apply goal framing: success evidence, stop condition, and non-goals must be explicit before implementation.
 13. For code-facing routes, apply the Harness constraint gate before implementation: create or refresh `.skill-harness/engineering-constraints.md`.
@@ -152,9 +153,9 @@ If the task is simple and clearly single-domain, keep routing lightweight.
 - Implementation Steps
 - Expected Results
 
-**For Multi-Expert Execution Mode (NEW):**
+**For Multi-Expert Execution Mode:**
 - Expert Team Roster (2-4 experts)
-- Individual Expert Analyses (actual execution outputs)
+- Individual Expert Analyses (actual execution outputs only when real runtime exists; otherwise clearly labeled expert-lens analysis)
 - Synthesized Solution (integrated from all perspectives)
 - Implementation Steps (unified path)
 

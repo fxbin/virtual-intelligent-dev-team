@@ -1827,11 +1827,15 @@
     {
       "id": 100,
       "prompt": "前端页面加载很慢，怎么优化",
-      "expected_output": "Single-domain simple optimization should NOT escalate to root-cause iteration. Routes to a lightweight delivery bundle.",
+      "expected_output": "Single-domain simple optimization should stay in direct-execution and avoid harness or Team Engine overhead.",
       "files": [],
       "expectations": [
         "needs_iteration is false",
-        "workflow_bundle is not root-cause-remediate"
+        "workflow_bundle is direct-execution",
+        "workflow_bundle_source is single-domain-direct-answer",
+        "harness_constraint_gate.required is false",
+        "team_engine_gate.required is false",
+        "workflow_bundle_bootstrap.required is false"
       ],
       "categories": [
         "blind-routing",
@@ -1845,11 +1849,16 @@
     {
       "id": 101,
       "prompt": "微服务架构拆分规划",
-      "expected_output": "Multi-domain architecture split should trigger multi-expert collaboration, not degrade to low-confidence direct-execution.",
+      "expected_output": "Multi-domain architecture split should trigger multi-expert collaboration while preserving an honest runtime claim until real spawn/wait/merge evidence exists.",
       "files": [],
       "expectations": [
         "workflow_bundle is multi-expert-execution",
-        "bundle_confidence >= 0.85"
+        "bundle_confidence >= 0.85",
+        "workflow_runtime_claim is soft_orchestration_until_runtime_evidence",
+        "multi_expert_plan.runtime_evidence_required is true",
+        "multi_expert_roles contains architecture-specialist",
+        "multi_expert_roles contains data-persistence-specialist",
+        "multi_expert_roles contains delivery-devops-specialist"
       ],
       "categories": [
         "blind-routing",
@@ -1988,6 +1997,91 @@
         "boundary-guard"
       ],
       "source": "regression:CASE2-fix (variant phrasing of split intent)",
+      "runner": "route"
+    },
+    {
+      "id": 110,
+      "prompt": "帮我修复接口慢的问题？",
+      "expected_output": "Chinese fix requests with a question mark should remain quick-slice delivery, not direct-answer consultation.",
+      "files": [],
+      "expectations": [
+        "workflow_bundle is quick-slice-deliver",
+        "workflow_bundle_source is keyword+lead",
+        "harness_constraint_gate.required is true",
+        "team_engine_gate.required is true",
+        "workflow_bundle_bootstrap.required is true"
+      ],
+      "categories": [
+        "regression",
+        "quick-slice",
+        "single-domain",
+        "boundary-guard"
+      ],
+      "source": "blind-review:A (Chinese fix request must not be captured by direct-answer)",
+      "runner": "route"
+    },
+    {
+      "id": 111,
+      "prompt": "React 应用全面性能优化",
+      "expected_output": "The SKILL.md React performance example should trigger multi-expert execution with an honest soft runtime claim.",
+      "files": [],
+      "expectations": [
+        "workflow_bundle is multi-expert-execution",
+        "workflow_runtime_claim is soft_orchestration_until_runtime_evidence",
+        "multi_expert_plan.runtime_evidence_required is true",
+        "multi_expert_roles contains frontend-performance-specialist",
+        "multi_expert_roles contains build-tool-specialist",
+        "multi_expert_roles contains code-review-specialist"
+      ],
+      "categories": [
+        "regression",
+        "multi-expert",
+        "frontend",
+        "boundary-guard"
+      ],
+      "source": "doc:SKILL.md#quick-examples (React performance multi-expert)",
+      "runner": "route"
+    },
+    {
+      "id": 112,
+      "prompt": "系统重构方案",
+      "expected_output": "The SKILL.md system refactor example should trigger multi-expert execution instead of fallback direct execution.",
+      "files": [],
+      "expectations": [
+        "workflow_bundle is multi-expert-execution",
+        "workflow_runtime_claim is soft_orchestration_until_runtime_evidence",
+        "multi_expert_plan.runtime_evidence_required is true",
+        "multi_expert_roles contains architecture-specialist",
+        "multi_expert_roles contains data-persistence-specialist",
+        "multi_expert_roles contains delivery-devops-specialist"
+      ],
+      "categories": [
+        "regression",
+        "multi-expert",
+        "architecture",
+        "boundary-guard"
+      ],
+      "source": "doc:SKILL.md#multi-expert-execution (system refactor plan)",
+      "runner": "route"
+    },
+    {
+      "id": 113,
+      "prompt": "前端页面加载很慢，帮我实现优化并跑验证",
+      "expected_output": "Implementation and verification wording should upgrade from lightweight direct answer into a delivery workflow.",
+      "files": [],
+      "expectations": [
+        "workflow_bundle is product-spec-deliver",
+        "harness_constraint_gate.required is true",
+        "team_engine_gate.required is true",
+        "workflow_bundle_bootstrap.required is true"
+      ],
+      "categories": [
+        "regression",
+        "single-domain",
+        "product-delivery",
+        "boundary-guard"
+      ],
+      "source": "blind-review:C (neighboring implementation wording should not stay direct-answer)",
       "runner": "route"
     }
   ]

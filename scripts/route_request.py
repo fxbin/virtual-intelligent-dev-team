@@ -49,7 +49,6 @@ HARNESS_CONSTRAINT_WORKFLOWS = {
     "audit-fix-deliver",
     "govern-change-safely",
     "root-cause-remediate",
-    "direct-execution",
 }
 TEAM_ENGINE_REQUIRED_WORKFLOWS = {
     "plan-first-build",
@@ -591,6 +590,87 @@ def should_suppress_git_agent_scoring(
     ambiguous_release_decision_hits = {"提交", "release", "发版", "发布"}
     return len(normalized_hits) > 0 and normalized_hits.issubset(
         ambiguous_release_decision_hits
+    )
+
+
+def is_simple_direct_answer_request(text: str, lead_agent: str) -> bool:
+    lowered = text.lower()
+    if lead_agent not in {"Technical Trinity", "World-Class Product Architect"}:
+        return False
+    if is_quick_slice_context(text):
+        return False
+
+    direct_answer_cues = [
+        "怎么",
+        "如何",
+        "怎么优化",
+        "如何优化",
+        "怎么提升",
+        "如何提升",
+        "how to",
+        "how do i",
+        "what is the best way",
+        "recommend",
+        "?",
+        "？",
+    ]
+    single_domain_subjects = [
+        "前端",
+        "页面",
+        "react",
+        "next.js",
+        "css",
+        "性能",
+        "加载",
+        "打包",
+        "bundle",
+        "bug",
+        "报错",
+        "error",
+        "接口慢",
+        "api slow",
+        "优化",
+        "performance",
+    ]
+    escalation_markers = [
+        "实现",
+        "开发",
+        "重做",
+        "改造",
+        "重构",
+        "迁移",
+        "规划",
+        "计划",
+        "方案",
+        "prd",
+        "验收",
+        "用户流",
+        "backend contract",
+        "api contract",
+        "commit",
+        "push",
+        "pull request",
+        "merge",
+        "release",
+        "发布",
+        "上线",
+        "内测",
+        "多轮",
+        "下一轮",
+        "全面",
+        "跨域",
+        "多域",
+        "系统",
+        "项目",
+        "架构",
+        "安全",
+        "审计",
+    ]
+
+    return (
+        text_has_any_keyword(lowered, direct_answer_cues)
+        and text_has_any_keyword(lowered, single_domain_subjects)
+        and not text_has_any_keyword(lowered, escalation_markers)
     )
 
 
@@ -2650,6 +2730,135 @@ def build_workflow_bundle(
         "架构拆分",
         "架构重构",
     ]
+    multi_expert_frontend_keywords = [
+        "React性能全面优化",
+        "React 性能全面优化",
+        "React 应用全面性能优化",
+        "react performance overhaul",
+        "react app performance overhaul",
+        "全面性能优化",
+        "全面前端性能优化",
+        "frontend performance overhaul",
+    ]
+    multi_expert_system_keywords = [
+        "系统重构方案",
+        "系统重构规划",
+        "整体重构方案",
+        "大型系统重构",
+        "system refactor plan",
+        "system redesign plan",
+        "system re-architecture",
+    ]
+
+    def build_multi_expert_bundle(kind: str) -> dict[str, object]:
+        if kind == "frontend":
+            reason = (
+                "The request is a broad frontend performance overhaul, so runtime, build, "
+                "and code-quality specialists should collaborate before reducing it to a single product-delivery path."
+            )
+            experts = [
+                {
+                    "role": "frontend-performance-specialist",
+                    "focus": "runtime rendering, hydration, interaction latency, and browser profiling",
+                },
+                {
+                    "role": "build-tool-specialist",
+                    "focus": "bundle size, code splitting, asset loading, and build pipeline bottlenecks",
+                },
+                {
+                    "role": "code-review-specialist",
+                    "focus": "component structure, state boundaries, memoization, and regression risk",
+                },
+            ]
+            steps = [
+                "separate runtime, build, and code-structure performance hypotheses",
+                "identify the cheapest measurement for each hypothesis before changing code",
+                "rank fixes by user-visible impact, implementation risk, and rollback cost",
+                "turn the selected path into narrow implementation slices only after the diagnosis is coherent",
+            ]
+            progress_anchor = ".skill-performance/frontend-performance-plan.md"
+            resume_artifacts = [
+                ".skill-performance/frontend-performance-plan.md",
+                ".skill-performance/performance-hypotheses.md",
+            ]
+        elif kind == "system":
+            reason = (
+                "The request is a broad system refactor plan, so architecture, data, and delivery specialists "
+                "should collaborate before committing to one execution path."
+            )
+            experts = [
+                {
+                    "role": "architecture-specialist",
+                    "focus": "module boundaries, ownership seams, coupling, and architecture risk",
+                },
+                {
+                    "role": "data-persistence-specialist",
+                    "focus": "state ownership, migration sequencing, compatibility, and rollback",
+                },
+                {
+                    "role": "delivery-devops-specialist",
+                    "focus": "release slicing, observability, deployment safety, and incremental rollout",
+                },
+            ]
+            steps = [
+                "map the current system boundaries and high-risk dependencies",
+                "separate architecture, data, and delivery decisions before coding",
+                "identify reversible slices and irreversible decisions",
+                "define the first executable planning artifact and evidence needed to proceed",
+            ]
+            progress_anchor = ".skill-architecture/system-refactor-plan.md"
+            resume_artifacts = [
+                ".skill-architecture/system-refactor-plan.md",
+                ".skill-architecture/refactor-decisions.md",
+            ]
+        else:
+            reason = "The request is a multi-domain architecture split or decomposition (e.g. microservices, monolith-to-services, cross-domain refactor), so multiple specialists (architecture, data/persistence, delivery/DevOps) should collaborate up front rather than a single expert defaulting to direct execution."
+            experts = [
+                {
+                    "role": "architecture-specialist",
+                    "focus": "service boundaries, coupling, migration risk, and ownership seams",
+                },
+                {
+                    "role": "data-persistence-specialist",
+                    "focus": "data ownership, migration sequencing, consistency, and rollback",
+                },
+                {
+                    "role": "delivery-devops-specialist",
+                    "focus": "deployment topology, observability, release safety, and incremental rollout",
+                },
+            ]
+            steps = [
+                "convene the relevant specialists: architecture, data/persistence, and delivery/DevOps",
+                "align on split boundaries, data ownership, and deployment contracts before coding",
+                "capture cross-cutting decisions and risks that no single specialist owns alone",
+                "split execution into vertical slices that respect the agreed boundaries",
+            ]
+            progress_anchor = ".skill-architecture/split-decisions.md"
+            resume_artifacts = [
+                ".skill-architecture/split-decisions.md",
+                ".skill-architecture/data-ownership.md",
+            ]
+
+        return {
+            "name": "multi-expert-execution",
+            "confidence": 0.9,
+            "source": f"{kind}-keyword",
+            "reason": reason,
+            "runtime_claim": "soft_orchestration_until_runtime_evidence",
+            "multi_expert_plan": {
+                "runtime_evidence_required": True,
+                "runtime_evidence": [
+                    "spawn",
+                    "wait",
+                    "merge",
+                ],
+                "fallback": "Use clearly labeled specialist lenses in one response when the host does not expose real subagent runtime evidence.",
+                "experts": experts,
+            },
+            "steps": steps,
+            "progress_anchor_recommended": progress_anchor,
+            "resume_artifacts": resume_artifacts,
+        }
 
     if needs_project_knowledge_capture:
         return {
@@ -2797,6 +3006,30 @@ def build_workflow_bundle(
             ],
         }
 
+    if is_simple_direct_answer_request(text, lead_agent):
+        return {
+            "name": "direct-execution",
+            "confidence": 0.78,
+            "source": "single-domain-direct-answer",
+            "reason": "The request is a simple single-domain question, so the answer should stay direct and avoid product, harness, Team Engine, or resume-artifact overhead.",
+            "steps": [
+                "answer the technical question directly",
+                "include concrete checks or examples only when they help the user act",
+                "avoid workflow artifacts unless the user asks to implement, verify, commit, release, or iterate",
+            ],
+            "progress_anchor_recommended": None,
+            "resume_artifacts": [],
+        }
+
+    if text_has_any_keyword(text, multi_expert_frontend_keywords):
+        return build_multi_expert_bundle("frontend")
+
+    if text_has_any_keyword(text, multi_expert_system_keywords):
+        return build_multi_expert_bundle("system")
+
+    if text_has_any_keyword(text, multi_expert_split_keywords):
+        return build_multi_expert_bundle("architecture")
+
     if lead_agent == "World-Class Product Architect" or text_has_any_keyword(text, product_keywords):
         return {
             "name": "product-spec-deliver",
@@ -2860,25 +3093,6 @@ def build_workflow_bundle(
                 ".skill-delivery/current-slice.md",
                 ".skill-delivery/status.yaml",
                 ".skill-context/project-context.md",
-            ],
-        }
-
-    if lead_agent == "Technical Trinity" and text_has_any_keyword(text, multi_expert_split_keywords):
-        return {
-            "name": "multi-expert-execution",
-            "confidence": 0.9,
-            "source": "lead+keyword",
-            "reason": "The request is a multi-domain architecture split or decomposition (e.g. microservices, monolith-to-services, cross-domain refactor), so multiple specialists (architecture, data/persistence, delivery/DevOps) should collaborate up front rather than a single expert defaulting to direct execution.",
-            "steps": [
-                "convene the relevant specialists: architecture, data/persistence, and delivery/DevOps",
-                "align on split boundaries, data ownership, and deployment contracts before coding",
-                "capture cross-cutting decisions and risks that no single specialist owns alone",
-                "split execution into vertical slices that respect the agreed boundaries",
-            ],
-            "progress_anchor_recommended": ".skill-architecture/split-decisions.md",
-            "resume_artifacts": [
-                ".skill-architecture/split-decisions.md",
-                ".skill-architecture/data-ownership.md",
             ],
         }
 
@@ -3101,11 +3315,12 @@ def build_harness_constraint_gate(
     bundle_name = str(workflow_bundle.get("name", "direct-execution"))
     required = bundle_name in HARNESS_CONSTRAINT_WORKFLOWS
     task_summary = " ".join(request_text.split())[:160] or "<task summary>"
-    reason = (
-        "Code-facing routes must create or refresh the Harness engineering constraints before implementation."
-        if required
-        else "This route is evidence, release, beta, or post-release focused; Harness constraints are optional unless implementation begins."
-    )
+    if required:
+        reason = "Code-facing routes must create or refresh the Harness engineering constraints before implementation."
+    elif bundle_name == "direct-execution":
+        reason = "Direct-answer routes stay lightweight; Harness constraints are optional unless the user asks to implement or verify code."
+    else:
+        reason = "This route is evidence, release, beta, or post-release focused; Harness constraints are optional unless implementation begins."
 
     return {
         "required": required,
@@ -4148,6 +4363,17 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "workflow_bundle": workflow_bundle.get("name"),
         "bundle_confidence": workflow_bundle.get("confidence"),
         "workflow_bundle_source": workflow_bundle.get("source"),
+        "workflow_runtime_claim": workflow_bundle.get("runtime_claim", ""),
+        "multi_expert_plan": workflow_bundle.get("multi_expert_plan", {}),
+        "multi_expert_roles": [
+            str(expert.get("role", ""))
+            for expert in (
+                (workflow_bundle.get("multi_expert_plan", {}) or {}).get("experts", [])
+                if isinstance(workflow_bundle.get("multi_expert_plan", {}), dict)
+                else []
+            )
+            if str(expert.get("role", "")).strip()
+        ],
         "workflow_steps": workflow_bundle.get("steps", []),
         "workflow_reason": workflow_bundle.get("reason"),
         "stage_council_plan": stage_council_plan,

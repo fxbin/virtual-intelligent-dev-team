@@ -56,7 +56,7 @@ Choose the output mode based on question complexity and user needs:
 
 ---
 
-### Mode 2: Multi-Expert Execution ⭐ NEW
+### Mode 2: Multi-Expert Execution
 
 **Use when:**
 - Multi-domain problems requiring multiple perspectives
@@ -65,15 +65,17 @@ Choose the output mode based on question complexity and user needs:
 - Examples: "微服务拆分", "React性能优化", "系统重构方案"
 
 **Key difference from other modes:**
-- **Actually spawns multiple experts** (using Agent tool)
-- **Collects their real outputs** (not just role names)
-- **Synthesizes into comprehensive answer**
+- Spawns multiple experts only when the host exposes real Agent spawn / wait / merge runtime evidence.
+- Collects real expert outputs only when those experts were actually spawned.
+- Falls back to soft expert orchestration when runtime evidence is unavailable, and labels that fallback explicitly instead of implying true parallel execution.
+- Synthesizes the available perspectives into one comprehensive answer.
 
 **Execution process:**
-1. Identify 2-4 relevant experts based on problem domains
-2. Spawn each expert in parallel (or sequence if dependencies exist)
-3. Each expert provides their analysis
-4. Synthesize all perspectives into unified solution
+1. Identify 2-4 relevant experts based on problem domains.
+2. Check whether the host exposes spawn / wait / merge runtime evidence.
+3. If real runtime exists, spawn each expert in parallel or sequence when dependencies exist.
+4. If real runtime is unavailable, keep one response, use clearly labeled specialist lenses, and mark the runtime claim as soft orchestration.
+5. Synthesize all perspectives into a unified solution.
 
 **Output structure:**
 ```markdown
@@ -88,15 +90,15 @@ Choose the output mode based on question complexity and user needs:
 
 ### [Expert 1] 的分析
 
-[实际执行后的专家输出 - 具体的技术分析和方案]
+[实际执行后的专家输出；若未真实 spawn，则标注为 soft expert lens]
 
 ### [Expert 2] 的分析
 
-[实际执行后的专家输出 - 具体的技术分析和方案]
+[实际执行后的专家输出；若未真实 spawn，则标注为 soft expert lens]
 
 ### [Expert 3] 的分析
 
-[实际执行后的专家输出 - 具体的技术分析和方案]
+[实际执行后的专家输出；若未真实 spawn，则标注为 soft expert lens]
 
 ---
 

@@ -105,6 +105,8 @@ flowchart TD
 7. Team Engine Lite 闭环
    - Worker 负责产出，Verifier 负责验收，Lead 只能根据 DeliveryCycleReport 接受，不让同一个角色既当选手又当裁判。
 
+产品发现和原型设计的 Stage Council 是这七层之上的可选 overlay：它只在阶段专家会改变产物顺序时展开，不替代顶层 lead、workflow bundle 或 Team Engine Lite 验收。
+
 ## 设计原则
 
 ### 1. 默认人工，自动需显式触发

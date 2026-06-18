@@ -488,6 +488,60 @@ class RoutingTests(unittest.TestCase):
         practice_names = [item["name"] for item in result["micro_practices"]]
         self.assertIn("feedback-loop-first", practice_names)
 
+    def test_simple_single_domain_optimization_stays_direct_answer(self) -> None:
+        result = route_request.route_request(
+            "前端页面加载很慢，怎么优化",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertEqual("direct-execution", result["workflow_bundle"])
+        self.assertEqual("single-domain-direct-answer", result["workflow_bundle_source"])
+        self.assertFalse(result["harness_constraint_gate"]["required"])
+        self.assertFalse(result["team_engine_gate"]["required"])
+        self.assertFalse(result["workflow_bundle_bootstrap"]["required"])
+
+    def test_chinese_fix_question_stays_quick_slice(self) -> None:
+        result = route_request.route_request(
+            "帮我修复接口慢的问题？",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertEqual("quick-slice-deliver", result["workflow_bundle"])
+        self.assertEqual("keyword+lead", result["workflow_bundle_source"])
+        self.assertTrue(result["harness_constraint_gate"]["required"])
+        self.assertTrue(result["team_engine_gate"]["required"])
+        self.assertTrue(result["workflow_bundle_bootstrap"]["required"])
+
+    def test_react_performance_overhaul_uses_multi_expert_soft_runtime(self) -> None:
+        result = route_request.route_request(
+            "React 应用全面性能优化",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertEqual("multi-expert-execution", result["workflow_bundle"])
+        self.assertEqual("soft_orchestration_until_runtime_evidence", result["workflow_runtime_claim"])
+        self.assertTrue(result["multi_expert_plan"]["runtime_evidence_required"])
+        self.assertIn("frontend-performance-specialist", result["multi_expert_roles"])
+        self.assertIn("build-tool-specialist", result["multi_expert_roles"])
+        self.assertIn("code-review-specialist", result["multi_expert_roles"])
+
+    def test_system_refactor_plan_uses_multi_expert_soft_runtime(self) -> None:
+        result = route_request.route_request(
+            "系统重构方案",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertEqual("multi-expert-execution", result["workflow_bundle"])
+        self.assertEqual("soft_orchestration_until_runtime_evidence", result["workflow_runtime_claim"])
+        self.assertTrue(result["multi_expert_plan"]["runtime_evidence_required"])
+        self.assertIn("architecture-specialist", result["multi_expert_roles"])
+        self.assertIn("data-persistence-specialist", result["multi_expert_roles"])
+        self.assertIn("delivery-devops-specialist", result["multi_expert_roles"])
+
     def test_bug_slice_activates_feedback_loop_first_micro_practice(self) -> None:
         result = route_request.route_request(
             "Fix the checkout API regression by first reproducing it with a failing test.",

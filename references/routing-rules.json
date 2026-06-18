@@ -1,8 +1,8 @@
 {
   "meta": {
     "author": "fxbin",
-    "version": "v4.84.1",
-    "updated": "2026-06-17"
+    "version": "v4.84.2",
+    "updated": "2026-06-18"
   },
   "thresholds": {
     "max_agent_score": 20,
