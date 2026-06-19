@@ -1,8 +1,8 @@
 {
   "meta": {
     "author": "fxbin",
-    "version": "v4.84.2",
-    "updated": "2026-06-18"
+    "version": "v4.84.3",
+    "updated": "2026-06-19"
   },
   "thresholds": {
     "max_agent_score": 20,
@@ -203,6 +203,7 @@
       "lead_agent": "World-Class Product Architect",
       "when_any_keywords": [
         "commit",
+        "commits",
         "push",
         "pull request",
         "merge request",
@@ -271,6 +272,7 @@
         "status",
         "add",
         "commit",
+        "commits",
         "push",
         "pull",
         "checkout",
@@ -1029,6 +1031,10 @@
         },
         {
           "keyword": "commit",
+          "score": 5
+        },
+        {
+          "keyword": "commits",
           "score": 5
         },
         {
@@ -2151,6 +2157,10 @@
       },
       {
         "keyword": "commit",
+        "score": 1
+      },
+      {
+        "keyword": "commits",
         "score": 1
       },
       {

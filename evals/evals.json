@@ -2083,6 +2083,73 @@
       ],
       "source": "blind-review:C (neighboring implementation wording should not stay direct-answer)",
       "runner": "route"
+    },
+    {
+      "id": 114,
+      "prompt": "审查完成后按 P0/P1/P2 分批修复并提交，每批独立 commit",
+      "expected_output": "Audit findings that must be fixed by severity batch should remain audit-led, attach Git workflow, and expose the audit batch fix source.",
+      "files": [],
+      "expectations": [
+        "lead_agent is Code Audit Council",
+        "assistant_agents contains Git Workflow Guardian",
+        "needs_git_workflow is true",
+        "process_skills contains git-workflow",
+        "workflow_bundle is audit-fix-deliver",
+        "workflow_bundle_source is audit-batch-fix",
+        "workflow_steps contains freeze the audit finding list before implementation",
+        "workflow_steps contains create one independent commit per accepted batch using the repo commit convention"
+      ],
+      "categories": [
+        "regression",
+        "review",
+        "git-workflow",
+        "workflow-bundle",
+        "boundary-guard"
+      ],
+      "source": "proposal:qoder-code-audit-batch-fix",
+      "runner": "route"
+    },
+    {
+      "id": 115,
+      "prompt": "This is a PR. Review it, then fix P0/P1/P2 findings in separate commits.",
+      "expected_output": "English audit batch remediation should keep Code Audit Council as lead and require separate severity-batch commits.",
+      "files": [],
+      "expectations": [
+        "lead_agent is Code Audit Council",
+        "needs_git_workflow is true",
+        "process_skills contains git-workflow",
+        "workflow_bundle is audit-fix-deliver",
+        "workflow_bundle_source is audit-batch-fix",
+        "workflow_steps contains classify findings into P0/P1/P2 batches with scope and dependencies",
+        "workflow_steps contains fix one severity batch at a time, starting with P0"
+      ],
+      "categories": [
+        "regression",
+        "review",
+        "mixed-language",
+        "git-workflow",
+        "workflow-bundle"
+      ],
+      "source": "proposal:qoder-code-audit-batch-fix",
+      "runner": "route"
+    },
+    {
+      "id": 116,
+      "prompt": "帮我按 P0/P1/P2 排一下需求优先级",
+      "expected_output": "Product or requirement priority bucketing without audit findings, remediation, and commits should not trigger audit batch fix.",
+      "files": [],
+      "negative": true,
+      "expectations": [
+        "workflow_bundle is not audit-fix-deliver",
+        "workflow_bundle_source is not audit-batch-fix"
+      ],
+      "categories": [
+        "negative",
+        "product-delivery",
+        "boundary-guard"
+      ],
+      "source": "proposal:qoder-code-audit-batch-fix (negative boundary)",
+      "runner": "route"
     }
   ]
 }

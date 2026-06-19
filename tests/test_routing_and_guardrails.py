@@ -425,6 +425,51 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual([], result["process_skills"])
         self.assertEqual("audit-fix-deliver", result["workflow_bundle"])
 
+    def test_audit_batch_fix_routes_to_audit_with_separate_commit_steps(self) -> None:
+        result = route_request.route_request(
+            "审查完成后按 P0/P1/P2 分批修复并提交，每批独立 commit",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertEqual("Code Audit Council", result["lead_agent"])
+        self.assertEqual("audit-fix-deliver", result["workflow_bundle"])
+        self.assertEqual("audit-batch-fix", result["workflow_bundle_source"])
+        self.assertTrue(result["needs_git_workflow"])
+        self.assertIn("Git Workflow Guardian", result["assistant_agents"])
+        self.assertIn("git-workflow", result["process_skills"])
+        self.assertIn(
+            "create one independent commit per accepted batch using the repo commit convention",
+            result["workflow_steps"],
+        )
+
+    def test_english_audit_batch_fix_keeps_audit_lead(self) -> None:
+        result = route_request.route_request(
+            "This is a PR. Review it, then fix P0/P1/P2 findings in separate commits.",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertEqual("Code Audit Council", result["lead_agent"])
+        self.assertEqual("audit-fix-deliver", result["workflow_bundle"])
+        self.assertEqual("audit-batch-fix", result["workflow_bundle_source"])
+        self.assertTrue(result["needs_git_workflow"])
+        self.assertIn("git-workflow", result["process_skills"])
+        self.assertIn(
+            "fix one severity batch at a time, starting with P0",
+            result["workflow_steps"],
+        )
+
+    def test_product_priority_buckets_do_not_trigger_audit_batch_fix(self) -> None:
+        result = route_request.route_request(
+            "帮我按 P0/P1/P2 排一下需求优先级",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertNotEqual("audit-fix-deliver", result["workflow_bundle"])
+        self.assertNotEqual("audit-batch-fix", result["workflow_bundle_source"])
+
     def test_route_exposes_execution_quality_gate(self) -> None:
         result = route_request.route_request(
             "Migrate this subsystem. Plan before coding and define verification first.",

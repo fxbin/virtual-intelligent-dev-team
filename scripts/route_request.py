@@ -929,6 +929,64 @@ def keyword_hits(text: str, keywords: list[str]) -> list[str]:
     return hits
 
 
+def is_audit_batch_fix_context(text: str) -> bool:
+    """Detect explicit code-audit findings that must be fixed in separate batches."""
+    lowered = text.lower()
+
+    def has_any(keywords: list[str]) -> bool:
+        return any(
+            keyword.lower() in lowered or keyword_matches(lowered, keyword)
+            for keyword in keywords
+        )
+
+    audit_hits = [
+        "audit",
+        "review",
+        "code review",
+        "pr review",
+        "security review",
+        "finding",
+        "findings",
+        "审查",
+        "审计",
+        "代码审查",
+        "发现",
+        "审查完成",
+    ]
+    severity_hits = [
+        "p0",
+        "p1",
+        "p2",
+        "p0/p1/p2",
+        "severity",
+        "严重级别",
+        "分级",
+        "优先级",
+    ]
+    batch_hits = [
+        "batch",
+        "batches",
+        "separate",
+        "separate commit",
+        "separate commits",
+        "each commit",
+        "分批",
+        "逐批",
+        "每批",
+        "独立",
+        "单独",
+    ]
+    fix_hits = ["fix", "remediate", "修复", "整改", "处理"]
+    commit_hits = ["commit", "提交"]
+    return (
+        has_any(audit_hits)
+        and has_any(severity_hits)
+        and has_any(batch_hits)
+        and has_any(fix_hits)
+        and has_any(commit_hits)
+    )
+
+
 def detect_priority_lead(text: str, config: dict[str, object]) -> dict[str, object] | None:
     lowered = text.lower()
     rules = config.get("priority_routing_rules", [])
@@ -2966,19 +3024,42 @@ def build_workflow_bundle(
             ],
         }
 
-    if lead_agent == "Code Audit Council" or text_has_any_keyword(text, audit_keywords):
-        keyword_triggered = text_has_any_keyword(text, audit_keywords)
+    audit_batch_fix = is_audit_batch_fix_context(text)
+    if lead_agent == "Code Audit Council" or text_has_any_keyword(text, audit_keywords) or audit_batch_fix:
+        keyword_triggered = text_has_any_keyword(text, audit_keywords) or audit_batch_fix
+        steps = [
+            "produce findings first",
+            "separate blockers from follow-up improvements",
+            "define the smallest safe remediation step",
+            "enter Git delivery only if commit, push, or PR actions are requested",
+        ]
+        if audit_batch_fix:
+            steps = [
+                "freeze the audit finding list before implementation",
+                "classify findings into P0/P1/P2 batches with scope and dependencies",
+                "fix one severity batch at a time, starting with P0",
+                "verify each batch independently before staging it",
+                "create one independent commit per accepted batch using the repo commit convention",
+                "carry unresolved lower-severity findings into the remaining-findings ledger",
+            ]
         return {
             "name": "audit-fix-deliver",
-            "confidence": 0.88 if lead_agent == "Code Audit Council" and keyword_triggered else 0.78,
-            "source": "lead+keyword" if keyword_triggered else "lead-default",
-            "reason": "The request is review-led, so the default path is findings first, remediation second, and Git delivery only when explicitly needed.",
-            "steps": [
-                "produce findings first",
-                "separate blockers from follow-up improvements",
-                "define the smallest safe remediation step",
-                "enter Git delivery only if commit, push, or PR actions are requested",
-            ],
+            "confidence": 0.9
+            if audit_batch_fix
+            else 0.88
+            if lead_agent == "Code Audit Council" and keyword_triggered
+            else 0.78,
+            "source": "audit-batch-fix"
+            if audit_batch_fix
+            else "lead+keyword"
+            if keyword_triggered
+            else "lead-default",
+            "reason": (
+                "The request is review-led; when the user asks for P0/P1/P2 batch "
+                "remediation, findings must be frozen, fixed one batch at a time, "
+                "verified independently, and committed separately."
+            ),
+            "steps": steps,
             "progress_anchor_recommended": ".skill-iterations/current-round-memory.md",
             "resume_artifacts": [
                 ".skill-iterations/current-round-memory.md",
@@ -4041,6 +4122,14 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         elif priority_agent != "":
             lead_agent = priority_agent
             lead_score = scores.get(lead_agent, 0)
+    if is_audit_batch_fix_context(routed_text):
+        lead_agent = "Code Audit Council"
+        scores[lead_agent] = max(scores.get(lead_agent, 0), 6)
+        lead_score = scores[lead_agent]
+        priority_route = {
+            "agent": lead_agent,
+            "matched_keywords": ["audit-batch-fix"],
+        }
     lead_agent = rebalance_git_lead_for_semantic_owner(
         lead_agent=lead_agent,
         priority_route=priority_route,
@@ -4107,6 +4196,12 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         needs_worktree=needs_worktree,
         needs_git_workflow=needs_git_workflow,
     )
+    if (
+        lead_agent == "Code Audit Council"
+        and needs_git_workflow
+        and is_audit_batch_fix_context(routed_text)
+    ):
+        assistants = dedupe_agents(assistants + ["Git Workflow Guardian"])
     git_reason_hits = reasons.get("Git Workflow Guardian", {}).get("positive", [])
     if (
         lead_agent != "Git Workflow Guardian"
