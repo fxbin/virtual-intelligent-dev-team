@@ -189,6 +189,8 @@ For the full user-facing response contract, use `references/output-contract.md`.
   - Enter pre-development planning, generate the transformation brief and progress anchor, then hand back to execution.
 - `这个小 bug 直接修一下并跑回归`
   - Route into quick-slice delivery, preserve the current slice and project context, then implement with targeted verification.
+- `审查完成后按 P0/P1/P2 分批修复并提交，每批独立 commit`
+  - Route into audit-fix-deliver with batch remediation: freeze findings, fix one severity batch at a time, verify each batch, and commit each accepted batch separately.
 - `这个功能开发前后都要做内测，按轮次逐步加用户`
   - Route into staged beta validation, define cohort ramp, and keep feedback evidence before release expansion.
 - `继续下一轮，直到结果稳定`

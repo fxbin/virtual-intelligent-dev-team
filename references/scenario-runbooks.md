@@ -47,11 +47,13 @@ Use these runbooks when the user request implies a recurring multi-role pattern.
 - Flow:
   1. Findings first.
   2. Separate blockers from follow-up improvements.
-  3. Attach implementation specialist only for fix design or patch execution.
-  4. Attach Git guardrails if PR/commit/push is part of the ask.
+  3. If the user asks for P0/P1/P2 batch fixes, freeze findings, build the batch order, and fix only one batch before verifying and committing it.
+  4. Attach implementation specialist only for fix design or patch execution.
+  5. Attach Git guardrails if PR/commit/push is part of the ask.
 - Success markers:
   - severity-ordered findings
   - concrete remediation path
+  - independent verification and commit evidence for each requested fix batch
   - no mixing of audit verdict and speculative redesign
 - Preferred bundle:
   - `audit-fix-deliver`

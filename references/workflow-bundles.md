@@ -153,11 +153,19 @@ Template:
 - Use when:
   - the request combines review or audit with remediation
   - the request includes review now and commit / push / PR later
+  - the user explicitly asks to fix audit findings by P0/P1/P2 batch with separate commits
 - Default sequence:
   1. findings first
   2. separate blockers from improvements
   3. define the smallest safe remediation step
   4. enter Git delivery only if requested
+- Batch remediation sequence when P0/P1/P2 and separate commits are requested:
+  1. freeze the finding list before implementation; do not keep discovering and fixing in the same pass unless new P0 evidence appears
+  2. classify findings into P0/P1/P2 batches with scope, dependency notes, and validation required for each batch
+  3. fix one batch at a time, starting with P0; do not mix lower-severity cleanup into a higher-severity commit
+  4. run targeted verification for the current batch before staging files
+  5. create one independent commit per accepted batch using the repository commit convention
+  6. record remaining findings and explicitly carry deferred P1/P2 work forward
 - Primary references:
   - `references/scenario-runbooks.md`
   - `references/coordination-handoff-templates.md`

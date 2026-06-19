@@ -249,6 +249,13 @@ After routing, answer with one unified structure. The lead agent owns the respon
    - Whether Git lead should switch to `Git Workflow Guardian`
    - Recommended branch, commit, and PR strategy
    - Current Git stage, if relevant
+   - For audit batch remediation, one commit record per accepted P0/P1/P2 batch:
+     - batch id and severity
+     - findings covered
+     - files touched
+     - verification evidence
+     - commit message and hash after commit
+     - remaining or deferred findings
 8. `Governance`
    - Whether roundtable governance is enabled
    - Selected governance track
