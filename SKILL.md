@@ -341,3 +341,135 @@ Run semantic regression after changing routing, guardrails, examples, or this sk
 ```bash
 python scripts/validate_virtual_team.py --pretty
 ```
+
+## Runtime Routing
+
+### Primary Routes
+
+| Trigger family | Selected route | Default lead | Fallback |
+| --- | --- | --- | --- |
+| review / audit / security | audit-fix-deliver | Code Audit Council | Technical Trinity when implementation follow-up dominates |
+| git / branch / pr / push | govern-change-safely | Git Workflow Guardian | Technical Trinity when git is incidental |
+| rewrite / migration / plan-first | plan-first-build | Technical Trinity | Sentinel Architect (NB) when risk or research-first signals dominate |
+| iteration / retry / optimize | bounded-iteration | Technical Trinity | Sentinel Architect (NB) when repeated failures require root-cause discipline |
+| release / ship / hold | ship-hold-remediate | Technical Trinity | Git Workflow Guardian when delivery governance overtakes release evidence |
+| beta / staged validation / rollout feedback | beta-feedback-ramp | World-Class Product Architect | Technical Trinity when product signals are weak and implementation dominates |
+
+### Stage Council Overlays
+
+These overlays sit under `product-spec-deliver`; they do not replace the selected lead or workflow bundle.
+
+| Trigger family | Overlay | Lead remains |
+| --- | --- | --- |
+| PRD / product strategy / user research / competitor / metrics / roadmap / stakeholder | product-discovery-council | World-Class Product Architect |
+| high-fidelity prototype / runnable HTML prototype / design system / visual design / accessibility | prototype-design-council | World-Class Product Architect |
+
+### Routing Score Model
+
+1. **Explicit priority routing** — `priority_routing_rules` handle hard priority scenarios like "audit before language stack", "explicit Git workflow before general engineering".
+2. **Positive keyword scoring** — accumulate by weight when `positive` keywords match.
+3. **Negative keyword penalty** — subtract penalty to reduce false triggers and cross-domain leakage.
+4. **Score clamping** — `final_score = clamp(positive_score - negative_score, 0, max_agent_score)`.
+5. **Confidence** — `confidence = top1_score / max(top3_total_score, 1)`.
+6. **Language detection** — `language_profiles` identify `python/go/nodejs/rust/java/kotlin/swift/cpp/csharp/php/ruby/elixir/scala` and map to lead agents.
+7. **Matching boundaries** — Chinese: substring match; English: word boundary match (short words like `pr`, `ui`, `go` require technical context).
+
+### Thresholds
+
+- `high_confidence` (0.55): single lead
+- `medium_confidence` (0.35): lead + 1 assistant
+- Below `medium_confidence`: lead + 2 assistants, suggest clarification
+- `sentinel_overlay_threshold` (6): trigger governance overlay
+
+### Fallback Rules
+
+- If explicit process skill detection is stronger than specialist routing, prefer the process route.
+- If the request is low-information and no route clears confidence, ask one clarification question.
+- If the task is single-domain and low-risk, keep one lead and suppress ceremony.
+- Always return the smallest executable next step plus the correct resume anchor.
+
+## Workflow Bundles
+
+Use workflow bundles when routing should return more than a lead agent. A bundle is the smallest reusable delivery journey for a recurring request shape.
+
+### 1. `plan-first-build`
+
+- **Use when**: rewrite, migration, architecture overhaul, or "plan first" requests
+- **Sequence**:
+  1. Lock scope, target, and constraints
+  2. Create compact system map when target area is unfamiliar
+  3. Create planning pack
+  4. Split execution into vertical slices with AFK/HITL classifications
+  5. Create progress anchor and durable `.skill-context/project-context.md`
+  6. Hand back to normal implementation routing
+- **Resume anchor**: `docs/progress/MASTER.md`
+
+### 2. `product-spec-deliver`
+
+- **Use when**: product scope, user flow, acceptance criteria, or frontend/backend contract alignment
+- **Sequence**:
+  1. Define target user and primary outcome
+  2. Lock smallest acceptable scope
+  3. Sharpen shared language when product terms are ambiguous
+  4. Write user flow and acceptance criteria
+  5. Split build work into vertical slices when feature spans layers
+  6. Surface frontend/backend contract questions before implementation
+- **Resume anchors**: `.skill-product/current-slice.md`, `.skill-product/acceptance-criteria.md`
+
+### 3. `audit-fix-deliver`
+
+- **Use when**: review findings and remediation path in one motion
+- **Sequence**:
+  1. Findings first
+  2. Separate blockers from follow-up improvements
+  3. If P0/P1/P2 batch fixes requested: freeze findings, build batch order, fix one batch, verify, commit
+  4. Resume anchor: last verified batch
+
+### 4. `govern-change-safely`
+
+- **Use when**: Git workflow, branch strategy, PR sequencing, or merge safety
+- **Sequence**:
+  1. Assess current branch state and work-in-progress
+  2. Determine safest change path (worktree, branch, or patch)
+  3. Execute with rollback plan
+  4. Verify clean state before proceeding
+
+### 5. `ship-hold-remediate`
+
+- **Use when**: release readiness decisions
+- **Sequence**:
+  1. Run release gate checks
+  2. Produce `ship` / `hold` decision with evidence
+  3. If `hold`: generate remediation plan with priority order
+  4. Resume anchor: release-gate report
+
+### 6. `bounded-iteration`
+
+- **Use when**: optimization loops, benchmark comparison, repeated retries
+- **Sequence**:
+  1. Lock objective: target outcome, baseline, metric, constraints, max rounds
+  2. Each round: define candidate → state hypothesis → validate → record evidence → decide (`keep`/`retry`/`rollback`/`stop`)
+  3. Closure: finalize ledger, write reflection, preserve patterns
+- **Caps**: live requests ≤3 rounds, offline ≤120 rounds, same hypothesis ≤2 retries
+
+### 7. `beta-feedback-ramp`
+
+- **Use when**: staged validation or rollout risk control
+- **Sequence**:
+  1. Define cohort and success criteria
+  2. Run staged rollout with feedback capture
+  3. Analyze signals and decide ramp/hold/rollback
+  4. Resume anchor: beta status report
+
+### Bundle Confidence Levels
+
+| Bundle | Confidence | Source |
+|--------|-----------|--------|
+| `ship-hold-remediate` | 0.98 | process-skill (explicit release gate) |
+| `plan-first-build` | 0.96 | process-skill (explicit planning request) |
+| `root-cause-remediate` | 0.93 | process-skill (explicit iteration) |
+| `audit-fix-deliver` | 0.88 | keyword+lead |
+| `govern-change-safely` | 0.85 | keyword+lead |
+| `direct-execution` | 0.35 | fallback (no strong bundle match) |
+
+Use bundle as explicit execution journey when `bundle_confidence >= 0.6`. Keep execution lightweight when `bundle_confidence < 0.6`.
