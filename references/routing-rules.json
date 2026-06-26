@@ -1,8 +1,8 @@
 {
   "meta": {
     "author": "fxbin",
-    "version": "v4.84.3",
-    "updated": "2026-06-19"
+    "version": "v5.0.2",
+    "updated": "2026-06-26"
   },
   "thresholds": {
     "max_agent_score": 20,
@@ -70,7 +70,7 @@
     "fast_track_control": {
       "quota_per_24h": 3,
       "cooldown_minutes": 30,
-      "metrics_file": ".skill-metrics/governance_events.jsonl",
+      "metrics_file": ".skill-metrics/decision-log.jsonl",
       "window_hours": 24,
       "write_event_log": true
     },
@@ -452,6 +452,17 @@
           "keyword": "axum",
           "score": 3
         }
+      ],
+      "constraints": [
+        "禁止建议 java.util.Date；统一使用 java.time",
+        "Stream.parallel() 改动必须附性能基准",
+        "公共 API 变更必须同时更新 OpenAPI 契约与回归测试",
+        "JVM 调优建议必须标注 GC 算法与目标停顿时间"
+      ],
+      "evidence_requirements": [
+        "JVM 启动参数与运行时版本",
+        "受影响模块的回归测试结果",
+        "Spring Boot 启动耗时或吞吐基准（改动相关时）"
       ]
     },
     "Sentinel Architect (NB)": {
@@ -638,6 +649,18 @@
           "keyword": "saas strategy",
           "score": 5
         }
+      ],
+      "constraints": [
+        "不得跳过风险评估直接进入执行",
+        "不得在没有回滚方案的情况下推进生产高风险变更",
+        "不得在反复失败场景下继续猜测，必须转入根因排查",
+        "重大变更必须保留人工 sign-off 节点"
+      ],
+      "evidence_requirements": [
+        "风险矩阵（影响面 / 回滚成本 / 监控信号）",
+        "分阶段执行计划与决策检查点",
+        "回滚策略与触发条件",
+        "上线前 checklist 与责任分工"
       ]
     },
     "Technical Trinity": {
@@ -891,7 +914,19 @@
           "score": 4
         }
       ],
-      "negative": []
+      "negative": [],
+      "constraints": [
+        "架构变更必须给出模块/接口/边界影响范围",
+        "多语言实现建议必须落到 language-profiles.yaml 已注册的 profile",
+        "迁移与重构必须保留行为对等的回归证据",
+        "禁止把业务战略 / 融资 / 定价类请求路由到本 Agent"
+      ],
+      "evidence_requirements": [
+        "目标语言对应的 lint / test / build 命令（来自 language-profiles.yaml）",
+        "接口契约与现有调用方清单",
+        "回归测试结果或可运行验证脚本",
+        "对架构改造场景：模块地图或调用链证据"
+      ]
     },
     "Code Audit Council": {
       "positive": [
@@ -997,6 +1032,18 @@
           "keyword": "动效评审",
           "score": 6
         }
+      ],
+      "constraints": [
+        "审查意见必须按严重度（P0/P1/P2）排序",
+        "必须区分 UI/UX 审查与代码/安全审查",
+        "禁止把业务战略类讨论归入审查范围",
+        "审计发现必须可执行：每条 finding 必须给出修复建议或建议的修复路径"
+      ],
+      "evidence_requirements": [
+        "受影响文件 / 模块清单",
+        "严重度判定依据（安全影响 / 可维护性 / 行为差异）",
+        "建议的修复 patch 或步骤",
+        "对 P0 finding：阻断合并的判断与依据"
       ]
     },
     "Git Workflow Guardian": {
@@ -1143,6 +1190,18 @@
           "keyword": "react",
           "score": 3
         }
+      ],
+      "constraints": [
+        "禁止直接推送到 main / master 等受保护分支",
+        "禁止跳过 PR 流程直接合并",
+        "冲突处理必须先 rebase 后 merge，不允许无视冲突直接 push",
+        "敏感操作（force push / 强制覆盖 / 删除远端分支）必须二次确认"
+      ],
+      "evidence_requirements": [
+        "当前分支状态（status / ahead-behind）",
+        "PR / MR 链接或编号",
+        "CI / lint / test 通过状态",
+        "涉及 worktree 时：worktree 路径与隔离分支清单"
       ]
     },
     "World-Class Product Architect": {
@@ -1653,6 +1712,18 @@
           "keyword": "strategy",
           "score": 4
         }
+      ],
+      "constraints": [
+        "PRD / 验收标准必须先于实现工作产出",
+        "涉及 UI/UX 时必须给出可访问性检查清单",
+        "涉及发布后反馈回流时必须绑定监控信号而不是主观判断",
+        "禁止把后端基础设施 / 纯业务战略作为本 Agent 主线"
+      ],
+      "evidence_requirements": [
+        "用户流与验收标准",
+        "影响范围（界面 / 交互 / 设计系统 / 可访问性）",
+        "对内测 / beta 场景：cohort 定义与反馈门禁",
+        "对发布后场景：监控信号或真实用户反馈样本"
       ]
     }
   },
@@ -1720,6 +1791,127 @@
         "warp",
         "rocket",
         "serde"
+      ]
+    },
+    "java": {
+      "lead_agent": "Java Virtuoso",
+      "profile": "java",
+      "keywords": [
+        "java",
+        "jdk",
+        "jvm",
+        "spring",
+        "spring boot",
+        "virtual thread",
+        "loom",
+        "gc",
+        "full gc",
+        "zgc",
+        "g1",
+        "java 8"
+      ]
+    },
+    "kotlin": {
+      "lead_agent": "Technical Trinity",
+      "profile": "kotlin",
+      "keywords": [
+        "kotlin",
+        "ktor",
+        "exposed",
+        "kotlinx",
+        "gradle.kts",
+        "kotlin DSL"
+      ]
+    },
+    "swift": {
+      "lead_agent": "Technical Trinity",
+      "profile": "swift",
+      "keywords": [
+        "swift",
+        "swiftui",
+        "uikit",
+        "vapor",
+        "swiftpm",
+        "swift package manager"
+      ]
+    },
+    "cpp": {
+      "lead_agent": "Technical Trinity",
+      "profile": "cpp",
+      "keywords": [
+        "cpp",
+        "c++",
+        "cmake",
+        "conan",
+        "vcpkg",
+        "clang",
+        "clang-tidy"
+      ]
+    },
+    "csharp": {
+      "lead_agent": "Technical Trinity",
+      "profile": "csharp",
+      "keywords": [
+        "csharp",
+        "c#",
+        "dotnet",
+        ".net",
+        "asp.net",
+        "blazor",
+        "entity framework"
+      ]
+    },
+    "php": {
+      "lead_agent": "Technical Trinity",
+      "profile": "php",
+      "keywords": [
+        "php",
+        "laravel",
+        "symfony",
+        "composer",
+        "phpcs",
+        "phpstan"
+      ]
+    },
+    "ruby": {
+      "lead_agent": "Technical Trinity",
+      "profile": "ruby",
+      "keywords": [
+        "ruby",
+        "rails",
+        "ruby on rails",
+        "gem",
+        "bundler",
+        "rspec",
+        "sinatra",
+        "rubocop"
+      ]
+    },
+    "elixir": {
+      "lead_agent": "Technical Trinity",
+      "profile": "elixir",
+      "keywords": [
+        "elixir",
+        "phoenix",
+        "erlang",
+        "otp",
+        "ecto",
+        "liveview",
+        "mix",
+        "credo"
+      ]
+    },
+    "scala": {
+      "lead_agent": "Technical Trinity",
+      "profile": "scala",
+      "keywords": [
+        "scala",
+        "play framework",
+        "akka",
+        "cats",
+        "zio",
+        "sbt",
+        "scalafix"
       ]
     }
   },
