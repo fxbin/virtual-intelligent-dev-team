@@ -73,7 +73,23 @@ def classify_prompt(text: str) -> list[str]:
 
     if any(route_request.keyword_matches(lowered, token) for token in ["react", "next.js", "tailwind", "shadcn", "ui", "ux", "dashboard", "frontend", "front-end", "framer motion"]):
         tags.append("frontend")
-    if any(route_request.keyword_matches(lowered, token) for token in ["python", "django", "flask", "fastapi", "celery", "go", "gin", "node", "nestjs", "java", "spring", "rust"]):
+    if any(route_request.keyword_matches(lowered, token) for token in [
+        # Original four languages
+        "python", "django", "flask", "fastapi", "celery",
+        "go", "gin",
+        "node", "nestjs",
+        "java", "spring",
+        "rust",
+        # v5.0 additions (keep parity with routing-rules.json language_profiles)
+        "kotlin", "ktor", "exposed", "kotlinx",
+        "swift", "swiftui", "uikit", "vapor",
+        "cpp", "c++", "cmake", "conan",
+        "csharp", "c#", "dotnet", ".net", "blazor",
+        "php", "laravel", "symfony", "composer",
+        "ruby", "rails", "rspec", "rubocop",
+        "elixir", "phoenix", "ecto", "liveview",
+        "scala", "akka", "cats", "zio", "sbt",
+    ]):
         tags.append("backend-stack")
     if any(
         route_request.keyword_matches(lowered, token)

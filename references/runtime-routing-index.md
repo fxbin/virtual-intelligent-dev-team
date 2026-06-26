@@ -59,6 +59,10 @@
   - `automation_resume` 如何进入用户可见 sidecar
 - `automation-resume-execution.schema.json`
   - resume execution ledger 的正式契约
+- `decision-log-schema.md` 与 `decision-log.schema.json`
+  - v5.0 治理决策日志的字段语义与正式 schema；legacy `governance_events.jsonl`
+    的迁移入口是 `scripts/migrate_governance_events.py`，汇总查看入口是
+    `scripts/inspect_decision_log.py`（JSON / Markdown / HTML 三种输出）
 - `product-delivery-playbook.md`
   - 产品定义到实现切片的默认打法
 - `quick-slice-delivery-playbook.md`

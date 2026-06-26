@@ -1059,11 +1059,38 @@ def load_governance_events(repo_path: Path, metrics_file: str) -> list[dict[str,
     return events
 
 
-def append_governance_event(repo_path: Path, metrics_file: str, payload: dict[str, object]) -> None:
+def append_governance_event(
+    repo_path: Path,
+    metrics_file: str,
+    payload: dict[str, object],
+    *,
+    decision: str | None = None,
+    verifier: str | None = None,
+    reason: str | None = None,
+    evidence: str | None = None,
+) -> None:
+    """Append one entry to the governance decision log.
+
+    v5.0 extension: callers may pass four extra governance fields
+    (``decision``, ``verifier``, ``reason``, ``evidence``). They are stored
+    alongside the legacy ``payload`` dict so existing call sites continue to
+    work unchanged. The destination path defaults to the v5.0 decision log;
+    legacy ``governance_events.jsonl`` paths still work for one-shot
+    migration scripts.
+    """
     file_path = repo_path / metrics_file
     file_path.parent.mkdir(parents=True, exist_ok=True)
+    enriched: dict[str, object] = dict(payload)
+    if decision is not None:
+        enriched["decision"] = decision
+    if verifier is not None:
+        enriched["verifier"] = verifier
+    if reason is not None:
+        enriched["reason"] = reason
+    if evidence is not None:
+        enriched["evidence"] = evidence
     with file_path.open("a", encoding="utf-8") as file:
-        file.write(json.dumps(payload, ensure_ascii=False) + "\n")
+        file.write(json.dumps(enriched, ensure_ascii=False) + "\n")
 
 
 def get_fast_track_stats(
@@ -4228,7 +4255,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         fast_track_control = {}
     if bool(fast_track_control.get("write_event_log", True)):
         metrics_file = str(
-            fast_track_control.get("metrics_file", ".skill-metrics/governance_events.jsonl")
+            fast_track_control.get("metrics_file", ".skill-metrics/decision-log.jsonl")
         )
         try:
             append_governance_event(
@@ -4241,6 +4268,13 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
                     "selected_track": ((governance_plan.get("privy_council") or {}).get("selected_track")),
                     "mode_hint": "route_request",
                 },
+                decision="route_selected",
+                verifier="n_a",
+                reason=str(
+                    governance_plan.get("selection_reason")
+                    or governance_plan.get("reason")
+                    or ""
+                ),
             )
         except Exception:
             pass

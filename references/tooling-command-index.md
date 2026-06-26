@@ -97,6 +97,30 @@ python scripts/verify_action.py --text "<user request>" --check assistant-delta-
 python scripts/lint_virtual_team_contract.py --pretty
 ```
 
+- 治理与可观测性（v5.0）
+
+```bash
+python scripts/check_harness_health.py --pretty
+```
+
+```bash
+python scripts/check_language_profiles.py --pretty
+```
+
+```bash
+python scripts/inspect_decision_log.py --pretty
+```
+
+```bash
+python scripts/inspect_decision_log.py \
+  --markdown-output .skill-metrics/decision-log-report.md \
+  --html-output .skill-metrics/decision-log-report.html
+```
+
+```bash
+python scripts/migrate_governance_events.py --pretty
+```
+
 - benchmark eval 配置契约见：
   - `references/benchmark-evals.schema.json`
 - benchmark 结果契约见：
