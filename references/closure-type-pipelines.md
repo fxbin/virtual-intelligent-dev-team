@@ -12,59 +12,39 @@ Three fundamental closure types cover all workflow patterns:
 | **Governance** | Decision gates with pass/fail/hold outcomes | Change safety, release readiness |
 | **Lifecycle** | Multi-round evolution with feedback loops | Iteration, beta rollout, post-release feedback |
 
-## 参数化 Pipeline 设计
+## Pipeline Parameters
 
-### 1. Delivery Pipeline
+### Delivery Pipeline
 
-```yaml
-pipeline: delivery
-parameters:
-  scope: [narrow_slice, product_spec, audit_fix, full_rewrite]
-  planning_required: [yes, no]
-  verification_mode: [self_review, verifier_cycle, none]
+**Purpose:** Produce deliverables with acceptance criteria
 
-template:
-  init: "init_{scope}_context"
-  execute: "execute_delivery"
-  verify: "verify_{verification_mode}"
-  report: "delivery_cycle_report"
-  resume_anchor: ".skill-delivery/current-{scope}.md"
-```
+**Parameters:**
+- `scope`: narrow_slice | product_spec | audit_fix | full_rewrite
+- `planning_required`: yes | no
+- `verification_mode`: self_review | verifier_cycle | none
 
-### 2. Governance Pipeline
+**Resume anchor:** `.skill-delivery/current-{scope}.md`
 
-```yaml
-pipeline: governance
-parameters:
-  gate_type: [change_safety, release_readiness]
-  decision_mode: [ship_hold, pass_fail, fast_track]
+### Governance Pipeline
 
-template:
-  assess: "assess_current_state"
-  evaluate: "evaluate_against_criteria"
-  decide: "make_{decision_mode}_decision"
-  remediate: "generate_remediation_plan"  # if needed
-  resume_anchor: ".skill-governance/{gate_type}-report.md"
-```
+**Purpose:** Decision gates with pass/fail/hold outcomes
 
-### 3. Lifecycle Pipeline
+**Parameters:**
+- `gate_type`: change_safety | release_readiness
+- `decision_mode`: ship_hold | pass_fail | fast_track
 
-```yaml
-pipeline: lifecycle
-parameters:
-  lifecycle_type: [iteration, beta_rollout, post_release_feedback, auto_run, knowledge_capture]
-  round_based: [yes, no]
-  auto_advance: [yes, no]
+**Resume anchor:** `.skill-governance/{gate_type}-report.md`
 
-template:
-  setup: "setup_{lifecycle_type}_context"
-  loop_entry: "enter_round_or_phase"
-  execute: "execute_current_round"
-  evaluate: "evaluate_round_outcome"
-  transition: "decide_continue_stop_or_rollback"
-  capture: "capture_learnings"
-  resume_anchor: ".skill-lifecycle/{lifecycle_type}-state.json"
-```
+### Lifecycle Pipeline
+
+**Purpose:** Multi-round evolution with feedback loops
+
+**Parameters:**
+- `lifecycle_type`: iteration | beta_rollout | post_release_feedback | auto_run | knowledge_capture
+- `round_based`: yes | no
+- `auto_advance`: yes | no
+
+**Resume anchor:** `.skill-lifecycle/{lifecycle_type}-state.json`
 
 ## Pipeline Selection
 
