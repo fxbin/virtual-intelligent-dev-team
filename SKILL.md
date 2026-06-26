@@ -256,6 +256,78 @@ Read indexes first; do not flatten the whole skill into this file.
 - Maintainer-facing project docs:
   [README.md](README.md) and [docs/README.md](docs/README.md)
 
+## Governance & Observability (v5.0+)
+
+The skill now exposes a governance layer alongside the routing layer:
+
+- **Decision log**: every route decision appends one JSON line to
+  `.skill-metrics/decision-log.jsonl`. Schema: `references/decision-log.schema.json`,
+  field semantics: `references/decision-log-schema.md`. Legacy
+  `governance_events.jsonl` entries can be migrated with
+  `scripts/migrate_governance_events.py` (one-shot, idempotent).
+- **Agent manifest**: each lead agent in `references/agent-catalog.md` and
+  `references/routing-rules.json` now declares `Constraints` (hard
+  guardrails the LLM must enforce) and `Evidence Requirements` (what the
+  agent must produce before claiming done/ready/ship).
+- **Health check**: `scripts/check_harness_health.py` validates Agent
+  Identity, Agent Manifest, Routing Rules, Workflow Bundles, Decision Log
+  readability, and Language Profiles presence.
+- **Dashboard**: `scripts/inspect_decision_log.py` summarizes the decision
+  log as JSON / Markdown / self-contained HTML.
+
+Typical invocations:
+
+```bash
+# Health snapshot
+python scripts/check_harness_health.py --pretty
+
+# Decision log summary (stdout JSON)
+python scripts/inspect_decision_log.py --pretty
+
+# Markdown + HTML report (paths are required)
+python scripts/inspect_decision_log.py \
+  --markdown-output .skill-metrics/decision-log-report.md \
+  --html-output .skill-metrics/decision-log-report.html
+
+# One-shot legacy migration (run once after upgrading)
+python scripts/migrate_governance_events.py --pretty
+```
+
+## Language Profile Loading (v5.0+)
+
+Language support is split into three orthogonal layers:
+
+1. **Routing** — `references/routing-rules.json → language_profiles`
+   decides which lead agent handles the request (13 profiles: python / go
+   / nodejs / rust / java / kotlin / swift / cpp / csharp / php / ruby /
+   elixir / scala).
+2. **Context** — `references/language-profiles.yaml → profiles.<lang>`
+   injects the matched agent's working memory with ecosystem defaults,
+   idiomatic conventions, and canonical verification commands.
+3. **Constraints** — `language-profiles.yaml → profiles.<lang>.harness_constraints`
+   feeds language-specific guardrails that the LLM must enforce, layered
+   on top of the matched agent's `agent_rules[*].constraints`.
+
+When a request matches a language keyword in `routing-rules.json`:
+
+1. Route the task to the profile's `lead_agent`.
+2. Load the matching entry from `language-profiles.yaml` if present (yaml
+   is incremental — older languages LLM already understands do not need
+   a profile entry).
+3. Inject into the agent's context: ecosystem, conventions, verification
+   commands, and `harness_constraints`.
+
+If no profile entry exists in the YAML for the detected language, the
+LLM relies on its general knowledge — the skill does not refuse tasks for
+unsupported languages, it just lacks structured guardrails for them.
+Run `python scripts/check_language_profiles.py --pretty` to validate the
+two files stay in sync.
+
+**Java is an exception**: routing still prefers `Java Virtuoso`, and the
+Java entry in `language-profiles.yaml` injects baseline toolchain info
+(Gradle / Maven, Spring Boot 3.x, JVM 21+) that complements — but does
+not replace — Java Virtuoso's depth.
+
 ## Built-in checks
 
 Use deterministic routing inspection when needed:

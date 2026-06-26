@@ -2150,6 +2150,177 @@
       ],
       "source": "proposal:qoder-code-audit-batch-fix (negative boundary)",
       "runner": "route"
+    },
+    {
+      "id": 117,
+      "prompt": "用 Kotlin 写一个 Ktor 接口，处理用户登录请求，序列化用 kotlinx.serialization。",
+      "expected_output": "JVM-side Kotlin request should route to Technical Trinity and inject the language-profiles.yaml kotlin profile conventions.",
+      "files": [
+        "references/language-profiles.yaml",
+        "references/routing-rules.json"
+      ],
+      "expectations": [
+        "detected_languages contains kotlin",
+        "language_routing.kotlin is Technical Trinity",
+        "needs_git_workflow is false"
+      ],
+      "categories": [
+        "backend-stack",
+        "language-routing",
+        "kotlin"
+      ]
+    },
+    {
+      "id": 118,
+      "prompt": "Build a SwiftUI view with a list and a detail page using Swift Concurrency.",
+      "expected_output": "Swift request should route to Technical Trinity and inject the swift profile (SwiftUI / Swift Concurrency) into context.",
+      "files": [
+        "references/language-profiles.yaml",
+        "references/routing-rules.json"
+      ],
+      "expectations": [
+        "detected_languages contains swift",
+        "language_routing.swift is Technical Trinity",
+        "needs_git_workflow is false"
+      ],
+      "categories": [
+        "backend-stack",
+        "language-routing",
+        "swift"
+      ]
+    },
+    {
+      "id": 119,
+      "prompt": "Modernize a C++ codebase to C++20 and switch to std::span in the hot path.",
+      "expected_output": "C++ request should route to Technical Trinity and inject the cpp profile (C++20, CMake, sanitizers) into context.",
+      "files": [
+        "references/language-profiles.yaml",
+        "references/routing-rules.json"
+      ],
+      "expectations": [
+        "detected_languages contains cpp",
+        "language_routing.cpp is Technical Trinity",
+        "needs_git_workflow is false"
+      ],
+      "categories": [
+        "backend-stack",
+        "language-routing",
+        "cpp"
+      ]
+    },
+    {
+      "id": 120,
+      "prompt": "Implement a new endpoint in ASP.NET Core using Entity Framework Core for an existing C# service.",
+      "expected_output": "C# request should route to Technical Trinity and inject the csharp profile (ASP.NET Core, EF Core) into context.",
+      "files": [
+        "references/language-profiles.yaml",
+        "references/routing-rules.json"
+      ],
+      "expectations": [
+        "detected_languages contains csharp",
+        "language_routing.csharp is Technical Trinity",
+        "needs_git_workflow is false"
+      ],
+      "categories": [
+        "backend-stack",
+        "language-routing",
+        "csharp"
+      ]
+    },
+    {
+      "id": 121,
+      "prompt": "Refactor a Laravel controller to use dependency injection and avoid N+1 in Eloquent.",
+      "expected_output": "PHP request should route to Technical Trinity and inject the php profile (Laravel / Composer / phpstan) into context.",
+      "files": [
+        "references/language-profiles.yaml",
+        "references/routing-rules.json"
+      ],
+      "expectations": [
+        "detected_languages contains php",
+        "language_routing.php is Technical Trinity",
+        "needs_git_workflow is false"
+      ],
+      "categories": [
+        "backend-stack",
+        "language-routing",
+        "php"
+      ]
+    },
+    {
+      "id": 122,
+      "prompt": "Implement a service object in a Rails app and write the corresponding RSpec coverage.",
+      "expected_output": "Ruby request should route to Technical Trinity and inject the ruby profile (Rails / RSpec / rubocop) into context.",
+      "files": [
+        "references/language-profiles.yaml",
+        "references/routing-rules.json"
+      ],
+      "expectations": [
+        "detected_languages contains ruby",
+        "language_routing.ruby is Technical Trinity",
+        "needs_git_workflow is false"
+      ],
+      "categories": [
+        "backend-stack",
+        "language-routing",
+        "ruby"
+      ]
+    },
+    {
+      "id": 123,
+      "prompt": "Wire a new Phoenix LiveView page and back it with an Ecto Changeset for form validation.",
+      "expected_output": "Elixir request should route to Technical Trinity and inject the elixir profile (Phoenix / OTP / Ecto) into context.",
+      "files": [
+        "references/language-profiles.yaml",
+        "references/routing-rules.json"
+      ],
+      "expectations": [
+        "detected_languages contains elixir",
+        "language_routing.elixir is Technical Trinity",
+        "needs_git_workflow is false"
+      ],
+      "categories": [
+        "backend-stack",
+        "language-routing",
+        "elixir"
+      ]
+    },
+    {
+      "id": 124,
+      "prompt": "Refactor a Scala service to use ZIO for the async boundary and sealed traits for the domain model.",
+      "expected_output": "Scala request should route to Technical Trinity and inject the scala profile (Cats / ZIO / sbt) into context.",
+      "files": [
+        "references/language-profiles.yaml",
+        "references/routing-rules.json"
+      ],
+      "expectations": [
+        "detected_languages contains scala",
+        "language_routing.scala is Technical Trinity",
+        "needs_git_workflow is false"
+      ],
+      "categories": [
+        "backend-stack",
+        "language-routing",
+        "scala"
+      ]
+    },
+    {
+      "id": 125,
+      "prompt": "Migrate a Spring Boot 3 service to Java 21 virtual threads and verify with Gradle tests.",
+      "expected_output": "Java request should route to Java Virtuoso and inject the java profile (Spring Boot 3.x, JVM 21+, Gradle/Maven) into context.",
+      "files": [
+        "references/language-profiles.yaml",
+        "references/routing-rules.json"
+      ],
+      "expectations": [
+        "detected_languages contains java",
+        "language_routing.java is Java Virtuoso",
+        "needs_git_workflow is false"
+      ],
+      "categories": [
+        "backend-stack",
+        "language-routing",
+        "java"
+      ]
     }
   ]
 }

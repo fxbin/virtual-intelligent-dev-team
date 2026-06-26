@@ -375,6 +375,68 @@ python3 -m unittest virtual-intelligent-dev-team.tests.test_routing_and_guardrai
 python3 virtual-intelligent-dev-team/scripts/validate_virtual_team.py --pretty
 ```
 
+## v5.0.0 Highlights
+
+v5.0 把"路由可见性 + Agent Manifest 治理 + 多语言覆盖"合并为一次发版，对应迭代路线图 §2.1 与 §2.4 的内容：
+
+- **治理基础（§2.1）**
+  - 决策日志从 `.skill-metrics/governance_events.jsonl` 迁移到 `.skill-metrics/decision-log.jsonl`，schema 见 `references/decision-log.schema.json`，语义见 `references/decision-log-schema.md`。新字段 `decision` / `verifier` / `reason` / `evidence` 全部 optional，向后兼容。一次性迁移入口：`scripts/migrate_governance_events.py`。
+  - 6 个 Lead Agent 全部扩展 `Constraints`（硬护栏）和 `Evidence Requirements`（完成前必备证据）字段，叙述版在 `references/agent-catalog.md`，机器可读版在 `references/routing-rules.json → agent_rules[*]`。
+  - Harness 健康检查：`scripts/check_harness_health.py` 一次性覆盖 Agent Identity / Agent Manifest / Routing Rules / Workflow Bundles / Decision Log / Language Profiles 6 项检查，输出 HEALTHY / DEGRADED / BROKEN。
+  - 决策日志 Dashboard：`scripts/inspect_decision_log.py` 输出 JSON / Markdown / 自包含 HTML（无第三方依赖）。
+
+- **多语言 Profile 系统（§2.4）**
+  - `references/language-profiles.yaml`（schema `language-profiles/v1`）覆盖 9 种语言：java / kotlin / swift / cpp / csharp / php / ruby / elixir / scala。每种语言包含 ecosystem / conventions / verification / harness_constraints 四类上下文，由 LLM 在 agent 工作内存中按需注入。
+  - `references/routing-rules.json → language_profiles` 从 4 个扩展到 13 个：保留 python / go / nodejs / rust，新增 java / kotlin / swift / cpp / csharp / php / ruby / elixir / scala。Java 仍由 `Java Virtuoso` 独立处理。
+  - 完整性校验：`scripts/check_language_profiles.py` 校验 yaml ↔ json 单向一致性、必填字段、关键词重叠率。
+  - 三层解耦：路由（JSON）/ 上下文（YAML）/ 约束（YAML + Agent Manifest），加新语言只影响对应层。
+
+- **未做项（按路线图延后）**
+  - v5.5 沉降精简（80 → 30-40 文件）——下一轮
+  - v5.5 领域特化 Agent（Data Pipeline Guardian + API Contract Sentinel）——下一轮
+  - v5.5 平台化架构预留（`.skill-harness/trigger.yaml`）——下一轮
+
+### v5.0.1 — Decision Log Dashboard 视觉重做（patch bump）
+
+在 v5.0.0 基础上，仅重做 `scripts/inspect_decision_log.py` 的 `render_html()` 与 `render_markdown()`：
+
+- **Hero section**：深色渐变（#0f172a → #1e293b → #312e81）+ 双 radial-gradient 高光（紫 + 蓝）+ HEALTHY/EMPTY 状态徽章
+- **设计 token 系统**：CSS variables 统一颜色 / 字号 / 圆角 / 阴影；语义色 `--info` / `--ok` / `--warn` / `--err` / `--accent`
+- **4 个差异化 KPI 卡片**：events=蓝、throughput=紫、first/last=绿，hover 微抬升 + 阴影加深
+- **5 个分布卡片用语义色 bar**：
+  - Decision Distribution：🧭 icon，delivery_held=amber / release_hold=red / fast_track=purple
+  - Verifier Distribution：✅ icon，pass=green / fail=red / hold=amber / n_a=gray
+  - Lead Agent Distribution：👥 icon，neutral info
+  - Track Distribution：🚦 icon，regular=blue / fast=purple
+  - Risk Distribution：⚠️ icon，low=green / medium=amber / high=red
+- **Hourly Throughput 改为 inline SVG sparkline**：紫色渐变 area fill + 线 + peak 红点 + 极值坐标
+- **响应式**：`auto-fit` grid 在 < 640px 折叠为单列；KPI 网格降为 2 列
+- **可访问性**：`aria-label` / `aria-hidden` / contrast ≥ 4.5 / tabular-nums 数字对齐
+- **零依赖**：无 CDN、无 JS、无外部字体（系统字体栈）
+
+MarkDown 报告同步升级：emoji section 标题 + ASCII bar + sparkline code block。
+
+### v5.0.2 — Dashboard i18n + KPI 联动 + a11y v2（patch bump）
+
+在 v5.0.1 基础上扩展 `scripts/inspect_decision_log.py`：
+
+- **i18n 中英双语**：新增 `STRINGS` 字典（28 个 key × 2 语言）+ CLI `--language en|zh|auto`；`auto` 从 `LC_ALL` / `LANG` / `locale` 探测；fallback 永远走英文。`<html lang>`、`<title>`、hero / KPI / 分布标题 / 空状态 / footer 全部本地化。
+- **CSS-only KPI ↔ 分布卡片 hover 联动**（零 JS，纯 `:has()`）：
+  - KPI 卡片带 `data-focus="total|recent|history|latest"`
+  - 分布卡片带 `data-focus`（decision/verifier=latest, lead=total, track=history, risk=recent）
+  - hover 任意 KPI → 对应 dist-card 边框高亮 + 其他卡片淡化；反向同理
+  - hover 任意 dist-row → 所有卡片中同 `data-key` 行高亮（如 hover `low` 在 Risk 卡片，所有卡片的 `low` 行都亮）
+  - `:focus-within` 支持键盘焦点联动（Tab 即可触发）
+- **a11y v2**：
+  - **Skip link**：`<a class="skip-link" href="#main">` 默认隐藏，`:focus` 时显示在左上角
+  - **键盘导航**：所有 `.kpi` 和 `.dist-row` 加 `tabindex="0"`；`:focus-visible` 全局蓝色描边
+  - **ARIA 完整**：`role="list"` / `role="listitem"` / `aria-label` / `aria-labelledby` / `aria-live="polite"`（health badge）
+  - **SVG 标题**：`<title>` 子元素让屏幕阅读器读出 sparkline 数据
+  - **`prefers-reduced-motion`**：把所有 transition / animation 降到 0.01ms
+  - **`prefers-contrast: more`**：边框加粗到 2px、文字加深、focus 描边加粗到 4px
+
+中文样例产物：`/tmp/vidt-zh.html`（28.9KB）/ `/tmp/vidt-zh.md`（2.6KB）。
+
 ## 版本
 
 当前版本见 [VERSION](VERSION)。
