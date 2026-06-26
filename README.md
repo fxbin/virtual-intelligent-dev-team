@@ -391,10 +391,10 @@ v5.0 把"路由可见性 + Agent Manifest 治理 + 多语言覆盖"合并为一�
   - 完整性校验：`scripts/check_language_profiles.py` 校验 yaml ↔ json 单向一致性、必填字段、关键词重叠率。
   - 三层解耦：路由（JSON）/ 上下文（YAML）/ 约束（YAML + Agent Manifest），加新语言只影响对应层。
 
-- **未做项（按路线图延后）**
-  - v5.5 沉降精简（80 → 30-40 文件）——下一轮
-  - v5.5 领域特化 Agent（Data Pipeline Guardian + API Contract Sentinel）——下一轮
-  - v5.5 平台化架构预留（`.skill-harness/trigger.yaml`）——下一轮
+- **v5.5 已完成**
+  - 沉降精简：references/ 95 → 88 文件，I类组件内联至 SKILL.md
+  - 领域特化 Agent：Data Pipeline Guardian + API Contract Sentinel
+  - 平台化架构预留：`.skill-harness/trigger.yaml`（v0.5 schema）
 
 ### v5.0.1 — Decision Log Dashboard 视觉重做（patch bump）
 
