@@ -80,6 +80,29 @@ Use pre-development planning only when the request benefits from it:
 
 If the task is simple and clearly single-domain, keep routing lightweight.
 
+## Quick examples
+
+| User request | Output mode | Why |
+|-------------|-------------|-----|
+| "前端性能慢，怎么优化？" | Direct Answer | Single-domain, well-scoped question |
+| "微服务架构拆分规划" | Multi-Expert | Spans architecture, product, and delivery |
+| "设计一个用户认证系统" | Full Workflow | Requires product spec + API contract + implementation |
+| "这个 PR 有安全问题吗？" | Expert Routing | Clear specialist domain (security audit) |
+| "帮我重构这段 Python 代码" | Direct Answer | Single language, single file scope |
+| "发布这个版本到生产环境" | Full Workflow | Needs release gate + ship/hold decision |
+| "设计 Kafka 实时数据管道" | Expert Routing | Clear domain: Data Pipeline Guardian |
+| "API 版本兼容性怎么保证" | Expert Routing | Clear domain: API Contract Sentinel |
+
+## Key terms
+
+- **Workflow bundle** - Parameterized pipeline for a closure type (delivery/governance/lifecycle)
+- **Quick slice** - Narrow, time-boxed implementation with minimal ceremony
+- **Baseline** - Snapshot of current state before changes, for comparison and rollback
+- **Round memory** - Accumulated context across iteration rounds
+- **Self-feedback** - LLM evaluates its own output against acceptance criteria
+- **Pivot** - Change direction based on new evidence or failed validation
+- **Resume anchor** - File path where workflow state is preserved for interruption recovery
+
 ## Workflow
 
 1. Identify task type, risk level, language stack, and Git/process needs.
