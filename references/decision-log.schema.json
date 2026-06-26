@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-hub:virtual-intelligent-dev-team:decision-log.schema",
+  "title": "Virtual Intelligent Dev Team Decision Log Entry",
+  "description": "Append-only governance decision log. One JSON object per line. Backward-compatible extension of the legacy governance_events.jsonl format; legacy entries are migrated by scripts/migrate_governance_events.py with defaults for the four v5.0 fields (decision, verifier, reason, evidence).",
+  "type": "object",
+  "required": [
+    "decision",
+    "lead_agent",
+    "mode_hint",
+    "risk_level",
+    "selected_track",
+    "timestamp",
+    "verifier"
+  ],
+  "properties": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp with seconds precision. Produced by datetime.now().isoformat(timespec='seconds') in route_request.py."
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "route_selected",
+        "delivery_accepted",
+        "delivery_held",
+        "release_ship",
+        "release_hold",
+        "fast_track_engaged",
+        "fallback_engaged",
+        "intent_confirmation_requested"
+      ],
+      "description": "Semantic decision kind. Legacy entries default to route_selected."
+    },
+    "lead_agent": {
+      "type": "string",
+      "description": "Selected lead agent display string (must match agent_rules keys, e.g. 'Technical Trinity', 'Sentinel Architect (NB)')."
+    },
+    "verifier": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "fail",
+        "hold",
+        "n_a"
+      ],
+      "description": "Independent verification outcome. n_a means no verifier ran (typical for routing-only entries). Legacy entries default to n_a."
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "description": "Risk tier inferred by governance layer (or default low)."
+    },
+    "selected_track": {
+      "type": "string",
+      "enum": [
+        "regular track",
+        "fast track"
+      ],
+      "description": "Privy council track selection. 'regular track' = full dual-sign flow; 'fast track' = quota-gated expedited flow."
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 0,
+      "description": "Short human-readable rationale. Legacy entries default to empty string. Free-form prose, not validated."
+    },
+    "evidence": {
+      "type": "string",
+      "minLength": 0,
+      "description": "Optional evidence pointer — test IDs, command outputs, gate statuses, or '||'-joined fragments. Optional; not required."
+    },
+    "mode_hint": {
+      "type": "string",
+      "description": "Producer tag indicating which script/branch emitted the entry (e.g. 'route_request', 'release_gate')."
+    }
+  },
+  "additionalProperties": false
+}
