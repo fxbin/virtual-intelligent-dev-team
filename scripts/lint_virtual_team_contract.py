@@ -146,7 +146,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
     route_script = resolved_skill_dir / "scripts" / "route_request.py"
     index_paths = [
         resolved_skill_dir / "references" / "tooling-command-index.md",
-        resolved_skill_dir / "references" / "runtime-routing-index.md",
+        resolved_skill_dir / "references" / "playbook-index.md",
     ]
     local_route_request = load_module(
         f"virtual_team_contract_lint_route_request_{resolved_skill_dir.name}",

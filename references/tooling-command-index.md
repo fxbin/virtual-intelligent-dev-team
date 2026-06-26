@@ -176,8 +176,7 @@ python scripts/generate_response_pack.py --text "<user request>" --repo . --outp
   - 适合在执行前把 `workflow_bundle / source explanation / next action / resume anchor` 直接喂给别的脚本
 - JSON sidecar 的稳定字段说明见：
   - `references/response-pack-sidecar-schema.md`
-- 用户可见输出结构见：
-  - `references/output-contract.md`
+- 用户可见输出结构见 SKILL.md Output template 段落
 - 可执行 schema 见：
   - `references/response-pack-sidecar.schema.json`
 - `generate_response_pack.py` 写 sidecar 前会先做 schema 校验
