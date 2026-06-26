@@ -39,7 +39,8 @@ LANGUAGE_PROFILES_PATH = SKILL_DIR / "references" / "language-profiles.yaml"
 DECISION_LOG_DEFAULT = ".skill-metrics/decision-log.jsonl"
 LEGACY_GOVERNANCE_LOG = ".skill-metrics/governance_events.jsonl"
 
-# Canonical bundle references — these are the bundle entries in workflow-bundles.md.
+# Canonical bundle references — these are the bundle entries now inlined in SKILL.md.
+# Note: workflow-bundles.md and iteration-protocol.md were sedimented into SKILL.md in v5.5.
 CANONICAL_BUNDLE_REFS = (
     "references/pre-development-planning-playbook.md",
     "references/quick-slice-delivery-playbook.md",
@@ -48,7 +49,6 @@ CANONICAL_BUNDLE_REFS = (
     "references/technical-governance-playbook.md",
     "references/post-release-feedback-playbook.md",
     "references/release-gate-playbook.md",
-    "references/iteration-protocol.md",
     "references/root-cause-escalation-playbook.md",
     "references/git-workflow-playbook.md",
 )

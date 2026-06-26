@@ -1,0 +1,174 @@
+# Skill Harness Trigger Schema (v5.5 Platform Preview)
+# Platform-level trigger configuration for virtual-intelligent-dev-team
+# This file is a schema placeholder for future platformization (v6.0+)
+
+schema_version: "skill-harness-trigger/v0.5"
+skill_name: virtual-intelligent-dev-team
+
+# ─────────────────────────────────────────────────────────────
+# Trigger Patterns
+# ─────────────────────────────────────────────────────────────
+triggers:
+  # Intent-based triggers (natural language patterns)
+  intent_patterns:
+    - pattern: "review|audit|security|漏洞|审计|代码审查"
+      route: audit-fix-deliver
+      lead_agent: Code Audit Council
+      priority: high
+
+    - pattern: "git|branch|pr|push|commit|merge|rebase|分支|合并|提交"
+      route: govern-change-safely
+      lead_agent: Git Workflow Guardian
+      priority: high
+
+    - pattern: "rewrite|migration|plan.first|架构改造|迁移|重构"
+      route: plan-first-build
+      lead_agent: Technical Trinity
+      priority: high
+
+    - pattern: "iteration|retry|optimize|benchmark|迭代|优化|对比"
+      route: bounded-iteration
+      lead_agent: Technical Trinity
+      priority: medium
+
+    - pattern: "release|ship|hold|上线|发布|交付"
+      route: ship-hold-remediate
+      lead_agent: Technical Trinity
+      priority: high
+
+    - pattern: "beta|staged|rollout|内测|灰度|分批"
+      route: beta-feedback-ramp
+      lead_agent: World-Class Product Architect
+      priority: medium
+
+    - pattern: "data.pipeline|ETL|stream|kafka|spark|数据流|数据管道"
+      route: data-pipeline-govern
+      lead_agent: Data Pipeline Guardian
+      priority: high
+
+    - pattern: "API|openapi|graphql|grpc|contract|接口|契约"
+      route: api-contract-govern
+      lead_agent: API Contract Sentinel
+      priority: high
+
+  # Explicit command triggers (slash commands or structured triggers)
+  command_triggers:
+    - command: "/auto"
+      workflow: auto-run
+      requires_confirmation: true
+      eligible_workflows:
+        - root-cause-remediate
+        - ship-hold-remediate
+        - post-release-close-loop
+
+    - command: "/plan"
+      workflow: plan-first-build
+      requires_confirmation: false
+
+    - command: "/ship"
+      workflow: ship-hold-remediate
+      requires_confirmation: false
+
+    - command: "/audit"
+      workflow: audit-fix-deliver
+      requires_confirmation: false
+
+# ─────────────────────────────────────────────────────────────
+# Platform Integration Hooks
+# ─────────────────────────────────────────────────────────────
+platform_hooks:
+  # Future: External agent backend integration
+  external_agent_backend:
+    enabled: false
+    endpoint: "${EXTERNAL_AGENT_BACKEND_URL}"
+    auth_method: "bearer_token"
+    timeout_seconds: 300
+
+  # Future: Real subagent runtime
+  subagent_runtime:
+    enabled: false
+    provider: "native"  # or "docker", "k8s", "lambda"
+    max_parallel_agents: 4
+    spawn_timeout_seconds: 60
+
+  # Future: Decision log persistence
+  decision_log:
+    enabled: true
+    storage: "local"  # or "s3", "gcs", "postgres"
+    path: ".skill-metrics/decision-log.jsonl"
+    retention_days: 90
+
+  # Future: Metrics export
+  metrics_export:
+    enabled: false
+    format: "prometheus"  # or "cloudwatch", "datadog"
+    endpoint: "${METRICS_ENDPOINT}"
+
+# ─────────────────────────────────────────────────────────────
+# Governance Constraints
+# ─────────────────────────────────────────────────────────────
+governance:
+  # Fast track control
+  fast_track:
+    quota_per_24h: 3
+    cooldown_minutes: 30
+    requires_objective_signal: true
+
+  # Roundtable governance
+  roundtable:
+    min_assistants: 1
+    max_assistants: 3
+    confidence_threshold: 0.75
+
+  # Privy council
+  privy_council:
+    allow_fast_track: false
+    force_regular_keywords:
+      - "审计"
+      - "合规"
+      - "高风险"
+      - "核心模块"
+      - "双签"
+
+# ─────────────────────────────────────────────────────────────
+# Workflow Defaults
+# ─────────────────────────────────────────────────────────────
+workflow_defaults:
+  bounded_iteration:
+    online_round_cap: 3
+    offline_round_cap: 120
+    max_same_hypothesis_retries: 2
+
+  team_engine_lite:
+    max_cycles: 5
+    enable_verifier: true
+    require_delivery_cycle_report: true
+
+  harness_constraint:
+    auto_create: true
+    required_for_workflows:
+      - plan-first-build
+      - product-spec-deliver
+      - quick-slice-deliver
+      - audit-fix-deliver
+      - govern-change-safely
+      - root-cause-remediate
+
+# ─────────────────────────────────────────────────────────────
+# Language Profile Binding
+# ─────────────────────────────────────────────────────────────
+language_profile_binding:
+  routing_rules: "references/routing-rules.json"
+  language_profiles: "references/language-profiles.yaml"
+  auto_sync: true
+
+# ─────────────────────────────────────────────────────────────
+# Schema Extensions (for future platform features)
+# ─────────────────────────────────────────────────────────────
+extensions:
+  # Reserved for v6.0+ platform features
+  # - Custom agent registry
+  # - Plugin system
+  # - Remote skill composition
+  # - A/B testing framework
+  reserved: true
