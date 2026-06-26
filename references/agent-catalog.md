@@ -88,3 +88,23 @@ Stage councils are optional overlays. They do not become top-level leads.
 - Roles: `ux-discovery`, `design-system-curator`, `prototype-builder`, `visual-critic`, `accessibility-reviewer`.
 - Output bias: design brief, design token choice, runnable prototype readiness, visual quality gate, accessibility gate.
 - Avoid using for: product strategy without UI surface, code-only refactors, or generic redesign requests that only need quick implementation.
+
+## 7. Data Pipeline Guardian
+
+- Core strengths: data pipeline architecture, ETL/ELT design, stream processing, data quality governance, schema evolution, data lineage, batch vs real-time tradeoffs, data warehouse/lake design, CDC (Change Data Capture), data observability.
+- Best triggers: `data pipeline`, `ETL`, `ELT`, `stream processing`, `kafka`, `spark`, `flink`, `airflow`, `dbt`, `data quality`, `data governance`, `schema evolution`, `CDC`, `data warehouse`, `data lake`, `data mesh`, `batch job`, `dataflow`, `pipeline orchestration`.
+- Typical tasks: pipeline architecture design, data quality rule implementation, schema migration strategies, stream vs batch decisions, data lineage tracking, pipeline monitoring and alerting, data contract definition.
+- Avoid using as lead for: pure business analytics without engineering context, simple one-off SQL queries without pipeline implications.
+- Output bias: pipeline topology decisions, data quality gates, schema contract enforcement, failure handling strategies, observability requirements.
+- Constraints: 数据管道变更必须评估对下游消费者的影响；schema 变更必须遵循向后兼容或显式迁移策略；数据质量问题必须分级（阻塞/告警/日志）并绑定处理策略；流处理场景必须明确 exactly-once/at-least-once 语义选择及其实现机制；禁止在没有数据血缘追踪的情况下推进复杂管道改造。
+- Evidence requirements: 管道设计需提供拓扑图（来源/转换/目标）、数据质量检查点与规则清单、schema 契约与版本策略、失败场景处理方案（重试/死信/告警）；涉及流处理时附语义保证机制与 checkpoint 策略；涉及 schema 变更时附向后兼容性分析与迁移步骤。
+
+## 8. API Contract Sentinel
+
+- Core strengths: API design governance, OpenAPI/AsyncAPI specification, contract-first development, backward compatibility enforcement, versioning strategies, API security, rate limiting, idempotency design, GraphQL schema governance, gRPC/protobuf contract management.
+- Best triggers: `API design`, `API contract`, `OpenAPI`, `Swagger`, `AsyncAPI`, `REST API`, `GraphQL`, `gRPC`, `protobuf`, `API versioning`, `backward compatibility`, `breaking change`, `API gateway`, `rate limiting`, `idempotency`, `API security`, `contract-first`.
+- Typical tasks: API contract review, breaking change detection, versioning strategy design, OpenAPI spec validation, GraphQL schema review, API security audit, rate limit and quota design, idempotency implementation guidance.
+- Avoid using as lead for: pure UI/UX design without API implications, internal-only private methods without contract concerns.
+- Output bias: contract clarity, backward compatibility preservation, versioning decisions, security considerations, client impact assessment.
+- Constraints: API 变更必须评估对现有客户端的兼容性影响；breaking change 必须显式标记并给出迁移窗口或版本策略；公开 API 必须配套 OpenAPI/AsyncAPI 规范；API 安全审查必须覆盖认证/授权/输入验证/速率限制；GraphQL schema 变更必须评估查询复杂度与 N+1 风险；禁止在没有客户端影响分析的情况下推进 breaking change。
+- Evidence requirements: API 设计需提供 OpenAPI/AsyncAPI/GraphQL schema 规范、向后兼容性分析（字段变更/端点废弃/行为变更）、客户端影响清单（按调用方/使用频率/关键程度分级）、版本迁移计划与弃用时间表；涉及安全时附威胁模型与缓解措施；涉及性能时附速率限制策略与配额分配方案。

@@ -1,7 +1,7 @@
 {
   "meta": {
     "author": "fxbin",
-    "version": "v5.0.2",
+    "version": "v5.5.0",
     "updated": "2026-06-26"
   },
   "thresholds": {
@@ -317,7 +317,9 @@
     "Technical Trinity",
     "Code Audit Council",
     "Git Workflow Guardian",
-    "World-Class Product Architect"
+    "World-Class Product Architect",
+    "Data Pipeline Guardian",
+    "API Contract Sentinel"
   ],
   "agent_rules": {
     "Java Virtuoso": {
@@ -1724,6 +1726,140 @@
         "影响范围（界面 / 交互 / 设计系统 / 可访问性）",
         "对内测 / beta 场景：cohort 定义与反馈门禁",
         "对发布后场景：监控信号或真实用户反馈样本"
+      ]
+    },
+    "Data Pipeline Guardian": {
+      "positive": [
+        {"keyword": "data pipeline", "score": 6},
+        {"keyword": "ETL", "score": 6},
+        {"keyword": "ELT", "score": 6},
+        {"keyword": "stream processing", "score": 6},
+        {"keyword": "kafka", "score": 5},
+        {"keyword": "spark", "score": 5},
+        {"keyword": "flink", "score": 5},
+        {"keyword": "airflow", "score": 5},
+        {"keyword": "dbt", "score": 5},
+        {"keyword": "data quality", "score": 6},
+        {"keyword": "data governance", "score": 6},
+        {"keyword": "schema evolution", "score": 5},
+        {"keyword": "CDC", "score": 5},
+        {"keyword": "change data capture", "score": 5},
+        {"keyword": "data warehouse", "score": 5},
+        {"keyword": "data lake", "score": 5},
+        {"keyword": "data mesh", "score": 5},
+        {"keyword": "batch job", "score": 5},
+        {"keyword": "dataflow", "score": 5},
+        {"keyword": "pipeline orchestration", "score": 5},
+        {"keyword": "数据管道", "score": 6},
+        {"keyword": "数据流", "score": 5},
+        {"keyword": "数据质量", "score": 6},
+        {"keyword": "数据治理", "score": 6},
+        {"keyword": "schema 变更", "score": 5},
+        {"keyword": "数据血缘", "score": 5},
+        {"keyword": "实时计算", "score": 5},
+        {"keyword": "批处理", "score": 5},
+        {"keyword": "数据仓库", "score": 6},
+        {"keyword": "数仓", "score": 6},
+        {"keyword": "数据湖", "score": 5},
+        {"keyword": "实时数仓", "score": 6},
+        {"keyword": "数据流", "score": 6},
+        {"keyword": "数据中台", "score": 6},
+        {"keyword": "埋点", "score": 5},
+        {"keyword": "日志收集", "score": 5},
+        {"keyword": "Iceberg", "score": 5},
+        {"keyword": "Hudi", "score": 5},
+        {"keyword": "Delta Lake", "score": 5},
+        {"keyword": "Lambda架构", "score": 5},
+        {"keyword": "Kappa架构", "score": 5}
+      ],
+      "negative": [
+        {"keyword": "ui", "score": 3},
+        {"keyword": "ux", "score": 3},
+        {"keyword": "frontend", "score": 3},
+        {"keyword": "visual design", "score": 3},
+        {"keyword": "商业模式", "score": 6},
+        {"keyword": "融资", "score": 6},
+        {"keyword": "定价策略", "score": 6}
+      ],
+      "constraints": [
+        "数据管道变更必须评估对下游消费者的影响",
+        "schema 变更必须遵循向后兼容或显式迁移策略",
+        "数据质量问题必须分级（阻塞/告警/日志）并绑定处理策略",
+        "流处理场景必须明确 exactly-once/at-least-once 语义选择及其实现机制",
+        "禁止在没有数据血缘追踪的情况下推进复杂管道改造"
+      ],
+      "evidence_requirements": [
+        "管道拓扑图（来源/转换/目标）",
+        "数据质量检查点与规则清单",
+        "schema 契约与版本策略",
+        "失败场景处理方案（重试/死信/告警）",
+        "流处理语义保证机制与 checkpoint 策略",
+        "schema 变更向后兼容性分析与迁移步骤"
+      ]
+    },
+    "API Contract Sentinel": {
+      "positive": [
+        {"keyword": "API design", "score": 6},
+        {"keyword": "API contract", "score": 6},
+        {"keyword": "OpenAPI", "score": 6},
+        {"keyword": "Swagger", "score": 5},
+        {"keyword": "AsyncAPI", "score": 6},
+        {"keyword": "REST API", "score": 5},
+        {"keyword": "GraphQL", "score": 6},
+        {"keyword": "gRPC", "score": 6},
+        {"keyword": "protobuf", "score": 5},
+        {"keyword": "API versioning", "score": 6},
+        {"keyword": "backward compatibility", "score": 6},
+        {"keyword": "breaking change", "score": 6},
+        {"keyword": "API gateway", "score": 5},
+        {"keyword": "rate limiting", "score": 5},
+        {"keyword": "idempotency", "score": 5},
+        {"keyword": "API security", "score": 5},
+        {"keyword": "contract-first", "score": 6},
+        {"keyword": "API 设计", "score": 6},
+        {"keyword": "API 契约", "score": 6},
+        {"keyword": "接口设计", "score": 5},
+        {"keyword": "接口契约", "score": 6},
+        {"keyword": "接口版本", "score": 6},
+        {"keyword": "向后兼容", "score": 6},
+        {"keyword": "破坏性变更", "score": 6},
+        {"keyword": "限流", "score": 5},
+        {"keyword": "幂等", "score": 5},
+        {"keyword": "幂等性", "score": 5},
+        {"keyword": "API 安全", "score": 5},
+        {"keyword": "契约优先", "score": 6},
+        {"keyword": "API版本", "score": 6},
+        {"keyword": "版本管理", "score": 5},
+        {"keyword": "schema演进", "score": 5},
+        {"keyword": "schema evolution", "score": 5},
+        {"keyword": "webhook", "score": 5},
+        {"keyword": "回调接口", "score": 5},
+        {"keyword": "session同步", "score": 5}
+      ],
+      "negative": [
+        {"keyword": "ui", "score": 3},
+        {"keyword": "ux", "score": 3},
+        {"keyword": "visual design", "score": 3},
+        {"keyword": "商业模式", "score": 4},
+        {"keyword": "融资", "score": 4},
+        {"keyword": "data pipeline", "score": 3},
+        {"keyword": "ETL", "score": 3}
+      ],
+      "constraints": [
+        "API 变更必须评估对现有客户端的兼容性影响",
+        "breaking change 必须显式标记并给出迁移窗口或版本策略",
+        "公开 API 必须配套 OpenAPI/AsyncAPI 规范",
+        "API 安全审查必须覆盖认证/授权/输入验证/速率限制",
+        "GraphQL schema 变更必须评估查询复杂度与 N+1 风险",
+        "禁止在没有客户端影响分析的情况下推进 breaking change"
+      ],
+      "evidence_requirements": [
+        "OpenAPI/AsyncAPI/GraphQL schema 规范",
+        "向后兼容性分析（字段变更/端点废弃/行为变更）",
+        "客户端影响清单（按调用方/使用频率/关键程度分级）",
+        "版本迁移计划与弃用时间表",
+        "威胁模型与缓解措施（涉及安全时）",
+        "速率限制策略与配额分配方案（涉及性能时）"
       ]
     }
   },
