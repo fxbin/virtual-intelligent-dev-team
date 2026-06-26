@@ -1,0 +1,248 @@
+schema_version: language-profiles/v1
+skill_name: virtual-intelligent-dev-team
+
+# Per-language context and constraint profiles used by the LLM to inject
+# ecosystem defaults, idiomatic conventions, canonical verification commands,
+# and language-specific guardrails. The router decision itself is still driven
+# by `routing-rules.json → language_profiles`; this file only feeds the agent
+# context after a profile is matched. See `references/language-profiles-schema.md`.
+
+profiles:
+  java:
+    display_name: Java / JVM
+    routing_keywords:
+      - java
+      - jdk
+      - jvm
+      - spring
+      - spring boot
+      - virtual thread
+      - loom
+    ecosystem:
+      build: "Gradle / Maven"
+      framework: "Spring Boot 3.x"
+      jvm: "21+ (Virtual Threads)"
+    conventions:
+      - 优先使用 record 而非可变 POJO（数据载体）
+      - 公共 API 变更必须同步更新 OpenAPI 契约与回归测试
+      - 使用 java.time 替代 java.util.Date 与 Calendar
+      - Stream.parallel() 必须有性能基准支撑
+    verification:
+      lint: "./gradlew checkstyleMain"
+      test: "./gradlew test"
+      coverage: "./gradlew jacocoTestReport"
+      static_analysis: "./gradlew spotbugsMain"
+    harness_constraints:
+      - "Stream.parallel() 改动必须附性能基准"
+      - "公共 API 变更必须同时更新 OpenAPI 契约与回归测试"
+      - "JVM 调优建议必须标注 GC 算法与目标停顿时间"
+
+  kotlin:
+    display_name: Kotlin / JVM
+    routing_keywords:
+      - kotlin
+      - ktor
+      - exposed
+      - kotlinx
+      - gradle.kts
+      - kotlin DSL
+    ecosystem:
+      web_framework: "Ktor / Spring"
+      orm: "Exposed"
+      build: "Gradle (Kotlin DSL)"
+      async: "kotlinx.coroutines"
+      serialization: "kotlinx.serialization"
+    conventions:
+      - 优先使用 data class 而非 POJO
+      - 扩展函数优于 Util 类
+      - 协程优于回调或 RxJava（除非已有存量）
+      - sealed class/interface 用于受控状态建模
+    verification:
+      lint: "./gradlew ktlintCheck"
+      test: "./gradlew test"
+      coverage: "./gradlew jacocoTestReport"
+      static_analysis: "./gradlew detekt"
+    harness_constraints:
+      - "新增公开 API 必须标注 @SinceKotlin 注解或等价机制"
+      - "禁止使用 !! 强制解包（除非有不可达证明）"
+
+  swift:
+    display_name: Swift / Apple
+    routing_keywords:
+      - swift
+      - swiftui
+      - uikit
+      - vapor
+      - swiftpm
+      - swift package manager
+    ecosystem:
+      ui_framework: "SwiftUI / UIKit"
+      networking: "URLSession / Alamofire"
+      package_manager: "Swift Package Manager"
+      async: "Swift Concurrency (async/await)"
+    conventions:
+      - 优先 struct 而非 class，除非需要引用语义
+      - 协议（Protocol）优先于继承
+      - 使用 Result 类型处理错误，避免 throws 滥用
+      - SwiftUI 视图保持纯函数式
+    verification:
+      lint: "swiftlint"
+      test: "swift test"
+      build: "swift build"
+    harness_constraints:
+      - "禁止在主 Actor 上执行耗时操作"
+      - "@MainActor 标注 UI 入口点"
+
+  cpp:
+    display_name: C / C++
+    routing_keywords:
+      - cpp
+      - "c++"
+      - cmake
+      - conan
+      - vcpkg
+      - clang
+      - clang-tidy
+    ecosystem:
+      build: "CMake"
+      package_manager: "vcpkg / Conan"
+      standard: "C++20 及以上（若项目无历史包袱）"
+    conventions:
+      - RAII 优先，避免裸 new/delete
+      - std::optional 优于 magic value 哨兵
+      - std::span 优于原始指针+长度
+      - Move 语义用于资源所有权转移
+      - constexpr 优先于运行时计算
+    verification:
+      lint: "clang-tidy"
+      test: "ctest"
+      static_analysis: "clang-analyzer"
+      sanitizers: "-fsanitize=address,undefined"
+    harness_constraints:
+      - "禁止 reinterpret_cast（除非硬件寄存器操作）"
+      - "所有动态分配必须配合智能指针或明确的所有权文档"
+
+  csharp:
+    display_name: C# / .NET
+    routing_keywords:
+      - csharp
+      - "c#"
+      - dotnet
+      - ".net"
+      - asp.net
+      - blazor
+      - entity framework
+    ecosystem:
+      web_framework: "ASP.NET Core"
+      orm: "Entity Framework Core"
+      build: "dotnet CLI / MSBuild"
+      async: "Task / async-await"
+    conventions:
+      - 优先使用 record 而非 class（不可变数据）
+      - LINQ 优先于显式循环
+      - 使用 primary constructor（C# 12+）
+    verification:
+      lint: "dotnet format"
+      test: "dotnet test"
+      build: "dotnet build"
+    harness_constraints: []
+
+  php:
+    display_name: PHP
+    routing_keywords:
+      - php
+      - laravel
+      - symfony
+      - composer
+      - phpcs
+      - phpstan
+    ecosystem:
+      web_framework: "Laravel / Symfony"
+      package_manager: "Composer"
+      async: "Swoole / ReactPHP（选配）"
+    conventions:
+      - 类型声明（PHP 8.x 全量）
+      - 依赖注入优先于 Service Locator
+      - Eloquent ORM 中避免 N+1 查询
+    verification:
+      lint: "phpcs"
+      test: "phpunit"
+      static_analysis: "phpstan"
+    harness_constraints: []
+
+  ruby:
+    display_name: Ruby
+    routing_keywords:
+      - ruby
+      - rails
+      - ruby on rails
+      - gem
+      - bundler
+      - rspec
+      - sinatra
+      - rubocop
+    ecosystem:
+      web_framework: "Ruby on Rails / Sinatra"
+      package_manager: "Bundler"
+      test: "RSpec / Minitest"
+    conventions:
+      - Fat Model Skinny Controller
+      - Service Object 用于复杂业务逻辑
+      - ActiveRecord 关系声明优于裸 SQL
+    verification:
+      lint: "rubocop"
+      test: "bundle exec rspec"
+      security: "bundle audit"
+    harness_constraints: []
+
+  elixir:
+    display_name: Elixir / Phoenix
+    routing_keywords:
+      - elixir
+      - phoenix
+      - erlang
+      - otp
+      - ecto
+      - liveview
+      - mix
+      - credo
+    ecosystem:
+      web_framework: "Phoenix"
+      orm: "Ecto"
+      build: "Mix"
+      async: "OTP / GenServer / Task"
+    conventions:
+      - Let it crash — Supervisor 树优先
+      - Pattern matching 优先于条件分支
+      - Pipe operator 链式数据变换
+      - Ecto Changeset 用于数据校验
+    verification:
+      lint: "mix credo"
+      test: "mix test"
+      static_analysis: "mix dialyzer"
+    harness_constraints: []
+
+  scala:
+    display_name: Scala
+    routing_keywords:
+      - scala
+      - play framework
+      - akka
+      - cats
+      - zio
+      - sbt
+      - scalafix
+    ecosystem:
+      web_framework: "Play / http4s"
+      functional: "Cats / ZIO"
+      build: "sbt"
+      async: "Future / IO / ZIO"
+    conventions:
+      - 不可变数据结构优先
+      - for-comprehension 优于嵌套 flatMap
+      - 密封特质（sealed trait）用于代数数据类型
+    verification:
+      lint: "scalafix"
+      test: "sbt test"
+      static_analysis: "sbt scalafix"
+    harness_constraints: []
