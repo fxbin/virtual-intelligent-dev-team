@@ -460,9 +460,9 @@
       "name": "frontend_backend_contract",
       "text": "Redesign this React admin page and align the frontend flow with the backend API contract.",
       "expect": {
-        "lead_agent": "World-Class Product Architect",
+        "lead_agent": "API Contract Sentinel",
         "assistant_agents_contains": [
-          "Technical Trinity"
+          "World-Class Product Architect"
         ],
         "needs_git_workflow": false,
         "priority_agent": null
@@ -1006,30 +1006,25 @@
   ],
   "workflow_quality_cases": [
     {
-      "name": "runtime_index_links_quality_protocols",
-      "path": "references/runtime-routing-index.md",
+      "name": "playbook_index_links_core_protocols",
+      "path": "references/playbook-index.md",
       "expect": {
         "contains": [
-          "workflow-quality-baseline.md",
-          "trigger-health-baseline.md",
-          "goal-framing-protocol.md",
-          "anti-entropy-governance.md"
+          "agent-catalog.md",
+          "team-engine-lite-protocol.md",
+          "quick-slice-delivery-playbook.md"
         ]
       }
     },
     {
-      "name": "output_contract_requires_completion_evidence",
-      "path": "references/output-contract.md",
+      "name": "skill_md_requires_output_template",
+      "path": "SKILL.md",
       "expect": {
         "contains": [
-          "Completion Evidence Rule",
-          "covered_scope",
-          "uncovered_scope",
-          "confidence_grade",
-          "evidence_refs",
-          "--completion-evidence .skill-evidence/completion-evidence.json",
-          "Goal Frame",
-          "Anti-Entropy"
+          "## Output template",
+          "Selected route",
+          "Fallback",
+          "Next step"
         ]
       }
     },
@@ -1054,14 +1049,14 @@
       }
     },
     {
-      "name": "workflow_bundles_activate_goal_and_anti_entropy",
-      "path": "references/workflow-bundles.md",
+      "name": "workflow_bundles_defined_in_skill_md",
+      "path": "SKILL.md",
       "expect": {
         "contains": [
-          "goal-framing-protocol.md",
-          "anti-entropy-governance.md",
-          "workflow-quality-baseline.md",
-          "workflow_quality_checks"
+          "## Workflow Bundles",
+          "plan-first-build",
+          "product-spec-deliver",
+          "audit-fix-deliver"
         ]
       }
     },

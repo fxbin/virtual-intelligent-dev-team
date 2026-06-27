@@ -100,7 +100,9 @@ def validate_routing_cases(config: dict[str, object], cases: list[dict[str, obje
             raise AssertionError(f"routing case {name} missing expect object")
 
         result = route_request.route_request(text=text, config=config, repo_path=REPO_ROOT)
-        check(result["lead_agent"] == expect.get("lead_agent"), f"{name}: unexpected lead_agent")
+        actual_lead = result.get("lead_agent")
+        expected_lead = expect.get("lead_agent")
+        check(actual_lead == expected_lead, f"{name}: unexpected lead_agent (expected={expected_lead}, actual={actual_lead})")
 
         if "assistant_agents" in expect:
             check(result["assistant_agents"] == expect["assistant_agents"], f"{name}: unexpected assistants")
