@@ -1,7 +1,7 @@
 ---
 name: virtual-intelligent-dev-team
 archetype: router
-description: R&D / product / quick-slice / staged-beta / technical-governance router and bounded-iteration orchestrator for complex software work. Dispatch the best lead agent from Java Virtuoso, Sentinel Architect (NB), Technical Trinity, Code Audit Council, Git Workflow Guardian, and World-Class Product Architect; attach copilots only when useful; ask a targeted intent-confirmation question for fuzzy ideas before treating a provisional route as final; expand optional product-discovery or prototype-design stage councils under product delivery when phase-level specialists materially change the artifact sequence; use quick slice delivery for narrow implementation or bug-fix work; enter pre-development planning for large rewrites, migrations, and project-wide transformations; enable evidence-driven iteration for optimization loops, repeated retries, benchmark comparison, or candidate evaluation; and trigger the formal release gate when the user asks whether a version is ready to ship or submit.
+description: Bounded work-loop router for complex software tasks. Routes to the smallest defensible workflow with one semantic lead from 8 specialists (Java Virtuoso, Sentinel Architect, Technical Trinity, Code Audit Council, Git Workflow Guardian, World-Class Product Architect, Data Pipeline Guardian, API Contract Sentinel), attaches copilots only when useful, asks intent-confirmation for fuzzy ideas, and closes with verifiable evidence.
 ---
 
 # Virtual Intelligent Dev Team
@@ -102,6 +102,7 @@ If the task is simple and clearly single-domain, keep routing lightweight.
 - **Self-feedback** - LLM evaluates its own output against acceptance criteria
 - **Pivot** - Change direction based on new evidence or failed validation
 - **Resume anchor** - File path where workflow state is preserved for interruption recovery
+- **Project context** - Durable project rules, commands, architecture constraints, forbidden changes, and verification defaults shared across slices
 
 ## Workflow
 
@@ -134,8 +135,6 @@ If the task is simple and clearly single-domain, keep routing lightweight.
         - Specialist perspective on focused problem
    
    **Golden Rule:** Multi-domain problems → Multi-Expert Execution (not Direct Answer).
-   
-   See `references/output-contract.md` for detailed output structures.
 
 2. If the request is a large rewrite, migration, overhaul, or planning-before-coding transformation, enter the pre-development planning branch first.
 3. **If using Direct Answer Mode:** Skip to answering directly with technical depth. Provide: Analysis → Solution → Steps → Expected Results. Skip Team Dispatch, Evidence, and Resume sections. Exit here.
@@ -196,70 +195,14 @@ If the task is simple and clearly single-domain, keep routing lightweight.
 - `Next step`
   - smallest executable action, required artifact, and resume anchor
 
-For the full user-facing response contract, use `references/output-contract.md`.
-
-## Quick examples
-
-- `前端性能慢，怎么优化？`（单域简单优化）
-  - Route into Direct Answer Mode: 给出具体优化方案，跳过团队编排。
-- `微服务架构拆分规划`（多域协作）
-  - Route into Multi-Expert Execution: 调用 Sentinel Architect（架构）+ Database Expert（数据）+ DevOps Specialist（部署），收集各自方案，综合输出。
-- `React 应用全面性能优化`（多域协作）
-  - Route into Multi-Expert Execution: 调用 Frontend Performance Expert（运行时）+ Build Tool Specialist（构建）+ Code Review Expert（代码质量），综合三方建议。
-- `评估当前项目里的版本，看看能不能继续优化`
-  - Route into bounded iteration with evidence, baseline comparison, and next-round decisions.
-- `先别写代码，先把这个单体拆分迁移项目规划清楚`
-  - Enter pre-development planning, generate the transformation brief and progress anchor, then hand back to execution.
-- `这个小 bug 直接修一下并跑回归`
-  - Route into quick-slice delivery, preserve the current slice and project context, then implement with targeted verification.
-- `审查完成后按 P0/P1/P2 分批修复并提交，每批独立 commit`
-  - Route into audit-fix-deliver with batch remediation: freeze findings, fix one severity batch at a time, verify each batch, and commit each accepted batch separately.
-- `这个功能开发前后都要做内测，按轮次逐步加用户`
-  - Route into staged beta validation, define cohort ramp, and keep feedback evidence before release expansion.
-- `继续下一轮，直到结果稳定`
-  - Keep the same semantic owner, persist round memory, and use `keep / retry / rollback / stop` instead of vague retries.
-- `这个版本现在能发布吗`
-  - Trigger the formal release gate and answer with `ship` or `hold`, not only a benchmark summary.
-- `已经试过很多次了，帮我找根因`
-  - Escalate into root-cause discipline, require evidence, and prefer Sentinel-led investigation when risk is high.
-
-## Key terms
-
-- `workflow bundle`
-  - The smallest reusable delivery journey for the request shape.
-- `project context`
-  - Durable project rules, commands, architecture constraints, forbidden changes, and verification defaults shared across slices.
-- `quick slice`
-  - A narrow implementation or bug-fix delivery unit with explicit intent, non-goals, acceptance criteria, and verification evidence.
-- `baseline`
-  - The comparison anchor for one round or one candidate.
-- `round memory`
-  - Short-term memory for what changed, what failed, and what should carry into the next round.
-- `self-feedback`
-  - Compact reflection that turns evidence into the next hypothesis instead of repeating the same attempt.
-- `pivot`
-  - Switch to a new bottleneck after the current hypothesis is exhausted.
-- `resume`
-  - Continue from persisted loop state instead of restarting the whole loop.
-
 ## Runtime references
 
 Read indexes first; do not flatten the whole skill into this file.
 
-- Route selection, scenarios, iteration, release, and Git split:
-  [references/runtime-routing-index.md](references/runtime-routing-index.md)
-- Runtime operation rules:
-  [references/runtime-operation-contract.md](references/runtime-operation-contract.md)
-- Output structure:
-  [references/output-contract.md](references/output-contract.md)
+- Playbook and protocol index:
+  [references/playbook-index.md](references/playbook-index.md)
 - Execution-quality guardrails:
   [references/execution-quality-guardrails.md](references/execution-quality-guardrails.md)
-- Workflow quality and trigger health:
-  [references/workflow-quality-baseline.md](references/workflow-quality-baseline.md) and
-  [references/trigger-health-baseline.md](references/trigger-health-baseline.md)
-- Goal framing and anti-entropy governance:
-  [references/goal-framing-protocol.md](references/goal-framing-protocol.md) and
-  [references/anti-entropy-governance.md](references/anti-entropy-governance.md)
 - Optional product-discovery and prototype-design stage councils:
   [references/stage-council-protocol.md](references/stage-council-protocol.md)
 - Harness engineering constraint gate:
@@ -272,8 +215,6 @@ Read indexes first; do not flatten the whole skill into this file.
   [references/external-agent-backend-orchestration-protocol.md](references/external-agent-backend-orchestration-protocol.md)
 - Scripts, templates, validation, and command entrypoints:
   [references/tooling-command-index.md](references/tooling-command-index.md)
-- Workflow bundles and resume anchors:
-  [references/workflow-bundles.md](references/workflow-bundles.md)
 - Team catalog:
   [references/agent-catalog.md](references/agent-catalog.md)
 - Maintainer-facing project docs:
@@ -284,9 +225,8 @@ Read indexes first; do not flatten the whole skill into this file.
 The skill now exposes a governance layer alongside the routing layer:
 
 - **Decision log**: every route decision appends one JSON line to
-  `.skill-metrics/decision-log.jsonl`. Schema: `references/decision-log.schema.json`,
-  field semantics: `references/decision-log-schema.md`. Legacy
-  `governance_events.jsonl` entries can be migrated with
+  `.skill-metrics/decision-log.jsonl`. Schema: `references/decision-log.schema.json`.
+  Legacy `governance_events.jsonl` entries can be migrated with
   `scripts/migrate_governance_events.py` (one-shot, idempotent).
 - **Agent manifest**: each lead agent in `references/agent-catalog.md` and
   `references/routing-rules.json` now declares `Constraints` (hard
@@ -377,6 +317,8 @@ python scripts/validate_virtual_team.py --pretty
 | iteration / retry / optimize | bounded-iteration | Technical Trinity | Sentinel Architect (NB) when repeated failures require root-cause discipline |
 | release / ship / hold | ship-hold-remediate | Technical Trinity | Git Workflow Guardian when delivery governance overtakes release evidence |
 | beta / staged validation / rollout feedback | beta-feedback-ramp | World-Class Product Architect | Technical Trinity when product signals are weak and implementation dominates |
+| data pipeline / ETL / stream processing | data-pipeline-govern | Data Pipeline Guardian | Technical Trinity when infrastructure-only |
+| API design / contract / versioning | api-contract-govern | API Contract Sentinel | Technical Trinity when implementation-only |
 
 ### Stage Council Overlays
 

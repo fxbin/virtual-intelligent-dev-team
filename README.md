@@ -396,6 +396,12 @@ v5.0 把"路由可见性 + Agent Manifest 治理 + 多语言覆盖"合并为一�
   - 领域特化 Agent：Data Pipeline Guardian + API Contract Sentinel
   - 平台化架构预留：`.skill-harness/trigger.yaml`（v0.5 schema）
 
+- **v5.7.0 — SKILL.md 结构清理**
+  - 删除重复的 Quick examples 和 Key terms 章节
+  - 清理 4 个死引用（output-contract.md, runtime-routing-index.md, workflow-bundles.md, decision-log-schema.md）
+  - 重写 Description：8 个 agent 全列出，精简至 280 字符
+  - Runtime Routing 表补齐 2 条新路由（data-pipeline-govern, api-contract-govern）
+
 ### v5.0.1 — Decision Log Dashboard 视觉重做（patch bump）
 
 在 v5.0.0 基础上，仅重做 `scripts/inspect_decision_log.py` 的 `render_html()` 与 `render_markdown()`：

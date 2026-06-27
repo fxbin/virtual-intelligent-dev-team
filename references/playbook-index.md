@@ -55,7 +55,7 @@ Quick reference for playbooks and protocols used by core scripts.
 | File | Purpose |
 |------|---------|
 | [subagent-exec-guide.md](./subagent-exec-guide.md) | Subagent spawning patterns |
-| [output-contract.md](./output-contract.md) | Response structure requirements |
+| SKILL.md Output template | Response structure requirements |
 
 ---
 
