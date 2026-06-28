@@ -2346,6 +2346,94 @@
         "regression"
       ],
       "runner": "route"
+    },
+    {
+      "id": 127,
+      "prompt": "Build a FastAPI endpoint with Pydantic validation and pytest coverage.",
+      "expected_output": "Python request should route to Technical Trinity and use the python profile (FastAPI / Pydantic / pytest / ruff).",
+      "files": [
+        "references/language-profiles.yaml",
+        "references/routing-rules.json"
+      ],
+      "expectations": [
+        "detected_languages contains python",
+        "language_routing.python is Technical Trinity",
+        "workflow_bundle is quick-slice-deliver",
+        "harness_constraint_gate.required is true"
+      ],
+      "categories": [
+        "backend-stack",
+        "language-routing",
+        "python",
+        "quick-slice"
+      ],
+      "runner": "route"
+    },
+    {
+      "id": 128,
+      "prompt": "Implement a Go Gin handler with context timeouts and run go test ./...",
+      "expected_output": "Go request should route to Technical Trinity and use the go profile (Gin / context cancellation / go test).",
+      "files": [
+        "references/language-profiles.yaml",
+        "references/routing-rules.json"
+      ],
+      "expectations": [
+        "detected_languages contains go",
+        "language_routing.go is Technical Trinity",
+        "workflow_bundle is quick-slice-deliver",
+        "harness_constraint_gate.required is true"
+      ],
+      "categories": [
+        "backend-stack",
+        "language-routing",
+        "go",
+        "quick-slice"
+      ],
+      "runner": "route"
+    },
+    {
+      "id": 129,
+      "prompt": "Add a NestJS controller with DTO validation and run the TypeScript tests.",
+      "expected_output": "Node.js request should route to Technical Trinity and use the nodejs profile (NestJS / DTO validation / pnpm test).",
+      "files": [
+        "references/language-profiles.yaml",
+        "references/routing-rules.json"
+      ],
+      "expectations": [
+        "detected_languages contains nodejs",
+        "language_routing.nodejs is Technical Trinity",
+        "workflow_bundle is quick-slice-deliver",
+        "harness_constraint_gate.required is true"
+      ],
+      "categories": [
+        "backend-stack",
+        "language-routing",
+        "nodejs",
+        "quick-slice"
+      ],
+      "runner": "route"
+    },
+    {
+      "id": 130,
+      "prompt": "Implement an Axum route in Rust with Serde payloads and cargo test coverage.",
+      "expected_output": "Rust request should route to Technical Trinity and use the rust profile (Axum / Serde / cargo test).",
+      "files": [
+        "references/language-profiles.yaml",
+        "references/routing-rules.json"
+      ],
+      "expectations": [
+        "detected_languages contains rust",
+        "language_routing.rust is Technical Trinity",
+        "workflow_bundle is quick-slice-deliver",
+        "harness_constraint_gate.required is true"
+      ],
+      "categories": [
+        "backend-stack",
+        "language-routing",
+        "rust",
+        "quick-slice"
+      ],
+      "runner": "route"
     }
   ]
 }

@@ -8,6 +8,129 @@ skill_name: virtual-intelligent-dev-team
 # context after a profile is matched. See `references/language-profiles-schema.md`.
 
 profiles:
+  python:
+    display_name: Python
+    routing_keywords:
+      - python
+      - django
+      - flask
+      - fastapi
+      - celery
+      - gunicorn
+      - uvicorn
+      - pydantic
+    ecosystem:
+      web_framework: "FastAPI / Django / Flask"
+      package_manager: "uv / pip / Poetry"
+      async: "asyncio / AnyIO"
+      validation: "Pydantic"
+    conventions:
+      - 类型标注优先，公共边界必须明确输入输出类型
+      - FastAPI / Pydantic 场景优先使用 schema 校验而非手写字典约定
+      - IO 密集任务使用 async 或后台队列，避免阻塞事件循环
+      - 数据库访问必须明确事务边界和 N+1 风险
+    verification:
+      lint: "ruff check ."
+      format: "ruff format --check ."
+      type_check: "mypy ."
+      test: "pytest"
+    harness_constraints:
+      - "公共 API 变更必须同步更新 schema / OpenAPI 与回归测试"
+      - "异步代码不得在事件循环中执行阻塞 IO"
+      - "数据库查询改动必须说明事务边界与 N+1 风险"
+
+  go:
+    display_name: Go
+    routing_keywords:
+      - go语言
+      - golang
+      - gin
+      - fiber
+      - go kit
+      - gorm
+      - grpc-go
+    ecosystem:
+      web_framework: "Gin / Fiber / net/http"
+      orm: "GORM / sqlc"
+      build: "go toolchain"
+      rpc: "grpc-go"
+    conventions:
+      - context.Context 必须沿调用链传递取消和超时
+      - 错误处理必须包装关键上下文，避免吞错
+      - goroutine 必须有生命周期、取消和泄漏防护
+      - 热路径改动优先附 benchmark 或 pprof 证据
+    verification:
+      lint: "golangci-lint run"
+      test: "go test ./..."
+      race: "go test -race ./..."
+      benchmark: "go test -bench=. ./..."
+    harness_constraints:
+      - "新增 goroutine 必须说明退出条件和取消路径"
+      - "对外 API / gRPC 变更必须同步更新契约与兼容性说明"
+      - "并发或性能改动必须附 race / benchmark / pprof 中至少一种证据"
+
+  nodejs:
+    display_name: Node.js / TypeScript
+    routing_keywords:
+      - node
+      - node.js
+      - express
+      - nestjs
+      - koa
+      - pm2
+      - ts-node
+      - typescript backend
+    ecosystem:
+      web_framework: "Express / NestJS / Koa"
+      runtime: "Node.js LTS"
+      package_manager: "pnpm / npm / yarn"
+      language: "TypeScript"
+    conventions:
+      - TypeScript strict mode 优先，避免 any 泄漏到公共边界
+      - API 输入输出使用 DTO / schema 校验
+      - 异步错误必须进入统一错误处理链路
+      - 后端服务需区分启动配置、运行时配置和 secret
+    verification:
+      lint: "pnpm lint"
+      type_check: "pnpm typecheck"
+      test: "pnpm test"
+      build: "pnpm build"
+    harness_constraints:
+      - "公共 DTO / API contract 变更必须同步测试和客户端影响说明"
+      - "禁止新增未捕获 Promise rejection 路径"
+      - "认证、鉴权或配置改动必须标注 secret 与环境变量影响"
+
+  rust:
+    display_name: Rust
+    routing_keywords:
+      - rust
+      - cargo
+      - tokio
+      - actix
+      - axum
+      - warp
+      - rocket
+      - serde
+    ecosystem:
+      web_framework: "Axum / Actix / Warp / Rocket"
+      async: "Tokio"
+      build: "Cargo"
+      serialization: "Serde"
+    conventions:
+      - Result / Option 显式建模失败，不用 panic 处理可恢复错误
+      - 所有权和生命周期改动必须说明共享/可变边界
+      - async 任务必须明确取消、超时和 JoinHandle 处理
+      - unsafe 代码必须局部化并写明不变量
+    verification:
+      lint: "cargo clippy --all-targets --all-features -- -D warnings"
+      format: "cargo fmt -- --check"
+      test: "cargo test --all-features"
+      build: "cargo build --all-features"
+    harness_constraints:
+      - "禁止新增 unwrap / expect 处理外部输入或可恢复错误"
+      - "新增 unsafe 必须说明安全不变量和测试覆盖"
+      - "Tokio 并发改动必须说明取消、超时和资源释放路径"
+
   java:
     display_name: Java / JVM
     routing_keywords:

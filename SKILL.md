@@ -275,17 +275,16 @@ Language support is split into three orthogonal layers:
 When a request matches a language keyword in `routing-rules.json`:
 
 1. Route the task to the profile's `lead_agent`.
-2. Load the matching entry from `language-profiles.yaml` if present (yaml
-   is incremental — older languages LLM already understands do not need
-   a profile entry).
+2. Load the matching entry from `language-profiles.yaml`; the YAML now
+   covers all 13 routed language profiles.
 3. Inject into the agent's context: ecosystem, conventions, verification
    commands, and `harness_constraints`.
 
-If no profile entry exists in the YAML for the detected language, the
-LLM relies on its general knowledge — the skill does not refuse tasks for
-unsupported languages, it just lacks structured guardrails for them.
-Run `python scripts/check_language_profiles.py --pretty` to validate the
-two files stay in sync.
+If a new language is added to `routing-rules.json`, add the matching YAML
+profile in the same pass so the LLM gets structured ecosystem defaults,
+verification commands, and harness constraints. Run
+`python scripts/check_language_profiles.py --pretty` to validate the two
+files stay in sync.
 
 **Java is an exception**: routing still prefers `Java Virtuoso`, and the
 Java entry in `language-profiles.yaml` injects baseline toolchain info

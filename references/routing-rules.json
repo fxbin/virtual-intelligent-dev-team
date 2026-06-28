@@ -1,7 +1,7 @@
 {
   "meta": {
     "author": "fxbin",
-    "version": "v5.7.1",
+    "version": "v5.7.2",
     "updated": "2026-06-28"
   },
   "thresholds": {
@@ -270,7 +270,7 @@
         "conventional commits",
         "commit message",
         "status",
-        "add",
+        "git add",
         "commit",
         "commits",
         "push",
@@ -1075,7 +1075,7 @@
           "score": 4
         },
         {
-          "keyword": "add",
+          "keyword": "git add",
           "score": 4
         },
         {
@@ -2588,7 +2588,7 @@
         "score": 1
       },
       {
-        "keyword": "add",
+        "keyword": "git add",
         "score": 1
       },
       {
