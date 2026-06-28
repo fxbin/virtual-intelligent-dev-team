@@ -27,7 +27,7 @@ It has seven core closure layers plus one optional stage-council overlay:
 6. `Drill closure`
    - Offline drills verify rollback, resume, and release-gate bootstrap paths.
 7. `Team Engine Lite closure`
-   - Code-facing delivery now carries Worker / Verifier separation, max-cycle retry, remediation patch, controlled real subagent runtime eligibility, external-agent soft orchestration fallback, and a DeliveryCycleReport before Lead acceptance.
+   - Code-facing delivery uses Worker / Verifier separation, max-cycle retry, remediation patch, controlled real subagent runtime eligibility, external-agent soft orchestration fallback, and a DeliveryCycleReport before Lead acceptance.
 Optional overlay:
 
 - `Stage council overlay`
@@ -82,13 +82,13 @@ If the task is simple and clearly single-domain, keep routing lightweight.
 
 ## Quick examples
 
-| User request | Output mode | Why |
+| User request | Route shape | Why |
 |-------------|-------------|-----|
 | "前端性能慢，怎么优化？" | Direct Answer | Single-domain, well-scoped question |
 | "微服务架构拆分规划" | Multi-Expert | Spans architecture, product, and delivery |
 | "设计一个用户认证系统" | Full Workflow | Requires product spec + API contract + implementation |
 | "这个 PR 有安全问题吗？" | Expert Routing | Clear specialist domain (security audit) |
-| "帮我重构这段 Python 代码" | Direct Answer | Single language, single file scope |
+| "帮我重构这段 Python 代码" | Quick Slice | Code-editing refactor needs delivery evidence |
 | "发布这个版本到生产环境" | Full Workflow | Needs release gate + ship/hold decision |
 | "设计 Kafka 实时数据管道" | Expert Routing | Clear domain: Data Pipeline Guardian |
 | "API 版本兼容性怎么保证" | Expert Routing | Clear domain: API Contract Sentinel |
@@ -188,14 +188,14 @@ Read indexes first; do not flatten the whole skill into this file.
 
 ## Governance & Observability (v5.0+)
 
-The skill now exposes a governance layer alongside the routing layer:
+The skill exposes a governance layer alongside the routing layer:
 
 - **Decision log**: every route decision appends one JSON line to
   `.skill-metrics/decision-log.jsonl`. Schema: `references/decision-log.schema.json`.
   Legacy `governance_events.jsonl` entries can be migrated with
   `scripts/migrate_governance_events.py` (one-shot, idempotent).
 - **Agent manifest**: each lead agent in `references/agent-catalog.md` and
-  `references/routing-rules.json` now declares `Constraints` (hard
+  `references/routing-rules.json` declares `Constraints` (hard
   guardrails the LLM must enforce) and `Evidence Requirements` (what the
   agent must produce before claiming done/ready/ship).
 - **Health check**: `scripts/check_harness_health.py` validates Agent
@@ -240,7 +240,7 @@ Language support is split into three orthogonal layers:
 When a request matches a language keyword in `routing-rules.json`:
 
 1. Route the task to the profile's `lead_agent`.
-2. Load the matching entry from `language-profiles.yaml`; the YAML now
+2. Load the matching entry from `language-profiles.yaml`; the YAML
    covers all 13 routed language profiles.
 3. Inject into the agent's context: ecosystem, conventions, verification
    commands, and `harness_constraints`.
