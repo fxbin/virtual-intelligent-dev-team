@@ -112,9 +112,10 @@ If the task is simple and clearly single-domain, keep routing lightweight.
 
    **Decision Tree:**
    
-   1. **Is it a simple, single-domain question?**
+   1. **Is it a simple, single-domain explanation or advice question?**
       - Yes → **Direct Answer Mode** (skip to step 3)
-        - Bug fixes, "how do I...", single optimization
+        - "how do I...", conceptual debugging advice, single-domain optimization guidance
+        - Does not ask the agent to edit, refactor, implement, verify, commit, release, or iterate
         - Answer directly with: Analysis → Solution → Steps → Results
       - No → Continue to 2
    
@@ -137,7 +138,7 @@ If the task is simple and clearly single-domain, keep routing lightweight.
    **Golden Rule:** Multi-domain problems → Multi-Expert Execution (not Direct Answer).
 
 2. If the request is a large rewrite, migration, overhaul, or planning-before-coding transformation, enter the pre-development planning branch first.
-3. **If using Direct Answer Mode:** Skip to answering directly with technical depth. Provide: Analysis → Solution → Steps → Expected Results. Skip Team Dispatch, Evidence, and Resume sections. Exit here.
+3. **If using Direct Answer Mode:** Skip to answering directly with technical depth. Provide: Analysis → Solution → Steps → Expected Results. Skip Team Dispatch, Evidence, and Resume sections. Exit here. Direct Answer is advice-only: if the user asks for code edits, refactors, bug fixes, verification, commits, release readiness, or repeated iteration, route to the smallest delivery bundle instead.
 3.5. **If using Multi-Expert Execution Mode:** 
    - Identify 2-4 relevant experts based on problem domains
    - Spawn them in parallel using Agent tool or subagent runtime only when runtime evidence exists

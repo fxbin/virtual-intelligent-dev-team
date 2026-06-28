@@ -1968,19 +1968,22 @@
     {
       "id": 108,
       "prompt": "把这个函数重构一下",
-      "expected_output": "Ordinary single-function refactor must NOT be misrouted to multi-expert execution.",
+      "expected_output": "Ordinary single-function refactor is a code-facing delivery slice, so it should use quick-slice delivery with harness and Team Engine evidence instead of falling through to direct execution or multi-expert execution.",
       "files": [],
       "expectations": [
+        "workflow_bundle is quick-slice-deliver",
+        "harness_constraint_gate.required is true",
+        "team_engine_gate.required is true",
         "workflow_bundle is not multi-expert-execution"
       ],
       "categories": [
         "regression",
+        "quick-slice",
+        "team-engine-lite",
         "multi-expert",
-        "boundary-guard",
-        "negative"
+        "boundary-guard"
       ],
       "source": "regression:CASE2-fix (only multi-domain split triggers multi-expert)",
-      "negative": true,
       "runner": "route"
     },
     {
@@ -2321,6 +2324,28 @@
         "language-routing",
         "java"
       ]
+    },
+    {
+      "id": 126,
+      "prompt": "Refactor this Python helper and update the focused unit test.",
+      "expected_output": "Code-editing refactor requests should not stay in advice-only direct execution; they should enter quick-slice delivery with verification evidence.",
+      "files": [],
+      "expectations": [
+        "lead_agent is Technical Trinity",
+        "detected_languages contains python",
+        "workflow_bundle is quick-slice-deliver",
+        "harness_constraint_gate.required is true",
+        "team_engine_gate.required is true",
+        "progress_anchor_recommended is .skill-delivery/current-slice.md"
+      ],
+      "categories": [
+        "backend-stack",
+        "quick-slice",
+        "team-engine-lite",
+        "boundary-guard",
+        "regression"
+      ],
+      "runner": "route"
     }
   ]
 }
