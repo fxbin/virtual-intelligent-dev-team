@@ -33,6 +33,7 @@ Quick reference for playbooks and protocols used by core scripts.
 | Protocol | Used By | Purpose |
 |----------|---------|---------|
 | [agent-catalog.md](./agent-catalog.md) | check_harness_health.py | Lead agents scope and constraints |
+| [mode-selection-protocol.md](./mode-selection-protocol.md) | SKILL.md | Output mode boundaries |
 | [execution-quality-guardrails.md](./execution-quality-guardrails.md) | route_request.py | Quality guardrails reference |
 | [harness-engineering-constraint-protocol.md](./harness-engineering-constraint-protocol.md) | route_request.py | Code-facing constraints |
 | [team-engine-lite-protocol.md](./team-engine-lite-protocol.md) | route_request.py | Code/release/Git verification |

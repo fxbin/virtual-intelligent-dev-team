@@ -107,46 +107,9 @@ If the task is simple and clearly single-domain, keep routing lightweight.
 ## Workflow
 
 1. Identify task type, risk level, language stack, and Git/process needs.
-
-**1.5. Choose Output Mode (Critical):**
-
-   **Decision Tree:**
-   
-   1. **Is it a simple, single-domain explanation or advice question?**
-      - Yes → **Direct Answer Mode** (skip to step 3)
-        - "how do I...", conceptual debugging advice, single-domain optimization guidance
-        - Does not ask the agent to edit, refactor, implement, verify, commit, release, or iterate
-        - Answer directly with: Analysis → Solution → Steps → Results
-      - No → Continue to 2
-   
-   2. **Does it need multiple expert perspectives?**
-      - Yes → **Multi-Expert Execution Mode**
-        - Multi-domain problems (architecture + data + ops)
-        - Complex technical decisions benefiting from diverse views
-        - Spawn 2-4 experts only when the host exposes real spawn / wait / merge runtime evidence; otherwise use soft expert orchestration and label it honestly.
-        - Examples: "微服务拆分规划", "React性能全面优化", "系统重构方案"
-      - No → Continue to 3
-   
-   3. **Does it need full workflow orchestration?**
-      - Yes → **Full Workflow Mode**
-        - Large refactor / migration / multi-phase delivery
-        - Release readiness / governance gates
-      - No → **Expert Routing Mode**
-        - Single expert, deep dive
-        - Specialist perspective on focused problem
-   
-   **Golden Rule:** Multi-domain problems → Multi-Expert Execution (not Direct Answer).
-
-2. If the request is a large rewrite, migration, overhaul, or planning-before-coding transformation, enter the pre-development planning branch first.
-3. **If using Direct Answer Mode:** Skip to answering directly with technical depth. Provide: Analysis → Solution → Steps → Expected Results. Skip Team Dispatch, Evidence, and Resume sections. Exit here. Direct Answer is advice-only: if the user asks for code edits, refactors, bug fixes, verification, commits, release readiness, or repeated iteration, route to the smallest delivery bundle instead.
-3.5. **If using Multi-Expert Execution Mode:** 
-   - Identify 2-4 relevant experts based on problem domains
-   - Spawn them in parallel using Agent tool or subagent runtime only when runtime evidence exists
-   - If real runtime is unavailable, keep one response, use specialist lenses, and mark the result as soft orchestration
-   - Collect real expert outputs only when real experts were actually spawned
-   - Synthesize into unified, comprehensive answer
-   - Output structure: Expert roster → Individual analyses → Synthesized solution
-   - Exit here (skip Full Workflow sections).
+2. Choose the smallest output mode with [references/mode-selection-protocol.md](references/mode-selection-protocol.md): Direct Answer, Multi-Expert Execution, Expert Routing, or Full Workflow.
+3. Keep Direct Answer advice-only. If the user asks for code edits, refactors, bug fixes, verification, commits, release readiness, or repeated iteration, route to the smallest delivery bundle instead.
+3.5. Use Multi-Expert Execution only when multiple specialist perspectives materially change the result. Spawn real experts only when runtime evidence exists; otherwise label the result as soft expert orchestration.
 4. If the request is a narrow implementation or bug fix, use quick slice delivery instead of a full product or planning workflow.
 5. Choose one lead agent.
 6. Add one or two assistant agents only when they add clear value.
@@ -204,6 +167,8 @@ Read indexes first; do not flatten the whole skill into this file.
   [references/playbook-index.md](references/playbook-index.md)
 - Execution-quality guardrails:
   [references/execution-quality-guardrails.md](references/execution-quality-guardrails.md)
+- Output mode selection:
+  [references/mode-selection-protocol.md](references/mode-selection-protocol.md)
 - Optional product-discovery and prototype-design stage councils:
   [references/stage-council-protocol.md](references/stage-council-protocol.md)
 - Harness engineering constraint gate:
