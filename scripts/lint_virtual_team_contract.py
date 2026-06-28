@@ -55,7 +55,6 @@ DELIVERY_CYCLE_REPORT_TEMPLATE_PATH = SKILL_DIR / "assets" / "delivery-cycle-rep
 EXTERNAL_AGENT_BACKEND_PLAN_TEMPLATE_PATH = SKILL_DIR / "assets" / "external-agent-backend-plan-template.json"
 SAMPLE_DELIVERY_CYCLE_REPORT_PATH = SKILL_DIR / "assets" / "sample-delivery-cycle-report.json"
 MARKDOWN_PATH_RE = re.compile(r"(?<![\w./-])((?:assets|references|scripts)/[A-Za-z0-9_./-]+\.(?:md|json|py))(?![\w./-])")
-BARE_REFERENCE_RE = re.compile(r"^\s*-\s+`([A-Za-z0-9_.-]+\.(?:md|json))`\s*$")
 SCRIPT_COMMAND_RE = re.compile(r"python\s+(scripts/[A-Za-z0-9_.-]+\.py)\b")
 SCHEMA_VERSION_RE = re.compile(r"版本：`([^`]+)`")
 
@@ -96,11 +95,6 @@ def _resolve_markdown_path(raw_path: str, source_path: Path, skill_dir: Path) ->
 def _collect_markdown_references(source_path: Path) -> list[str]:
     text = source_path.read_text(encoding="utf-8")
     refs = set(MARKDOWN_PATH_RE.findall(text))
-    if source_path.name == "runtime-routing-index.md":
-        for line in text.splitlines():
-            match = BARE_REFERENCE_RE.match(line)
-            if match:
-                refs.add(match.group(1))
     return sorted(refs)
 
 

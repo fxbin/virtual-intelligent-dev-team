@@ -1588,8 +1588,8 @@
       "prompt": "Use $virtual-intelligent-dev-team to help this repository build AGENTS.md and project-local .agents/skills so future AI agents understand the codebase, commands, tests, helpers, and risky areas without inventing facts.",
       "expected_output": "Routes to the capture-project-knowledge workflow, keeps a software governance lead such as Technical Trinity or Sentinel Architect (NB), activates the project-knowledge-capture process skill, points to skill-forge's project knowledge capture protocol, and requires validation of referenced files and commands.",
       "files": [
-        "references/workflow-bundles.md",
-        "references/runtime-routing-index.md"
+        "SKILL.md",
+        "references/playbook-index.md"
       ],
       "expectations": [
         "process_skills contains project-knowledge-capture",
@@ -1803,7 +1803,7 @@
       "prompt": "我有个模糊猜想，不确定是该做产品验证、原型还是技术可行性，你先帮我判断方向。",
       "expected_output": "Fuzzy idea requests that could route to product opportunity, prototype exploration, or technical feasibility should ask for intent confirmation before hard-routing the provisional expert team.",
       "files": [
-        "references/output-contract.md",
+        "SKILL.md",
         "references/response-pack-sidecar.schema.json"
       ],
       "expectations": [

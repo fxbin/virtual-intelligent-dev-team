@@ -723,7 +723,7 @@ def blocker_profile(blocker_id: str) -> dict[str, object]:
                 "scripts/run_iteration_loop.py",
                 "scripts/run_iteration_cycle.py",
                 "references/offline-loop-drill-playbook.md",
-                "references/rollback-and-stop-rules.md",
+                "references/iteration-protocol.md",
                 "tests/test_routing_and_guardrails.py",
             ],
             "preferred_mutation_ops": ["replace_text", "insert_after", "json_set", "write_file"],

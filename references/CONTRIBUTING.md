@@ -88,7 +88,7 @@
 如果你想添加新的工作流包（例如新的交付流程、新的质量门禁）：
 
 **必须包含：**
-- [ ] 在 `references/workflow-bundle-catalog.md` 中注册
+- [ ] 在 `SKILL.md` 的 `## Workflow Bundles` 中注册，并在 `references/playbook-index.md` 添加入口
 - [ ] 创建对应的 playbook 文件（`references/<workflow-name>-playbook.md`）
 - [ ] 定义清晰的输入和输出契约
 - [ ] 提供模板文件（如果有）
@@ -451,7 +451,7 @@ git commit -m "feat(agent): 添加 Rust Performance Expert
 - [ ] 示例清晰可执行
 - [ ] 链接有效（相对路径正确）
 - [ ] 中英文混排规范
-- [ ] 在 `references/NAVIGATION.md` 中添加索引
+- [ ] 在 `references/playbook-index.md` 或 `references/tooling-command-index.md` 中添加索引
 
 ### Schema 类贡献
 
@@ -482,7 +482,7 @@ git commit -m "feat(agent): 添加 Rust Performance Expert
 
 ### Workflow 类贡献
 
-- [ ] 在 `workflow-bundle-catalog.md` 中注册
+- [ ] 在 `SKILL.md` 的 `## Workflow Bundles` 中注册
 - [ ] 创建 playbook 文件
 - [ ] 输入输出契约清晰
 - [ ] 提供模板（如适用）

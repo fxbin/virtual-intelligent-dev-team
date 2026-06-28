@@ -349,7 +349,7 @@ $virtual-intelligent-dev-team 判断当前版本是否可以 release。
 如果你主要关心运行时规则，优先读：
 
 - `SKILL.md`
-- `references/runtime-routing-index.md`
+- `references/playbook-index.md`
 - `references/tooling-command-index.md`
 
 如果你主要关心维护和扩展，优先读：
@@ -380,7 +380,7 @@ python3 virtual-intelligent-dev-team/scripts/validate_virtual_team.py --pretty
 v5.0 把"路由可见性 + Agent Manifest 治理 + 多语言覆盖"合并为一次发版，对应迭代路线图 §2.1 与 §2.4 的内容：
 
 - **治理基础（§2.1）**
-  - 决策日志从 `.skill-metrics/governance_events.jsonl` 迁移到 `.skill-metrics/decision-log.jsonl`，schema 见 `references/decision-log.schema.json`，语义见 `references/decision-log-schema.md`。新字段 `decision` / `verifier` / `reason` / `evidence` 全部 optional，向后兼容。一次性迁移入口：`scripts/migrate_governance_events.py`。
+  - 决策日志从 `.skill-metrics/governance_events.jsonl` 迁移到 `.skill-metrics/decision-log.jsonl`，字段契约见 `references/decision-log.schema.json`。新字段 `decision` / `verifier` / `reason` / `evidence` 全部 optional，向后兼容。一次性迁移入口：`scripts/migrate_governance_events.py`。
   - 6 个 Lead Agent 全部扩展 `Constraints`（硬护栏）和 `Evidence Requirements`（完成前必备证据）字段，叙述版在 `references/agent-catalog.md`，机器可读版在 `references/routing-rules.json → agent_rules[*]`。
   - Harness 健康检查：`scripts/check_harness_health.py` 一次性覆盖 Agent Identity / Agent Manifest / Routing Rules / Workflow Bundles / Decision Log / Language Profiles 6 项检查，输出 HEALTHY / DEGRADED / BROKEN。
   - 决策日志 Dashboard：`scripts/inspect_decision_log.py` 输出 JSON / Markdown / 自包含 HTML（无第三方依赖）。

@@ -55,8 +55,8 @@ Evidence:
 
 Failure owner:
 
-- `routing-rules.json`, `routing-table.md`, `workflow-bundles.md`, or route
-  examples
+- `routing-rules.json`, `SKILL.md` Workflow Bundles, `playbook-index.md`, or
+  route examples
 
 ### L3 Execution Depth
 
@@ -133,4 +133,3 @@ Fix trigger failures in this order:
 3. update the narrow owner file
 4. run validation
 5. only then adjust `SKILL.md` if the runtime contract itself was incomplete
-

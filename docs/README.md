@@ -44,7 +44,7 @@
 运行时真源主要在这些文件：
 
 - `../SKILL.md`
-- `../references/runtime-routing-index.md`
+- `../references/playbook-index.md`
 - `../references/tooling-command-index.md`
 - `../references/*.schema.json`
 

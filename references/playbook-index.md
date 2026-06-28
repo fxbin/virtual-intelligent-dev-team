@@ -50,6 +50,10 @@ Quick reference for playbooks and protocols used by core scripts.
 | [automation-resume-decision-matrix.md](./automation-resume-decision-matrix.md) | inspect_automation_state.py | Resume decision matrix |
 | [using-git-worktrees-playbook.md](./using-git-worktrees-playbook.md) | route_request.py | Git worktree workflows |
 | [response-pack-sidecar-schema.md](./response-pack-sidecar-schema.md) | lint_virtual_team_contract.py | Response pack schema |
+| [goal-framing-protocol.md](./goal-framing-protocol.md) | workflow-quality-baseline.md | Goal frame and drift control |
+| [anti-entropy-governance.md](./anti-entropy-governance.md) | technical-governance-playbook.md, workflow-quality-baseline.md | Duplicate-path and fallback growth control |
+| [workflow-quality-baseline.md](./workflow-quality-baseline.md) | regression-cases.json | Workflow quality baseline |
+| [trigger-health-baseline.md](./trigger-health-baseline.md) | regression-cases.json | Trigger health diagnostics |
 
 ## Supporting References
 

@@ -48,8 +48,9 @@ Output depth scales with risk.
 - High-risk: planning pack, Worker / Verifier cycle, release or governance
   evidence, resume anchor.
 
-Do not emit every possible section from `output-contract.md` when the selected
-bundle did not activate that lane.
+Do not emit every possible section from the `SKILL.md` Output template or
+`response-pack-sidecar.schema.json` when the selected bundle did not activate
+that lane.
 
 ### Evidence Freshness
 
@@ -132,4 +133,3 @@ When changing this skill, representative cases should cover:
 
 Add samples before expanding trigger wording. If a trigger fails, diagnose the
 failure layer first instead of stuffing every keyword into `SKILL.md`.
-
