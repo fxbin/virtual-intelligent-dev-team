@@ -2434,6 +2434,35 @@
         "quick-slice"
       ],
       "runner": "route"
+    },
+    {
+      "id": "neg-virtual-intelligent-dev-team-novel",
+      "category": "negative",
+      "prompt": "用 virtual-intelligent-dev-team 帮我写一本 50 万字的连载网文小说，要有多角色审核和流水线生产。",
+      "expected_output": "应识别为越界请求：该 skill 是复杂软件任务的有界工作循环路由器，8 个专家角色均为软件工程方向，不进行文学创作。应拒绝执行并建议用户使用 novel-forge/novel-studio skill。",
+      "files": [
+        "references/agent-catalog.md",
+        "references/CONTRIBUTING.md"
+      ]
+    },
+    {
+      "id": "neg-virtual-intelligent-dev-team-vague",
+      "category": "negative",
+      "prompt": "帮我做点东西，用你们团队的力量。",
+      "expected_output": "应触发信息不足回退：任务描述完全缺失，无法判断属于哪个专家领域或是否在能力范围内。应要求用户明确具体的软件任务描述。",
+      "files": [
+        "references/agent-catalog.md"
+      ]
+    },
+    {
+      "id": "neg-virtual-intelligent-dev-team-research",
+      "category": "negative",
+      "prompt": "用 virtual-intelligent-dev-team 对三家竞品公司做一份完整的深度研究报告，含时间线和竞品截面。",
+      "expected_output": "应识别为跨 skill 误路由：系统性深度研究不属于软件开发任务范畴。应拒绝执行并建议用户使用 deep-research-forge skill。",
+      "files": [
+        "references/agent-catalog.md",
+        "references/CONTRIBUTING.md"
+      ]
     }
   ]
 }
