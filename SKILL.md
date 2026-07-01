@@ -226,11 +226,11 @@ python scripts/migrate_governance_events.py --pretty
 
 Language support is split into three orthogonal layers:
 
-1. **Routing** — `references/routing-rules.json → language_profiles`
+1. **Routing** — `references/routing-rules.json` → language_profiles
    decides which lead agent handles the request (13 profiles: python / go
    / nodejs / rust / java / kotlin / swift / cpp / csharp / php / ruby /
    elixir / scala).
-2. **Context** — `references/language-profiles.yaml → profiles.<lang>`
+2. **Context** — `references/language-profiles.yaml` → profiles.<lang>
    injects the matched agent's working memory with ecosystem defaults,
    idiomatic conventions, and canonical verification commands.
 3. **Constraints** — `language-profiles.yaml → profiles.<lang>.harness_constraints`
