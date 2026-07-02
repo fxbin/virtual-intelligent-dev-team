@@ -1049,11 +1049,11 @@
       }
     },
     {
-      "name": "workflow_bundles_defined_in_skill_md",
-      "path": "SKILL.md",
+      "name": "workflow_bundles_defined_in_reference",
+      "path": "references/workflow-bundles.md",
       "expect": {
         "contains": [
-          "## Workflow Bundles",
+          "# Workflow Bundles",
           "plan-first-build",
           "product-spec-deliver",
           "audit-fix-deliver"
