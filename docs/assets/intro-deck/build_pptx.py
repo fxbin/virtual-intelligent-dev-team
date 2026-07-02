@@ -3,7 +3,7 @@
 """
 virtual-intelligent-dev-team 对外宣讲 PPTX 生成脚本。
 
-使用 python-pptx 原生 shape 绘制 10 页深色风格幻灯片，
+使用 python-pptx 原生 shape 绘制 11 页深色风格幻灯片，
 不依赖任何外部图片，所有视觉元素由 shape/textbox 构造。
 
 @author: fxbin
@@ -50,7 +50,7 @@ FONT_EN = "Helvetica"
 SLIDE_W = Inches(13.333)
 SLIDE_H = Inches(7.5)
 
-TOTAL_PAGES = 10
+TOTAL_PAGES = 11
 
 
 # ============================================================
@@ -878,7 +878,7 @@ def build_slide_6(prs):
         slide,
         Inches(0.95),
         [
-            {"text": "14 维度 ", "size": 36, "color": WHITE, "bold": True, "font_name": FONT_EN},
+            {"text": "18 维度 ", "size": 36, "color": WHITE, "bold": True, "font_name": FONT_EN},
             {"text": "能力对比", "size": 36, "color": PURPLE, "bold": True},
         ],
         size=36,
@@ -1282,11 +1282,81 @@ def build_slide_9(prs):
     )
 
 
+def build_slide_engineering(prs):
+    """工程化四支柱。"""
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    add_bg(slide)
+    add_eyebrow(slide, "ENGINEERING · 工程化四支柱", 10)
+
+    add_section_title(
+        slide,
+        Inches(0.95),
+        [
+            {"text": "Engineering ", "size": 36, "color": WHITE, "bold": True, "font_name": FONT_EN},
+            {"text": "Pillars", "size": 36, "color": CYAN, "bold": True, "font_name": FONT_EN},
+        ],
+        size=36,
+    )
+    add_subtitle(
+        slide,
+        Inches(1.85),
+        "让 LLM 在真实软件工程里更可靠的四根工程化门禁支柱",
+    )
+
+    pillars = [
+        ("P1", "Harness 工程约束门禁", "6 个 code-facing bundle 执行前必须创建 engineering-constraints.md，含 5 个必填章节", CYAN),
+        ("P2", "Team Engine Lite 对抗式验收", "Worker/Verifier/Lead 分离 + DeliveryCycleReport + 3 级 runtime claim", PURPLE),
+        ("P3", "Anti-Entropy 反熵治理", "delete-first / compat-exception / confirmation-first 三路径决策", AMBER),
+        ("P4", "Self-Optimization 自优化循环", "bounded iteration + mutation catalog + offline drill", ROSE),
+    ]
+
+    card_y = Inches(2.6)
+    card_h = Inches(3.8)
+    card_w = Inches(2.95)
+    gap = Inches(0.13)
+    start_x = Inches(0.6)
+
+    for idx, (label, title, desc, color) in enumerate(pillars):
+        x = start_x + (card_w + gap) * idx
+        card = add_card(
+            slide, x, card_y, card_w, card_h,
+            fill_color=CARD_BG,
+            border_color=color,
+            border_width=1.25,
+        )
+        add_card_text(
+            card,
+            [
+                [{"text": label, "size": 32, "color": color, "bold": True, "font_name": FONT_EN}],
+                [{"text": title, "size": 15, "color": WHITE, "bold": True}],
+                [{"text": desc, "size": 12, "color": TEXT_SECONDARY}],
+            ],
+            padding=0.25,
+        )
+
+    tip = add_card(
+        slide, Inches(0.6), Inches(6.65), Inches(12.13), Inches(0.65),
+        fill_color=CARD_BG,
+        border_color=CYAN,
+        border_width=1.0,
+    )
+    add_card_text(
+        tip,
+        [[
+            {"text": "核心差异化：", "size": 12, "color": CYAN, "bold": True},
+            {"text": "这四根支柱解决的是'实现前不约束、自产自审、旧路径永不退休、永远再来一轮'的真实软件工程痛点，而非'换几个角色回答'的表面问题。",
+             "size": 12, "color": TEXT_SECONDARY},
+        ]],
+        anchor=MSO_ANCHOR.MIDDLE,
+        padding=0.2,
+    )
+
+
 def build_slide_10(prs):
     """CTA。"""
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     add_bg(slide)
-    add_eyebrow(slide, "GET STARTED · 开始使用", 10)
+    add_eyebrow(slide, "GET STARTED · 开始使用", 11)
 
     # 中央大卡片（紫色渐变背景用纯色 PURPLE 模拟）
     card_x = Inches(0.9)
@@ -1410,7 +1480,7 @@ def main():
     builders = [
         build_slide_1, build_slide_2, build_slide_3, build_slide_4,
         build_slide_5, build_slide_6, build_slide_7, build_slide_8,
-        build_slide_9, build_slide_10,
+        build_slide_9, build_slide_engineering, build_slide_10,
     ]
 
     for idx, builder in enumerate(builders, start=1):
