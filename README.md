@@ -9,7 +9,7 @@
 [![Languages](https://img.shields.io/badge/language_profiles-13-10b981?style=flat-square)](./references/language-profiles.yaml)
 [![Python](https://img.shields.io/badge/python-3.8+-3776ab?style=flat-square&logo=python&logoColor=white)]()
 
-> **面向复杂软件工作的闭环协调层**：把专家路由 · 计划 · 执行 · 迭代 · Beta · Release · Feedback 收拢成一个可持续迭代的闭环工作流。
+> **面向复杂软件工作的闭环协调层**：把专家路由 · 计划 · 执行 · 迭代 · Beta · Release · Feedback 收拢成一个可持续迭代的闭环工作流，并以工程约束门禁 · Worker/Verifier 对抗式验收 · 反熵治理 · 自优化循环保障交付质量。
 > 适合接手"单个专家已经不够、单轮回答也不够"的复杂软件任务。
 
 ---
@@ -197,6 +197,14 @@
   - 不只做发布前 gate，也覆盖发布后的反馈回写与下一轮修复入口。
 - `阶段专家团`
   - 产品战略、PRD、用户研究、竞品、指标、路线图等请求可激活 `product-discovery-council`；高保真原型、设计系统、可运行 HTML 原型与可访问性审查可激活 `prototype-design-council`。两者都是 `World-Class Product Architect` 下面的 overlay，不会把简单任务升级成新顶层团队。
+- `Harness 工程约束门禁`
+  - 6 个 code-facing bundle（plan-first-build / product-spec-deliver / audit-fix-deliver / govern-change-safely / root-cause-remediate / direct-execution）执行前必须创建 `.skill-harness/engineering-constraints.md`，含 Scope / Non-Negotiable Constraints / Forbidden Changes / Verification Evidence / Rollback And Stop Conditions 五个必填章节，把"实现前先约束"变成硬门禁。
+- `Team Engine Lite 对抗式验收`
+  - Worker 只产不验、Verifier 只验不产、Lead 只能基于 DeliveryCycleReport 接受；11 个合法状态 + 5 个标准对象（WorkOrder / ImplementationOutput / VerificationReport / RemediationPatch / DeliveryCycleReport）；3 级 runtime claim（real_subagent_runtime / single_backend_multi_session / soft_orchestration_only）禁止把角色扮演误称为真实多 Agent runtime。
+- `Anti-Entropy 反熵治理`
+  - 遇到 duplicate owner、fallback、adapter、guard 或兼容路径增长时，先分类（code-retirement / contract-carrying-code / derived-state / persistent-state），再选路径（delete-first / compat-exception / confirmation-first），未知依赖不等于活跃依赖证据。
+- `Self-Optimization 自优化循环`
+  - bounded iteration + mutation catalog + offline loop drill：可对自身的 `routing-rules.json` / `regression-cases.json` / `evals.json` 做 JSON-aware 确定性自优化；live ≤3 轮、offline ≤120 轮、same-hypothesis ≤2 次重试；`rollback / keep / pivot / resume / hold→bootstrap→auto-run` 路径均可离线 drill 验证。
 
 ## 能力矩阵
 
@@ -213,9 +221,12 @@
 | 阶段专家团 | 产品发现与原型设计可按需展开 council overlay | 常见做法要么单专家过载，要么所有任务都进重流程 |
 | Beta 验证 | 分轮内测、模拟用户、cohort ramp、反馈门禁 | 通常只有静态测试计划，没有结构化分轮验证 |
 | 工作流质量 | 触发健康、快路径廉价、证据新鲜度、artifact 懒创建、authority boundary | 容易越改越重，或把方法建议误说成最终权威 |
-| 反熵治理 | delete-first / compat-exception / confirmation-first 路径选择 | 常见做法是不断加 fallback 或 guard |
 | Subagent runtime | 显式请求时输出受控计划，真实执行必须有宿主 spawn / wait / merge 证据 | 容易把角色扮演误称为真实多 Agent runtime |
 | 离线验证 | offline loop drill 验证回滚与恢复路径 | 很少验证关键闭环路径是否真的跑通 |
+| 工程约束门禁 | code-facing bundle 执行前必须创建 `.skill-harness/engineering-constraints.md`，含 5 个必填章节 | 通常直接进入实现，缺少前置约束门禁 |
+| 对抗式验收 | Worker/Verifier/Lead 分离 + DeliveryCycleReport + 11 状态机 + 3 级 runtime claim | 自产自审，或把角色扮演误称为真实多 Agent runtime |
+| 反熵治理 | delete-first / compat-exception / confirmation-first 三路径决策 + 4 类目标分类 | 不断加 fallback 或 guard，旧路径永不退休 |
+| 自优化循环 | bounded iteration + mutation catalog + offline drill，可对自身 routing/evals 做确定性自优化 | 无自优化能力，或陷入"再来一轮"的无限自转 |
 
 ## 快速开始
 
