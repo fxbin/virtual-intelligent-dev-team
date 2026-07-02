@@ -2450,6 +2450,11 @@
       "negative": true,
       "categories": [
         "negative"
+      ],
+      "expectations": [
+        "request is recognized as out-of-scope",
+        "skill declines the novel-writing request",
+        "skill recommends novel-forge or novel-studio"
       ]
     },
     {
@@ -2462,6 +2467,11 @@
       "negative": true,
       "categories": [
         "negative"
+      ],
+      "expectations": [
+        "request is recognized as insufficient-information",
+        "skill does not fabricate a software task",
+        "skill asks for a concrete software task description"
       ]
     },
     {
@@ -2475,6 +2485,11 @@
       "negative": true,
       "categories": [
         "negative"
+      ],
+      "expectations": [
+        "request is recognized as cross-skill misroute",
+        "skill declines the deep-research request",
+        "skill recommends deep-research-forge"
       ]
     }
   ]
