@@ -14,8 +14,7 @@
       ],
       "categories": [
         "review"
-      ],
-      "category": "review"
+      ]
     },
     {
       "id": 2,
@@ -32,8 +31,7 @@
       "categories": [
         "backend-stack",
         "review"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 3,
@@ -48,8 +46,7 @@
       ],
       "categories": [
         "backend-stack"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 4,
@@ -63,8 +60,7 @@
       ],
       "categories": [
         "frontend"
-      ],
-      "category": "frontend"
+      ]
     },
     {
       "id": 5,
@@ -80,8 +76,7 @@
       ],
       "categories": [
         "git-workflow"
-      ],
-      "category": "git-workflow"
+      ]
     },
     {
       "id": 6,
@@ -96,8 +91,7 @@
       "categories": [
         "general",
         "high-risk"
-      ],
-      "category": "general"
+      ]
     },
     {
       "id": 7,
@@ -116,8 +110,7 @@
       "categories": [
         "product-delivery",
         "cross-domain"
-      ],
-      "category": "product-delivery"
+      ]
     },
     {
       "id": 8,
@@ -134,8 +127,7 @@
       "categories": [
         "technical-governance",
         "git-workflow"
-      ],
-      "category": "technical-governance"
+      ]
     },
     {
       "id": 9,
@@ -150,8 +142,7 @@
       "categories": [
         "git-workflow",
         "review"
-      ],
-      "category": "git-workflow"
+      ]
     },
     {
       "id": 10,
@@ -173,8 +164,7 @@
       "categories": [
         "general",
         "clarification"
-      ],
-      "category": "general"
+      ]
     },
     {
       "id": 63,
@@ -190,8 +180,7 @@
       "categories": [
         "release-gate",
         "clarification"
-      ],
-      "category": "release-gate"
+      ]
     },
     {
       "id": 11,
@@ -207,8 +196,7 @@
       "categories": [
         "backend-stack",
         "cross-domain"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 12,
@@ -224,8 +212,7 @@
       "categories": [
         "backend-stack",
         "review"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 13,
@@ -241,8 +228,7 @@
       "categories": [
         "backend-stack",
         "git-workflow"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 14,
@@ -257,8 +243,7 @@
       ],
       "categories": [
         "backend-stack"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 15,
@@ -276,8 +261,7 @@
         "backend-stack",
         "git-workflow",
         "review"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 16,
@@ -298,8 +282,7 @@
         "git-workflow",
         "cross-domain",
         "worktree"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 17,
@@ -314,8 +297,7 @@
       ],
       "categories": [
         "backend-stack"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 18,
@@ -333,8 +315,7 @@
         "backend-stack",
         "git-workflow",
         "review"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 19,
@@ -354,8 +335,7 @@
         "backend-stack",
         "git-workflow",
         "worktree"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 20,
@@ -370,8 +350,7 @@
       ],
       "categories": [
         "backend-stack"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 21,
@@ -389,8 +368,7 @@
         "backend-stack",
         "git-workflow",
         "review"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 22,
@@ -410,8 +388,7 @@
         "backend-stack",
         "git-workflow",
         "worktree"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 23,
@@ -425,8 +402,7 @@
       ],
       "categories": [
         "backend-stack"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 24,
@@ -444,8 +420,7 @@
         "backend-stack",
         "git-workflow",
         "review"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 25,
@@ -464,8 +439,7 @@
         "backend-stack",
         "git-workflow",
         "worktree"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 26,
@@ -479,8 +453,7 @@
       ],
       "categories": [
         "frontend"
-      ],
-      "category": "frontend"
+      ]
     },
     {
       "id": 27,
@@ -496,8 +469,7 @@
       "categories": [
         "frontend",
         "review"
-      ],
-      "category": "frontend"
+      ]
     },
     {
       "id": 28,
@@ -516,8 +488,7 @@
         "frontend",
         "git-workflow",
         "worktree"
-      ],
-      "category": "frontend"
+      ]
     },
     {
       "id": 29,
@@ -531,8 +502,7 @@
       ],
       "categories": [
         "frontend"
-      ],
-      "category": "frontend"
+      ]
     },
     {
       "id": 30,
@@ -546,8 +516,7 @@
       ],
       "categories": [
         "frontend"
-      ],
-      "category": "frontend"
+      ]
     },
     {
       "id": 31,
@@ -561,8 +530,7 @@
       ],
       "categories": [
         "frontend"
-      ],
-      "category": "frontend"
+      ]
     },
     {
       "id": 32,
@@ -577,8 +545,7 @@
       "categories": [
         "frontend",
         "review"
-      ],
-      "category": "frontend"
+      ]
     },
     {
       "id": 33,
@@ -593,8 +560,7 @@
       "categories": [
         "frontend",
         "cross-domain"
-      ],
-      "category": "frontend"
+      ]
     },
     {
       "id": 34,
@@ -608,8 +574,7 @@
       ],
       "categories": [
         "frontend"
-      ],
-      "category": "frontend"
+      ]
     },
     {
       "id": 35,
@@ -623,8 +588,7 @@
       ],
       "categories": [
         "frontend"
-      ],
-      "category": "frontend"
+      ]
     },
     {
       "id": 36,
@@ -639,8 +603,7 @@
       "categories": [
         "frontend",
         "cross-domain"
-      ],
-      "category": "frontend"
+      ]
     },
     {
       "id": 37,
@@ -656,8 +619,7 @@
         "frontend",
         "chinese",
         "mixed-language"
-      ],
-      "category": "frontend"
+      ]
     },
     {
       "id": 38,
@@ -673,8 +635,7 @@
         "iteration",
         "chinese",
         "mixed-language"
-      ],
-      "category": "iteration"
+      ]
     },
     {
       "id": 39,
@@ -692,8 +653,7 @@
         "git-workflow",
         "chinese",
         "mixed-language"
-      ],
-      "category": "frontend"
+      ]
     },
     {
       "id": 40,
@@ -711,8 +671,7 @@
         "cross-domain",
         "chinese",
         "mixed-language"
-      ],
-      "category": "product-delivery"
+      ]
     },
     {
       "id": 41,
@@ -729,8 +688,7 @@
         "cross-domain",
         "chinese",
         "mixed-language"
-      ],
-      "category": "review"
+      ]
     },
     {
       "id": 42,
@@ -747,8 +705,7 @@
         "review",
         "chinese",
         "mixed-language"
-      ],
-      "category": "frontend"
+      ]
     },
     {
       "id": 43,
@@ -765,8 +722,7 @@
         "assistant_agents contains Technical Trinity",
         "workflow_bundle is product-spec-deliver",
         "governance_plan.privy_council.selected_track is regular track"
-      ],
-      "category": "frontend"
+      ]
     },
     {
       "id": 44,
@@ -782,8 +738,7 @@
         "assistant_agents contains Technical Trinity",
         "needs_git_workflow is false",
         "priority_routing agent is Code Audit Council"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 45,
@@ -798,8 +753,7 @@
         "confidence is 0.0",
         "clarifying_question is not null",
         "assistant_agents is empty"
-      ],
-      "category": "clarification"
+      ]
     },
     {
       "id": 46,
@@ -814,8 +768,7 @@
         "lead_agent is World-Class Product Architect",
         "assistant_agents contains Technical Trinity",
         "needs_git_workflow is false"
-      ],
-      "category": "frontend"
+      ]
     },
     {
       "id": 47,
@@ -833,8 +786,7 @@
         "needs_git_workflow is true",
         "governance_plan.privy_council.selected_track is regular track",
         "governance_plan.execution_contract.dri_required is true"
-      ],
-      "category": "general"
+      ]
     },
     {
       "id": 48,
@@ -853,8 +805,7 @@
         "assistant_agents contains Technical Trinity",
         "needs_git_workflow is true",
         "priority_routing agent is Code Audit Council"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 49,
@@ -872,8 +823,7 @@
         "assistant_agents contains Git Workflow Guardian",
         "needs_git_workflow is true",
         "priority_routing agent does not exist"
-      ],
-      "category": "frontend"
+      ]
     },
     {
       "id": 50,
@@ -889,8 +839,7 @@
         "assistant_agents contains Git Workflow Guardian",
         "assistant_agents contains Technical Trinity",
         "needs_git_workflow is true"
-      ],
-      "category": "product-delivery"
+      ]
     },
     {
       "id": 51,
@@ -905,8 +854,7 @@
         "lead_agent is Git Workflow Guardian",
         "needs_git_workflow is true",
         "workflow_bundle is govern-change-safely"
-      ],
-      "category": "technical-governance"
+      ]
     },
     {
       "categories": [
@@ -924,8 +872,7 @@
         "governance_plan.execution_contract.dri_agent is Sentinel Architect (NB)"
       ],
       "id": 52,
-      "files": [],
-      "category": "general"
+      "files": []
     },
     {
       "categories": [
@@ -943,8 +890,7 @@
         "governance_plan.execution_contract.dri_agent is Sentinel Architect (NB)"
       ],
       "id": 53,
-      "files": [],
-      "category": "general"
+      "files": []
     },
     {
       "id": 54,
@@ -967,8 +913,7 @@
         "process_plan first commands contain python scripts/promote_iteration_baseline.py --workspace .skill-iterations --round-id round-01 --label accepted-round-01 --pretty",
         "process_plan first commands contain python scripts/sync_distilled_patterns.py --workspace .skill-iterations --pretty",
         "process_plan first commands contain python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.json --pretty"
-      ],
-      "category": "iteration"
+      ]
     },
     {
       "id": 55,
@@ -988,8 +933,7 @@
         "process_skills contains release-gate",
         "process_plan first commands contain python scripts/verify_completion_evidence.py --evidence .skill-evidence/completion-evidence.json --pretty",
         "process_plan first commands contain python scripts/run_release_gate.py --output-dir evals/release-gate --pretty"
-      ],
-      "category": "iteration"
+      ]
     },
     {
       "id": 56,
@@ -1011,8 +955,7 @@
         "process_skills contains release-gate",
         "process_plan first commands contain python scripts/verify_completion_evidence.py --evidence .skill-evidence/completion-evidence.json --pretty",
         "process_plan first commands contain python scripts/run_release_gate.py --output-dir evals/release-gate --pretty"
-      ],
-      "category": "iteration"
+      ]
     },
     {
       "id": 57,
@@ -1035,8 +978,7 @@
         "process_plan first artifacts contain docs/progress/phase-4-cutover.md",
         "response_pack_json planning_pack exists",
         "response_pack_json optimization_loop does not exist"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 58,
@@ -1052,8 +994,7 @@
         "needs_pre_development_planning is true",
         "process_skills contains pre-development-planning",
         "workflow_bundle is plan-first-build"
-      ],
-      "category": "planning"
+      ]
     },
     {
       "id": 59,
@@ -1072,8 +1013,7 @@
         "resume_artifacts contains .skill-iterations/distilled-patterns.md",
         "process_plan first commands contain python scripts/init_project_memory.py --root . --mode iteration --pretty",
         "response_pack_json optimization_loop exists"
-      ],
-      "category": "iteration"
+      ]
     },
     {
       "id": 60,
@@ -1094,8 +1034,7 @@
         "response_pack_json evidence.workflow_source_explanation contains primary execution journey",
         "response_pack_json next_action.smallest_executable_action contains run the release gate first",
         "response_pack_json resume.progress_anchor is evals/release-gate/release-gate-report.md"
-      ],
-      "category": "release-gate"
+      ]
     },
     {
       "id": 61,
@@ -1112,8 +1051,7 @@
         "workflow_bundle is audit-fix-deliver",
         "response_pack_json team_dispatch.workflow_bundle_source is lead+keyword",
         "response_pack_json evidence.workflow_source_explanation contains strongly anchored in task semantics"
-      ],
-      "category": "review"
+      ]
     },
     {
       "id": 62,
@@ -1132,8 +1070,7 @@
         "assistant_delta_contract.required_fields contains claim",
         "assistant_delta_contract.required_fields contains evidence",
         "response_pack_json bundle_bootstrap.resume_anchor is .skill-product/current-slice.md"
-      ],
-      "category": "cross-domain"
+      ]
     },
     {
       "id": 64,
@@ -1152,8 +1089,7 @@
         "response_pack_json evidence.workflow_source_explanation contains 主执行旅程",
         "response_pack_json resume.progress_anchor is docs/progress/MASTER.md",
         "response_pack_json next_action.current_owner is Sentinel Architect (NB)"
-      ],
-      "category": "planning"
+      ]
     },
     {
       "id": 65,
@@ -1172,8 +1108,7 @@
         "verify_action_json details.commands length is 12",
         "verify_action_json router_snapshot.progress_anchor_recommended is .skill-governance/change-plan.md",
         "verify_action_json explanation_card.workflow_bundle_source is lead-default"
-      ],
-      "category": "git-workflow"
+      ]
     },
     {
       "id": 66,
@@ -1195,8 +1130,7 @@
         "verify_action_json details.bootstrap_command_required_now is true",
         "verify_action_json details.bootstrap.resume_anchor is .skill-product/current-slice.md",
         "verify_action_json details.bootstrap.commands contains python scripts/init_product_delivery.py --root . --pretty"
-      ],
-      "category": "product-delivery"
+      ]
     },
     {
       "id": 67,
@@ -1226,8 +1160,7 @@
         "response_pack_json beta_program.feedback_anchor is .skill-beta/feedback-ledger.md",
         "response_pack_json beta_program.report_template is assets/beta-round-report-template.json",
         "response_pack_json beta_program.gate_command_template contains python scripts/evaluate_beta_round.py"
-      ],
-      "category": "product-delivery"
+      ]
     },
     {
       "id": 68,
@@ -1253,8 +1186,7 @@
         "release_gate_json follow_up.loop_state is reopened",
         "release_gate_json explanation_card.workflow_bundle is ship-hold-remediate",
         "release_gate_json explanation_card.resume_artifacts length is 2"
-      ],
-      "category": "release-gate"
+      ]
     },
     {
       "id": 69,
@@ -1289,8 +1221,7 @@
         "release_gate_json beta_gate.round_id is round-02",
         "release_gate_json beta_gate.blocker_breakdown exists",
         "release_gate_json explanation_card.route_evidence contains beta=FAIL"
-      ],
-      "category": "release-gate"
+      ]
     },
     {
       "id": 70,
@@ -1308,8 +1239,7 @@
         "workflow_bundle_bootstrap.required is true",
         "workflow_bundle_bootstrap.commands contains python scripts/init_post_release_feedback.py --root . --pretty",
         "response_pack_json resume.progress_anchor is .skill-post-release/triage-summary.md"
-      ],
-      "category": "product-delivery"
+      ]
     },
     {
       "id": 71,
@@ -1352,8 +1282,7 @@
         "release_gate_json completion_evidence.completion_allowed is true",
         "release_gate_json follow_up.post_release_bootstrap.resume_anchor contains .skill-post-release/triage-summary.md",
         "release_gate_json follow_up.post_release_bootstrap.signal_report contains .skill-post-release/current-signals.json"
-      ],
-      "category": "release-gate"
+      ]
     },
     {
       "id": 91,
@@ -1381,8 +1310,7 @@
         "release_gate_json completion_evidence.decision is missing",
         "release_gate_json follow_up.blockers contains completion evidence is missing",
         "release_gate_json explanation_card.route_evidence contains completion-evidence=FAIL"
-      ],
-      "category": "release-gate"
+      ]
     },
     {
       "id": 72,
@@ -1403,8 +1331,7 @@
         "response_pack_json auto_run.workflow_bundle is root-cause-remediate",
         "response_pack_json auto_run.workflow_supported is true",
         "response_pack_json auto_run.setup_command contains python scripts/run_auto_workflow.py"
-      ],
-      "category": "auto-run"
+      ]
     },
     {
       "id": 73,
@@ -1421,8 +1348,7 @@
         "response_pack_json auto_run.workflow_bundle is ship-hold-remediate",
         "response_pack_json auto_run.requested_phase is setup",
         "response_pack_json auto_run.go_command contains python scripts/run_auto_workflow.py --mode go"
-      ],
-      "category": "auto-run"
+      ]
     },
     {
       "id": 74,
@@ -1439,8 +1365,7 @@
         "process_plan first skill is post-release-feedback",
         "response_pack_json auto_run.workflow_bundle is post-release-close-loop",
         "response_pack_json auto_run.workflow_supported is true"
-      ],
-      "category": "auto-run"
+      ]
     },
     {
       "id": 75,
@@ -1459,8 +1384,7 @@
         "verify_action_json details.requested_phase is go",
         "verify_action_json details.plan_exists is false",
         "recommended_next_step contains Run auto setup first"
-      ],
-      "category": "auto-run"
+      ]
     },
     {
       "id": 76,
@@ -1479,8 +1403,7 @@
         "response_pack_json auto_run.detached_ready is true",
         "response_pack_json auto_run.state_dir is .skill-auto/state",
         "response_pack_json auto_run.automation_state_schema is references/automation-state.schema.json"
-      ],
-      "category": "auto-run"
+      ]
     },
     {
       "id": 77,
@@ -1500,8 +1423,7 @@
         "verify_action_json details.resume_requested is true",
         "verify_action_json details.detached_ready is true",
         "verify_action_json details.state_dir is .skill-auto/state"
-      ],
-      "category": "auto-run"
+      ]
     },
     {
       "id": 78,
@@ -1520,8 +1442,7 @@
         "quality_gate.principles contains smallest-defensible-bundle",
         "quality_gate.surgical_scope.workflow_bundle is plan-first-build",
         "quality_gate.verification_check contains docs/progress/MASTER.md"
-      ],
-      "category": "planning"
+      ]
     },
     {
       "id": 79,
@@ -1547,8 +1468,7 @@
         "harness_constraint_gate.principles contains constraints-before-code",
         "response_pack_json engineering_constraints.artifact is .skill-harness/engineering-constraints.md",
         "response_pack_json next_action.smallest_executable_action contains Harness engineering constraints first"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 90,
@@ -1570,8 +1490,7 @@
         "workflow_bundle is quick-slice-deliver",
         "micro_practice_names contains feedback-loop-first",
         "harness_constraint_gate.required is true"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 80,
@@ -1596,8 +1515,7 @@
         "response_pack_json team_engine.producer_can_self_pass is false",
         "response_pack_json team_engine.leader_accept_requires_cycle_report is true",
         "response_pack_json team_engine.team_engine_closure_verdict is pass_with_watch"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 81,
@@ -1621,8 +1539,7 @@
         "response_pack_json external_agent_backend.runtime_claim is soft_orchestration_only",
         "response_pack_json external_agent_backend.backend_orchestration_verdict is simulated"
       ],
-      "runtime_dependent": true,
-      "category": "multi-agent"
+      "runtime_dependent": true
     },
     {
       "id": 82,
@@ -1659,8 +1576,7 @@
         "response_pack_json real_subagent_runtime.candidate_runtime_claim is real_subagent_runtime",
         "response_pack_json real_subagent_runtime.runtime_evidence_required is true"
       ],
-      "runtime_dependent": true,
-      "category": "multi-agent"
+      "runtime_dependent": true
     },
     {
       "id": 83,
@@ -1682,8 +1598,7 @@
         "workflow_bundle_bootstrap.commands contains rg --files",
         "progress_anchor_recommended is AGENTS.md",
         "resume_artifacts contains AGENTS.md"
-      ],
-      "category": "project-knowledge"
+      ]
     },
     {
       "id": 84,
@@ -1711,8 +1626,7 @@
         "response_pack contains Evaluation command: python scripts/evaluate_micro_practices.py",
         "team_engine_gate.acceptance_gates contains feedback_loop_gate",
         "reason.micro_practice_names contains feedback-loop-first"
-      ],
-      "category": "feedback-loop-first"
+      ]
     },
     {
       "id": 85,
@@ -1749,8 +1663,7 @@
         "response_pack contains Evaluation command: python scripts/evaluate_micro_practices.py",
         "team_engine_gate.acceptance_gates contains shared_language_gate",
         "team_engine_gate.acceptance_gates contains vertical_slice_gate"
-      ],
-      "category": "product-delivery"
+      ]
     },
     {
       "id": 86,
@@ -1786,8 +1699,7 @@
         "response_pack contains Update command: python scripts/update_micro_practices.py",
         "response_pack contains Evaluation command: python scripts/evaluate_micro_practices.py",
         "progress_anchor_recommended is docs/progress/MASTER.md"
-      ],
-      "category": "planning"
+      ]
     },
     {
       "id": 87,
@@ -1812,8 +1724,7 @@
         "verify_action_json details.decision is missing",
         "verify_action_json details.active_practices contains feedback-loop-first",
         "verify_action_json details.recommended_commands contains python scripts/init_micro_practices.py --root . --text \"<user request>\" --pretty"
-      ],
-      "category": "micro-practices"
+      ]
     },
     {
       "id": 88,
@@ -1837,8 +1748,7 @@
         "verify_action_json details.decision is missing",
         "verify_action_json details.template is assets/completion-evidence-template.json",
         "verify_action_json details.verify_command contains verify_completion_evidence.py"
-      ],
-      "category": "completion-evidence"
+      ]
     },
     {
       "id": 89,
@@ -1862,8 +1772,7 @@
         "product-delivery",
         "stage-council",
         "contract-output"
-      ],
-      "category": "product-delivery"
+      ]
     },
     {
       "id": 92,
@@ -1887,8 +1796,7 @@
         "frontend",
         "stage-council",
         "contract-output"
-      ],
-      "category": "frontend"
+      ]
     },
     {
       "id": 93,
@@ -1914,8 +1822,7 @@
         "clarification",
         "product-delivery",
         "contract-output"
-      ],
-      "category": "clarification"
+      ]
     },
     {
       "id": 100,
@@ -1939,8 +1846,7 @@
       ],
       "source": "doc:SKILL.md#quick-examples (direct answer for simple single-domain)",
       "negative": true,
-      "runner": "route",
-      "category": "blind-routing"
+      "runner": "route"
     },
     {
       "id": 101,
@@ -1962,8 +1868,7 @@
         "architecture"
       ],
       "source": "doc:SKILL.md#multi-expert-execution (microservices split)",
-      "runner": "route",
-      "category": "blind-routing"
+      "runner": "route"
     },
     {
       "id": 102,
@@ -1979,8 +1884,7 @@
         "planning"
       ],
       "source": "doc:SKILL.md#pre-development-planning",
-      "runner": "route",
-      "category": "blind-routing"
+      "runner": "route"
     },
     {
       "id": 103,
@@ -1995,8 +1899,7 @@
         "quick-slice"
       ],
       "source": "doc:SKILL.md#quick-slice-delivery",
-      "runner": "route",
-      "category": "blind-routing"
+      "runner": "route"
     },
     {
       "id": 104,
@@ -2012,8 +1915,7 @@
         "release-gate"
       ],
       "source": "doc:SKILL.md#release-gate (formal ship/hold)",
-      "runner": "route",
-      "category": "blind-routing"
+      "runner": "route"
     },
     {
       "id": 105,
@@ -2029,8 +1931,7 @@
         "root-cause"
       ],
       "source": "doc:SKILL.md#root-cause-discipline",
-      "runner": "route",
-      "category": "blind-routing"
+      "runner": "route"
     },
     {
       "id": 106,
@@ -2047,8 +1948,7 @@
         "boundary-guard"
       ],
       "source": "regression:CASE1-fix (suppress only single-domain optimize)",
-      "runner": "route",
-      "category": "regression"
+      "runner": "route"
     },
     {
       "id": 107,
@@ -2065,8 +1965,7 @@
         "boundary-guard"
       ],
       "source": "regression:CASE5-fix (release-gate beats git-workflow)",
-      "runner": "route",
-      "category": "regression"
+      "runner": "route"
     },
     {
       "id": 108,
@@ -2087,8 +1986,7 @@
         "boundary-guard"
       ],
       "source": "regression:CASE2-fix (only multi-domain split triggers multi-expert)",
-      "runner": "route",
-      "category": "regression"
+      "runner": "route"
     },
     {
       "id": 109,
@@ -2104,8 +2002,7 @@
         "boundary-guard"
       ],
       "source": "regression:CASE2-fix (variant phrasing of split intent)",
-      "runner": "route",
-      "category": "regression"
+      "runner": "route"
     },
     {
       "id": 110,
@@ -2126,8 +2023,7 @@
         "boundary-guard"
       ],
       "source": "blind-review:A (Chinese fix request must not be captured by direct-answer)",
-      "runner": "route",
-      "category": "regression"
+      "runner": "route"
     },
     {
       "id": 111,
@@ -2149,8 +2045,7 @@
         "boundary-guard"
       ],
       "source": "doc:SKILL.md#quick-examples (React performance multi-expert)",
-      "runner": "route",
-      "category": "regression"
+      "runner": "route"
     },
     {
       "id": 112,
@@ -2172,8 +2067,7 @@
         "boundary-guard"
       ],
       "source": "doc:SKILL.md#multi-expert-execution (system refactor plan)",
-      "runner": "route",
-      "category": "regression"
+      "runner": "route"
     },
     {
       "id": 113,
@@ -2193,8 +2087,7 @@
         "boundary-guard"
       ],
       "source": "blind-review:C (neighboring implementation wording should not stay direct-answer)",
-      "runner": "route",
-      "category": "regression"
+      "runner": "route"
     },
     {
       "id": 114,
@@ -2219,8 +2112,7 @@
         "boundary-guard"
       ],
       "source": "proposal:qoder-code-audit-batch-fix",
-      "runner": "route",
-      "category": "regression"
+      "runner": "route"
     },
     {
       "id": 115,
@@ -2244,8 +2136,7 @@
         "workflow-bundle"
       ],
       "source": "proposal:qoder-code-audit-batch-fix",
-      "runner": "route",
-      "category": "regression"
+      "runner": "route"
     },
     {
       "id": 116,
@@ -2265,8 +2156,7 @@
         "boundary-guard"
       ],
       "source": "proposal:qoder-code-audit-batch-fix (negative boundary)",
-      "runner": "route",
-      "category": "negative"
+      "runner": "route"
     },
     {
       "id": 117,
@@ -2285,8 +2175,7 @@
         "backend-stack",
         "language-routing",
         "kotlin"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 118,
@@ -2305,8 +2194,7 @@
         "backend-stack",
         "language-routing",
         "swift"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 119,
@@ -2325,8 +2213,7 @@
         "backend-stack",
         "language-routing",
         "cpp"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 120,
@@ -2345,8 +2232,7 @@
         "backend-stack",
         "language-routing",
         "csharp"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 121,
@@ -2365,8 +2251,7 @@
         "backend-stack",
         "language-routing",
         "php"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 122,
@@ -2385,8 +2270,7 @@
         "backend-stack",
         "language-routing",
         "ruby"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 123,
@@ -2405,8 +2289,7 @@
         "backend-stack",
         "language-routing",
         "elixir"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 124,
@@ -2425,8 +2308,7 @@
         "backend-stack",
         "language-routing",
         "scala"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 125,
@@ -2445,8 +2327,7 @@
         "backend-stack",
         "language-routing",
         "java"
-      ],
-      "category": "backend-stack"
+      ]
     },
     {
       "id": 126,
@@ -2468,8 +2349,7 @@
         "boundary-guard",
         "regression"
       ],
-      "runner": "route",
-      "category": "backend-stack"
+      "runner": "route"
     },
     {
       "id": 127,
@@ -2491,8 +2371,7 @@
         "python",
         "quick-slice"
       ],
-      "runner": "route",
-      "category": "backend-stack"
+      "runner": "route"
     },
     {
       "id": 128,
@@ -2514,8 +2393,7 @@
         "go",
         "quick-slice"
       ],
-      "runner": "route",
-      "category": "backend-stack"
+      "runner": "route"
     },
     {
       "id": 129,
@@ -2537,8 +2415,7 @@
         "nodejs",
         "quick-slice"
       ],
-      "runner": "route",
-      "category": "backend-stack"
+      "runner": "route"
     },
     {
       "id": 130,
@@ -2560,40 +2437,45 @@
         "rust",
         "quick-slice"
       ],
-      "runner": "route",
-      "category": "backend-stack"
+      "runner": "route"
     },
     {
       "id": 131,
-      "category": "negative",
       "prompt": "用 virtual-intelligent-dev-team 帮我写一本 50 万字的连载网文小说，要有多角色审核和流水线生产。",
       "expected_output": "应识别为越界请求：该 skill 是复杂软件任务的有界工作循环路由器，8 个专家角色均为软件工程方向，不进行文学创作。应拒绝执行并建议用户使用 novel-forge/novel-studio skill。",
       "files": [
         "references/agent-catalog.md",
         "references/CONTRIBUTING.md"
       ],
-      "negative": true
+      "negative": true,
+      "categories": [
+        "negative"
+      ]
     },
     {
       "id": 132,
-      "category": "negative",
       "prompt": "帮我做点东西，用你们团队的力量。",
       "expected_output": "应触发信息不足回退：任务描述完全缺失，无法判断属于哪个专家领域或是否在能力范围内。应要求用户明确具体的软件任务描述。",
       "files": [
         "references/agent-catalog.md"
       ],
-      "negative": true
+      "negative": true,
+      "categories": [
+        "negative"
+      ]
     },
     {
       "id": 133,
-      "category": "negative",
       "prompt": "用 virtual-intelligent-dev-team 对三家竞品公司做一份完整的深度研究报告，含时间线和竞品截面。",
       "expected_output": "应识别为跨 skill 误路由：系统性深度研究不属于软件开发任务范畴。应拒绝执行并建议用户使用 deep-research-forge skill。",
       "files": [
         "references/agent-catalog.md",
         "references/CONTRIBUTING.md"
       ],
-      "negative": true
+      "negative": true,
+      "categories": [
+        "negative"
+      ]
     }
   ]
 }
