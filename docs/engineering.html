@@ -266,6 +266,57 @@
     font-size: 16px;
   }
 
+  /* === 六大支柱关系图 === */
+  .pillar-tree {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 8px;
+  }
+  .tree-layer {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .tree-node {
+    padding: 14px 20px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    min-width: 140px;
+    border: 1px solid var(--border);
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+  }
+  .tree-node.layer-1 {
+    border-color: var(--brand);
+    color: var(--text);
+    background: var(--bg-elevated);
+  }
+  .tree-node.layer-2 {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .tree-node.layer-3 {
+    border-color: var(--secondary);
+    color: var(--secondary);
+  }
+  .tree-arrow {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 20px;
+    line-height: 1;
+  }
+  .tree-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+    text-align: center;
+    margin-top: 4px;
+    font-family: "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  }
+
   /* === 对比表 === */
   .compare-card {
     background: var(--bg-card);
@@ -494,6 +545,33 @@
           </ul>
         </div>
       </article>
+    </section>
+
+    <!-- 六大支柱关系图 -->
+    <section>
+      <div class="flow-card">
+        <h2>六大支柱关系图</h2>
+        <div class="name-en">Six Pillars Hierarchy</div>
+        <p class="pillar-mech" style="margin-bottom: 28px;">
+          本项目的工程化能力由六大支柱构成，分三个层级：基础层解决"谁来做、怎么收口"，工程层解决"实现前约束、验收时对抗"，治理层解决"旧路径退休、自身可优化"。
+        </p>
+        <div class="pillar-tree">
+          <div class="tree-layer">
+            <div class="tree-node layer-1">Routing 路由<div class="tree-desc">8 lead · 13 语言 profile</div></div>
+            <div class="tree-node layer-1">7 Closures 七层闭环<div class="tree-desc">Planning → Feedback</div></div>
+          </div>
+          <div class="tree-arrow">↓ 工程化门禁层 ↓</div>
+          <div class="tree-layer">
+            <div class="tree-node layer-2">P1 Harness<div class="tree-desc">实现前约束</div></div>
+            <div class="tree-node layer-2">P2 Team Engine Lite<div class="tree-desc">对抗式验收</div></div>
+          </div>
+          <div class="tree-arrow">↓ 治理与自优化层 ↓</div>
+          <div class="tree-layer">
+            <div class="tree-node layer-3">P3 Anti-Entropy<div class="tree-desc">反熵治理</div></div>
+            <div class="tree-node layer-3">P4 Self-Optimization<div class="tree-desc">自优化循环</div></div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- Harness 门禁流程图 -->

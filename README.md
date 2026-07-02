@@ -380,6 +380,13 @@ flowchart TD
     AB -->|否| AK
 ```
 
+**流程图与四大工程化支柱的映射**：
+
+- **Harness 工程约束门禁** → `AE` 节点：code-facing bundle 进入实现前必须经过此门禁
+- **Team Engine Lite 对抗式验收** → `AF` / `AG` / `AH` / `AI` 节点：Worker 产出 → Verifier 验收 → Lead 基于 DeliveryCycleReport 接受
+- **Anti-Entropy 反熵治理** → 贯穿 `N` / `O` 节点：加载协同治理轨道时触发 delete-first / compat-exception / confirmation-first 路径选择
+- **Self-Optimization 自优化循环** → `AI` 节点的"有界重试"体现了 bounded iteration 原则；skill 自身的 routing/evals 优化通过 offline loop drill 离线执行，不在此用户任务流程图中
+
 ## 如何调用
 
 最常见的调用方式：
