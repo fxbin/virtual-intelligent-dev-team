@@ -1,12 +1,44 @@
 # Virtual Intelligent Dev Team
 
+[![Version](https://img.shields.io/badge/version-v5.7.6-8b5cf6?style=flat-square)](./VERSION)
+[![License](https://img.shields.io/badge/license-MIT-10b981?style=flat-square)](./LICENSE)
+[![Status](https://img.shields.io/badge/status-production--ready-f59e0b?style=flat-square)]()
+[![Archetype](https://img.shields.io/badge/archetype-router-06b6d4?style=flat-square)](./SKILL.md)
+[![Agents](https://img.shields.io/badge/specialist_agents-8-3b82f6?style=flat-square)](./references/agent-catalog.md)
+[![Closures](https://img.shields.io/badge/closure_layers-7-a78bfa?style=flat-square)](https://fxbin.github.io/virtual-intelligent-dev-team/architecture.html)
+[![Languages](https://img.shields.io/badge/language_profiles-13-10b981?style=flat-square)](./references/language-profiles.yaml)
+[![Python](https://img.shields.io/badge/python-3.8+-3776ab?style=flat-square&logo=python&logoColor=white)]()
+
+> **面向复杂软件工作的闭环协调层**：把专家路由 · 计划 · 执行 · 迭代 · Beta · Release · Feedback 收拢成一个可持续迭代的闭环工作流。
+> 适合接手"单个专家已经不够、单轮回答也不够"的复杂软件任务。
+
+---
+
+## 在线站点
+
+> 完整可视化导览已迁移至 GitHub Pages，提供更友好的浏览体验。
+
+| 入口 | 说明 | 链接 |
+| --- | --- | --- |
+| 落地页 | 项目总览：定位 / 痛点 / 七层闭环 / 8 Agent / 能力矩阵 / Quick Start | [fxbin.github.io/virtual-intelligent-dev-team](https://fxbin.github.io/virtual-intelligent-dev-team) |
+| 演示文稿 | 10 页 PPT 在线演示（← → 翻页 · F 全屏） | [Deck](https://fxbin.github.io/virtual-intelligent-dev-team/deck.html) |
+| 七层闭环架构 | 七层 Closure 的触发条件、核心机制与关键产物 | [Architecture](https://fxbin.github.io/virtual-intelligent-dev-team/architecture.html) |
+| 8 Agent 角色图谱 | 8 个专家的职责、领域与证据要求 | [Agents](https://fxbin.github.io/virtual-intelligent-dev-team/agents.html) |
+| 能力矩阵对比 | 14 个维度对比本项目 vs 普通多专家提示词 | [Matrix](https://fxbin.github.io/virtual-intelligent-dev-team/matrix.html) |
+
+> 本地预览：`open docs/index.html`，或在仓库根目录运行 `python -m http.server 8000` 后访问 `http://localhost:8000/docs/`。
+
+---
+
+## 项目定位
+
 `virtual-intelligent-dev-team` 是一个面向复杂软件工作的智能协作项目。
 
-它不只是”专家角色路由器”，而是把研发、产品、分轮内测、技术治理、发布门禁、显式 `/auto` 自动运行，以及状态驱动恢复，收拢成一个可持续迭代的闭环工作流。
+它不只是"专家角色路由器"，而是把研发、产品、分轮内测、技术治理、发布门禁、显式 `/auto` 自动运行，以及状态驱动恢复，收拢成一个可持续迭代的闭环工作流。
 
 一句话说：
 
-它适合接手”单个专家已经不够、单轮回答也不够”的复杂软件任务。
+它适合接手"单个专家已经不够、单轮回答也不够"的复杂软件任务。
 
 ---
 
@@ -374,74 +406,6 @@ python3 skill-forge/scripts/quick_validate.py ./virtual-intelligent-dev-team
 python3 -m unittest virtual-intelligent-dev-team.tests.test_routing_and_guardrails
 python3 virtual-intelligent-dev-team/scripts/validate_virtual_team.py --pretty
 ```
-
-## v5.0.0 Highlights
-
-v5.0 把"路由可见性 + Agent Manifest 治理 + 多语言覆盖"合并为一次发版，对应迭代路线图 §2.1 与 §2.4 的内容：
-
-- **治理基础（§2.1）**
-  - 决策日志从 `.skill-metrics/governance_events.jsonl` 迁移到 `.skill-metrics/decision-log.jsonl`，字段契约见 `references/decision-log.schema.json`。新字段 `decision` / `verifier` / `reason` / `evidence` 全部 optional，向后兼容。一次性迁移入口：`scripts/migrate_governance_events.py`。
-  - 6 个 Lead Agent 全部扩展 `Constraints`（硬护栏）和 `Evidence Requirements`（完成前必备证据）字段，叙述版在 `references/agent-catalog.md`，机器可读版在 `references/routing-rules.json → agent_rules[*]`。
-  - Harness 健康检查：`scripts/check_harness_health.py` 一次性覆盖 Agent Identity / Agent Manifest / Routing Rules / Workflow Bundles / Decision Log / Language Profiles 6 项检查，输出 HEALTHY / DEGRADED / BROKEN。
-  - 决策日志 Dashboard：`scripts/inspect_decision_log.py` 输出 JSON / Markdown / 自包含 HTML（无第三方依赖）。
-
-- **多语言 Profile 系统（§2.4）**
-  - `references/language-profiles.yaml`（schema `language-profiles/v1`）覆盖 9 种语言：java / kotlin / swift / cpp / csharp / php / ruby / elixir / scala。每种语言包含 ecosystem / conventions / verification / harness_constraints 四类上下文，由 LLM 在 agent 工作内存中按需注入。
-  - `references/routing-rules.json → language_profiles` 从 4 个扩展到 13 个：保留 python / go / nodejs / rust，新增 java / kotlin / swift / cpp / csharp / php / ruby / elixir / scala。Java 仍由 `Java Virtuoso` 独立处理。
-  - 完整性校验：`scripts/check_language_profiles.py` 校验 yaml ↔ json 单向一致性、必填字段、关键词重叠率。
-  - 三层解耦：路由（JSON）/ 上下文（YAML）/ 约束（YAML + Agent Manifest），加新语言只影响对应层。
-
-- **v5.5 已完成**
-  - 沉降精简：references/ 95 → 88 文件，I类组件内联至 SKILL.md
-  - 领域特化 Agent：Data Pipeline Guardian + API Contract Sentinel
-  - 平台化架构预留：`.skill-harness/trigger.yaml`（v0.5 schema）
-
-- **v5.7.0 — SKILL.md 结构清理**
-  - 删除重复的 Quick examples 和 Key terms 章节
-  - 清理 4 个死引用（output-contract.md, runtime-routing-index.md, workflow-bundles.md, decision-log-schema.md）
-  - 重写 Description：8 个 agent 全列出，精简至 280 字符
-  - Runtime Routing 表补齐 2 条新路由（data-pipeline-govern, api-contract-govern）
-
-### v5.0.1 — Decision Log Dashboard 视觉重做（patch bump）
-
-在 v5.0.0 基础上，仅重做 `scripts/inspect_decision_log.py` 的 `render_html()` 与 `render_markdown()`：
-
-- **Hero section**：深色渐变（#0f172a → #1e293b → #312e81）+ 双 radial-gradient 高光（紫 + 蓝）+ HEALTHY/EMPTY 状态徽章
-- **设计 token 系统**：CSS variables 统一颜色 / 字号 / 圆角 / 阴影；语义色 `--info` / `--ok` / `--warn` / `--err` / `--accent`
-- **4 个差异化 KPI 卡片**：events=蓝、throughput=紫、first/last=绿，hover 微抬升 + 阴影加深
-- **5 个分布卡片用语义色 bar**：
-  - Decision Distribution：🧭 icon，delivery_held=amber / release_hold=red / fast_track=purple
-  - Verifier Distribution：✅ icon，pass=green / fail=red / hold=amber / n_a=gray
-  - Lead Agent Distribution：👥 icon，neutral info
-  - Track Distribution：🚦 icon，regular=blue / fast=purple
-  - Risk Distribution：⚠️ icon，low=green / medium=amber / high=red
-- **Hourly Throughput 改为 inline SVG sparkline**：紫色渐变 area fill + 线 + peak 红点 + 极值坐标
-- **响应式**：`auto-fit` grid 在 < 640px 折叠为单列；KPI 网格降为 2 列
-- **可访问性**：`aria-label` / `aria-hidden` / contrast ≥ 4.5 / tabular-nums 数字对齐
-- **零依赖**：无 CDN、无 JS、无外部字体（系统字体栈）
-
-MarkDown 报告同步升级：emoji section 标题 + ASCII bar + sparkline code block。
-
-### v5.0.2 — Dashboard i18n + KPI 联动 + a11y v2（patch bump）
-
-在 v5.0.1 基础上扩展 `scripts/inspect_decision_log.py`：
-
-- **i18n 中英双语**：新增 `STRINGS` 字典（28 个 key × 2 语言）+ CLI `--language en|zh|auto`；`auto` 从 `LC_ALL` / `LANG` / `locale` 探测；fallback 永远走英文。`<html lang>`、`<title>`、hero / KPI / 分布标题 / 空状态 / footer 全部本地化。
-- **CSS-only KPI ↔ 分布卡片 hover 联动**（零 JS，纯 `:has()`）：
-  - KPI 卡片带 `data-focus="total|recent|history|latest"`
-  - 分布卡片带 `data-focus`（decision/verifier=latest, lead=total, track=history, risk=recent）
-  - hover 任意 KPI → 对应 dist-card 边框高亮 + 其他卡片淡化；反向同理
-  - hover 任意 dist-row → 所有卡片中同 `data-key` 行高亮（如 hover `low` 在 Risk 卡片，所有卡片的 `low` 行都亮）
-  - `:focus-within` 支持键盘焦点联动（Tab 即可触发）
-- **a11y v2**：
-  - **Skip link**：`<a class="skip-link" href="#main">` 默认隐藏，`:focus` 时显示在左上角
-  - **键盘导航**：所有 `.kpi` 和 `.dist-row` 加 `tabindex="0"`；`:focus-visible` 全局蓝色描边
-  - **ARIA 完整**：`role="list"` / `role="listitem"` / `aria-label` / `aria-labelledby` / `aria-live="polite"`（health badge）
-  - **SVG 标题**：`<title>` 子元素让屏幕阅读器读出 sparkline 数据
-  - **`prefers-reduced-motion`**：把所有 transition / animation 降到 0.01ms
-  - **`prefers-contrast: more`**：边框加粗到 2px、文字加深、focus 描边加粗到 4px
-
-中文样例产物：`/tmp/vidt-zh.html`（28.9KB）/ `/tmp/vidt-zh.md`（2.6KB）。
 
 ## 版本
 

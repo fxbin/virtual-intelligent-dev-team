@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="author" content="fxbin">
+<title>8 Specialist Agents — Virtual Intelligent Dev Team</title>
+<style>
+  /* === 设计 Token（machine-hallucination 配色） === */
+  :root {
+    --bg: #0A0A1A;
+    --bg-card: #13102a;
+    --bg-elevated: #1a1535;
+    --bg-code: #0f0820;
+    --border: #2a1f4d;
+    --border-soft: #1f1738;
+    --text: #ffffff;
+    --text-muted: #c4b5fd;
+    --text-dim: #8b6fc0;
+    --brand: #9B4DCA;
+    --brand-soft: #c4b5fd;
+    --accent: #00CED1;
+    --secondary: #FF1493;
+    --success: #00CED1;
+    --warning: #FF1493;
+    --danger: #FF1493;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    color-scheme: dark;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: -apple-system, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.5;
+  }
+
+  code, .mono {
+    font-family: "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  }
+
+  /* === 顶部导航 === */
+  .nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 60px;
+    background: rgba(10, 10, 26, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    z-index: 100;
+  }
+  .nav-inner {
+    max-width: 1200px;
+    height: 100%;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .nav-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .nav-back:hover { color: var(--text); }
+  .nav-back .arrow { color: var(--text-dim); }
+  .nav-links {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+  }
+  .nav-links a {
+    color: var(--text-muted);
+    font-size: 14px;
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .nav-links a:hover,
+  .nav-links a.active { color: var(--text); }
+
+  /* === 主体 === */
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 120px 24px 80px;
+  }
+  .page-head { margin-bottom: 64px; }
+  .page-head h1 {
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+  .page-head .sub {
+    font-size: 20px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    max-width: 760px;
+  }
+
+  section { margin-bottom: 64px; }
+  section:last-child { margin-bottom: 0; }
+
+  .lead {
+    font-size: 17px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    max-width: 820px;
+    margin-bottom: 64px;
+  }
+  .lead code {
+    color: var(--brand-soft);
+    background: var(--bg-elevated);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+
+  /* === Agent 网格 === */
+  .roster {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+  .agent-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 26px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .agent-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .agent-icon {
+    width: 48px; height: 48px;
+    border-radius: var(--radius-md);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-soft);
+    color: var(--brand-soft);
+    font-family: "SF Mono", "JetBrains Mono", "Menlo", monospace;
+    font-size: 15px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .agent-title { flex: 1; min-width: 0; }
+  .agent-title h2 {
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.3;
+    margin-bottom: 4px;
+  }
+  .agent-tag {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+
+  /* chips */
+  .skills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    line-height: 1.4;
+    font-family: "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  }
+
+  /* 职责列表 */
+  .duties-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dim);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .duties {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .duty {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    font-size: 13.5px;
+    color: var(--text-muted);
+    line-height: 1.55;
+  }
+  .duty .mark {
+    color: var(--brand-soft);
+    font-weight: 700;
+    flex-shrink: 0;
+    line-height: 1.55;
+  }
+
+  /* evidence 区块 */
+  .evidence {
+    margin-top: auto;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    background: var(--bg);
+    border: 1px solid var(--border);
+  }
+  .evidence-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dim);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .evidence-text {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    line-height: 1.55;
+  }
+
+  /* === Stage Council Overlay === */
+  .overlay-card {
+    background: var(--bg-card);
+    border: 1px dashed var(--border-soft);
+    border-radius: var(--radius-lg);
+    padding: 28px 32px;
+  }
+  .overlay-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .overlay-tag {
+    font-family: "SF Mono", "JetBrains Mono", "Menlo", monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .overlay-card h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .overlay-card p {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    margin-bottom: 20px;
+  }
+  .overlay-card p code {
+    color: var(--brand-soft);
+    background: var(--bg-elevated);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .overlay-councils {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .council-item {
+    padding: 16px 18px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+  }
+  .council-item .name {
+    font-family: "SF Mono", "JetBrains Mono", "Menlo", monospace;
+    font-size: 13px;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .council-item .desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  /* === Footer === */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 24px;
+    margin-top: 80px;
+  }
+  .footer-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .footer-links {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .footer-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .footer-links a:hover { color: var(--text); }
+
+  /* === 响应式 === */
+  @media (max-width: 768px) {
+    main { padding: 100px 16px 60px; }
+    .page-head h1 { font-size: 36px; }
+    .page-head .sub { font-size: 17px; }
+    .nav-links { gap: 14px; }
+    .nav-links a { font-size: 13px; }
+    .roster { grid-template-columns: 1fr; gap: 16px; }
+    .agent-card { padding: 20px 20px; }
+    .overlay-councils { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <!-- 顶部导航 -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-back" href="index.html">
+        <span class="arrow">←</span>
+        <span>Virtual Intelligent Dev Team</span>
+      </a>
+      <div class="nav-links">
+        <a href="architecture.html">Architecture</a>
+        <a href="agents.html" class="active">Agents</a>
+        <a href="matrix.html">Matrix</a>
+        <a href="deck.html">Deck</a>
+        <a href="https://github.com/fxbin/virtual-intelligent-dev-team" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <!-- 页头 -->
+    <div class="page-head">
+      <h1>8 Specialist Agents</h1>
+      <p class="sub">按任务形状路由的专家角色</p>
+    </div>
+
+    <p class="lead">
+      八位专家 Agent 覆盖了从代码到产品、从架构到发布的完整软件交付链路，每位都拥有独立的擅长领域、核心职责与可验证的交付证据要求。所有 Agent 在 <code>references/agent-catalog.md</code>（叙述版）与 <code>references/routing-rules.json</code>（机器可读版）中双重定义。
+    </p>
+
+    <!-- 8 Agent 网格 -->
+    <section class="roster">
+      <!-- 1. Java Virtuoso -->
+      <article class="agent-card">
+        <div class="agent-head">
+          <div class="agent-icon">JV</div>
+          <div class="agent-title">
+            <h2>Java Virtuoso</h2>
+            <div class="agent-tag">JVM 生态深度专家</div>
+          </div>
+        </div>
+        <div class="skills">
+          <span class="chip">Java</span>
+          <span class="chip">Kotlin</span>
+          <span class="chip">Spring Boot 3.x</span>
+          <span class="chip">Gradle/Maven</span>
+          <span class="chip">JVM 21+</span>
+        </div>
+        <div>
+          <div class="duties-label">核心职责</div>
+          <div class="duties">
+            <div class="duty"><span class="mark">▸</span><span>JVM 性能调优与内存分析</span></div>
+            <div class="duty"><span class="mark">▸</span><span>Spring 生态架构设计</span></div>
+            <div class="duty"><span class="mark">▸</span><span>Java/Kotlin 代码审查与重构</span></div>
+            <div class="duty"><span class="mark">▸</span><span>并发与事务边界治理</span></div>
+          </div>
+        </div>
+        <div class="evidence">
+          <div class="evidence-label">Evidence Requirements</div>
+          <div class="evidence-text">JVM 测试报告 + 性能基准对比 + 依赖兼容性矩阵</div>
+        </div>
+      </article>
+
+      <!-- 2. Sentinel Architect -->
+      <article class="agent-card">
+        <div class="agent-head">
+          <div class="agent-icon">SA</div>
+          <div class="agent-title">
+            <h2>Sentinel Architect</h2>
+            <div class="agent-tag">架构风险与高危变更治理</div>
+          </div>
+        </div>
+        <div class="skills">
+          <span class="chip">架构重构</span>
+          <span class="chip">迁移</span>
+          <span class="chip">大型系统拆分</span>
+          <span class="chip">高风险变更</span>
+        </div>
+        <div>
+          <div class="duties-label">核心职责</div>
+          <div class="duties">
+            <div class="duty"><span class="mark">▸</span><span>架构风险评估与决策</span></div>
+            <div class="duty"><span class="mark">▸</span><span>迁移路径规划与回滚点设计</span></div>
+            <div class="duty"><span class="mark">▸</span><span>跨团队技术决策协调</span></div>
+            <div class="duty"><span class="mark">▸</span><span>Pre-Development Planning 主导</span></div>
+          </div>
+        </div>
+        <div class="evidence">
+          <div class="evidence-label">Evidence Requirements</div>
+          <div class="evidence-text">架构决策记录(ADR) + 风险评估矩阵 + 回滚预案</div>
+        </div>
+      </article>
+
+      <!-- 3. Technical Trinity -->
+      <article class="agent-card">
+        <div class="agent-head">
+          <div class="agent-icon">TT</div>
+          <div class="agent-title">
+            <h2>Technical Trinity</h2>
+            <div class="agent-tag">通用后端工程与小切片交付</div>
+          </div>
+        </div>
+        <div class="skills">
+          <span class="chip">Python</span>
+          <span class="chip">Go</span>
+          <span class="chip">Node.js</span>
+          <span class="chip">Rust</span>
+          <span class="chip">通用后端</span>
+        </div>
+        <div>
+          <div class="duties-label">核心职责</div>
+          <div class="duties">
+            <div class="duty"><span class="mark">▸</span><span>小切片功能实现与 bugfix</span></div>
+            <div class="duty"><span class="mark">▸</span><span>Quick Slice Brief 主导</span></div>
+            <div class="duty"><span class="mark">▸</span><span>多语言后端代码交付</span></div>
+            <div class="duty"><span class="mark">▸</span><span>目标验证与自审</span></div>
+          </div>
+        </div>
+        <div class="evidence">
+          <div class="evidence-label">Evidence Requirements</div>
+          <div class="evidence-text">Quick Slice Brief + 验证命令 + Delivery Status</div>
+        </div>
+      </article>
+
+      <!-- 4. Code Audit Council -->
+      <article class="agent-card">
+        <div class="agent-head">
+          <div class="agent-icon">CA</div>
+          <div class="agent-title">
+            <h2>Code Audit Council</h2>
+            <div class="agent-tag">安全审计与代码质量审查</div>
+          </div>
+        </div>
+        <div class="skills">
+          <span class="chip">安全审计</span>
+          <span class="chip">代码审查</span>
+          <span class="chip">合规检查</span>
+          <span class="chip">漏洞修复</span>
+        </div>
+        <div>
+          <div class="duties-label">核心职责</div>
+          <div class="duties">
+            <div class="duty"><span class="mark">▸</span><span>安全漏洞识别与修复建议</span></div>
+            <div class="duty"><span class="mark">▸</span><span>代码质量审查与重构建议</span></div>
+            <div class="duty"><span class="mark">▸</span><span>合规性检查</span></div>
+            <div class="duty"><span class="mark">▸</span><span>audit-fix-deliver 工作流主导</span></div>
+          </div>
+        </div>
+        <div class="evidence">
+          <div class="evidence-label">Evidence Requirements</div>
+          <div class="evidence-text">审计报告 + 修复证据 + 回归测试结果</div>
+        </div>
+      </article>
+
+      <!-- 5. Git Workflow Guardian -->
+      <article class="agent-card">
+        <div class="agent-head">
+          <div class="agent-icon">GW</div>
+          <div class="agent-title">
+            <h2>Git Workflow Guardian</h2>
+            <div class="agent-tag">分支策略与回滚保护</div>
+          </div>
+        </div>
+        <div class="skills">
+          <span class="chip">Git 工作流</span>
+          <span class="chip">分支策略</span>
+          <span class="chip">回滚</span>
+          <span class="chip">CI/CD 集成</span>
+        </div>
+        <div>
+          <div class="duties-label">核心职责</div>
+          <div class="duties">
+            <div class="duty"><span class="mark">▸</span><span>分支策略设计与守护</span></div>
+            <div class="duty"><span class="mark">▸</span><span>回滚与 revert 决策</span></div>
+            <div class="duty"><span class="mark">▸</span><span>提交规范治理</span></div>
+            <div class="duty"><span class="mark">▸</span><span>govern-change-safely 主导</span></div>
+          </div>
+        </div>
+        <div class="evidence">
+          <div class="evidence-label">Evidence Requirements</div>
+          <div class="evidence-text">分支策略文档 + 回滚验证 + 提交历史审计</div>
+        </div>
+      </article>
+
+      <!-- 6. World-Class Product Architect -->
+      <article class="agent-card">
+        <div class="agent-head">
+          <div class="agent-icon">PA</div>
+          <div class="agent-title">
+            <h2>World-Class Product Architect</h2>
+            <div class="agent-tag">产品定义与发现专家团 Leader</div>
+          </div>
+        </div>
+        <div class="skills">
+          <span class="chip">PRD</span>
+          <span class="chip">用户研究</span>
+          <span class="chip">竞品分析</span>
+          <span class="chip">路线图</span>
+          <span class="chip">原型设计</span>
+        </div>
+        <div>
+          <div class="duties-label">核心职责</div>
+          <div class="duties">
+            <div class="duty"><span class="mark">▸</span><span>产品战略与 PRD 定义</span></div>
+            <div class="duty"><span class="mark">▸</span><span>Stage Council 协调</span></div>
+            <div class="duty"><span class="mark">▸</span><span>用户研究与竞品分析</span></div>
+            <div class="duty"><span class="mark">▸</span><span>product-spec-deliver 主导</span></div>
+          </div>
+        </div>
+        <div class="evidence">
+          <div class="evidence-label">Evidence Requirements</div>
+          <div class="evidence-text">PRD 文档 + 用户研究报告 + 路线图 + 验收标准</div>
+        </div>
+      </article>
+
+      <!-- 7. Data Pipeline Guardian -->
+      <article class="agent-card">
+        <div class="agent-head">
+          <div class="agent-icon">DP</div>
+          <div class="agent-title">
+            <h2>Data Pipeline Guardian</h2>
+            <div class="agent-tag">实时数据管道与流处理</div>
+          </div>
+        </div>
+        <div class="skills">
+          <span class="chip">Kafka</span>
+          <span class="chip">Flink</span>
+          <span class="chip">Pulsar</span>
+          <span class="chip">实时数仓</span>
+          <span class="chip">数据治理</span>
+        </div>
+        <div>
+          <div class="duties-label">核心职责</div>
+          <div class="duties">
+            <div class="duty"><span class="mark">▸</span><span>实时数据管道设计</span></div>
+            <div class="duty"><span class="mark">▸</span><span>流处理作业优化</span></div>
+            <div class="duty"><span class="mark">▸</span><span>数据质量与一致性治理</span></div>
+            <div class="duty"><span class="mark">▸</span><span>data-pipeline-govern 主导</span></div>
+          </div>
+        </div>
+        <div class="evidence">
+          <div class="evidence-label">Evidence Requirements</div>
+          <div class="evidence-text">管道拓扑图 + 吞吐基准 + 数据质量报告</div>
+        </div>
+      </article>
+
+      <!-- 8. API Contract Sentinel -->
+      <article class="agent-card">
+        <div class="agent-head">
+          <div class="agent-icon">AC</div>
+          <div class="agent-title">
+            <h2>API Contract Sentinel</h2>
+            <div class="agent-tag">API 契约与版本兼容性</div>
+          </div>
+        </div>
+        <div class="skills">
+          <span class="chip">API 设计</span>
+          <span class="chip">契约测试</span>
+          <span class="chip">版本兼容</span>
+          <span class="chip">OpenAPI</span>
+          <span class="chip">gRPC</span>
+        </div>
+        <div>
+          <div class="duties-label">核心职责</div>
+          <div class="duties">
+            <div class="duty"><span class="mark">▸</span><span>API 契约定义与审查</span></div>
+            <div class="duty"><span class="mark">▸</span><span>版本兼容性验证</span></div>
+            <div class="duty"><span class="mark">▸</span><span>契约测试编排</span></div>
+            <div class="duty"><span class="mark">▸</span><span>api-contract-govern 主导</span></div>
+          </div>
+        </div>
+        <div class="evidence">
+          <div class="evidence-label">Evidence Requirements</div>
+          <div class="evidence-text">契约文档 + 兼容性矩阵 + 契约测试报告</div>
+        </div>
+      </article>
+    </section>
+
+    <!-- Stage Council Overlay -->
+    <section>
+      <div class="overlay-card">
+        <div class="overlay-head">
+          <span class="overlay-tag">Optional Overlay</span>
+          <h3>Stage Council</h3>
+        </div>
+        <p>
+          阶段专家团是八位 Agent 之上的可选 overlay：只在阶段专家会改变产物顺序时展开，不替代顶层 lead、workflow bundle 或 Team Engine Lite 验收。在 World-Class Product Architect 下按需展开，包含 <code>product-discovery-council</code> 与 <code>prototype-design-council</code> 两个阶段。
+        </p>
+        <div class="overlay-councils">
+          <div class="council-item">
+            <div class="name">product-discovery-council</div>
+            <div class="desc">产品战略、PRD、用户研究、竞品分析、路线图定义</div>
+          </div>
+          <div class="council-item">
+            <div class="name">prototype-design-council</div>
+            <div class="desc">高保真原型、设计系统、可访问性审查、交互验证</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 页脚 -->
+  <footer>
+    <div class="footer-inner">
+      <span>Virtual Intelligent Dev Team · v5.7.6 · MIT License</span>
+      <div class="footer-links">
+        <a href="index.html">← Back to Home</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="agents.html">Agents</a>
+        <a href="matrix.html">Matrix</a>
+        <a href="deck.html">Deck</a>
+        <a href="https://github.com/fxbin/virtual-intelligent-dev-team" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Virtual Intelligent Dev Team — Intro Deck</title>
+<style>
+  :root {
+    --bg-1: #0A0A1A;
+    --bg-2: #13102a;
+    --bg-3: #1a1535;
+    --accent-purple: #9B4DCA;
+    --accent-blue: #9B4DCA;
+    --accent-cyan: #00CED1;
+    --accent-emerald: #00CED1;
+    --accent-amber: #FF1493;
+    --accent-rose: #FF1493;
+    --accent-indigo: #9B4DCA;
+    --fg: #ffffff;
+    --fg-muted: #c4b5fd;
+    --fg-dim: #8b6fc0;
+    --border: #2a1f4d;
+    --card-bg: #13102a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+                 "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--bg-1);
+    color: var(--fg);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .deck {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    padding: 56px 80px;
+    background: var(--bg-1);
+  }
+
+  .slide.active { display: flex; }
+
+  .slide-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .slide-eyebrow {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent-cyan);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .slide-num {
+    font-size: 12px;
+    color: var(--fg-dim);
+    font-family: "SF Mono", "Menlo", monospace;
+    letter-spacing: 0.1em;
+  }
+
+  .slide-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .slide-footer {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--fg-dim);
+    letter-spacing: 0.05em;
+  }
+
+  h1.cover-title {
+    font-size: 96px;
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    color: var(--fg);
+    margin-bottom: 24px;
+  }
+
+  h2.slide-title {
+    font-size: 56px;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+    color: var(--fg);
+  }
+
+  h2.slide-title .accent {
+    color: var(--accent-cyan);
+  }
+
+  .slide-sub {
+    font-size: 20px;
+    color: var(--fg-muted);
+    line-height: 1.5;
+    margin-bottom: 40px;
+    max-width: 900px;
+  }
+
+  .badge-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--fg-muted);
+  }
+
+  .badge .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .grid-7 { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; }
+
+  .card {
+    padding: 24px;
+    border-radius: 14px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+  }
+
+  .card-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--fg);
+    margin-bottom: 8px;
+  }
+
+  .card-body {
+    font-size: 14px;
+    color: var(--fg-muted);
+    line-height: 1.6;
+  }
+
+  .pain-card {
+    padding: 28px;
+    border-radius: 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+  }
+
+  .pain-card .num {
+    font-size: 48px;
+    font-weight: 800;
+    color: var(--accent-rose);
+    line-height: 1;
+    margin-bottom: 12px;
+    opacity: 0.8;
+  }
+
+  .pain-card .title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--fg);
+    margin-bottom: 8px;
+  }
+
+  .pain-card .desc {
+    font-size: 14px;
+    color: var(--fg-muted);
+    line-height: 1.6;
+  }
+
+  .positioning-row {
+    display: grid;
+    grid-template-columns: 1fr 80px 1fr;
+    gap: 24px;
+    align-items: center;
+  }
+
+  .positioning-card {
+    padding: 32px;
+    border-radius: 16px;
+    text-align: center;
+  }
+
+  .positioning-card.bad {
+    background: rgba(255, 20, 147, 0.05);
+    border: 1px dashed rgba(255, 20, 147, 0.3);
+  }
+
+  .positioning-card.good {
+    background: var(--card-bg);
+    border: 1px solid var(--accent-purple);
+  }
+
+  .positioning-card .icon {
+    font-size: 40px;
+    margin-bottom: 16px;
+  }
+
+  .positioning-card .label {
+    font-size: 14px;
+    color: var(--fg-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .positioning-card .title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--fg);
+    margin-bottom: 12px;
+  }
+
+  .positioning-card .desc {
+    font-size: 14px;
+    color: var(--fg-muted);
+    line-height: 1.6;
+  }
+
+  .vs-arrow {
+    text-align: center;
+    font-size: 32px;
+    color: var(--fg-dim);
+    font-weight: 300;
+  }
+
+  .layer-strip {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .layer-mini {
+    padding: 20px 12px;
+    border-radius: 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    text-align: center;
+    border-top: 3px solid;
+  }
+
+  .layer-mini:nth-child(1) { border-top-color: var(--accent-purple); }
+  .layer-mini:nth-child(2) { border-top-color: var(--accent-blue); }
+  .layer-mini:nth-child(3) { border-top-color: var(--accent-cyan); }
+  .layer-mini:nth-child(4) { border-top-color: var(--accent-emerald); }
+  .layer-mini:nth-child(5) { border-top-color: var(--accent-amber); }
+  .layer-mini:nth-child(6) { border-top-color: var(--accent-rose); }
+  .layer-mini:nth-child(7) { border-top-color: var(--accent-indigo); }
+
+  .layer-mini .num {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--fg-dim);
+    letter-spacing: 0.15em;
+    margin-bottom: 6px;
+  }
+
+  .layer-mini .name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--fg);
+    margin-bottom: 4px;
+  }
+
+  .layer-mini .name-en {
+    font-size: 11px;
+    color: var(--fg-dim);
+  }
+
+  .agent-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+
+  .agent-mini {
+    padding: 18px;
+    border-radius: 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .agent-mini .icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .agent-mini .meta { flex: 1; min-width: 0; }
+  .agent-mini .role { font-size: 14px; font-weight: 600; color: var(--fg); margin-bottom: 2px; }
+  .agent-mini .domain { font-size: 11px; color: var(--fg-dim); }
+
+  .agent-mini:nth-child(1) .icon { background: rgba(0, 206, 209, 0.18); color: #00CED1; }
+  .agent-mini:nth-child(2) .icon { background: rgba(255, 20, 147, 0.18); color: #FF1493; }
+  .agent-mini:nth-child(3) .icon { background: rgba(0, 206, 209, 0.18); color: #00CED1; }
+  .agent-mini:nth-child(4) .icon { background: rgba(255, 20, 147, 0.18); color: #FF1493; }
+  .agent-mini:nth-child(5) .icon { background: rgba(0, 206, 209, 0.18); color: #00CED1; }
+  .agent-mini:nth-child(6) .icon { background: rgba(255, 20, 147, 0.18); color: #FF1493; }
+  .agent-mini:nth-child(7) .icon { background: rgba(0, 206, 209, 0.18); color: #00CED1; }
+  .agent-mini:nth-child(8) .icon { background: rgba(255, 20, 147, 0.18); color: #FF1493; }
+
+  .compare-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .compare-table th {
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.06);
+    text-align: left;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--fg);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .compare-table th.good { color: var(--accent-cyan); }
+  .compare-table th.bad { color: var(--fg-dim); }
+
+  .compare-table td {
+    padding: 14px 20px;
+    font-size: 13px;
+    line-height: 1.5;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .compare-table tr:last-child td { border-bottom: none; }
+
+  .compare-table td.dim { color: var(--fg); font-weight: 600; }
+  .compare-table td.good { color: var(--accent-cyan); background: rgba(0, 206, 209, 0.04); }
+  .compare-table td.bad { color: var(--fg-dim); background: rgba(255, 20, 147, 0.02); }
+
+  .route-row {
+    display: grid;
+    grid-template-columns: 1fr 60px 1fr;
+    gap: 16px;
+    align-items: center;
+    padding: 16px 20px;
+    border-radius: 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  .route-row .request {
+    font-size: 14px;
+    color: var(--fg);
+    font-weight: 500;
+  }
+
+  .route-row .arrow {
+    text-align: center;
+    color: var(--accent-purple);
+    font-size: 18px;
+  }
+
+  .route-row .result {
+    font-size: 13px;
+    color: var(--accent-cyan);
+    font-weight: 600;
+  }
+
+  .route-row .result .why {
+    display: block;
+    font-size: 11px;
+    color: var(--fg-dim);
+    font-weight: 400;
+    margin-top: 2px;
+  }
+
+  .code-block {
+    padding: 20px 24px;
+    border-radius: 12px;
+    background: rgba(15, 8, 32, 0.6);
+    border: 1px solid var(--border);
+    font-family: "SF Mono", "Menlo", "Consolas", monospace;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--fg-muted);
+    margin-bottom: 16px;
+  }
+
+  .code-block .prompt { color: var(--accent-purple); }
+  .code-block .comment { color: var(--fg-dim); }
+  .code-block .result { color: var(--accent-emerald); }
+
+  .timeline {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+
+  .timeline-card {
+    padding: 20px;
+    border-radius: 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--accent-purple);
+  }
+
+  .timeline-card .version {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--accent-purple);
+    margin-bottom: 8px;
+    font-family: "SF Mono", monospace;
+  }
+
+  .timeline-card .title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--fg);
+    margin-bottom: 8px;
+  }
+
+  .timeline-card .desc {
+    font-size: 12px;
+    color: var(--fg-muted);
+    line-height: 1.5;
+  }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+
+  .stat-card {
+    padding: 28px 20px;
+    border-radius: 14px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    text-align: center;
+  }
+
+  .stat-card .num {
+    font-size: 48px;
+    font-weight: 800;
+    color: var(--accent-cyan);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .stat-card .label {
+    font-size: 13px;
+    color: var(--fg-muted);
+    letter-spacing: 0.05em;
+  }
+
+  .roadmap-row {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 20px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+  }
+
+  .roadmap-row:last-child { border-bottom: none; }
+
+  .roadmap-row .phase {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    font-family: "SF Mono", monospace;
+    letter-spacing: 0.1em;
+  }
+
+  .roadmap-row .content {
+    font-size: 14px;
+    color: var(--fg-muted);
+  }
+
+  .roadmap-row .content strong {
+    color: var(--fg);
+    font-weight: 600;
+  }
+
+  .cta-card {
+    padding: 48px;
+    border-radius: 20px;
+    background: var(--card-bg);
+    border: 1px solid var(--accent-purple);
+    text-align: center;
+  }
+
+  .cta-card h2 {
+    font-size: 40px;
+    font-weight: 800;
+    margin-bottom: 16px;
+    color: var(--fg);
+  }
+
+  .cta-card p {
+    font-size: 16px;
+    color: var(--fg-muted);
+    margin-bottom: 32px;
+    line-height: 1.6;
+  }
+
+  .cta-links {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .cta-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .cta-link:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--accent-purple);
+  }
+
+  .cta-link.primary {
+    background: var(--accent-purple);
+    border-color: transparent;
+  }
+
+  .nav-controls {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    display: flex;
+    gap: 8px;
+    z-index: 100;
+  }
+
+  .nav-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .nav-btn:hover {
+    background: rgba(155, 77, 202, 0.2);
+    border-color: var(--accent-purple);
+  }
+
+  .progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    background: var(--accent-cyan);
+    transition: width 0.3s;
+    z-index: 100;
+  }
+
+  .hint {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    font-size: 11px;
+    color: var(--fg-dim);
+    letter-spacing: 0.05em;
+    z-index: 100;
+  }
+
+  .cover-meta {
+    margin-top: 32px;
+    font-size: 14px;
+    color: var(--fg-dim);
+    letter-spacing: 0.05em;
+  }
+
+  .cover-meta a { color: var(--accent-cyan); text-decoration: none; }
+</style>
+</head>
+<body>
+  <div class="progress-bar" id="progress"></div>
+
+  <div class="deck" id="deck">
+
+    <!-- Slide 1: Cover -->
+    <section class="slide active">
+      <div class="slide-body" style="justify-content: center;">
+        <div class="badge-row">
+          <span class="badge"><span class="dot" style="background: var(--accent-purple); color: var(--accent-purple);"></span>v5.7.6</span>
+          <span class="badge"><span class="dot" style="background: var(--accent-emerald); color: var(--accent-emerald);"></span>MIT License</span>
+          <span class="badge"><span class="dot" style="background: var(--accent-amber); color: var(--accent-amber);"></span>Production Ready</span>
+          <span class="badge"><span class="dot" style="background: var(--accent-cyan); color: var(--accent-cyan);"></span>Router Archetype</span>
+        </div>
+        <h1 class="cover-title">Virtual Intelligent<br/>Dev Team</h1>
+        <p style="font-size: 24px; color: var(--fg-muted); margin-bottom: 16px; max-width: 880px; line-height: 1.5;">
+          面向复杂软件工作的闭环协调层
+        </p>
+        <p style="font-size: 16px; color: var(--fg-dim); max-width: 760px; line-height: 1.7;">
+          把专家路由 · 计划 · 执行 · 迭代 · Beta · Release · Feedback<br/>
+          收拢成一个可持续迭代的闭环工作流
+        </p>
+        <div style="display: flex; gap: 56px; margin-top: 48px; margin-bottom: 40px;">
+          <div>
+            <div style="font-size: 64px; font-weight: 800; color: var(--accent-purple); line-height: 1; letter-spacing: -0.02em;">8</div>
+            <div style="font-size: 12px; color: var(--fg-dim); margin-top: 10px; letter-spacing: 0.15em; text-transform: uppercase;">Specialists</div>
+          </div>
+          <div>
+            <div style="font-size: 64px; font-weight: 800; color: var(--accent-purple); line-height: 1; letter-spacing: -0.02em;">7</div>
+            <div style="font-size: 12px; color: var(--fg-dim); margin-top: 10px; letter-spacing: 0.15em; text-transform: uppercase;">Closures</div>
+          </div>
+          <div>
+            <div style="font-size: 64px; font-weight: 800; color: var(--accent-purple); line-height: 1; letter-spacing: -0.02em;">13</div>
+            <div style="font-size: 12px; color: var(--fg-dim); margin-top: 10px; letter-spacing: 0.15em; text-transform: uppercase;">Languages</div>
+          </div>
+          <div>
+            <div style="font-size: 64px; font-weight: 800; color: var(--accent-purple); line-height: 1; letter-spacing: -0.02em;">7</div>
+            <div style="font-size: 12px; color: var(--fg-dim); margin-top: 10px; letter-spacing: 0.15em; text-transform: uppercase;">Workflows</div>
+          </div>
+        </div>
+        <div class="cover-meta">
+          github.com/fxbin/virtual-intelligent-dev-team · v5.7.6 · MIT License
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Virtual Intelligent Dev Team · Intro Deck</span>
+        <span>01 / 10</span>
+      </div>
+    </section>
+
+    <!-- Slide 2: Problem -->
+    <section class="slide">
+      <div class="slide-header">
+        <span class="slide-eyebrow">Problem · 痛点</span>
+        <span class="slide-num">02 / 10</span>
+      </div>
+      <div class="slide-body">
+        <h2 class="slide-title">为什么需要<span class="accent">闭环协调层</span>？</h2>
+        <p class="slide-sub">普通多专家提示词在复杂软件任务中有三个结构性缺口</p>
+        <div class="grid-3">
+          <div class="pain-card">
+            <div class="num">01</div>
+            <div class="title">角色堆砌 ≠ 协同</div>
+            <div class="desc">平铺多个角色视角，没有判断谁主负责、谁协同、是否需要治理。复杂任务里"谁来 lead"比"有几个专家"更重要。</div>
+          </div>
+          <div class="pain-card">
+            <div class="num">02</div>
+            <div class="title">单轮回答 ≠ 闭环</div>
+            <div class="desc">只给建议，没有执行路径、恢复锚点和下一步。真实软件交付需要跨多轮、跨多天、可恢复的状态管理。</div>
+          </div>
+          <div class="pain-card">
+            <div class="num">03</div>
+            <div class="title">发布前判断 ≠ 全链路</div>
+            <div class="desc">只覆盖"能不能发"，缺少 beta、release gate、completion evidence、post-release feedback 的连续治理链路。</div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Problem · 传统方案的三个缺口</span>
+        <span>02 / 10</span>
+      </div>
+    </section>
+
+    <!-- Slide 3: Positioning -->
+    <section class="slide">
+      <div class="slide-header">
+        <span class="slide-eyebrow">Positioning · 定位</span>
+        <span class="slide-num">03 / 10</span>
+      </div>
+      <div class="slide-body">
+        <h2 class="slide-title">不是<span class="accent">角色扮演器</span>，是闭环协调层</h2>
+        <p class="slide-sub">从"换几个角色回答"升级到"打通复杂软件工作的关键链条"</p>
+        <div class="positioning-row">
+          <div class="positioning-card bad">
+            <div class="icon">✕</div>
+            <div class="label">Ordinary</div>
+            <div class="title">多专家提示词</div>
+            <div class="desc">换几个角色视角回答问题<br/>单轮建议 · 无执行路径 · 无闭环</div>
+          </div>
+          <div class="vs-arrow">→</div>
+          <div class="positioning-card good">
+            <div class="icon">✦</div>
+            <div class="label">Virtual Dev Team</div>
+            <div class="title">闭环协调层</div>
+            <div class="desc">路由 + 计划 + 执行 + 迭代 + Beta<br/>Release + Feedback + 状态恢复</div>
+          </div>
+        </div>
+        <div style="margin-top: 32px; padding: 20px 24px; border-radius: 12px; background: rgba(155, 77, 202, 0.06); border: 1px dashed rgba(155, 77, 202, 0.3); font-size: 14px; color: var(--fg-muted); line-height: 1.6;">
+          <strong style="color: var(--accent-purple);">一句话理解：</strong>适合接手"单个专家已经不够、单轮回答也不够"的复杂软件任务。
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Positioning · 闭环协调层定位</span>
+        <span>03 / 10</span>
+      </div>
+    </section>
+
+    <!-- Slide 4: Seven Closures -->
+    <section class="slide">
+      <div class="slide-header">
+        <span class="slide-eyebrow">Architecture · 七层闭环</span>
+        <span class="slide-num">04 / 10</span>
+      </div>
+      <div class="slide-body">
+        <h2 class="slide-title">Seven <span class="accent">Closure Layers</span></h2>
+        <p class="slide-sub">每层都有明确触发条件、核心机制和结构化产物</p>
+        <div class="layer-strip">
+          <div class="layer-mini">
+            <div class="num">L1</div>
+            <div class="name">规划</div>
+            <div class="name-en">Planning</div>
+          </div>
+          <div class="layer-mini">
+            <div class="num">L2</div>
+            <div class="name">路由</div>
+            <div class="name-en">Routing</div>
+          </div>
+          <div class="layer-mini">
+            <div class="num">L3</div>
+            <div class="name">交付</div>
+            <div class="name-en">Delivery</div>
+          </div>
+          <div class="layer-mini">
+            <div class="num">L4</div>
+            <div class="name">迭代</div>
+            <div class="name-en">Iteration</div>
+          </div>
+          <div class="layer-mini">
+            <div class="num">L5</div>
+            <div class="name">发布</div>
+            <div class="name-en">Release</div>
+          </div>
+          <div class="layer-mini">
+            <div class="num">L6</div>
+            <div class="name">演练</div>
+            <div class="name-en">Drill</div>
+          </div>
+          <div class="layer-mini">
+            <div class="num">L7</div>
+            <div class="name">团队引擎</div>
+            <div class="name-en">Team Engine Lite</div>
+          </div>
+        </div>
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-title" style="color: var(--accent-purple);">L1-L2 · 入口层</div>
+            <div class="card-body">规划与路由：判断任务形态，选择主负责人和最小 workflow bundle。模糊想法先做意图确认。</div>
+          </div>
+          <div class="card">
+            <div class="card-title" style="color: var(--accent-cyan);">L3-L4 · 执行层</div>
+            <div class="card-body">交付与迭代：小切片保留 brief + context + status；优化循环有 baseline、round memory 和回滚决策。</div>
+          </div>
+          <div class="card">
+            <div class="card-title" style="color: var(--accent-amber);">L5-L7 · 治理层</div>
+            <div class="card-body">发布、演练、团队引擎：ship/hold 门禁 + completion evidence；Worker/Verifier 分离验收。</div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Architecture · 七层闭环是核心主线</span>
+        <span>04 / 10</span>
+      </div>
+    </section>
+
+    <!-- Slide 5: 8 Agents -->
+    <section class="slide">
+      <div class="slide-header">
+        <span class="slide-eyebrow">Agent Roster · 专家角色</span>
+        <span class="slide-num">05 / 10</span>
+      </div>
+      <div class="slide-body">
+        <h2 class="slide-title">8 Specialist <span class="accent">Agents</span></h2>
+        <p class="slide-sub">覆盖从代码到产品、从架构到发布的完整软件交付链路</p>
+        <div class="agent-grid">
+          <div class="agent-mini">
+            <div class="icon">JV</div>
+            <div class="meta">
+              <div class="role">Java Virtuoso</div>
+              <div class="domain">JVM · Spring · Gradle</div>
+            </div>
+          </div>
+          <div class="agent-mini">
+            <div class="icon">SA</div>
+            <div class="meta">
+              <div class="role">Sentinel Architect</div>
+              <div class="domain">架构风险 · 高危治理</div>
+            </div>
+          </div>
+          <div class="agent-mini">
+            <div class="icon">TT</div>
+            <div class="meta">
+              <div class="role">Technical Trinity</div>
+              <div class="domain">通用后端 · 小切片</div>
+            </div>
+          </div>
+          <div class="agent-mini">
+            <div class="icon">CA</div>
+            <div class="meta">
+              <div class="role">Code Audit Council</div>
+              <div class="domain">安全审计 · 代码审查</div>
+            </div>
+          </div>
+          <div class="agent-mini">
+            <div class="icon">GW</div>
+            <div class="meta">
+              <div class="role">Git Workflow Guardian</div>
+              <div class="domain">分支策略 · 回滚保护</div>
+            </div>
+          </div>
+          <div class="agent-mini">
+            <div class="icon">PA</div>
+            <div class="meta">
+              <div class="role">World-Class Product Architect</div>
+              <div class="domain">PRD · 用户研究 · 路线图</div>
+            </div>
+          </div>
+          <div class="agent-mini">
+            <div class="icon">DP</div>
+            <div class="meta">
+              <div class="role">Data Pipeline Guardian</div>
+              <div class="domain">Kafka · Flink · 实时管道</div>
+            </div>
+          </div>
+          <div class="agent-mini">
+            <div class="icon">AC</div>
+            <div class="meta">
+              <div class="role">API Contract Sentinel</div>
+              <div class="domain">契约 · 兼容性 · 版本</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top: 24px; padding: 16px 20px; border-radius: 10px; background: rgba(0, 206, 209, 0.06); border: 1px solid rgba(0, 206, 209, 0.2); font-size: 13px; color: var(--fg-muted); line-height: 1.6;">
+          <strong style="color: var(--accent-cyan);">双重定义：</strong>每个 Agent 在 <code style="color: var(--accent-cyan);">references/agent-catalog.md</code>（叙述版）和 <code style="color: var(--accent-cyan);">references/routing-rules.json</code>（机器可读版）中同步声明 Constraints 与 Evidence Requirements。
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Agent Roster · 8 个专家角色</span>
+        <span>05 / 10</span>
+      </div>
+    </section>
+
+    <!-- Slide 6: Capability Matrix -->
+    <section class="slide">
+      <div class="slide-header">
+        <span class="slide-eyebrow">Capability · 能力矩阵</span>
+        <span class="slide-num">06 / 10</span>
+      </div>
+      <div class="slide-body">
+        <h2 class="slide-title">14 维度 <span class="accent">能力对比</span></h2>
+        <p class="slide-sub">本项目 vs 普通多专家提示词的结构性差异</p>
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>维度</th>
+              <th class="good">✦ 本项目</th>
+              <th class="bad">✕ 普通方案</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="dim">任务路由</td>
+              <td class="good">选择主负责人、协同者、治理轨道</td>
+              <td class="bad">平铺多个角色视角</td>
+            </tr>
+            <tr>
+              <td class="dim">恢复能力</td>
+              <td class="good">状态优先恢复、resume、恢复锚点</td>
+              <td class="bad">依赖上下文记忆</td>
+            </tr>
+            <tr>
+              <td class="dim">迭代能力</td>
+              <td class="good">有边界的多轮优化、基线、回滚决策</td>
+              <td class="bad">无限"再来一轮"</td>
+            </tr>
+            <tr>
+              <td class="dim">发布治理</td>
+              <td class="good">release gate、completion evidence、修复入口</td>
+              <td class="bad">"建议发/不发"或只看 benchmark</td>
+            </tr>
+            <tr>
+              <td class="dim">上线后闭环</td>
+              <td class="good">post-release feedback loop</td>
+              <td class="bad">很少覆盖上线后反馈回写</td>
+            </tr>
+            <tr>
+              <td class="dim">Subagent runtime</td>
+              <td class="good">受控计划 + 宿主 spawn/wait/merge 证据</td>
+              <td class="bad">角色扮演误称真实多 Agent</td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="margin-top: 16px; font-size: 12px; color: var(--fg-dim); text-align: center;">
+          完整 14 维度对比见 <code>matrix.html</code>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Capability Matrix · 14 维度对比</span>
+        <span>06 / 10</span>
+      </div>
+    </section>
+
+    <!-- Slide 7: Routing Examples -->
+    <section class="slide">
+      <div class="slide-header">
+        <span class="slide-eyebrow">Routing · 路由示例</span>
+        <span class="slide-num">07 / 10</span>
+      </div>
+      <div class="slide-body">
+        <h2 class="slide-title">5 个典型请求 <span class="accent">路由结果</span></h2>
+        <p class="slide-sub">基于任务形态、风险、技术栈自动路由到最小可辩护 workflow bundle</p>
+        <div class="route-row">
+          <div class="request">"微服务架构拆分规划"</div>
+          <div class="arrow">→</div>
+          <div class="result">Multi-Expert<span class="why">跨架构、产品、交付多领域</span></div>
+        </div>
+        <div class="route-row">
+          <div class="request">"帮我重构这段 Python 代码"</div>
+          <div class="arrow">→</div>
+          <div class="result">Quick Slice<span class="why">Technical Trinity · 代码编辑需交付证据</span></div>
+        </div>
+        <div class="route-row">
+          <div class="request">"设计 Kafka 实时数据管道"</div>
+          <div class="arrow">→</div>
+          <div class="result">Expert Routing<span class="why">Data Pipeline Guardian · 明确领域</span></div>
+        </div>
+        <div class="route-row">
+          <div class="request">"发布这个版本到生产环境"</div>
+          <div class="arrow">→</div>
+          <div class="result">Full Workflow<span class="why">release gate + ship/hold 决策</span></div>
+        </div>
+        <div class="route-row">
+          <div class="request">"我想做一个用户画像功能"</div>
+          <div class="arrow">→</div>
+          <div class="result">Intent Confirm<span class="why">模糊想法先确认 5 个切入方向</span></div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Routing · 最小可辩护 workflow bundle</span>
+        <span>07 / 10</span>
+      </div>
+    </section>
+
+    <!-- Slide 8: Quick Start -->
+    <section class="slide">
+      <div class="slide-header">
+        <span class="slide-eyebrow">Quick Start · 快速上手</span>
+        <span class="slide-num">08 / 10</span>
+      </div>
+      <div class="slide-body">
+        <h2 class="slide-title">3 种<span class="accent">调用方式</span></h2>
+        <p class="slide-sub">默认手动模式，显式 /auto 才进入自动运行</p>
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-title" style="color: var(--accent-cyan);">① 手动模式</div>
+            <div class="code-block" style="margin: 12px 0;">
+              <span class="prompt">$virtual-intelligent-dev-team</span> 帮我评估这次<br/>重构的最佳负责人<br/>和执行顺序。
+            </div>
+            <div class="card-body">高风险任务逐轮确认，输出 lead route + workflow bundle + resume anchor</div>
+          </div>
+          <div class="card">
+            <div class="card-title" style="color: var(--accent-purple);">② /auto setup</div>
+            <div class="code-block" style="margin: 12px 0;">
+              <span class="prompt">$virtual-intelligent-dev-team</span> <span class="comment">/auto</span> setup<br/>这个项目级迁移。
+            </div>
+            <div class="card-body">建立 automation state + 恢复锚点，为后续 go 或 resume 准备状态</div>
+          </div>
+          <div class="card">
+            <div class="card-title" style="color: var(--accent-emerald);">③ /auto go</div>
+            <div class="code-block" style="margin: 12px 0;">
+              <span class="prompt">$virtual-intelligent-dev-team</span> <span class="comment">/auto</span> go
+              <span class="result">→ 进入自动执行</span>
+            </div>
+            <div class="card-body">有边界执行 + 状态优先恢复 + 保留 resume 锚点</div>
+          </div>
+        </div>
+        <div style="margin-top: 24px; padding: 16px 20px; border-radius: 10px; background: rgba(255, 20, 147, 0.06); border: 1px solid rgba(255, 20, 147, 0.2); font-size: 13px; color: var(--fg-muted); line-height: 1.6;">
+          <strong style="color: var(--accent-amber);">设计原则：</strong>自动化能力越强，越不能默认打开。默认 manual，只有显式 /auto 才进入自动运行，保持 setup → go 两阶段协议。
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Quick Start · 3 种调用方式</span>
+        <span>08 / 10</span>
+      </div>
+    </section>
+
+    <!-- Slide 9: Ecosystem (原 Slide 10，删除版本演进后上移) -->
+    <section class="slide">
+      <div class="slide-header">
+        <span class="slide-eyebrow">Ecosystem · 生态集成</span>
+        <span class="slide-num">09 / 10</span>
+      </div>
+      <div class="slide-body">
+        <h2 class="slide-title">完整<span class="accent">生态覆盖</span></h2>
+        <p class="slide-sub">从语言路由到工作流包到阶段专家团的完整集成</p>
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="num">13</div>
+            <div class="label">Language Profiles</div>
+          </div>
+          <div class="stat-card">
+            <div class="num">7</div>
+            <div class="label">Workflow Bundles</div>
+          </div>
+          <div class="stat-card">
+            <div class="num">8</div>
+            <div class="label">Specialist Agents</div>
+          </div>
+          <div class="stat-card">
+            <div class="num">7</div>
+            <div class="label">Closure Layers</div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title" style="color: var(--accent-blue);">三层语言解耦</div>
+            <div class="card-body">
+              <strong>Routing</strong>（JSON）决定 lead agent<br/>
+              <strong>Context</strong>（YAML）注入生态默认值<br/>
+              <strong>Constraints</strong>（YAML + Manifest）注入语言护栏<br/>
+              <span style="color: var(--fg-dim); font-size: 12px;">覆盖 python/go/nodejs/rust/java/kotlin/swift/cpp/csharp/php/ruby/elixir/scala</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title" style="color: var(--accent-purple);">Stage Council Overlay</div>
+            <div class="card-body">
+              <strong>product-discovery-council</strong>：产品战略、PRD、用户研究、竞品、路线图<br/>
+              <strong>prototype-design-council</strong>：高保真原型、设计系统、可访问性审查<br/>
+              <span style="color: var(--fg-dim); font-size: 12px;">在 World-Class Product Architect 下按需展开，不替换顶层 lead</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Ecosystem · 完整生态覆盖</span>
+        <span>09 / 10</span>
+      </div>
+    </section>
+
+    <!-- Slide 10: CTA (原 Slide 12，删除路线图后上移) -->
+    <section class="slide">
+      <div class="slide-header">
+        <span class="slide-eyebrow">Get Started · 开始使用</span>
+        <span class="slide-num">10 / 10</span>
+      </div>
+      <div class="slide-body" style="justify-content: center;">
+        <div class="cta-card">
+          <h2>开始你的第一个闭环任务</h2>
+          <p>
+            适合接手"单个专家已经不够、单轮回答也不够"的复杂软件任务<br/>
+            从手动模式开始，按需进入 /auto 自动运行
+          </p>
+          <div class="cta-links">
+            <a class="cta-link primary" href="https://github.com/fxbin/virtual-intelligent-dev-team" target="_blank" rel="noopener">★ GitHub Repository</a>
+            <a class="cta-link" href="index.html">返回首页</a>
+            <a class="cta-link" href="architecture.html">七层闭环架构</a>
+            <a class="cta-link" href="agents.html">8 个 Agent 角色</a>
+            <a class="cta-link" href="matrix.html">能力矩阵对比</a>
+          </div>
+          <div style="margin-top: 32px; font-size: 13px; color: var(--fg-dim); letter-spacing: 0.05em;">
+            Virtual Intelligent Dev Team · v5.7.6 · MIT License<br/>
+            github.com/fxbin/virtual-intelligent-dev-team
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Get Started · 开始使用</span>
+        <span>10 / 10</span>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="nav-controls">
+    <button class="nav-btn" id="prev">‹</button>
+    <button class="nav-btn" id="next">›</button>
+  </div>
+
+  <div class="hint">← → 翻页 · Space 下一页 · F 全屏</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+  const progress = document.getElementById('progress');
+
+  function show(idx) {
+    slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+    progress.style.width = ((idx + 1) / total * 100) + '%';
+    current = idx;
+  }
+
+  function next() { if (current < total - 1) show(current + 1); }
+  function prev() { if (current > 0) show(current - 1); }
+
+  document.getElementById('next').addEventListener('click', next);
+  document.getElementById('prev').addEventListener('click', prev);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+    else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    }
+    else if (e.key === 'Home') show(0);
+    else if (e.key === 'End') show(total - 1);
+  });
+
+  show(0);
+</script>
+</body>
+</html>
