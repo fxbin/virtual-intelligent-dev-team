@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="author" content="fxbin">
+<title>Engineering Pillars — Virtual Intelligent Dev Team</title>
+<style>
+  /* === 设计 Token（machine-hallucination 配色） === */
+  :root {
+    --bg: #0A0A1A;
+    --bg-card: #13102a;
+    --bg-elevated: #1a1535;
+    --bg-code: #0f0820;
+    --border: #2a1f4d;
+    --border-soft: #1f1738;
+    --text: #ffffff;
+    --text-muted: #c4b5fd;
+    --text-dim: #8b6fc0;
+    --brand: #9B4DCA;
+    --brand-soft: #c4b5fd;
+    --accent: #00CED1;
+    --secondary: #FF1493;
+    --success: #00CED1;
+    --warning: #FF1493;
+    --danger: #FF1493;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    color-scheme: dark;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: -apple-system, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.5;
+  }
+
+  code, .mono {
+    font-family: "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  }
+
+  /* === 顶部导航 === */
+  .nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 60px;
+    background: rgba(10, 10, 26, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    z-index: 100;
+  }
+  .nav-inner {
+    max-width: 1200px;
+    height: 100%;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .nav-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .nav-back:hover { color: var(--text); }
+  .nav-back .arrow { color: var(--text-dim); }
+  .nav-links {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+  }
+  .nav-links a {
+    color: var(--text-muted);
+    font-size: 14px;
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .nav-links a:hover,
+  .nav-links a.active { color: var(--text); }
+
+  /* === 主体 === */
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 120px 24px 80px;
+  }
+  .page-head { margin-bottom: 64px; }
+  .page-head h1 {
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+  .page-head .sub {
+    font-size: 20px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    max-width: 760px;
+  }
+
+  section { margin-bottom: 64px; }
+  section:last-child { margin-bottom: 0; }
+
+  .lead {
+    font-size: 17px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    max-width: 820px;
+    margin-bottom: 64px;
+  }
+
+  /* === 支柱卡片 === */
+  .pillars {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .pillar-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px 32px;
+  }
+  .pillar-head {
+    display: grid;
+    grid-template-columns: 56px 1fr auto;
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+  .pillar-num {
+    width: 56px; height: 56px;
+    border-radius: var(--radius-md);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-soft);
+    color: var(--accent);
+    font-family: "SF Mono", "JetBrains Mono", "Menlo", monospace;
+    font-size: 18px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pillar-title h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .pillar-name-en {
+    font-size: 13px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .pillar-tag {
+    font-family: "SF Mono", "JetBrains Mono", "Menlo", monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    padding: 6px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+  }
+  .pillar-mech {
+    font-size: 15px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    margin-bottom: 20px;
+  }
+  .pillar-mech code {
+    color: var(--brand-soft);
+    background: var(--bg-elevated);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .pillar-detail {
+    border-top: 1px solid var(--border);
+    padding-top: 18px;
+  }
+  .detail-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dim);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .pillar-detail ul {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .pillar-detail li {
+    font-size: 13px;
+    color: var(--text-muted);
+    padding: 6px 12px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  }
+
+  /* === 流程图区块 === */
+  .flow-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px 32px;
+  }
+  .flow-card h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .flow-card .name-en {
+    font-size: 13px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .flow-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+  }
+  .flow-step {
+    padding: 10px 16px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    color: var(--text-muted);
+    font-family: "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  }
+  .flow-step.gate {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .flow-arrow {
+    color: var(--text-dim);
+    font-size: 16px;
+  }
+
+  /* === 对比表 === */
+  .compare-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px 32px;
+    overflow-x: auto;
+  }
+  .compare-card h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .compare-card .name-en {
+    font-size: 13px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  th, td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    color: var(--text-dim);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  td:first-child {
+    color: var(--text);
+    font-weight: 600;
+  }
+  td.yes { color: var(--accent); }
+  td.no { color: var(--text-dim); }
+
+  /* === Footer === */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 24px;
+    margin-top: 80px;
+  }
+  .footer-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .footer-links {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .footer-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .footer-links a:hover { color: var(--text); }
+
+  /* === 响应式 === */
+  @media (max-width: 768px) {
+    main { padding: 100px 16px 60px; }
+    .page-head h1 { font-size: 36px; }
+    .page-head .sub { font-size: 17px; }
+    .nav-links { gap: 14px; }
+    .nav-links a { font-size: 13px; }
+    .pillar-card { padding: 22px 20px; }
+    .pillar-head {
+      grid-template-columns: 48px 1fr;
+      gap: 14px;
+    }
+    .pillar-num { width: 48px; height: 48px; font-size: 15px; }
+    .pillar-tag {
+      grid-column: 1 / -1;
+      margin-top: 4px;
+      justify-self: start;
+    }
+    .flow-steps { flex-direction: column; align-items: stretch; }
+    .flow-arrow { display: none; }
+  }
+</style>
+</head>
+<body>
+  <!-- 顶部导航 -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-back" href="index.html">
+        <span class="arrow">←</span>
+        <span>Virtual Intelligent Dev Team</span>
+      </a>
+      <div class="nav-links">
+        <a href="architecture.html">Architecture</a>
+        <a href="engineering.html" class="active">Engineering</a>
+        <a href="agents.html">Agents</a>
+        <a href="matrix.html">Matrix</a>
+        <a href="deck.html">Deck</a>
+        <a href="https://github.com/fxbin/virtual-intelligent-dev-team" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <!-- 页头 -->
+    <div class="page-head">
+      <h1>Engineering Pillars</h1>
+      <p class="sub">让 LLM 在真实软件工程里更可靠的四根工程化支柱</p>
+    </div>
+
+    <p class="lead">
+      路由与七层闭环解决的是"谁来做、怎么收口"，但这不够。真实软件工程里 LLM 的痛点是：实现前不约束、自产自审、旧路径永不退休、永远"再来一轮"。这四根支柱就是针对这四个痛点设计的工程化门禁，也是本项目区别于"换几个角色回答"的核心差异化所在。
+    </p>
+
+    <!-- 四大工程化支柱 -->
+    <section class="pillars">
+      <!-- P1 Harness 工程约束门禁 -->
+      <article class="pillar-card">
+        <div class="pillar-head">
+          <div class="pillar-num">P1</div>
+          <div class="pillar-title">
+            <h2>Harness 工程约束门禁</h2>
+            <div class="pillar-name-en">Engineering Constraint Gate</div>
+          </div>
+          <div class="pillar-tag">6 个 code-facing bundle</div>
+        </div>
+        <p class="pillar-mech">
+          6 个 code-facing bundle（<code>plan-first-build</code> / <code>product-spec-deliver</code> / <code>audit-fix-deliver</code> / <code>govern-change-safely</code> / <code>root-cause-remediate</code> / <code>direct-execution</code>）执行前必须先创建或刷新 <code>.skill-harness/engineering-constraints.md</code>，把"实现前先约束"从建议变成硬门禁。Agent 可以先看代码，但在工程约束明确之前不能开始改生产文件。
+        </p>
+        <div class="pillar-detail">
+          <div class="detail-label">必填章节</div>
+          <ul>
+            <li>Scope</li>
+            <li>Non-Negotiable Constraints</li>
+            <li>Forbidden Changes</li>
+            <li>Verification Evidence</li>
+            <li>Rollback And Stop Conditions</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- P2 Team Engine Lite 对抗式验收 -->
+      <article class="pillar-card">
+        <div class="pillar-head">
+          <div class="pillar-num">P2</div>
+          <div class="pillar-title">
+            <h2>Team Engine Lite 对抗式验收</h2>
+            <div class="pillar-name-en">Worker / Verifier / Lead Separation</div>
+          </div>
+          <div class="pillar-tag">11 状态机 · 5 标准对象</div>
+        </div>
+        <p class="pillar-mech">
+          Worker 只产不验、Verifier 只验不产、Lead 只能基于 <code>DeliveryCycleReport</code> 接受。配合 3 级 runtime claim（<code>real_subagent_runtime</code> / <code>single_backend_multi_session</code> / <code>soft_orchestration_only</code>），禁止把角色扮演误称为真实多 Agent runtime。没有宿主 spawn / wait / merge 证据时，声明始终保持 <code>soft_orchestration_only</code>。
+        </p>
+        <div class="pillar-detail">
+          <div class="detail-label">标准对象</div>
+          <ul>
+            <li>WorkOrder</li>
+            <li>ImplementationOutput</li>
+            <li>VerificationReport</li>
+            <li>RemediationPatch</li>
+            <li>DeliveryCycleReport</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- P3 Anti-Entropy 反熵治理 -->
+      <article class="pillar-card">
+        <div class="pillar-head">
+          <div class="pillar-num">P3</div>
+          <div class="pillar-title">
+            <h2>Anti-Entropy 反熵治理</h2>
+            <div class="pillar-name-en">Anti-Entropy Governance</div>
+          </div>
+          <div class="pillar-tag">delete-first / compat-exception / confirmation-first</div>
+        </div>
+        <p class="pillar-mech">
+          遇到 duplicate owner、fallback、adapter、guard 或兼容路径增长时，先按目标分类（<code>code-retirement</code> / <code>contract-carrying-code</code> / <code>derived-state</code> / <code>persistent-state</code>），再选路径：<code>delete-first</code>（能删就删）、<code>compat-exception</code>（保留兼容但登记例外）、<code>confirmation-first</code>（未知依赖先问人）。核心原则：未知依赖不等于活跃依赖证据。
+        </p>
+        <div class="pillar-detail">
+          <div class="detail-label">触发信号</div>
+          <ul>
+            <li>duplicate owner</li>
+            <li>fallback growth</li>
+            <li>adapter / guard 膨胀</li>
+            <li>delete vs compat 边界</li>
+            <li>source-of-truth 删除边界</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- P4 Self-Optimization 自优化循环 -->
+      <article class="pillar-card">
+        <div class="pillar-head">
+          <div class="pillar-num">P4</div>
+          <div class="pillar-title">
+            <h2>Self-Optimization 自优化循环</h2>
+            <div class="pillar-name-en">Bounded Iteration + Mutation Catalog</div>
+          </div>
+          <div class="pillar-tag">live ≤3 · offline ≤120 · same-hypothesis ≤2</div>
+        </div>
+        <p class="pillar-mech">
+          可对自身的 <code>routing-rules.json</code> / <code>regression-cases.json</code> / <code>evals.json</code> 做 JSON-aware 确定性自优化。Live 模式最多 3 轮、Offline 模式最多 120 轮、同一假设最多 2 次重试。所有 <code>rollback / keep / pivot / resume / hold→bootstrap→auto-run</code> 路径都可以通过 <code>offline loop drill</code> 离线验证，不让自优化变成"无限自转"。
+        </p>
+        <div class="pillar-detail">
+          <div class="detail-label">Mutation 操作族</div>
+          <ul>
+            <li>json_set</li>
+            <li>json_merge</li>
+            <li>json_delete</li>
+            <li>append_unique</li>
+            <li>regex_replace</li>
+          </ul>
+        </div>
+      </article>
+    </section>
+
+    <!-- Harness 门禁流程图 -->
+    <section>
+      <div class="flow-card">
+        <h2>Harness 门禁流程</h2>
+        <div class="name-en">Constraint Gate Flow</div>
+        <p class="pillar-mech" style="margin-bottom: 24px;">
+          code-facing bundle 在进入实现前必须经过 Harness 门禁。Release / beta / post-release 路由在只做证据收集时可以跳过门禁，但一旦进入实现阶段就必须补上。
+        </p>
+        <div class="flow-steps">
+          <div class="flow-step">收到 code-facing 任务</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">路由到 bundle</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step gate">Harness Constraint Gate</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">init_harness_constraints.py</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">engineering-constraints.md</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">Team Engine Lite</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step gate">DeliveryCycleReport</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 工程化能力对比 -->
+    <section>
+      <div class="compare-card">
+        <h2>工程化能力对比</h2>
+        <div class="name-en">Engineering Capability Comparison</div>
+        <table>
+          <thead>
+            <tr>
+              <th>能力</th>
+              <th>本项目</th>
+              <th>普通多专家提示词</th>
+              <th>通用 Agent 框架</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>工程约束门禁</td>
+              <td class="yes">5 必填章节 + 6 bundle 强制</td>
+              <td class="no">无</td>
+              <td class="no">无</td>
+            </tr>
+            <tr>
+              <td>对抗式验收</td>
+              <td class="yes">Worker/Verifier/Lead 分离</td>
+              <td class="no">自产自审</td>
+              <td class="no">部分（critic 角色）</td>
+            </tr>
+            <tr>
+              <td>反熵治理</td>
+              <td class="yes">3 路径 + 4 类目标</td>
+              <td class="no">不断加 fallback</td>
+              <td class="no">无</td>
+            </tr>
+            <tr>
+              <td>自优化循环</td>
+              <td class="yes">bounded iteration + drill</td>
+              <td class="no">无</td>
+              <td class="no">无</td>
+            </tr>
+            <tr>
+              <td>Runtime 诚实</td>
+              <td class="yes">3 级 runtime claim</td>
+              <td class="no">角色扮演误称多 Agent</td>
+              <td class="no">部分声明 real runtime</td>
+            </tr>
+            <tr>
+              <td>完成证据</td>
+              <td class="yes">7 字段 schema</td>
+              <td class="no">"觉得好了"就完成</td>
+              <td class="no">部分（task output）</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 自动化脚本清单 -->
+    <section>
+      <div class="pillar-card">
+        <div class="pillar-head" style="grid-template-columns: 1fr; gap: 0;">
+          <div class="pillar-title">
+            <h2>自动化脚本支撑</h2>
+            <div class="pillar-name-en">45+ Automation Scripts</div>
+          </div>
+        </div>
+        <p class="pillar-mech">
+          四根支柱不是停留在文档上的概念，而是由 45+ 个 Python 脚本支撑的可执行机制。这些脚本覆盖初始化、校验、迭代、演练、发布、恢复全链路，确保工程化门禁可以被机器执行和验证。
+        </p>
+        <div class="pillar-detail">
+          <div class="detail-label">核心脚本</div>
+          <ul>
+            <li>init_harness_constraints.py</li>
+            <li>check_harness_health.py</li>
+            <li>run_release_gate.py</li>
+            <li>run_iteration_loop.py</li>
+            <li>run_offline_loop_drill.py</li>
+            <li>run_team_engine_drill.py</li>
+            <li>verify_action.py</li>
+            <li>verify_completion_evidence.py</li>
+            <li>route_request.py</li>
+            <li>validate_virtual_team.py</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <span>Virtual Intelligent Dev Team · v5.7.6</span>
+      <div class="footer-links">
+        <a href="index.html">Home</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="engineering.html">Engineering</a>
+        <a href="agents.html">Agents</a>
+        <a href="matrix.html">Matrix</a>
+        <a href="https://github.com/fxbin/virtual-intelligent-dev-team" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

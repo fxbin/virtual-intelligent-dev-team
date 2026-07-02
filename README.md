@@ -23,8 +23,9 @@
 | 落地页 | 项目总览：定位 / 痛点 / 七层闭环 / 8 Agent / 能力矩阵 / Quick Start | [fxbin.github.io/virtual-intelligent-dev-team](https://fxbin.github.io/virtual-intelligent-dev-team) |
 | 演示文稿 | 10 页 PPT 在线演示（← → 翻页 · F 全屏） | [Deck](https://fxbin.github.io/virtual-intelligent-dev-team/deck.html) |
 | 七层闭环架构 | 七层 Closure 的触发条件、核心机制与关键产物 | [Architecture](https://fxbin.github.io/virtual-intelligent-dev-team/architecture.html) |
+| 工程化四支柱 | Harness 门禁 · Team Engine Lite · 反熵治理 · 自优化循环 | [Engineering](https://fxbin.github.io/virtual-intelligent-dev-team/engineering.html) |
 | 8 Agent 角色图谱 | 8 个专家的职责、领域与证据要求 | [Agents](https://fxbin.github.io/virtual-intelligent-dev-team/agents.html) |
-| 能力矩阵对比 | 14 个维度对比本项目 vs 普通多专家提示词 | [Matrix](https://fxbin.github.io/virtual-intelligent-dev-team/matrix.html) |
+| 能力矩阵对比 | 18 个维度对比本项目 vs 普通多专家提示词 vs 通用 Agent 框架 | [Matrix](https://fxbin.github.io/virtual-intelligent-dev-team/matrix.html) |
 
 > 本地预览：`open docs/index.html`，或在仓库根目录运行 `python -m http.server 8000` 后访问 `http://localhost:8000/docs/`。
 
