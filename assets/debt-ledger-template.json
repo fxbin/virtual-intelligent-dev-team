@@ -1,0 +1,24 @@
+{
+  "schema_version": "debt-ledger/v1",
+  "generated_at": "",
+  "source_request": "",
+  "entries": [
+    {
+      "id": "<唯一标识,如 DEBT-001>",
+      "location": "<文件路径:行号 或 模块名>",
+      "shortcut_type": "<known-shortcut | temporary-workaround | technical-debt>",
+      "description": "<故意走捷径的描述>",
+      "ceiling": "<这个 shortcut 能承受的上限,如 'QPS < 100' 或 '数据量 < 10万行'>",
+      "upgrade_path": "<达到 ceiling 后的升级方案>",
+      "created_at": "<ISO 8601>",
+      "status": "open | resolved",
+      "resolved_at": null,
+      "resolution": null
+    }
+  ],
+  "summary": {
+    "total": 0,
+    "open": 0,
+    "resolved": 0
+  }
+}

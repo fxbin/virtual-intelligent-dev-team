@@ -1,4 +1,8 @@
-# Team Engine Lite Protocol
+# Team Engine Lite Subgraph Protocol
+
+> **定位变更**(P1-8):从"第七层独立闭环"降级为"Delivery closure 内的 Worker/Verifier 子图"。
+> Verifier 独立性由"禁止上游预判下游"硬约束(P0-3)保证,而非独立成层。
+> 详见 `references/verifier-extraction-guide.md` 的痛驱动抽取路径。
 
 This protocol turns virtual software-team coordination from role routing into a replayable delivery contract.
 
@@ -104,6 +108,8 @@ Legal states:
 - `failed`
 - `hold`
 - `escalated`
+- `human_resolved`
+- `resumed`
 - `accepted`
 
 Legal transitions:
@@ -121,15 +127,46 @@ retrying -> running
 passed -> accepted
 hold -> escalated
 failed -> escalated
+escalated -> human_resolved
+human_resolved -> resumed
+resumed -> running
+resumed -> accepted
 ```
 
 Hard rules:
 
-- `accepted` can only follow `passed`
+- `accepted` can only follow `passed` or `resumed`(人工接受)
 - `retrying` requires `remediation_patch`
 - `passed` requires `verification_report.verdict = pass`
 - `failed` or `hold` requires blocker evidence or human escalation
 - `cycle_count > max_cycles` must become `escalated`
+- `human_resolved` requires human decision record(介入者、决策、理由)
+- `resumed` 只能从 `human_resolved` 转入
+
+### 人工介入点一等公民(P1-9)
+
+人工介入不是 fallback,是流程中的一等公民。
+
+| 介入点 | 触发条件 | 人的权力 | 恢复状态 |
+|--------|---------|---------|---------|
+| Delivery escalate | max_cycles 耗尽 | keep_baseline / rewrite_workorder / abort | resumed |
+| Verifier 同根因 reject | 连续两次同根因 fail | adjust_patch / change_verifier / accept_risk | resumed |
+| Intent drift | Worker 偏离 WorkOrder | reject_drift / accept_drift | resumed |
+| Hold | 证据不足 | provide_evidence / abort | resumed |
+
+人工介入决策必须写入 decision-log:
+
+```json
+{
+  "event": "human_intervention",
+  "timestamp": "<ISO 8601>",
+  "intervener": "<角色或人>",
+  "trigger": "<触发条件>",
+  "decision": "<决策>",
+  "rationale": "<理由>",
+  "resume_state": "resumed"
+}
+```
 
 ## Standard Objects
 

@@ -1,5 +1,10 @@
 # Project Memory Lite
 
+> **Journal 模式**(P1-10):本协议已升级为 workspace journal 模式。
+> 详见 `references/workspace-journal-protocol.md`。
+> journal 是 event sourcing(事件流),能复盘"上一次为什么走 Sentinel 而不是 Trinity"。
+> compaction 后状态不丢失(对应 Karpathy 的"pod 重启内存清空"问题)。
+
 Use this protocol when the request benefits from resuming work across sessions,
 rounds, or delivery gates, but a full persistent memory system would be too heavy.
 

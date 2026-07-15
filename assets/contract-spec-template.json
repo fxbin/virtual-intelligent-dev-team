@@ -1,0 +1,74 @@
+{
+  "schema_version": "contract-spec/v1",
+  "spec_id": "contract-spec-template",
+  "endpoint": "/api/v1/example",
+  "method": "POST",
+  "request_schema": {
+    "fields": [
+      {
+        "name": "example_field",
+        "type": "string",
+        "required": true,
+        "description": "示例请求字段"
+      }
+    ]
+  },
+  "response_schema": {
+    "success": {
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "资源唯一标识"
+        }
+      ]
+    },
+    "error": {
+      "fields": [
+        {
+          "name": "error_code",
+          "type": "integer",
+          "required": true,
+          "description": "错误码"
+        },
+        {
+          "name": "error_message",
+          "type": "string",
+          "required": true,
+          "description": "错误描述"
+        }
+      ]
+    }
+  },
+  "error_codes": [
+    {
+      "code": 400,
+      "meaning": "请求参数无效",
+      "retryable": false
+    },
+    {
+      "code": 404,
+      "meaning": "资源不存在",
+      "retryable": false
+    },
+    {
+      "code": 500,
+      "meaning": "服务器内部错误",
+      "retryable": true
+    }
+  ],
+  "version": "1.0.0",
+  "signatures": {
+    "frontend_lead": {
+      "agent": "",
+      "signed_at": "",
+      "accepted": false
+    },
+    "backend_lead": {
+      "agent": "",
+      "signed_at": "",
+      "accepted": false
+    }
+  }
+}

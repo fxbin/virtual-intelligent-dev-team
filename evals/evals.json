@@ -2694,6 +2694,311 @@
         "verify_action_json details.verdict is spec_violation"
       ],
       "runtime_dependent": true
+    },
+    {
+      "id": 200,
+      "runner": "verify_action",
+      "check": "contract-lock",
+      "categories": [
+        "contract-lock",
+        "contract-output",
+        "p1-5"
+      ],
+      "prompt": "Worker is ready to start implementation, verify contract lock.",
+      "expected_output": "contract-lock check should allow (skip) when no contract-spec path is provided.",
+      "files": [
+        "references/contract-lock-protocol.md",
+        "assets/contract-spec-template.json"
+      ],
+      "expectations": [
+        "allowed is true",
+        "verify_action_json details.spec_exists is false"
+      ]
+    },
+    {
+      "id": 201,
+      "runner": "route",
+      "categories": [
+        "contract-lock",
+        "p1-5"
+      ],
+      "prompt": "Review this API contract for backward compatibility and breaking changes.",
+      "expected_output": "API contract review should route to API Contract Sentinel and expose contract lock reference.",
+      "files": [
+        "references/contract-lock-protocol.md"
+      ],
+      "expectations": [
+        "lead_agent is API Contract Sentinel"
+      ]
+    },
+    {
+      "id": 202,
+      "runner": "route",
+      "categories": [
+        "layer-reinforcement",
+        "p1-6"
+      ],
+      "prompt": "Refactor this Java helper function.",
+      "expected_output": "Seven-layer reinforcement should expose acceptance_gates in team_engine_gate.",
+      "files": [
+        "references/layer-reinforcement-protocol.md",
+        "references/circuit-breaker-config.json"
+      ],
+      "expectations": [
+        "team_engine_gate.acceptance_gates exists",
+        "team_engine_gate.max_cycles exists"
+      ]
+    },
+    {
+      "id": 203,
+      "runner": "route",
+      "categories": [
+        "layer-reinforcement",
+        "p1-6"
+      ],
+      "prompt": "Refactor this Java helper function.",
+      "expected_output": "Seven-layer reinforcement should expose state_machine and work_order_contract in team_engine_gate.",
+      "files": [
+        "references/layer-reinforcement-protocol.md"
+      ],
+      "expectations": [
+        "team_engine_gate.state_machine exists",
+        "team_engine_gate.work_order_contract exists"
+      ]
+    },
+    {
+      "id": 204,
+      "runner": "route",
+      "categories": [
+        "state-schema",
+        "p1-7"
+      ],
+      "prompt": "Refactor this Java helper function.",
+      "expected_output": "State schema should expose state_machine contract in team_engine_gate.",
+      "files": [
+        "references/state-schema-spec.md"
+      ],
+      "expectations": [
+        "team_engine_gate.state_machine exists"
+      ]
+    },
+    {
+      "id": 205,
+      "runner": "route",
+      "categories": [
+        "state-schema",
+        "p1-7"
+      ],
+      "prompt": "Refactor this Java helper function.",
+      "expected_output": "State schema should expose work_order_contract in team_engine_gate.",
+      "files": [
+        "references/state-schema-spec.md"
+      ],
+      "expectations": [
+        "team_engine_gate.work_order_contract exists"
+      ]
+    },
+    {
+      "id": 206,
+      "runner": "route",
+      "categories": [
+        "team-engine-lite-subgraph",
+        "p1-8"
+      ],
+      "prompt": "Refactor this Java helper function.",
+      "expected_output": "Team Engine Lite subgraph should reference team-engine-lite-protocol.md.",
+      "files": [
+        "references/team-engine-lite-protocol.md",
+        "references/verifier-extraction-guide.md"
+      ],
+      "expectations": [
+        "team_engine_gate.reference is references/team-engine-lite-protocol.md",
+        "team_engine_gate.runtime_claim is soft_orchestration_only"
+      ]
+    },
+    {
+      "id": 207,
+      "runner": "route",
+      "categories": [
+        "team-engine-lite-subgraph",
+        "p1-8"
+      ],
+      "prompt": "Refactor this Java helper function.",
+      "expected_output": "Team Engine Lite subgraph should keep soft_orchestration_only runtime claim.",
+      "files": [
+        "references/verifier-extraction-guide.md"
+      ],
+      "expectations": [
+        "team_engine_gate.runtime_claim is soft_orchestration_only"
+      ]
+    },
+    {
+      "id": 208,
+      "runner": "route",
+      "categories": [
+        "failure-path",
+        "p1-9"
+      ],
+      "prompt": "Refactor this Java helper function.",
+      "expected_output": "Failure path design should prevent producer self-pass.",
+      "files": [
+        "references/failure-runbook.md"
+      ],
+      "expectations": [
+        "team_engine_gate.producer_can_self_pass is false",
+        "team_engine_gate.leader_accept_requires_cycle_report is true"
+      ]
+    },
+    {
+      "id": 209,
+      "runner": "route",
+      "categories": [
+        "failure-path",
+        "p1-9"
+      ],
+      "prompt": "Refactor this Java helper function.",
+      "expected_output": "Failure path design should require remediation patch on verifier fail.",
+      "files": [
+        "references/failure-runbook.md",
+        "references/iteration-state-machine.md"
+      ],
+      "expectations": [
+        "team_engine_gate.verifier_fail_requires_remediation_patch is true"
+      ]
+    },
+    {
+      "id": 210,
+      "runner": "route",
+      "categories": [
+        "workspace-journal",
+        "p1-10"
+      ],
+      "prompt": "Refactor this Java helper function.",
+      "expected_output": "Workspace journal should preserve progress anchor for resume.",
+      "files": [
+        "references/workspace-journal-protocol.md",
+        "references/memory-model.md"
+      ],
+      "expectations": [
+        "progress_anchor_recommended is not null"
+      ]
+    },
+    {
+      "id": 211,
+      "runner": "route",
+      "categories": [
+        "workspace-journal",
+        "p1-10"
+      ],
+      "prompt": "Refactor this Java helper function.",
+      "expected_output": "Workspace journal should preserve resume artifacts for replay.",
+      "files": [
+        "references/workspace-journal-protocol.md",
+        "references/project-memory-lite.md"
+      ],
+      "expectations": [
+        "resume_artifacts exists"
+      ]
+    },
+    {
+      "id": 212,
+      "runner": "route",
+      "categories": [
+        "complexity-ladder",
+        "p1-12"
+      ],
+      "prompt": "Refactor this Java helper function.",
+      "expected_output": "Complexity ladder should not alter workflow bundle routing.",
+      "files": [
+        "references/complexity-ladder.md"
+      ],
+      "expectations": [
+        "workflow_bundle is quick-slice-deliver"
+      ]
+    },
+    {
+      "id": 213,
+      "runner": "route",
+      "categories": [
+        "complexity-ladder",
+        "p1-12"
+      ],
+      "prompt": "Refactor this Java helper function.",
+      "expected_output": "Complexity ladder should not alter lead agent assignment.",
+      "files": [
+        "references/complexity-ladder.md"
+      ],
+      "expectations": [
+        "lead_agent is Technical Trinity"
+      ]
+    },
+    {
+      "id": 214,
+      "runner": "route",
+      "categories": [
+        "debt-ledger",
+        "p1-13"
+      ],
+      "prompt": "Refactor this Java helper function.",
+      "expected_output": "Debt ledger should not alter team engine gate requirements.",
+      "files": [
+        "assets/debt-ledger-template.json",
+        "scripts/track_debt.py"
+      ],
+      "expectations": [
+        "team_engine_gate.required is true"
+      ]
+    },
+    {
+      "id": 215,
+      "runner": "route",
+      "categories": [
+        "debt-ledger",
+        "p1-13"
+      ],
+      "prompt": "Refactor this Java helper function.",
+      "expected_output": "Debt ledger should preserve harness constraint gate for known-shortcut tracking.",
+      "files": [
+        "references/completion-evidence.schema.json",
+        "references/worker-verifier-cycle-protocol.md"
+      ],
+      "expectations": [
+        "harness_constraint_gate.required is true"
+      ]
+    },
+    {
+      "id": 216,
+      "runner": "route",
+      "categories": [
+        "hook-injection",
+        "p1-19"
+      ],
+      "prompt": "Refactor this Java helper function.",
+      "expected_output": "Hook injection should output hook_directives in route result.",
+      "files": [
+        "references/hook-injection-protocol.md"
+      ],
+      "expectations": [
+        "hook_directives exists"
+      ]
+    },
+    {
+      "id": 217,
+      "runner": "route",
+      "categories": [
+        "hook-injection",
+        "p1-19"
+      ],
+      "prompt": "Refactor this Java helper function.",
+      "expected_output": "Hook injection should populate spec_files in hook_directives.",
+      "files": [
+        "references/hook-injection-protocol.md",
+        "scripts/route_request.py"
+      ],
+      "expectations": [
+        "hook_directives.spec_files exists",
+        "hook_directives.inject_target is worker"
+      ]
     }
   ]
 }

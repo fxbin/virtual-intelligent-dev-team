@@ -35,7 +35,8 @@
         "spec-violation",
         "lead-prejudgment",
         "yagni",
-        "breaker-status"
+        "breaker-status",
+        "contract-lock"
       ]
     },
     "allowed": {
@@ -326,6 +327,22 @@
         "properties": {
           "details": {
             "$ref": "#/$defs/breaker_status_details"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "check": {
+            "const": "contract-lock"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "details": {
+            "$ref": "#/$defs/contract_lock_details"
           }
         }
       }
@@ -1435,6 +1452,37 @@
         },
         "escalation_sink": {
           "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "contract_lock_details": {
+      "type": "object",
+      "required": [
+        "contract_spec",
+        "spec_exists",
+        "signatures_complete",
+        "both_accepted",
+        "missing_parties"
+      ],
+      "properties": {
+        "contract_spec": {
+          "type": "string"
+        },
+        "spec_exists": {
+          "type": "boolean"
+        },
+        "signatures_complete": {
+          "type": "boolean"
+        },
+        "both_accepted": {
+          "type": "boolean"
+        },
+        "missing_parties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "additionalProperties": false

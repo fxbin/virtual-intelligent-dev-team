@@ -1,5 +1,9 @@
 # Memory Model
 
+> **Journal 模式**(P1-10):本模型已升级为 workspace journal 模式(event sourcing)。
+> 详见 `references/workspace-journal-protocol.md`。
+> journal 是 append-only 事件流,支持因果链和 replay,可重建任意时间点状态。
+
 Bounded iteration needs memory, but not uncontrolled history replay.
 
 Project Memory Lite sits above per-round iteration memory.

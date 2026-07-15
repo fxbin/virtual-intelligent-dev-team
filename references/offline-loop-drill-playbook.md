@@ -74,6 +74,69 @@ Run this before calling the loop “closed enough” after changes to:
 - pivot logic
 - release gate hold bootstrap logic
 
+## 全七层 Drill 场景(P1-6 扩展)
+
+现有场景覆盖层 4(Iteration)和层 5(Release)。以下场景扩展到全七层:
+
+### 4. Routing 返回错误 Lead
+
+What it proves:
+
+- Routing 层(层 2)在收到不匹配的任务信号时能被检测到
+- circuit breaker 的 routing 层能记录失败
+- 降级到 Direct Answer 的路径可观测
+
+### 5. Verifier 永远 Pass(模拟失灵)
+
+What it proves:
+
+- Delivery 子图(层 3 + 层 7)的 Verifier 失灵能被 circuit breaker 检测
+- 连续 N 次假 pass 后 breaker open
+- escalation 队列文件有记录
+
+### 6. Baseline 被删
+
+What it proves:
+
+- Iteration 层(层 4)在 baseline 丢失时能 stop the cycle
+- 不会静默继续执行
+
+### 7. JSON Corrupt
+
+What it proves:
+
+- benchmark JSON 损坏时 Iteration 层能 stop the cycle
+- 不会把损坏数据当作结果
+
+### 8. Resume/Plan Drift
+
+What it proves:
+
+- resume state 与 plan content 不一致时能被检测
+- 不会基于过时的 plan 继续 resume
+
+### 9. Contract Mismatch
+
+What it proves:
+
+- 前后端接口不对齐时 Delivery 层(层 3)的 contract check 能拦截
+- 不会在不一致的基础上继续开发
+
+### 10. Release Gate 假 Ship
+
+What it proves:
+
+- Release 层(层 5)在 gate 返回 ship 但证据缺失时能 hold
+- 不会基于虚假证据发布
+
+## 扩展成功标准
+
+在原有成功标准基础上,追加:
+
+- 场景 4-10 各自的失败注入能触发对应的降级行为
+- circuit breaker 的 escalation 队列有对应记录
+- 每个场景的 drill 报告独立可观测
+
 ## Guardrail
 
 Keep the drill artifacts local and disposable. They are process evidence, not skill content.

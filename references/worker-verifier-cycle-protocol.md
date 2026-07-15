@@ -57,6 +57,29 @@ The Worker must report:
 
 `self_reported_done` only triggers verification. It is not completion.
 
+### Known-shortcut 标记
+
+当 Worker 故意走捷径时(如跳过边界校验、用简化算法、硬编码临时值),必须在 `completion-evidence` 的 `known_shortcuts` 字段中声明:
+
+```json
+{
+  "known_shortcuts": [
+    {
+      "location": "src/utils/cache.py:42",
+      "ceiling": "缓存条目 < 1000 时不触发 LRU 淘汰",
+      "upgrade_path": "引入 Redis 作为外部缓存层,支持 LRU + TTL"
+    }
+  ]
+}
+```
+
+规则:
+
+- 每个 known-shortcut 必须有明确的 `ceiling`(能承受的上限)和 `upgrade_path`(升级方案)
+- Verifier 验收时,known-shortcut 不算 finding,但记入 debt ledger(见 `scripts/track_debt.py`)
+- 未声明的捷径被 Verifier 发现时,按 `fail` 处理(不是 known-shortcut,而是 hidden debt)
+- `track_debt.py /debt` 命令可查询当前 debt 概览
+
 ## Verifier Contract
 
 The Verifier checks the Worker output against acceptance gates.

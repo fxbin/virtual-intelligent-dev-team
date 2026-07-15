@@ -4113,6 +4113,60 @@ def build_auto_run_profile(
     }
 
 
+HOOK_SPEC_MAP: dict[str, dict[str, list[str]]] = {
+    "Java Virtuoso": {
+        "spec_files": ["references/routing-rules.json", "references/execution-quality-guardrails.md"],
+        "spec_sections": ["routing-rules.json#java-profile", "language-profiles.yaml#java"],
+    },
+    "Frontend Virtuoso": {
+        "spec_files": ["references/routing-rules.json", "references/execution-quality-guardrails.md"],
+        "spec_sections": ["routing-rules.json#frontend-profile", "language-profiles.yaml#typescript"],
+    },
+    "API Contract Sentinel": {
+        "spec_files": ["references/routing-rules.json", "references/execution-quality-guardrails.md"],
+        "spec_sections": ["routing-rules.json#api-contract"],
+    },
+    "Sentinel Architect (NB)": {
+        "spec_files": ["references/routing-rules.json", "references/anti-entropy-governance.md"],
+        "spec_sections": ["routing-rules.json#architecture"],
+    },
+    "Code Audit Council": {
+        "spec_files": ["references/routing-rules.json", "references/execution-quality-guardrails.md"],
+        "spec_sections": ["routing-rules.json#audit"],
+    },
+    "Git Workflow Guardian": {
+        "spec_files": ["references/routing-rules.json", "references/git-workflow-playbook.md"],
+        "spec_sections": ["routing-rules.json#git-workflow"],
+    },
+    "World-Class Product Architect": {
+        "spec_files": ["references/routing-rules.json", "references/goal-framing-protocol.md"],
+        "spec_sections": ["routing-rules.json#product"],
+    },
+    "Technical Trinity": {
+        "spec_files": ["references/routing-rules.json", "references/execution-quality-guardrails.md"],
+        "spec_sections": ["routing-rules.json#fullstack"],
+    },
+    "Data Pipeline Guardian": {
+        "spec_files": ["references/routing-rules.json", "references/execution-quality-guardrails.md"],
+        "spec_sections": ["routing-rules.json#data"],
+    },
+}
+
+
+def build_hook_directives(lead_agent: str) -> dict[str, object]:
+    """根据 lead_agent 构建 hook 注入指令(P1-19)
+
+    将相关 spec 条目通过 hook 挂载进 Worker 的上下文,
+    Worker 不需要手动找规范。
+    """
+    mapping = HOOK_SPEC_MAP.get(lead_agent, {})
+    return {
+        "spec_files": mapping.get("spec_files", []),
+        "spec_sections": mapping.get("spec_sections", []),
+        "inject_target": "worker",
+    }
+
+
 def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict[str, object]:
     auto_mode = detect_auto_mode(text)
     routed_text = str(auto_mode.get("normalized_text", text)).strip() or text
@@ -4535,6 +4589,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "workflow_bundle_bootstrap": workflow_bundle_bootstrap,
         "beta_validation_plan": beta_validation_plan,
         "assistant_delta_contract": assistant_delta_contract,
+        "hook_directives": build_hook_directives(lead_agent),
         "scores": scores,
         "reason": reason,
         "repo_root_hint": str(repo_path),

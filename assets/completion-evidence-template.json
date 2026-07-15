@@ -21,6 +21,13 @@
   "worker_model": "<model name used by Worker, e.g. gpt-4o>",
   "verifier_model": "<model name used by Verifier, e.g. claude-sonnet-4>",
   "same_model_self_review": false,
+  "known_shortcuts": [
+    {
+      "location": "<文件路径:行号,故意走捷径的位置>",
+      "ceiling": "<这个 shortcut 能承受的上限>",
+      "upgrade_path": "<达到 ceiling 后的升级方案>"
+    }
+  ],
   "evidence_refs": [
     "<verifiable command, or existing local artifact path such as reports/checks.md>"
   ]

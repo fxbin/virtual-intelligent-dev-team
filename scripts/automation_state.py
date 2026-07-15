@@ -175,3 +175,124 @@ def write_automation_state(
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return payload
+
+
+# ---- Workspace Journal (P1-10) ----
+
+import hashlib
+
+JOURNAL_VERSION = "workspace-journal/v1"
+DEFAULT_JOURNAL_PATH = Path(".skill-harness") / "workspace-journal.jsonl"
+
+
+def compute_journal_hash(entry: dict[str, object]) -> str:
+    """计算 journal entry 的 SHA-256 hash(因果链)"""
+    raw = (
+        str(entry.get("timestamp", ""))
+        + str(entry.get("agent", ""))
+        + str(entry.get("action", ""))
+        + str(entry.get("reason", ""))
+        + str(entry.get("spec_ref", ""))
+        + str(entry.get("prev_hash", ""))
+    )
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def append_journal(
+    journal_path: Path | None = None,
+    *,
+    agent: str,
+    action: str,
+    reason: str,
+    spec_ref: str = "",
+    layer: str = "",
+    state_snapshot: dict[str, object] | None = None,
+) -> dict[str, object]:
+    """追加一条 journal entry(append-only + 因果链)
+
+    参数:
+        journal_path: journal 文件路径,默认 .skill-harness/workspace-journal.jsonl
+        agent: 执行动作的角色
+        action: 动作类型
+        reason: 动作理由
+        spec_ref: 引用的 spec 条目
+        layer: 所属层
+        state_snapshot: 动作后的 state 快照
+    """
+    path = journal_path or DEFAULT_JOURNAL_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    entries: list[dict[str, object]] = []
+    if path.exists():
+        for line in path.read_text(encoding="utf-8").strip().split("\n"):
+            line = line.strip()
+            if line:
+                try:
+                    entries.append(json.loads(line))
+                except json.JSONDecodeError:
+                    continue
+
+    prev_hash = entries[-1].get("hash", "genesis") if entries else "genesis"
+    entry: dict[str, object] = {
+        "timestamp": now_iso(),
+        "agent": agent,
+        "action": action,
+        "reason": reason,
+        "spec_ref": spec_ref,
+        "prev_hash": prev_hash,
+        "layer": layer,
+    }
+    if state_snapshot is not None:
+        entry["state_snapshot"] = state_snapshot
+    entry["hash"] = compute_journal_hash(entry)
+
+    with path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+    return entry
+
+
+def replay_journal(
+    journal_path: Path | None = None,
+    *,
+    target_timestamp: str | None = None,
+) -> dict[str, object]:
+    """从 journal replay 重建状态
+
+    参数:
+        journal_path: journal 文件路径
+        target_timestamp: 重建到这个时间点为止(含),None 表示重建到最新
+    """
+    path = journal_path or DEFAULT_JOURNAL_PATH
+    if not path.exists():
+        return {"entries": [], "reconstructed_state": {}, "entry_count": 0}
+
+    entries: list[dict[str, object]] = []
+    for line in path.read_text(encoding="utf-8").strip().split("\n"):
+        line = line.strip()
+        if line:
+            try:
+                entry = json.loads(line)
+                if target_timestamp and str(entry.get("timestamp", "")) > target_timestamp:
+                    break
+                entries.append(entry)
+            except json.JSONDecodeError:
+                continue
+
+    state: dict[str, object] = {}
+    for entry in entries:
+        agent = str(entry.get("agent", ""))
+        action = str(entry.get("action", ""))
+        key = f"{agent}:{action}"
+        if "state_snapshot" in entry:
+            snapshot = entry["state_snapshot"]
+            if isinstance(snapshot, dict):
+                state[key] = snapshot
+        state[f"{key}_last_timestamp"] = entry.get("timestamp", "")
+        state[f"{key}_last_reason"] = entry.get("reason", "")
+
+    return {
+        "entries": entries,
+        "reconstructed_state": state,
+        "entry_count": len(entries),
+    }

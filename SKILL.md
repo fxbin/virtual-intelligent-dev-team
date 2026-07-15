@@ -26,8 +26,9 @@ It has seven core closure layers plus one optional stage-council overlay:
    - Release readiness uses a formal `ship` / `hold` gate and bootstraps the next remediation loop when needed.
 6. `Drill closure`
    - Offline drills verify rollback, resume, and release-gate bootstrap paths.
-7. `Team Engine Lite closure`
+7. `Team Engine Lite subgraph`(Delivery closure 内子图,非独立层)
    - Code-facing delivery uses Worker / Verifier separation, max-cycle retry, remediation patch, controlled real subagent runtime eligibility, external-agent soft orchestration fallback, and a DeliveryCycleReport before Lead acceptance.
+   - Verifier 独立性由"禁止上游预判下游"硬约束(P0-3)保证,而非独立成层。详见 `references/team-engine-lite-protocol.md` 和 `references/verifier-extraction-guide.md`。
 Optional overlay:
 
 - `Stage council overlay`

@@ -1173,6 +1173,79 @@ def _verify_breaker_status(
     }
 
 
+def _verify_contract_lock(
+    result: dict[str, object],
+    contract_spec: Path | None = None,
+) -> dict[str, object]:
+    """检查前后端协作的 contract-spec 是否存在且双方签署(P1-5)
+
+    参数:
+        result: 路由结果
+        contract_spec: contract-spec 文件路径,为 None 时跳过检查
+    """
+    if not contract_spec:
+        return {
+            "allowed": True,
+            "summary": "No contract-spec path provided; contract lock check skipped.",
+            "details": {
+                "contract_spec": "",
+                "spec_exists": False,
+                "signatures_complete": False,
+                "both_accepted": False,
+                "missing_parties": [],
+            },
+            "recommended_next_step": "Provide --contract-spec to enable contract lock verification.",
+        }
+
+    spec_path = contract_spec.resolve() if contract_spec.is_absolute() else Path.cwd() / contract_spec
+    spec_exists = spec_path.exists()
+    signatures_complete = False
+    both_accepted = False
+    missing_parties: list[str] = []
+
+    if spec_exists:
+        try:
+            spec_data = json.loads(spec_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            spec_data = {}
+        signatures = spec_data.get("signatures", {}) if isinstance(spec_data, dict) else {}
+        frontend = signatures.get("frontend_lead", {}) if isinstance(signatures, dict) else {}
+        backend = signatures.get("backend_lead", {}) if isinstance(signatures, dict) else {}
+        if not frontend:
+            missing_parties.append("frontend_lead")
+        if not backend:
+            missing_parties.append("backend_lead")
+        signatures_complete = len(missing_parties) == 0
+        if signatures_complete:
+            both_accepted = bool(frontend.get("accepted", False)) and bool(backend.get("accepted", False))
+
+    if not spec_exists:
+        summary = "Contract-spec file not found; contract lock failed."
+        next_step = "Create and co-sign contract-spec before Worker starts implementation."
+    elif not signatures_complete:
+        summary = f"Contract-spec signatures incomplete; missing: {', '.join(missing_parties)}."
+        next_step = "Require both frontend_lead and backend_lead to sign the contract-spec."
+    elif not both_accepted:
+        summary = "Contract-spec signatures exist but not both accepted; contract lock failed."
+        next_step = "Re-negotiate contract terms; both parties must set accepted=true."
+    else:
+        summary = "Contract lock passed: contract-spec exists and both parties signed."
+        next_step = "Proceed with normal verification."
+
+    return {
+        "allowed": spec_exists and signatures_complete and both_accepted,
+        "summary": summary,
+        "details": {
+            "contract_spec": str(contract_spec),
+            "spec_exists": spec_exists,
+            "signatures_complete": signatures_complete,
+            "both_accepted": both_accepted,
+            "missing_parties": missing_parties,
+        },
+        "recommended_next_step": next_step,
+    }
+
+
 def _build_explanation_card(result: dict[str, object]) -> dict[str, object]:
     payload = response_pack.build_response_pack_payload(result)
     return response_contract.build_explanation_card_from_payload(payload)
@@ -1194,6 +1267,7 @@ def verify_action(
     dispatch_text: str | None = None,
     diff_file: Path | None = None,
     breaker_layer: str | None = None,
+    contract_spec: Path | None = None,
 ) -> dict[str, object]:
     if assistant_agents is None:
         assistant_agents = []
@@ -1239,6 +1313,8 @@ def verify_action(
         if not breaker_layer:
             raise ValueError("--breaker-layer is required for check=breaker-status")
         outcome = _verify_breaker_status(result, breaker_layer)
+    elif check == "contract-lock":
+        outcome = _verify_contract_lock(result, contract_spec)
     else:
         raise ValueError(f"Unsupported check: {check}")
 
@@ -1296,7 +1372,7 @@ def verify_action(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Verify whether a planned virtual team action matches the router contract.")
-    parser.add_argument("--self-test", action="store_true", help="Run self-test for all v5.8.0 checks.")
+    parser.add_argument("--self-test", action="store_true", help="Run self-test for all v5.9.0 checks.")
     parser.add_argument("--text", help="User request text.")
     parser.add_argument(
         "--check",
@@ -1318,6 +1394,7 @@ def parse_args() -> argparse.Namespace:
             "lead-prejudgment",
             "yagni",
             "breaker-status",
+            "contract-lock",
         ],
         help="What to verify before taking action.",
     )
@@ -1363,12 +1440,16 @@ def parse_args() -> argparse.Namespace:
         "--breaker-layer",
         help="Circuit breaker layer name for check=breaker-status (e.g. routing, verifier, delivery).",
     )
+    parser.add_argument(
+        "--contract-spec",
+        help="Contract-spec file path for check=contract-lock.",
+    )
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON output.")
     return parser.parse_args()
 
 
 def self_test() -> int:
-    """自测:验证 v5.8.0 新增 check 能正常执行并返回预期结构"""
+    """自测:验证 v5.9.0 新增 check 能正常执行并返回预期结构"""
     config = load_config(DEFAULT_CONFIG_PATH)
     repo_path = Path(".").resolve()
     test_text = "self-test probe"
@@ -1380,6 +1461,7 @@ def self_test() -> int:
         ("lead-prejudgment", "空 dispatch 时 allowed 应为 true", True, "allowed"),
         ("yagni", "无 diff 时 allowed 应为 true", True, "allowed"),
         ("spec-violation", "无 worker output 时 allowed 应为 true", True, "allowed"),
+        ("contract-lock", "无 contract-spec 时 allowed 应为 true(跳过)", True, "allowed"),
     ]
 
     for check_name, description, expected_allowed, field_name in checks:
@@ -1412,19 +1494,34 @@ def self_test() -> int:
     except Exception as exc:
         failures.append(f"FAIL: breaker-status — raised exception: {exc}")
 
+    try:
+        result = verify_action(
+            text=test_text,
+            config=config,
+            repo_path=repo_path,
+            check="contract-lock",
+            contract_spec=Path("/nonexistent/contract-spec.json"),
+        )
+        actual_allowed = bool(result.get("allowed"))
+        if actual_allowed:
+            failures.append("FAIL: contract-lock — 文件不存在时 allowed 应为 false")
+    except Exception as exc:
+        failures.append(f"FAIL: contract-lock — raised exception: {exc}")
+
     if failures:
         for f in failures:
             print(f"  {f}")
         print(f"\nSelf-test FAILED ({len(failures)} assertion(s))")
         return 1
 
-    print("Self-test PASSED: all v5.8.0 checks return expected structure")
+    print("Self-test PASSED: all v5.9.0 checks return expected structure")
     print("  - file-handoff: rejects when handoff dir missing")
     print("  - completion-evidence: rejects when evidence file missing")
     print("  - lead-prejudgment: allows empty dispatch")
     print("  - yagni: allows empty diff")
     print("  - spec-violation: allows empty worker output")
     print("  - breaker-status: returns closed state for verifier layer")
+    print("  - contract-lock: allows when no spec provided, rejects when spec missing")
     return 0
 
 
@@ -1453,6 +1550,7 @@ def main() -> None:
             dispatch_text=args.dispatch_text,
             diff_file=Path(args.diff_file) if args.diff_file else None,
             breaker_layer=args.breaker_layer,
+            contract_spec=Path(args.contract_spec) if args.contract_spec else None,
         )
         exit_code = 0
     except Exception as exc:

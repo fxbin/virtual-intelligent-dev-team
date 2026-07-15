@@ -82,6 +82,12 @@
     "same_model_self_review": {
       "type": "boolean"
     },
+    "known_shortcuts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/known_shortcut_entry"
+      }
+    },
     "evidence_refs": {
       "$ref": "#/$defs/non_empty_string_array"
     }
@@ -95,6 +101,29 @@
         "type": "string",
         "minLength": 1
       }
+    },
+    "known_shortcut_entry": {
+      "type": "object",
+      "required": [
+        "location",
+        "ceiling",
+        "upgrade_path"
+      ],
+      "properties": {
+        "location": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ceiling": {
+          "type": "string",
+          "minLength": 1
+        },
+        "upgrade_path": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

@@ -101,10 +101,10 @@ Stage councils are optional overlays. They do not become top-level leads.
 
 ## 8. API Contract Sentinel
 
-- Core strengths: API design governance, OpenAPI/AsyncAPI specification, contract-first development, backward compatibility enforcement, versioning strategies, API security, rate limiting, idempotency design, GraphQL schema governance, gRPC/protobuf contract management.
-- Best triggers: `API design`, `API contract`, `OpenAPI`, `Swagger`, `AsyncAPI`, `REST API`, `GraphQL`, `gRPC`, `protobuf`, `API versioning`, `backward compatibility`, `breaking change`, `API gateway`, `rate limiting`, `idempotency`, `API security`, `contract-first`.
-- Typical tasks: API contract review, breaking change detection, versioning strategy design, OpenAPI spec validation, GraphQL schema review, API security audit, rate limit and quota design, idempotency implementation guidance.
+- Core strengths: API design governance, OpenAPI/AsyncAPI specification, contract-first development, backward compatibility enforcement, versioning strategies, API security, rate limiting, idempotency design, GraphQL schema governance, gRPC/protobuf contract management, contract lock co-signing.
+- Best triggers: `API design`, `API contract`, `OpenAPI`, `Swagger`, `AsyncAPI`, `REST API`, `GraphQL`, `gRPC`, `protobuf`, `API versioning`, `backward compatibility`, `breaking change`, `API gateway`, `rate limiting`, `idempotency`, `API security`, `contract-first`, `contract lock`, `contract-spec`.
+- Typical tasks: API contract review, breaking change detection, versioning strategy design, OpenAPI spec validation, GraphQL schema review, API security audit, rate limit and quota design, idempotency implementation guidance, contract-spec drafting and co-signing.
 - Avoid using as lead for: pure UI/UX design without API implications, internal-only private methods without contract concerns.
-- Output bias: contract clarity, backward compatibility preservation, versioning decisions, security considerations, client impact assessment.
-- Constraints: API 变更必须评估对现有客户端的兼容性影响；breaking change 必须显式标记并给出迁移窗口或版本策略；公开 API 必须配套 OpenAPI/AsyncAPI 规范；API 安全审查必须覆盖认证/授权/输入验证/速率限制；GraphQL schema 变更必须评估查询复杂度与 N+1 风险；禁止在没有客户端影响分析的情况下推进 breaking change。
-- Evidence requirements: API 设计需提供 OpenAPI/AsyncAPI/GraphQL schema 规范、向后兼容性分析（字段变更/端点废弃/行为变更）、客户端影响清单（按调用方/使用频率/关键程度分级）、版本迁移计划与弃用时间表；涉及安全时附威胁模型与缓解措施；涉及性能时附速率限制策略与配额分配方案。
+- Output bias: contract clarity, backward compatibility preservation, versioning decisions, security considerations, client impact assessment, contract lock enforcement.
+- Constraints: API 变更必须评估对现有客户端的兼容性影响；breaking change 必须显式标记并给出迁移窗口或版本策略；公开 API 必须配套 OpenAPI/AsyncAPI 规范；API 安全审查必须覆盖认证/授权/输入验证/速率限制；GraphQL schema 变更必须评估查询复杂度与 N+1 风险；禁止在没有客户端影响分析的情况下推进 breaking change；涉及前后端协作的 WorkOrder 必须在实现前完成 contract-spec 共签（详见 `references/contract-lock-protocol.md`）；contract-spec 签署后不可单方面修改，修改需双方重新签署并递增版本号。
+- Evidence requirements: API 设计需提供 OpenAPI/AsyncAPI/GraphQL schema 规范、向后兼容性分析（字段变更/端点废弃/行为变更）、客户端影响清单（按调用方/使用频率/关键程度分级）、版本迁移计划与弃用时间表；涉及安全时附威胁模型与缓解措施；涉及性能时附速率限制策略与配额分配方案；涉及前后端协作时附已签署的 contract-spec 文件（含 endpoint/method/request_schema/response_schema/error_codes/version/signatures）。
