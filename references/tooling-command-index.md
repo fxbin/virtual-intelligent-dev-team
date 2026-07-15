@@ -86,6 +86,25 @@ python scripts/verify_action.py --text "<user request>" --check completion-evide
   - 完成证据是否满足 action / result / covered scope / uncovered scope / residual risk / confidence grade / evidence refs
   - `evidence_refs` 至少包含一条可验证命令，或一条存在的本地 artifact 路径
   - `A | B` 且无未覆盖范围或剩余风险时才允许完成声明
+- `file-handoff` 校验会额外确认：
+  - `.skill-handoff/` 目录是否存在
+  - 每个交接文件是否包含 `handoff` 元数据（from_role / to_role / artifact_type / artifact_path / timestamp）
+  - 角色方向是否合法（Lead→Worker / Worker→Verifier / Verifier→Lead / Verifier→Worker）
+  - artifact_type 是否属于允许枚举（WorkOrder / ImplementationOutput / VerificationReport / DeliveryCycleReport / RemediationPatch）
+  - 任一校验失败时 Verifier 不启动
+- `spec-violation` 校验会额外确认：
+  - Worker 产出是否违反 `routing-rules.json` 中 lead_agent 的 `constraints`
+  - 检测 `java.util.Date` / `Stream.parallel()` / `force push` 等违规模式
+  - 返回 `verdict`：`pass` / `hold` / `spec_violation`
+  - `spec_violation` 是可断言的客观事实，与 `fail`（WorkOrder 完成度不足）区分
+
+```bash
+python scripts/verify_action.py --text "<user request>" --check file-handoff --handoff-dir .skill-handoff --pretty
+```
+
+```bash
+python scripts/verify_action.py --text "<user request>" --check spec-violation --worker-output <path-to-worker-output> --pretty
+```
 
 ```bash
 python scripts/verify_action.py --text "<user request>" --check assistant-delta-contract --pretty

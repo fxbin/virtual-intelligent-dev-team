@@ -30,7 +30,9 @@
         "assistant-delta-contract",
         "auto-mode",
         "micro-practice-ledger",
-        "completion-evidence"
+        "completion-evidence",
+        "file-handoff",
+        "spec-violation"
       ]
     },
     "allowed": {
@@ -241,6 +243,38 @@
         "properties": {
           "details": {
             "$ref": "#/$defs/completion_evidence_details"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "check": {
+            "const": "file-handoff"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "details": {
+            "$ref": "#/$defs/file_handoff_details"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "check": {
+            "const": "spec-violation"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "details": {
+            "$ref": "#/$defs/spec_violation_details"
           }
         }
       }
@@ -1096,6 +1130,140 @@
         },
         "special_field_failures": {
           "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "handoff_file_entry": {
+      "type": "object",
+      "required": [
+        "file",
+        "from_role",
+        "to_role",
+        "artifact_type",
+        "valid"
+      ],
+      "properties": {
+        "file": {
+          "type": "string"
+        },
+        "from_role": {
+          "type": "string"
+        },
+        "to_role": {
+          "type": "string"
+        },
+        "artifact_type": {
+          "type": "string"
+        },
+        "valid": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "spec_violation_entry": {
+      "type": "object",
+      "required": [
+        "constraint",
+        "evidence"
+      ],
+      "properties": {
+        "constraint": {
+          "type": "string"
+        },
+        "evidence": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "file_handoff_details": {
+      "type": "object",
+      "required": [
+        "handoff_dir",
+        "dir_exists",
+        "total_files",
+        "files_checked",
+        "missing_handoff_meta",
+        "invalid_directions",
+        "invalid_types",
+        "filter_type"
+      ],
+      "properties": {
+        "handoff_dir": {
+          "type": "string"
+        },
+        "dir_exists": {
+          "type": "boolean"
+        },
+        "total_files": {
+          "type": "integer"
+        },
+        "files_checked": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/handoff_file_entry"
+          }
+        },
+        "missing_handoff_meta": {
+          "$ref": "#/$defs/string_array"
+        },
+        "invalid_directions": {
+          "$ref": "#/$defs/string_array"
+        },
+        "invalid_types": {
+          "$ref": "#/$defs/string_array"
+        },
+        "filter_type": {
+          "$ref": "#/$defs/string_or_null"
+        }
+      },
+      "additionalProperties": false
+    },
+    "spec_violation_details": {
+      "type": "object",
+      "required": [
+        "lead_agent",
+        "constraints_checked",
+        "constraints",
+        "worker_output",
+        "output_exists",
+        "verdict",
+        "violations",
+        "spec_file"
+      ],
+      "properties": {
+        "lead_agent": {
+          "type": "string"
+        },
+        "constraints_checked": {
+          "type": "integer"
+        },
+        "constraints": {
+          "$ref": "#/$defs/string_array"
+        },
+        "worker_output": {
+          "type": "string"
+        },
+        "output_exists": {
+          "type": "boolean"
+        },
+        "verdict": {
+          "enum": [
+            "pass",
+            "hold",
+            "spec_violation"
+          ]
+        },
+        "violations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/spec_violation_entry"
+          }
+        },
+        "spec_file": {
+          "type": "string"
         }
       },
       "additionalProperties": false

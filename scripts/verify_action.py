@@ -768,6 +768,194 @@ def _verify_completion_evidence(
     }
 
 
+ALLOWED_HANDOFF_TYPES = {
+    "WorkOrder",
+    "ImplementationOutput",
+    "VerificationReport",
+    "DeliveryCycleReport",
+    "RemediationPatch",
+}
+
+ALLOWED_HANDOFF_DIRECTIONS = {
+    ("Lead", "Worker"),
+    ("Worker", "Verifier"),
+    ("Verifier", "Lead"),
+    ("Verifier", "Worker"),
+}
+
+
+def _verify_file_handoff(
+    result: dict[str, object],
+    repo_path: Path,
+    handoff_dir: Path | None = None,
+    handoff_type: str | None = None,
+) -> dict[str, object]:
+    """校验角色间交接物是否落文件,禁止 prompt 粘贴"""
+    default_dir = ".skill-handoff"
+    dir_rel = str(handoff_dir) if handoff_dir else default_dir
+    dir_rel = dir_rel.rstrip("/")
+    handoff_path = (repo_path / dir_rel).resolve()
+    dir_exists = handoff_path.is_dir()
+
+    files_checked: list[dict[str, object]] = []
+    missing_handoff_meta: list[str] = []
+    invalid_directions: list[str] = []
+    invalid_types: list[str] = []
+    total_files = 0
+
+    if dir_exists:
+        for entry in sorted(handoff_path.iterdir()):
+            if not entry.is_file() or entry.suffix != ".json":
+                continue
+            total_files += 1
+            rel = _repo_relative(entry, repo_path)
+            try:
+                with open(entry, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                meta = data.get("handoff")
+                if not isinstance(meta, dict):
+                    missing_handoff_meta.append(rel)
+                    continue
+                from_role = str(meta.get("from_role", ""))
+                to_role = str(meta.get("to_role", ""))
+                artifact_type = str(meta.get("artifact_type", ""))
+                if (from_role, to_role) not in ALLOWED_HANDOFF_DIRECTIONS:
+                    invalid_directions.append(f"{rel}: {from_role}->{to_role}")
+                if artifact_type not in ALLOWED_HANDOFF_TYPES:
+                    invalid_types.append(f"{rel}: {artifact_type}")
+                if handoff_type and artifact_type != handoff_type:
+                    continue
+                files_checked.append({
+                    "file": rel,
+                    "from_role": from_role,
+                    "to_role": to_role,
+                    "artifact_type": artifact_type,
+                    "valid": (from_role, to_role) in ALLOWED_HANDOFF_DIRECTIONS
+                    and artifact_type in ALLOWED_HANDOFF_TYPES,
+                })
+            except (json.JSONDecodeError, OSError):
+                missing_handoff_meta.append(rel)
+
+    has_failures = bool(missing_handoff_meta or invalid_directions or invalid_types)
+    allowed = dir_exists and total_files > 0 and not has_failures
+
+    if not dir_exists:
+        summary = f"Handoff directory '{dir_rel}' does not exist. No file handoffs found."
+        next_step = f"Create '{dir_rel}/' and write handoff artifacts before invoking Verifier."
+    elif total_files == 0:
+        summary = f"Handoff directory '{dir_rel}' exists but contains no JSON artifacts."
+        next_step = "Write WorkOrder/ImplementationOutput/VerificationReport to the handoff directory."
+    elif has_failures:
+        summary = "Handoff artifacts exist but some have invalid schema or direction."
+        next_step = "Fix handoff metadata: each file needs from_role/to_role/artifact_type/timestamp."
+    else:
+        summary = f"All {total_files} handoff artifact(s) passed schema and direction checks."
+        next_step = "Proceed to Verifier; file handoff contract is satisfied."
+
+    return {
+        "allowed": allowed,
+        "summary": summary,
+        "details": {
+            "handoff_dir": dir_rel,
+            "dir_exists": dir_exists,
+            "total_files": total_files,
+            "files_checked": files_checked,
+            "missing_handoff_meta": missing_handoff_meta,
+            "invalid_directions": invalid_directions,
+            "invalid_types": invalid_types,
+            "filter_type": handoff_type,
+        },
+        "recommended_next_step": next_step,
+    }
+
+
+def _verify_spec_violation(
+    result: dict[str, object],
+    repo_path: Path,
+    worker_output: Path | None = None,
+    config: dict[str, object] | None = None,
+) -> dict[str, object]:
+    """检查 Worker 产出是否违反 routing-rules.json 中的 agent constraints"""
+    lead_agent = str(result.get("lead_agent", ""))
+    agent_rules = {}
+    if config and isinstance(config, dict):
+        raw_rules = config.get("agent_rules", {})
+        if isinstance(raw_rules, dict):
+            agent_rules = raw_rules
+
+    constraints: list[str] = []
+    if lead_agent and lead_agent in agent_rules:
+        agent_entry = agent_rules[lead_agent]
+        if isinstance(agent_entry, dict):
+            raw_constraints = agent_entry.get("constraints", [])
+            if isinstance(raw_constraints, list):
+                constraints = [str(c) for c in raw_constraints]
+
+    output_text = ""
+    output_rel = ""
+    output_exists = False
+    if worker_output:
+        output_path = worker_output.resolve() if worker_output.is_absolute() else (repo_path / worker_output).resolve()
+        output_exists = output_path.exists()
+        output_rel = _repo_relative(output_path, repo_path) if output_exists else str(worker_output)
+        if output_exists:
+            try:
+                output_text = output_path.read_text(encoding="utf-8")
+            except OSError:
+                output_text = ""
+
+    violations: list[dict[str, str]] = []
+    if constraints and output_text:
+        output_text_lower = output_text.lower()
+        for constraint in constraints:
+            constraint_lower = constraint.lower()
+            if "java.util.date" in constraint_lower and "java.util.date" in output_text_lower:
+                violations.append({"constraint": constraint, "evidence": "java.util.date found in output"})
+            if "stream.parallel" in constraint_lower and "stream.parallel" in output_text_lower:
+                violations.append({"constraint": constraint, "evidence": "Stream.parallel() found in output"})
+            if "force push" in constraint_lower or "force-push" in constraint_lower:
+                if "force push" in output_text_lower or "force-push" in output_text_lower:
+                    violations.append({"constraint": constraint, "evidence": "force push mentioned in output"})
+
+    has_violations = len(violations) > 0
+    if not worker_output:
+        allowed = True
+        verdict = "pass"
+        summary = "No worker output provided for spec violation check; skipping."
+        next_step = "Provide --worker-output to check spec compliance."
+    elif not output_exists:
+        allowed = False
+        verdict = "hold"
+        summary = f"Worker output '{output_rel}' does not exist; cannot check spec compliance."
+        next_step = "Ensure Worker writes output to the specified path before verification."
+    elif has_violations:
+        allowed = False
+        verdict = "spec_violation"
+        summary = f"Worker output violates {len(violations)} spec constraint(s) for '{lead_agent}'."
+        next_step = "Fix violations; see details for specific constraints and evidence."
+    else:
+        allowed = True
+        verdict = "pass"
+        summary = f"Worker output complies with all {len(constraints)} spec constraint(s) for '{lead_agent}'."
+        next_step = "Proceed to WorkOrder completion check."
+
+    return {
+        "allowed": allowed,
+        "summary": summary,
+        "details": {
+            "lead_agent": lead_agent,
+            "constraints_checked": len(constraints),
+            "constraints": constraints,
+            "worker_output": output_rel,
+            "output_exists": output_exists,
+            "verdict": verdict,
+            "violations": violations,
+            "spec_file": "references/routing-rules.json",
+        },
+        "recommended_next_step": next_step,
+    }
+
+
 def _build_explanation_card(result: dict[str, object]) -> dict[str, object]:
     payload = response_pack.build_response_pack_payload(result)
     return response_contract.build_explanation_card_from_payload(payload)
@@ -783,6 +971,9 @@ def verify_action(
     lead_agent: str | None = None,
     assistant_agents: list[str] | None = None,
     completion_evidence: Path | None = None,
+    handoff_dir: Path | None = None,
+    handoff_type: str | None = None,
+    worker_output: Path | None = None,
 ) -> dict[str, object]:
     if assistant_agents is None:
         assistant_agents = []
@@ -816,6 +1007,10 @@ def verify_action(
         outcome = _verify_micro_practice_ledger(result, repo_path)
     elif check == "completion-evidence":
         outcome = _verify_completion_evidence(result, repo_path, completion_evidence)
+    elif check == "file-handoff":
+        outcome = _verify_file_handoff(result, repo_path, handoff_dir, handoff_type)
+    elif check == "spec-violation":
+        outcome = _verify_spec_violation(result, repo_path, worker_output, config)
     else:
         raise ValueError(f"Unsupported check: {check}")
 
@@ -890,6 +1085,8 @@ def parse_args() -> argparse.Namespace:
             "auto-mode",
             "micro-practice-ledger",
             "completion-evidence",
+            "file-handoff",
+            "spec-violation",
         ],
         help="What to verify before taking action.",
     )
@@ -911,6 +1108,18 @@ def parse_args() -> argparse.Namespace:
         "--completion-evidence",
         help="Path to completion evidence JSON for check=completion-evidence.",
     )
+    parser.add_argument(
+        "--handoff-dir",
+        help="Handoff directory for check=file-handoff. Defaults to .skill-handoff.",
+    )
+    parser.add_argument(
+        "--handoff-type",
+        help="Filter handoff artifacts by type for check=file-handoff.",
+    )
+    parser.add_argument(
+        "--worker-output",
+        help="Worker output file path for check=spec-violation.",
+    )
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON output.")
     return parser.parse_args()
 
@@ -927,6 +1136,9 @@ def main() -> None:
             lead_agent=args.lead_agent,
             assistant_agents=list(args.assistant_agent),
             completion_evidence=Path(args.completion_evidence) if args.completion_evidence else None,
+            handoff_dir=Path(args.handoff_dir) if args.handoff_dir else None,
+            handoff_type=args.handoff_type,
+            worker_output=Path(args.worker_output) if args.worker_output else None,
         )
         exit_code = 0
     except Exception as exc:
