@@ -1,0 +1,26 @@
+{
+  "scenario_id": "lead-skips-verifier",
+  "description": "Lead 在 dispatch 中直接声明验收通过，跳过 Verifier 独立检查（违反 P0-3 禁止上游预判下游）",
+  "target_layer": "delivery",
+  "failure_type": "verifier-skip",
+  "trigger": {
+    "method": "verify_action_check",
+    "check": "lead-prejudgment",
+    "setup_description": "构造 dispatch_text 包含预判模式「应该没问题」+ 跳过 Verifier 声明",
+    "setup_data": {
+      "dispatch_text": "Lead 直接验收，应该没问题，跳过 Verifier 环节加速交付。"
+    }
+  },
+  "expected": {
+    "caught": true,
+    "behavior": "lead-prejudgment 检测到预判模式「应该没问题」→ allowed=false"
+  },
+  "affected_files": [
+    "references/worker-verifier-cycle-protocol.md",
+    "references/team-engine-lite-protocol.md",
+    "scripts/verify_action.py"
+  ],
+  "affected_function": "_verify_lead_prejudgment",
+  "fix_scope_hint": "root-cause",
+  "fix_scope_reason": "verifier 独立性为共享硬约束，修复预判检测所有调用方均受益"
+}

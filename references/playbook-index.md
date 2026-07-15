@@ -54,6 +54,7 @@ Quick reference for playbooks and protocols used by core scripts.
 | [anti-entropy-governance.md](./anti-entropy-governance.md) | technical-governance-playbook.md, workflow-quality-baseline.md | Duplicate-path and fallback growth control |
 | [workflow-quality-baseline.md](./workflow-quality-baseline.md) | regression-cases.json | Workflow quality baseline |
 | [trigger-health-baseline.md](./trigger-health-baseline.md) | regression-cases.json | Trigger health diagnostics |
+| [observability-protocol.md](./observability-protocol.md) | emit_telemetry.py, inspect_decision_log.py, verify_action.py | Observability three pillars and per-layer SLO |
 
 ## Supporting References
 

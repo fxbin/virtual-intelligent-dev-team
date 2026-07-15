@@ -1,0 +1,34 @@
+{
+  "scenario_id": "frontend-backend-contract-mismatch",
+  "description": "前后端 contract-spec 字段类型不一致（frontend 期望 user_id:number，backend 返回 userId:string），但双方都已签名 accepted=true",
+  "target_layer": "delivery",
+  "failure_type": "contract-content-mismatch",
+  "trigger": {
+    "method": "verify_action_check",
+    "check": "contract-lock",
+    "setup_description": "构造 contract-spec.json：signatures 完整且双方 accepted=true，但 fields 中 frontend 与 backend 字段名/类型不一致",
+    "setup_data": {
+      "contract_spec": {
+        "fields": {
+          "frontend": { "user_id": "number" },
+          "backend": { "userId": "string" }
+        },
+        "signatures": {
+          "frontend_lead": { "accepted": true, "signed_at": "2026-07-15T00:00:00Z" },
+          "backend_lead": { "accepted": true, "signed_at": "2026-07-15T00:00:00Z" }
+        }
+      }
+    }
+  },
+  "expected": {
+    "caught": false,
+    "behavior": "contract-lock 只校验签名存在与 accepted 状态，不校验字段内容一致性 → 漏洞：字段类型不匹配未被拦截"
+  },
+  "affected_files": [
+    "references/contract-lock-protocol.md",
+    "scripts/verify_action.py"
+  ],
+  "affected_function": "_verify_contract_lock",
+  "fix_scope_hint": "root-cause",
+  "fix_scope_reason": "contract-spec 校验逻辑为共享函数，所有 contract-lock 调用方均受益于一次修复"
+}

@@ -2999,6 +2999,223 @@
         "hook_directives.spec_files exists",
         "hook_directives.inject_target is worker"
       ]
+    },
+    {
+      "id": 218,
+      "runner": "verify_action",
+      "categories": [
+        "observability",
+        "p2-16"
+      ],
+      "prompt": "Verify observability telemetry schema and health report",
+      "expected_output": "emit_telemetry self-test passes; health report schema_version is layer-health-report/v1.",
+      "files": [
+        "scripts/emit_telemetry.py",
+        "scripts/inspect_decision_log.py",
+        "references/observability-protocol.md"
+      ],
+      "expectations": [
+        "allowed is true",
+        "details.emit_self_test_exit is 0",
+        "details.health_schema_version is layer-health-report/v1"
+      ]
+    },
+    {
+      "id": 219,
+      "runner": "verify_action",
+      "categories": [
+        "observability",
+        "p2-16"
+      ],
+      "prompt": "Verify observability protocol is referenced and layers complete",
+      "expected_output": "SKILL.md references observability-protocol.md; health report has 7 layers.",
+      "files": [
+        "SKILL.md",
+        "references/observability-protocol.md"
+      ],
+      "expectations": [
+        "allowed is true",
+        "details.skill_md_references_protocol is true",
+        "details.protocol_exists is true",
+        "details.health_layer_count is 7"
+      ]
+    },
+    {
+      "id": 220,
+      "runner": "verify_action",
+      "categories": [
+        "observability",
+        "p2-16"
+      ],
+      "prompt": "Verify intent drift probe and SLO violation detection are wired",
+      "expected_output": "Observability schema valid: telemetry self-test passed, health report schema correct, protocol referenced.",
+      "files": [
+        "scripts/emit_telemetry.py",
+        "references/observability-protocol.md",
+        "references/circuit-breaker-config.json"
+      ],
+      "expectations": [
+        "allowed is true",
+        "details.emit_self_test_exit is 0",
+        "details.health_schema_version is layer-health-report/v1"
+      ]
+    },
+    {
+      "id": 221,
+      "runner": "stress_scenarios",
+      "categories": [
+        "stress-scenarios",
+        "p2-15"
+      ],
+      "prompt": "Run all 7 stress scenarios and verify every scenario executes without error",
+      "expected_output": "run_stress_scenarios reports total_scenarios=7, scenarios_passed=7, scenarios_error=0.",
+      "files": [
+        "scripts/run_stress_scenarios.py",
+        "evals/stress-scenarios/frontend-backend-contract-mismatch.json",
+        "evals/stress-scenarios/worker-self-pass.json",
+        "evals/stress-scenarios/lead-skips-verifier.json",
+        "evals/stress-scenarios/verifier-always-pass.json",
+        "evals/stress-scenarios/baseline-deleted.json",
+        "evals/stress-scenarios/json-corrupt.json",
+        "evals/stress-scenarios/resume-plan-drift.json"
+      ],
+      "expectations": [
+        "stress_scenarios_json ok is true",
+        "stress_scenarios_json total_scenarios is 7",
+        "stress_scenarios_json scenarios_passed is 7",
+        "stress_scenarios_json scenarios_error is 0"
+      ],
+      "runtime_dependent": true
+    },
+    {
+      "id": 222,
+      "runner": "stress_scenarios",
+      "categories": [
+        "stress-scenarios",
+        "p2-15",
+        "trace-summary"
+      ],
+      "prompt": "Verify trace_summary is non-empty and complete for all 7 stress scenarios (machine-validated, not self-reported)",
+      "expected_output": "trace_incomplete=0; every scenario.trace_summary.complete is true with real file paths and caller lists.",
+      "files": [
+        "scripts/run_stress_scenarios.py"
+      ],
+      "expectations": [
+        "stress_scenarios_json trace_incomplete is 0",
+        "stress_scenarios_json scenarios trace_summary.complete is true",
+        "stress_scenarios_json scenarios trace_summary.all_files_exist is true",
+        "stress_scenarios_json scenarios trace_summary.caller_count >= 1"
+      ],
+      "runtime_dependent": true
+    },
+    {
+      "id": 223,
+      "runner": "stress_scenarios",
+      "categories": [
+        "stress-scenarios",
+        "p2-15",
+        "fix-scope"
+      ],
+      "prompt": "Verify fix_scope root-cause ratio meets 80% threshold (root-cause fix over symptom fix)",
+      "expected_output": "fix_scope_root_cause_ratio >= 0.8; at least 6 of 7 scenarios marked root-cause.",
+      "files": [
+        "scripts/run_stress_scenarios.py"
+      ],
+      "expectations": [
+        "stress_scenarios_json fix_scope_root_cause_ratio >= 0.8",
+        "stress_scenarios_json scenarios fix_scope.scope contains root-cause"
+      ],
+      "runtime_dependent": true
+    },
+    {
+      "id": 224,
+      "runner": "stress_scenarios",
+      "categories": [
+        "stress-scenarios",
+        "p2-15",
+        "crash-point-collection"
+      ],
+      "prompt": "Verify crash points are collected and vulnerabilities_found is reported across all stress scenarios",
+      "expected_output": "vulnerabilities_found is 0 for current release; every scenario has status=passed with exec_summary non-empty.",
+      "files": [
+        "scripts/run_stress_scenarios.py"
+      ],
+      "expectations": [
+        "stress_scenarios_json ok is true",
+        "stress_scenarios_json vulnerabilities_found is 0",
+        "stress_scenarios_json scenarios status is passed",
+        "stress_scenarios_json scenarios exec_summary is not empty"
+      ],
+      "runtime_dependent": true
+    },
+    {
+      "id": 225,
+      "runner": "route",
+      "categories": [
+        "multi-session",
+        "p2-14",
+        "multi-agent"
+      ],
+      "prompt": "Please use multi-agent subagents to implement this parallel refactor with independent Worker and Verifier agents.",
+      "expected_output": "Route emits three-tier runtime_claim: candidate_runtime_claim=real_subagent_runtime, candidate_multi_session_claim=single_backend_multi_session, session_circuit_breaker present.",
+      "files": [
+        "scripts/route_request.py",
+        "references/real-subagent-runtime-protocol.md"
+      ],
+      "expectations": [
+        "real_subagent_runtime.eligible is true",
+        "real_subagent_runtime.runtime_claim is soft_orchestration_only",
+        "real_subagent_runtime.candidate_runtime_claim is real_subagent_runtime",
+        "real_subagent_runtime.candidate_multi_session_claim is single_backend_multi_session",
+        "real_subagent_runtime.session_circuit_breaker.applicable_tier is single_backend_multi_session",
+        "real_subagent_runtime.tier_selection_algorithm is not empty"
+      ]
+    },
+    {
+      "id": 226,
+      "runner": "route",
+      "categories": [
+        "multi-session",
+        "p2-14",
+        "lightweight-route"
+      ],
+      "prompt": "Fix this simple typo in the README file.",
+      "expected_output": "Simple single-domain fix does not trigger multi-agent eligibility; all three tiers default to soft_orchestration_only.",
+      "files": [
+        "scripts/route_request.py"
+      ],
+      "expectations": [
+        "real_subagent_runtime.eligible is false",
+        "real_subagent_runtime.runtime_claim is soft_orchestration_only",
+        "real_subagent_runtime.candidate_runtime_claim is soft_orchestration_only",
+        "real_subagent_runtime.candidate_multi_session_claim is soft_orchestration_only"
+      ],
+      "negative": true
+    },
+    {
+      "id": 227,
+      "runner": "route",
+      "categories": [
+        "multi-session",
+        "p2-14",
+        "circuit-breaker"
+      ],
+      "prompt": "Use parallel agents to spawn multiple subagents for this complex multi-file refactor with verification.",
+      "expected_output": "Session circuit-breaker fields (kill / restart / isolate_context / escalation) are populated; fallback chain includes multi_session_unavailable downgrade path.",
+      "files": [
+        "scripts/route_request.py",
+        "references/real-subagent-runtime-protocol.md"
+      ],
+      "expectations": [
+        "real_subagent_runtime.eligible is true",
+        "real_subagent_runtime.session_circuit_breaker.failure_threshold is 3",
+        "real_subagent_runtime.session_circuit_breaker.kill is not empty",
+        "real_subagent_runtime.session_circuit_breaker.restart is not empty",
+        "real_subagent_runtime.session_circuit_breaker.isolate_context is not empty",
+        "real_subagent_runtime.session_circuit_breaker.escalation is not empty",
+        "real_subagent_runtime.fallback.multi_session_unavailable is not empty",
+        "real_subagent_runtime.fallback.session_killed is not empty"
+      ]
     }
   ]
 }

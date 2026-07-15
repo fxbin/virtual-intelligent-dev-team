@@ -1,0 +1,26 @@
+{
+  "scenario_id": "worker-self-pass",
+  "description": "Worker 自检产出后直接声明通过，跳过 Verifier 独立验收（违反 producer_can_self_pass:false 硬约束）",
+  "target_layer": "delivery",
+  "failure_type": "role-separation-breach",
+  "trigger": {
+    "method": "verify_action_check",
+    "check": "lead-prejudgment",
+    "setup_description": "构造 dispatch_text 包含预判模式「肯定能过」+ 自验声明",
+    "setup_data": {
+      "dispatch_text": "Worker 自检完成，肯定能过，不需要 Verifier 再验收了。"
+    }
+  },
+  "expected": {
+    "caught": true,
+    "behavior": "lead-prejudgment 检测到预判模式「肯定能过」→ allowed=false"
+  },
+  "affected_files": [
+    "references/team-engine-lite-protocol.md",
+    "references/worker-verifier-cycle-protocol.md",
+    "scripts/verify_action.py"
+  ],
+  "affected_function": "_verify_lead_prejudgment",
+  "fix_scope_hint": "root-cause",
+  "fix_scope_reason": "role_separation_gate 为共享门禁，修复 prejudgment 检测逻辑所有调用方均受益"
+}

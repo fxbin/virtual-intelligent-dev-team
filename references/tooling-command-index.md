@@ -776,6 +776,22 @@ python scripts/run_release_gate.py --output-dir evals/release-gate --beta-report
   - `route`
   - `verify_action`
   - `release_gate`
+  - `stress_scenarios`（`runtime_dependent: true`，blind audit 跳过，由验证门禁 `run_stress_scenarios.py` 单独执行）
+
+- stress scenarios（v6.0.0+）
+
+```bash
+python scripts/run_stress_scenarios.py --pretty
+```
+
+```bash
+python scripts/run_stress_scenarios.py --self-test
+```
+
+- `run_stress_scenarios.py` 输出契约：
+  - `ok` / `total_scenarios` / `scenarios_passed` / `scenarios_error` / `vulnerabilities_found` / `trace_incomplete` / `fix_scope_root_cause_ratio`
+  - 每个场景携带 `trace_summary`（机器校验：真实文件路径 + caller 列表，非空或场景 fail）和 `fix_scope`（`root-cause` / `symptom`）
+  - 通过门禁：7 场景全部执行，`trace_summary` 全非空，`fix_scope` root-cause 比例 >= 80%
 
 - benchmark compare
 

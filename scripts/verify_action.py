@@ -17,6 +17,8 @@ RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
 EVALUATE_MICRO_PRACTICES_SCRIPT = SCRIPT_DIR / "evaluate_micro_practices.py"
 VERIFY_COMPLETION_EVIDENCE_SCRIPT = SCRIPT_DIR / "verify_completion_evidence.py"
 CIRCUIT_BREAKER_SCRIPT = SCRIPT_DIR / "circuit_breaker.py"
+EMIT_TELEMETRY_SCRIPT = SCRIPT_DIR / "emit_telemetry.py"
+INSPECT_DECISION_LOG_SCRIPT = SCRIPT_DIR / "inspect_decision_log.py"
 DEFAULT_CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 DEFAULT_BREAKER_CONFIG_PATH = SKILL_DIR / "references" / "circuit-breaker-config.json"
 DEFAULT_BREAKER_STATE_FILE = Path(".skill-harness") / "breaker-state.json"
@@ -46,6 +48,14 @@ completion_evidence_verifier = load_module(
 circuit_breaker_module = load_module(
     "virtual_team_verify_action_circuit_breaker",
     CIRCUIT_BREAKER_SCRIPT,
+)
+emit_telemetry_module = load_module(
+    "virtual_team_verify_action_emit_telemetry",
+    EMIT_TELEMETRY_SCRIPT,
+)
+inspect_decision_log_module = load_module(
+    "virtual_team_verify_action_inspect_decision_log",
+    INSPECT_DECISION_LOG_SCRIPT,
 )
 
 
@@ -1246,6 +1256,80 @@ def _verify_contract_lock(
     }
 
 
+def _verify_observability_schema(
+    result: dict[str, object],
+    repo_path: Path,
+) -> dict[str, object]:
+    """校验可观测性三件套 schema（observability-protocol.md，P2-16）
+
+    参数:
+        result: 路由结果（本 check 不依赖路由结果，但保持接口一致）
+        repo_path: 仓库根路径
+
+    返回:
+        outcome dict，含 allowed / summary / details / recommended_next_step
+    """
+    details: dict[str, object] = {}
+    issues: list[str] = []
+
+    try:
+        emit_exit = emit_telemetry_module.self_test()
+        details["emit_self_test_exit"] = emit_exit
+        if emit_exit != 0:
+            issues.append("emit_telemetry.py self-test failed")
+    except Exception as exc:
+        details["emit_self_test_exit"] = -1
+        issues.append(f"emit_telemetry.py self-test raised: {exc!r}")
+
+    try:
+        build_health_report = inspect_decision_log_module.build_health_report
+        health_schema_version = inspect_decision_log_module.HEALTH_REPORT_SCHEMA_VERSION
+        report = build_health_report(
+            repo_path,
+            window_id="30d",
+            markdown_output=None,
+            html_output=None,
+        )
+        schema = str(report.get("schema_version", ""))
+        details["health_schema_version"] = schema
+        layers = report.get("layers", [])
+        details["health_layer_count"] = len(layers) if isinstance(layers, list) else 0
+        if schema != health_schema_version:
+            issues.append(f"health report schema_version mismatch: {schema}")
+    except Exception as exc:
+        details["health_schema_version"] = ""
+        details["health_layer_count"] = 0
+        issues.append(f"health report raised: {exc!r}")
+
+    skill_md = repo_path / "SKILL.md"
+    protocol_file = repo_path / "references" / "observability-protocol.md"
+    details["protocol_exists"] = protocol_file.exists()
+    referenced = False
+    if skill_md.exists() and protocol_file.exists():
+        content = skill_md.read_text(encoding="utf-8")
+        referenced = "observability-protocol" in content
+    details["skill_md_references_protocol"] = referenced
+    if not protocol_file.exists():
+        issues.append("observability-protocol.md not found")
+    if not referenced:
+        issues.append("SKILL.md does not reference observability-protocol.md")
+
+    allowed = len(issues) == 0
+    if allowed:
+        summary = "Observability schema valid: telemetry self-test passed, health report schema correct, protocol referenced."
+        next_step = "All observability checks passed."
+    else:
+        summary = f"Observability schema issues: {'; '.join(issues)}"
+        next_step = "Fix observability schema issues before release."
+
+    return {
+        "allowed": allowed,
+        "summary": summary,
+        "details": details,
+        "recommended_next_step": next_step,
+    }
+
+
 def _build_explanation_card(result: dict[str, object]) -> dict[str, object]:
     payload = response_pack.build_response_pack_payload(result)
     return response_contract.build_explanation_card_from_payload(payload)
@@ -1315,6 +1399,8 @@ def verify_action(
         outcome = _verify_breaker_status(result, breaker_layer)
     elif check == "contract-lock":
         outcome = _verify_contract_lock(result, contract_spec)
+    elif check == "observability-schema":
+        outcome = _verify_observability_schema(result, repo_path)
     else:
         raise ValueError(f"Unsupported check: {check}")
 
@@ -1395,6 +1481,7 @@ def parse_args() -> argparse.Namespace:
             "yagni",
             "breaker-status",
             "contract-lock",
+            "observability-schema",
         ],
         help="What to verify before taking action.",
     )
@@ -1508,13 +1595,29 @@ def self_test() -> int:
     except Exception as exc:
         failures.append(f"FAIL: contract-lock — raised exception: {exc}")
 
+    try:
+        result = verify_action(
+            text=test_text,
+            config=config,
+            repo_path=SKILL_DIR,
+            check="observability-schema",
+        )
+        actual_allowed = bool(result.get("allowed"))
+        if not actual_allowed:
+            failures.append(
+                f"FAIL: observability-schema — expected allowed=true, got false: "
+                f"{result.get('summary', '')}"
+            )
+    except Exception as exc:
+        failures.append(f"FAIL: observability-schema — raised exception: {exc}")
+
     if failures:
         for f in failures:
             print(f"  {f}")
         print(f"\nSelf-test FAILED ({len(failures)} assertion(s))")
         return 1
 
-    print("Self-test PASSED: all v5.9.0 checks return expected structure")
+    print("Self-test PASSED: all checks return expected structure")
     print("  - file-handoff: rejects when handoff dir missing")
     print("  - completion-evidence: rejects when evidence file missing")
     print("  - lead-prejudgment: allows empty dispatch")
@@ -1522,6 +1625,7 @@ def self_test() -> int:
     print("  - spec-violation: allows empty worker output")
     print("  - breaker-status: returns closed state for verifier layer")
     print("  - contract-lock: allows when no spec provided, rejects when spec missing")
+    print("  - observability-schema: validates telemetry + health report + protocol reference")
     return 0
 
 

@@ -1,0 +1,24 @@
+{
+  "scenario_id": "json-corrupt",
+  "description": "benchmark-results.json 内容损坏（非法 JSON），系统在解析时应捕获异常而非崩溃",
+  "target_layer": "release",
+  "failure_type": "data-corruption",
+  "trigger": {
+    "method": "json_parse",
+    "setup_description": "写入损坏 JSON 到临时文件，尝试 json.load 解析，验证是否抛出 JSONDecodeError 且被捕获",
+    "setup_data": {
+      "corrupt_content": "{\"evals_passed\": 53, \"overall_passed\": false, \"failure_ids\": [1, ,]}"
+    }
+  },
+  "expected": {
+    "caught": true,
+    "behavior": "json.load 抛出 JSONDecodeError，调用方 try/except 捕获 → 不崩溃"
+  },
+  "affected_files": [
+    "scripts/inspect_decision_log.py",
+    "scripts/verify_action.py"
+  ],
+  "affected_function": "json.loads",
+  "fix_scope_hint": "root-cause",
+  "fix_scope_reason": "json.loads 有 15 个调用方，抽取共享 safe_json_load wrapper 可一次修复全部调用点的异常处理"
+}

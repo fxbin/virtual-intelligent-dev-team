@@ -3751,10 +3751,25 @@ def build_real_subagent_runtime_plan(
         "reference": REAL_SUBAGENT_RUNTIME_REFERENCE,
         "runtime_claim": "soft_orchestration_only",
         "candidate_runtime_claim": "real_subagent_runtime" if eligible else "soft_orchestration_only",
+        "candidate_multi_session_claim": "single_backend_multi_session" if eligible else "soft_orchestration_only",
         "runtime_evidence_required": bool(eligible),
         "activation_reason": activation_reason,
         "workflow_bundle": bundle_name,
         "max_subagents": 3 if eligible else 0,
+        "tier_selection_algorithm": (
+            "if host exposes spawn/wait/merge: real_subagent_runtime; "
+            "elif host exposes create_session/kill_session/restart_session: single_backend_multi_session; "
+            "else: soft_orchestration_only"
+        ),
+        "session_circuit_breaker": {
+            "applicable_tier": "single_backend_multi_session",
+            "failure_threshold": 3,
+            "kill": "session exceeding failure threshold is killed; partial output discarded",
+            "restart": "fresh session created with clean context and narrowed WorkOrder",
+            "isolate_context": "killed session context must not leak into replacement; only verified artifacts carry over",
+            "escalation": "2 kills for same failure reason → escalate to human",
+            "owner": "Lead owns session lifecycle decisions; Workers/Verifiers cannot kill their own sessions",
+        },
         "spawn_policy": {
             "user_explicit_or_auto_required": True,
             "no_default_swarm": True,
@@ -3770,9 +3785,11 @@ def build_real_subagent_runtime_plan(
             "conflict_resolution": "hold unless objective evidence resolves Worker/Verifier disagreement",
         },
         "fallback": {
-            "unavailable_runtime": "downgrade to external-agent-backend soft orchestration",
+            "unavailable_runtime": "downgrade to single_backend_multi_session if host supports sessions, else external-agent-backend soft orchestration",
+            "multi_session_unavailable": "downgrade to external-agent-backend soft orchestration (known-shortcut: no session isolation)",
             "malformed_output": "request one structured repair, then hold",
             "role_boundary_violation": "close or ignore violating subagent output and regenerate WorkOrder",
+            "session_killed": "discard partial output, restart with fresh context and narrowed WorkOrder",
         },
     }
 

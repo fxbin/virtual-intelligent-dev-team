@@ -1,0 +1,25 @@
+{
+  "scenario_id": "baseline-deleted",
+  "description": "bounded iteration 的 stable baseline benchmark-results.json 被删除后，iteration check 未检测到 baseline 缺失",
+  "target_layer": "iteration",
+  "failure_type": "baseline-missing",
+  "trigger": {
+    "method": "file_operation",
+    "setup_description": "注册 stable baseline 后删除 benchmark-results.json 文件，再检查 iteration check 是否拦截",
+    "setup_data": {
+      "baseline_label": "stable",
+      "delete_target": "benchmark-results.json"
+    }
+  },
+  "expected": {
+    "caught": false,
+    "behavior": "iteration check 只检查 needs_iteration 标志，不校验 baseline 文件是否存在 → 漏洞：baseline 被删后 iteration 仍可继续"
+  },
+  "affected_files": [
+    "references/baseline-registry.md",
+    "scripts/register_benchmark_baseline.py"
+  ],
+  "affected_function": "register_baseline",
+  "fix_scope_hint": "root-cause",
+  "fix_scope_reason": "baseline 注册逻辑为共享函数，所有 iteration 调用方均受益于一次修复"
+}

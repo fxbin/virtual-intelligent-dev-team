@@ -1,0 +1,26 @@
+{
+  "scenario_id": "verifier-always-pass",
+  "description": "Verifier 橡皮图章式验收（always returns pass），通过 circuit breaker 注入连续失败检测失灵",
+  "target_layer": "verifier",
+  "failure_type": "verifier-malfunction",
+  "trigger": {
+    "method": "circuit_breaker_api",
+    "setup_description": "对 verifier 层连续调用 record_failure 3 次（达到 max_consecutive_failures 阈值），触发 breaker open",
+    "setup_data": {
+      "layer": "verifier",
+      "failure_count": 3,
+      "failure_reason": "verifier always-pass malfunction simulated"
+    }
+  },
+  "expected": {
+    "caught": true,
+    "behavior": "breaker.check('verifier').allowed == false（breaker open 后拦截后续请求）"
+  },
+  "affected_files": [
+    "scripts/circuit_breaker.py",
+    "references/circuit-breaker-config.json"
+  ],
+  "affected_function": "record_failure",
+  "fix_scope_hint": "symptom",
+  "fix_scope_reason": "breaker 拦截的是 verifier 失灵的症状（连续失败），root-cause 修复需在 verifier 逻辑本身，不在 breaker"
+}

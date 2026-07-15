@@ -1,0 +1,27 @@
+{
+  "scenario_id": "resume-plan-drift",
+  "description": "resume state 的 plan 字段被 layer1 之外的层篡改（违反 state-schema-spec 所有权规则），spec-violation check 未检测到",
+  "target_layer": "planning",
+  "failure_type": "state-ownership-violation",
+  "trigger": {
+    "method": "verify_action_check",
+    "check": "spec-violation",
+    "setup_description": "构造 layer-state.json 其 plan 字段被篡改，worker_output 含 state 字段修改痕迹，检查 spec-violation 是否拦截",
+    "setup_data": {
+      "layer_state_plan": "plan field modified by layer3 (delivery) instead of layer1 (planning)",
+      "worker_output_content": "modified plan.goal field during delivery phase"
+    }
+  },
+  "expected": {
+    "caught": false,
+    "behavior": "spec-violation 只检查 worker output 对 agent constraints 的违反（如 java.util.date / force push），不检查 state schema 所有权 → 漏洞：plan 字段被篡改未被拦截"
+  },
+  "affected_files": [
+    "references/state-schema-spec.md",
+    "references/automation-state.schema.json",
+    "scripts/verify_action.py"
+  ],
+  "affected_function": "_verify_spec_violation",
+  "fix_scope_hint": "root-cause",
+  "fix_scope_reason": "state schema 所有权校验为共享逻辑，修复后所有层的 spec-violation 检查均受益"
+}

@@ -6,16 +6,56 @@ It is not the default mode. Use it only when real subagent tools are available a
 
 ## Runtime Boundary
 
-Allowed runtime claims:
+Allowed runtime claims (three tiers, ordered by isolation strength):
 
 - `real_subagent_runtime`
   - The host can spawn one or more separate subagents with independently scoped prompts and collect their final outputs.
+  - Strongest isolation: each subagent is a separate process / context with independent memory.
 - `single_backend_multi_session`
-  - The host can create independent sessions, but not a fully managed workflow engine.
+  - The host can create independent sessions within a single backend, but not a fully managed workflow engine.
+  - Session is the circuit-breaker unit: a misbehaving session can be killed, restarted, or context-isolated without tearing down the entire backend.
+  - Weaker than `real_subagent_runtime` (sessions share the same backend process / model context), stronger than `soft_orchestration_only` (which has no isolation at all).
 - `soft_orchestration_only`
   - No reliable subagent runtime is available; use the existing external-agent backend protocol.
+  - `known-shortcut:` no true session isolation — role separation is logical, not runtime-enforced. A misbehaving role cannot be killed or restarted independently.
+  - Upgrade path: when the host exposes `create_session` / `kill_session` / `restart_session` capabilities, upgrade to `single_backend_multi_session`.
 
 Never claim `real_subagent_runtime` when the current host only simulates roles in one thread.
+
+### Tier Selection Algorithm
+
+```
+if host exposes spawn / wait / merge:
+    runtime_claim = real_subagent_runtime
+elif host exposes create_session / kill_session / restart_session:
+    runtime_claim = single_backend_multi_session
+else:
+    runtime_claim = soft_orchestration_only
+```
+
+The router emits `candidate_runtime_claim` based on request eligibility; the host downgrades to a lower tier when the required capability is missing. The host must never upgrade beyond what it can actually enforce.
+
+## Session as Circuit Breaker Unit
+
+When `runtime_claim` is `single_backend_multi_session`, each session is a circuit-breaker unit:
+
+- **Kill**: a session that exceeds failure threshold (default: 3 consecutive failures) is killed; its partial output is discarded.
+- **Restart**: after kill, a fresh session is created with a clean context and a narrowed WorkOrder.
+- **Isolate context**: a killed session's context must not leak into the replacement session; only verified artifacts (ImplementationOutput / VerificationReport) carry over.
+- **Escalation**: if a session is killed twice for the same failure reason, escalate to human decision rather than retrying indefinitely.
+
+This mirrors the trust-boundary principle: a session that cannot be killed is not a real isolation boundary.
+
+### Session Lifecycle
+
+```
+session_created → session_active → session_killed (on failure threshold)
+                                 ↘ session_completed (on success)
+session_killed → session_restarted (fresh context + narrowed WorkOrder)
+session_killed → session_escalated (after 2 kills for same reason)
+```
+
+The Lead owns session lifecycle decisions; Workers and Verifiers cannot kill their own sessions.
 
 ## Activation Rules
 
@@ -107,3 +147,12 @@ If real subagent tools are unavailable:
 - Set `runtime_claim: soft_orchestration_only`.
 - Set `backend_orchestration_verdict: simulated`.
 - State that role separation is logical, not runtime-isolated.
+- `known-shortcut:` ceiling — no session kill / restart / context isolation; a misbehaving role poisons the shared context. Upgrade path: when host exposes `create_session` / `kill_session` / `restart_session`, upgrade to `single_backend_multi_session` to gain session-level circuit breaking.
+
+### Intermediate fallback: single_backend_multi_session
+
+If the host cannot spawn fully independent subagents but can create / kill / restart sessions within a single backend:
+
+- Set `runtime_claim: single_backend_multi_session`.
+- Treat each session as a circuit-breaker unit (see "Session as Circuit Breaker Unit" above).
+- `known-shortcut:` ceiling — sessions share the same backend process / model context; a backend-level failure still takes down all sessions. Upgrade path: when host exposes `spawn` / `wait` / `merge`, upgrade to `real_subagent_runtime` for process-level isolation.

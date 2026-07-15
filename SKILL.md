@@ -123,8 +123,8 @@ If the task is simple and clearly single-domain, keep routing lightweight.
 13. For code-facing routes, apply the Harness constraint gate before implementation: create or refresh `.skill-harness/engineering-constraints.md`.
 14. For changes that add or retire guards, fallbacks, adapters, duplicate owners, compatibility paths, schema, persistence, or source-of-truth behavior, apply anti-entropy governance before choosing delete, compat, or confirmation paths.
 15. For code-facing, release-facing, Git-facing, or remediation routes, apply Team Engine Lite: Worker can produce, Verifier can pass/fail/hold, and Lead can accept only after a DeliveryCycleReport.
-16. If the user explicitly asks for multi-agent / subagent / parallel agent execution, or `/auto` reaches an eligible workflow, build a controlled real subagent runtime plan; only claim actual real subagent execution when the host exposes spawn / wait / merge runtime evidence.
-17. If external Agent backends are available but real subagent runtime is not proven, treat them as soft backend sessions under the same role boundary; do not claim true async multi-process runtime without runtime evidence.
+16. If the user explicitly asks for multi-agent / subagent / parallel agent execution, or `/auto` reaches an eligible workflow, build a controlled real subagent runtime plan with three tiers: `real_subagent_runtime` (host exposes spawn / wait / merge), `single_backend_multi_session` (host exposes create_session / kill_session / restart_session; session is the circuit-breaker unit), or `soft_orchestration_only` (no isolation; `known-shortcut:` ceiling). The host downgrades to the highest tier it can actually enforce; never upgrade beyond proven capability.
+17. If external Agent backends are available but real subagent runtime is not proven, check whether the host supports `single_backend_multi_session` (session-level circuit breaking) before falling back to `soft_orchestration_only`. `soft_orchestration_only` is the last resort with a `known-shortcut:` ceiling (no session kill / restart / context isolation).
 18. **Real Subagent Execution Guide**: When spawning Worker/Verifier/Explorer agents, use actual Agent tool invocations with independent prompts and contexts. See [references/subagent-exec-guide.md](references/subagent-exec-guide.md) for complete execution templates including Worker-Verifier cycles, parallel implementation, and Explorer-Worker patterns.
 19. If the user asks for optimization, repeated improvement, benchmark comparison, or another round, enter bounded iteration instead of open-ended self-looping.
 20. If the user asks whether the current version can ship, submit, or pass formal acceptance, run the release gate instead of answering from a benchmark summary alone.
@@ -182,6 +182,8 @@ Read indexes first; do not flatten the whole skill into this file.
   [references/external-agent-backend-orchestration-protocol.md](references/external-agent-backend-orchestration-protocol.md)
 - Scripts, templates, validation, and command entrypoints:
   [references/tooling-command-index.md](references/tooling-command-index.md)
+- Observability three pillars (metrics / logs / traces) and per-layer SLO:
+  [references/observability-protocol.md](references/observability-protocol.md)
 - Team catalog:
   [references/agent-catalog.md](references/agent-catalog.md)
 - Maintainer-facing project docs:
@@ -204,6 +206,21 @@ The skill exposes a governance layer alongside the routing layer:
   readability, and Language Profiles presence.
 - **Dashboard**: `scripts/inspect_decision_log.py` summarizes the decision
   log as JSON / Markdown / self-contained HTML.
+- **Telemetry**: `scripts/emit_telemetry.py` writes per-layer execution
+  traces with intent drift probe to `.skill-metrics/telemetry.jsonl`
+  (contract: [references/observability-protocol.md](references/observability-protocol.md)).
+- **Layer health**: `scripts/inspect_decision_log.py --health-report`
+  emits per-layer SLO status, failure counts, and breaker state from
+  telemetry + circuit breaker state files.
+- **Stress scenarios**: `scripts/run_stress_scenarios.py` runs 7
+  multi-role failure scenarios (contract mismatch / worker self-pass /
+  lead skips verifier / verifier always-pass / baseline deleted /
+  json corrupt / resume plan drift), each with ONE runnable check.
+  Output carries `trace_summary` (machine-validated: real file paths +
+  caller list, non-empty or scenario fails) and `fix_scope`
+  (`root-cause` / `symptom`); `symptom` triggers benchmark warn, not
+  fail. Passing gate: 7 scenarios executed, `trace_summary` all
+  non-empty, `fix_scope` root-cause ratio >= 80%.
 
 Typical invocations:
 
@@ -221,6 +238,9 @@ python scripts/inspect_decision_log.py \
 
 # One-shot legacy migration (run once after upgrading)
 python scripts/migrate_governance_events.py --pretty
+
+# Stress scenarios (v6.0.0+): trace_summary + fix_scope gate
+python scripts/run_stress_scenarios.py --pretty
 ```
 
 ## Language Profile Loading (v5.0+)

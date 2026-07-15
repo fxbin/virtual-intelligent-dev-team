@@ -33,6 +33,36 @@ SKILL_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_LOG_PATH = ".skill-metrics/decision-log.jsonl"
 
 REPORT_SCHEMA_VERSION = "decision-log-report/v1"
+HEALTH_REPORT_SCHEMA_VERSION = "layer-health-report/v1"
+
+DEFAULT_TELEMETRY_PATH = ".skill-metrics/telemetry.jsonl"
+DEFAULT_BREAKER_STATE_PATH = ".skill-harness/breaker-state.json"
+DEFAULT_ESCALATION_PATH = ".skill-harness/escalation-queue.jsonl"
+
+HEALTH_WINDOW_ID = "30d"
+P99_WINDOW_SIZE = 20
+P99_MIN_SAMPLES = 5
+DRIFT_CRITICAL_THRESHOLD = 0.50
+
+SLO_LATENCY_TARGETS = {
+    "planning": 30.0,
+    "routing": 10.0,
+    "delivery": 120.0,
+    "iteration": 90.0,
+    "release": 60.0,
+    "drill": 300.0,
+    "verifier": 15.0,
+}
+
+HEALTH_LAYER_ORDER = (
+    "planning",
+    "routing",
+    "delivery",
+    "iteration",
+    "release",
+    "drill",
+    "verifier",
+)
 
 # ── i18n ────────────────────────────────────────────────────
 # Two-language string table. The CLI accepts --language en|zh|auto. New keys
@@ -420,7 +450,7 @@ def render_markdown(summary: dict[str, Any], log_path: Path, lang: str = DEFAULT
         lines.append(f"  ({tr(lang, 'no_hourly')})")
     lines.append("```")
     lines.append("")
-    lines.append(f"_{tr(lang, 'footer', script='inspect_decision_log.py', version='5.0.2')}_")
+    lines.append(f"_{tr(lang, 'footer', script='inspect_decision_log.py', version='6.0.0')}_")
     lines.append("")
     return "\n".join(lines)
 
@@ -1032,7 +1062,7 @@ body[data-current-window="all"] [data-window]:not([data-window="all"]) {{
   </section>
 
   <footer>
-    {tr(lang, 'footer', script='scripts/inspect_decision_log.py', version='5.0.2')}
+    {tr(lang, 'footer', script='scripts/inspect_decision_log.py', version='6.0.0')}
   </footer>
 </main>
 <script id="i18n-strings" type="application/json">{strings_json}</script>
@@ -1154,6 +1184,373 @@ def _render_sparkline(hourly: dict[str, int], lang: str = DEFAULT_LANGUAGE) -> s
     )
 
 
+def load_breaker_states(breaker_state_path: Path) -> dict[str, dict[str, Any]]:
+    """读取 circuit breaker 状态文件，返回 {layer: state_dict}"""
+    if not breaker_state_path.exists():
+        return {}
+    try:
+        with breaker_state_path.open("r", encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (json.JSONDecodeError, OSError):
+        return {}
+    layers = data.get("layers", {})
+    if not isinstance(layers, dict):
+        return {}
+    return {
+        str(k): v for k, v in layers.items() if isinstance(v, dict)
+    }
+
+
+def compute_p99(values: list[float]) -> float | None:
+    """计算 p99 延迟，样本不足 P99_MIN_SAMPLES 时返回 None"""
+    if len(values) < P99_MIN_SAMPLES:
+        return None
+    sorted_vals = sorted(values)
+    idx = int(len(sorted_vals) * 0.99)
+    if idx >= len(sorted_vals):
+        idx = len(sorted_vals) - 1
+    return round(sorted_vals[idx], 4)
+
+
+def compute_layer_health(
+    telemetry_entries: list[dict[str, Any]],
+    escalation_entries: list[dict[str, Any]],
+    breaker_states: dict[str, dict[str, Any]],
+    window_seconds: int | None,
+) -> list[dict[str, Any]]:
+    """计算每层 health metrics
+
+    参数:
+        telemetry_entries: telemetry.jsonl 全量记录
+        escalation_entries: escalation-queue.jsonl 全量记录
+        breaker_states: breaker-state.json 解析结果
+        window_seconds: 时间窗口秒数，None 表示全量
+
+    返回:
+        每层 health dict 列表，字段见 observability-protocol.md §6.2
+    """
+    filtered_telemetry = filter_entries_by_window(telemetry_entries, window_seconds)
+    filtered_escalation = filter_entries_by_window(escalation_entries, window_seconds)
+
+    health_rows: list[dict[str, Any]] = []
+    for layer in HEALTH_LAYER_ORDER:
+        layer_entries = [
+            e for e in filtered_telemetry if e.get("layer") == layer
+        ]
+        recent = layer_entries[-P99_WINDOW_SIZE:]
+        latencies = [
+            float(e.get("latency_seconds", 0.0))
+            for e in recent
+            if isinstance(e.get("latency_seconds"), (int, float))
+        ]
+        p99 = compute_p99(latencies)
+
+        slo_target = SLO_LATENCY_TARGETS.get(layer, 0.0)
+        if p99 is None:
+            slo_status = "insufficient_data"
+        elif p99 <= slo_target:
+            slo_status = "met"
+        else:
+            slo_status = "violated"
+
+        failure_count = sum(
+            1 for e in recent if e.get("outcome") == "failure"
+        )
+        drift_critical_count = sum(
+            1 for e in recent
+            if isinstance(e.get("drift_score"), (int, float))
+            and float(e["drift_score"]) > DRIFT_CRITICAL_THRESHOLD
+        )
+
+        layer_breaker = breaker_states.get(layer, {})
+        breaker_state = str(layer_breaker.get("state", "closed"))
+        breaker_open_count = sum(
+            1 for e in filtered_escalation if e.get("layer") == layer
+        )
+
+        health_rows.append({
+            "layer": layer,
+            "slo_target_seconds": slo_target,
+            "p99_latency_seconds": p99,
+            "slo_status": slo_status,
+            "failure_count_window": failure_count,
+            "drift_critical_count": drift_critical_count,
+            "breaker_state": breaker_state,
+            "breaker_open_count": breaker_open_count,
+            "sample_count": len(recent),
+        })
+    return health_rows
+
+
+HEALTH_I18N = {
+    "en": {
+        "title": "Layer Health Report",
+        "subtitle": "Per-layer SLO and circuit breaker status (observability-protocol.md)",
+        "col_layer": "Layer",
+        "col_slo_target": "SLO Target (s)",
+        "col_p99": "p99 Latency (s)",
+        "col_slo_status": "SLO Status",
+        "col_failures": "Failures (window)",
+        "col_drift_critical": "Drift Critical",
+        "col_breaker": "Breaker State",
+        "col_breaker_open": "Breaker Open (window)",
+        "col_samples": "Samples",
+        "window_label": "Window",
+        "no_data": "No telemetry data found. Run emit_telemetry.py first.",
+        "footer": "Generated by <code>{script}</code> · virtual-intelligent-dev-team v{version}",
+    },
+    "zh": {
+        "title": "层健康报告",
+        "subtitle": "每层 SLO 与熔断器状态（observability-protocol.md）",
+        "col_layer": "层",
+        "col_slo_target": "SLO 阈值（秒）",
+        "col_p99": "p99 延迟（秒）",
+        "col_slo_status": "SLO 状态",
+        "col_failures": "失败次数（窗口）",
+        "col_drift_critical": "Drift 临界数",
+        "col_breaker": "熔断器状态",
+        "col_breaker_open": "熔断次数（窗口）",
+        "col_samples": "样本数",
+        "window_label": "时间窗口",
+        "no_data": "未找到 telemetry 数据，请先运行 emit_telemetry.py。",
+        "footer": "由 <code>{script}</code> 生成 · virtual-intelligent-dev-team v{version}",
+    },
+}
+
+
+def _htr(lang: str, key: str, **kwargs: object) -> str:
+    """health report i18n 取词"""
+    table = HEALTH_I18N.get(lang, HEALTH_I18N["en"])
+    text = table.get(key, key)
+    if kwargs:
+        text = text.format(**kwargs)
+    return text
+
+
+def render_health_markdown(
+    health_rows: list[dict[str, Any]],
+    window_id: str,
+    lang: str = DEFAULT_LANGUAGE,
+) -> str:
+    """渲染 health report 为 Markdown 表格"""
+    lines = [
+        f"# {_htr(lang, 'title')}",
+        "",
+        f"_{_htr(lang, 'subtitle')}_",
+        "",
+        f"- {_htr(lang, 'window_label')}: `{window_id}`",
+        "",
+    ]
+    if not health_rows or all(r["sample_count"] == 0 for r in health_rows):
+        lines.append(f"> {_htr(lang, 'no_data')}")
+        lines.append("")
+        return "\n".join(lines)
+
+    headers = [
+        _htr(lang, "col_layer"),
+        _htr(lang, "col_slo_target"),
+        _htr(lang, "col_p99"),
+        _htr(lang, "col_slo_status"),
+        _htr(lang, "col_failures"),
+        _htr(lang, "col_drift_critical"),
+        _htr(lang, "col_breaker"),
+        _htr(lang, "col_breaker_open"),
+        _htr(lang, "col_samples"),
+    ]
+    lines.append("| " + " | ".join(headers) + " |")
+    lines.append("|" + "|".join(["---"] * len(headers)) + "|")
+    for row in health_rows:
+        p99_str = (
+            f"{row['p99_latency_seconds']:.2f}"
+            if row["p99_latency_seconds"] is not None
+            else "N/A"
+        )
+        cells = [
+            row["layer"],
+            f"{row['slo_target_seconds']:.1f}",
+            p99_str,
+            row["slo_status"],
+            str(row["failure_count_window"]),
+            str(row["drift_critical_count"]),
+            row["breaker_state"],
+            str(row["breaker_open_count"]),
+            str(row["sample_count"]),
+        ]
+        lines.append("| " + " | ".join(cells) + " |")
+    lines.append("")
+    lines.append(
+        f"_{_htr(lang, 'footer', script='scripts/inspect_decision_log.py', version='6.0.0')}_"
+    )
+    return "\n".join(lines)
+
+
+def render_health_html(
+    health_rows: list[dict[str, Any]],
+    window_id: str,
+    lang: str = DEFAULT_LANGUAGE,
+) -> str:
+    """渲染 health report 为自包含 HTML 页面"""
+    generated = datetime.now().isoformat(timespec="seconds")
+    has_data = bool(health_rows) and any(r["sample_count"] > 0 for r in health_rows)
+
+    status_colors = {
+        "met": "#22c55e",
+        "violated": "#ef4444",
+        "insufficient_data": "#f59e0b",
+    }
+    breaker_colors = {
+        "closed": "#22c55e",
+        "open": "#ef4444",
+        "half_open": "#f59e0b",
+    }
+
+    rows_html = ""
+    if has_data:
+        for row in health_rows:
+            p99_str = (
+                f"{row['p99_latency_seconds']:.2f}"
+                if row["p99_latency_seconds"] is not None
+                else "N/A"
+            )
+            slo_color = status_colors.get(row["slo_status"], "#94a3b8")
+            breaker_color = breaker_colors.get(row["breaker_state"], "#94a3b8")
+            rows_html += (
+                f"<tr>"
+                f"<td>{row['layer']}</td>"
+                f"<td>{row['slo_target_seconds']:.1f}</td>"
+                f"<td>{p99_str}</td>"
+                f"<td><span class='badge' style='background:{slo_color}'>{row['slo_status']}</span></td>"
+                f"<td>{row['failure_count_window']}</td>"
+                f"<td>{row['drift_critical_count']}</td>"
+                f"<td><span class='badge' style='background:{breaker_color}'>{row['breaker_state']}</span></td>"
+                f"<td>{row['breaker_open_count']}</td>"
+                f"<td>{row['sample_count']}</td>"
+                f"</tr>"
+            )
+    else:
+        rows_html = (
+            f"<tr><td colspan='9' class='empty'>{_htr(lang, 'no_data')}</td></tr>"
+        )
+
+    headers = [
+        "col_layer", "col_slo_target", "col_p99", "col_slo_status",
+        "col_failures", "col_drift_critical", "col_breaker",
+        "col_breaker_open", "col_samples",
+    ]
+    th_html = "".join(
+        f"<th>{_htr(lang, h)}</th>" for h in headers
+    )
+
+    return (
+        f"<!DOCTYPE html>"
+        f"<html lang='{lang}'>"
+        f"<head>"
+        f"<meta charset='utf-8'>"
+        f"<meta name='viewport' content='width=device-width, initial-scale=1'>"
+        f"<title>{_htr(lang, 'title')}</title>"
+        f"<style>"
+        f"body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; "
+        f"background: #0f172a; color: #e2e8f0; margin: 0; padding: 24px; }}"
+        f".page {{ max-width: 1100px; margin: 0 auto; }}"
+        f"h1 {{ margin: 0 0 4px; font-size: 24px; }}"
+        f".sub {{ color: #94a3b8; font-size: 14px; margin-bottom: 16px; }}"
+        f".meta {{ color: #64748b; font-size: 12px; margin-bottom: 24px; }}"
+        f"table {{ width: 100%; border-collapse: collapse; background: rgba(248,250,252,0.04); "
+        f"border-radius: 8px; overflow: hidden; }}"
+        f"th {{ text-align: left; padding: 12px 14px; background: rgba(248,250,252,0.08); "
+        f"font-size: 12px; font-weight: 600; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.5px; }}"
+        f"td {{ padding: 10px 14px; border-top: 1px solid rgba(248,250,252,0.06); font-size: 14px; }}"
+        f"td.empty {{ text-align: center; color: #64748b; padding: 32px; }}"
+        f".badge {{ display: inline-block; padding: 2px 10px; border-radius: 999px; "
+        f"font-size: 12px; font-weight: 600; color: #0f172a; }}"
+        f"footer {{ margin-top: 24px; color: #64748b; font-size: 12px; }}"
+        f"code {{ background: rgba(248,250,252,0.1); padding: 2px 6px; border-radius: 4px; }}"
+        f"</style>"
+        f"</head>"
+        f"<body>"
+        f"<main class='page'>"
+        f"<h1>{_htr(lang, 'title')}</h1>"
+        f"<p class='sub'>{_htr(lang, 'subtitle')}</p>"
+        f"<p class='meta'>{_htr(lang, 'window_label')}: <code>{window_id}</code> · "
+        f"Generated: <code>{generated}</code></p>"
+        f"<table><thead><tr>{th_html}</tr></thead><tbody>{rows_html}</tbody></table>"
+        f"<footer>{_htr(lang, 'footer', script='scripts/inspect_decision_log.py', version='6.0.0')}</footer>"
+        f"</main>"
+        f"</body></html>"
+    )
+
+
+def build_health_report(
+    repo_path: Path,
+    window_id: str,
+    markdown_output: Path | None,
+    html_output: Path | None,
+    lang: str = DEFAULT_LANGUAGE,
+) -> dict[str, Any]:
+    """构建每层 health report
+
+    参数:
+        repo_path: 仓库根路径
+        window_id: 时间窗口标识（7d/30d/90d/all）
+        markdown_output: Markdown 输出路径，None 不输出
+        html_output: HTML 输出路径，None 不输出
+        lang: 报告语言
+
+    返回:
+        report dict，含 ok / schema_version / window / layers / warnings
+    """
+    telemetry_path = repo_path / DEFAULT_TELEMETRY_PATH
+    breaker_state_path = repo_path / DEFAULT_BREAKER_STATE_PATH
+    escalation_path = repo_path / DEFAULT_ESCALATION_PATH
+
+    telemetry_entries, warnings = load_entries(telemetry_path)
+    escalation_entries, esc_warnings = load_entries(escalation_path)
+    breaker_states = load_breaker_states(breaker_state_path)
+    warnings.extend(esc_warnings)
+
+    window_map = {w[0]: w[2] for w in WINDOW_SPECS}
+    window_seconds = window_map.get(window_id)
+
+    health_rows = compute_layer_health(
+        telemetry_entries,
+        escalation_entries,
+        breaker_states,
+        window_seconds,
+    )
+
+    ok = True
+    if markdown_output is not None:
+        try:
+            markdown_output.parent.mkdir(parents=True, exist_ok=True)
+            markdown_output.write_text(
+                render_health_markdown(health_rows, window_id, lang=lang),
+                encoding="utf-8",
+            )
+        except Exception as exc:
+            ok = False
+            warnings.append(f"failed to write markdown output: {exc!r}")
+
+    if html_output is not None:
+        try:
+            html_output.parent.mkdir(parents=True, exist_ok=True)
+            html_output.write_text(
+                render_health_html(health_rows, window_id, lang=lang),
+                encoding="utf-8",
+            )
+        except Exception as exc:
+            ok = False
+            warnings.append(f"failed to write html output: {exc!r}")
+
+    return {
+        "ok": ok,
+        "schema_version": HEALTH_REPORT_SCHEMA_VERSION,
+        "window": window_id,
+        "language": lang,
+        "layers": health_rows,
+        "warnings": warnings,
+    }
+
+
 def build_report(
     repo_path: Path,
     log_path: Path,
@@ -1231,16 +1628,36 @@ def main(argv: list[str]) -> int:
         action="store_true",
         help="Pretty-print the JSON result on stdout.",
     )
+    parser.add_argument(
+        "--health-report",
+        action="store_true",
+        help="Emit per-layer health report (observability-protocol.md) instead of decision-log report.",
+    )
+    parser.add_argument(
+        "--window",
+        default=HEALTH_WINDOW_ID,
+        choices=tuple(w[0] for w in WINDOW_SPECS),
+        help="Time window for health report (7d/30d/90d/all). Default: 30d.",
+    )
     args = parser.parse_args(argv)
 
     repo_path = Path(args.repo).resolve()
-    log_path = repo_path / args.log_file
     markdown_path = Path(args.markdown_output).resolve() if args.markdown_output else None
     html_path = Path(args.html_output).resolve() if args.html_output else None
     lang = resolve_language(args.language)
 
     try:
-        report = build_report(repo_path, log_path, markdown_path, html_path, lang=lang)
+        if args.health_report:
+            report = build_health_report(
+                repo_path,
+                window_id=args.window,
+                markdown_output=markdown_path,
+                html_output=html_path,
+                lang=lang,
+            )
+        else:
+            log_path = repo_path / args.log_file
+            report = build_report(repo_path, log_path, markdown_path, html_path, lang=lang)
     except Exception as exc:
         report = {"ok": False, "error": f"unexpected inspect error: {exc!r}"}
 

@@ -36,7 +36,8 @@
         "lead-prejudgment",
         "yagni",
         "breaker-status",
-        "contract-lock"
+        "contract-lock",
+        "observability-schema"
       ]
     },
     "allowed": {
@@ -343,6 +344,22 @@
         "properties": {
           "details": {
             "$ref": "#/$defs/contract_lock_details"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "check": {
+            "const": "observability-schema"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "details": {
+            "$ref": "#/$defs/observability_schema_details"
           }
         }
       }
@@ -1483,6 +1500,34 @@
           "items": {
             "type": "string"
           }
+        }
+      },
+      "additionalProperties": false
+    },
+    "observability_schema_details": {
+      "type": "object",
+      "required": [
+        "emit_self_test_exit",
+        "health_schema_version",
+        "health_layer_count",
+        "protocol_exists",
+        "skill_md_references_protocol"
+      ],
+      "properties": {
+        "emit_self_test_exit": {
+          "type": "integer"
+        },
+        "health_schema_version": {
+          "type": "string"
+        },
+        "health_layer_count": {
+          "type": "integer"
+        },
+        "protocol_exists": {
+          "type": "boolean"
+        },
+        "skill_md_references_protocol": {
+          "type": "boolean"
         }
       },
       "additionalProperties": false
