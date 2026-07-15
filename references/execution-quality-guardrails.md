@@ -11,6 +11,7 @@ Use these guardrails after routing selects a lead and workflow bundle.
 - If two materially different interpretations exist, name both before choosing.
 - Ask only when the missing fact would change the route, risk level, or artifact.
 - For low-information requests, prefer a clarification route over forced ceremony.
+- Lead must not make final judgment statements about Worker output before Verifier returns a verdict. State assumptions only (e.g., "assuming the interface is stable" is allowed; "should be fine" is not).
 
 ## 2. Smallest Defensible Bundle
 

@@ -198,6 +198,14 @@ def evaluate_completion_evidence(evidence_path: Path) -> dict[str, object]:
     evidence_refs = compact_string_list(payload.get("evidence_refs"))
     evidence_ref_checks = evaluate_evidence_refs(evidence_refs, repo_root)
 
+    worker_model = str(payload.get("worker_model", "")).strip()
+    verifier_model = str(payload.get("verifier_model", "")).strip()
+    same_model_self_review = (
+        bool(worker_model)
+        and bool(verifier_model)
+        and worker_model == verifier_model
+    )
+
     blockers: list[str] = []
     warnings: list[str] = []
     if status == "failed":
@@ -232,6 +240,11 @@ def evaluate_completion_evidence(evidence_path: Path) -> dict[str, object]:
         warnings.append("evidence_refs reference missing artifacts")
     if evidence_refs and not any(bool(item.get("verifiable")) for item in evidence_ref_checks):
         warnings.append("evidence_refs contain no verifiable command or existing artifact")
+    if same_model_self_review and status == "passed":
+        warnings.append(
+            f"same model self-review detected (worker={worker_model}, verifier={verifier_model}); "
+            "independent verification recommended"
+        )
 
     if blockers:
         decision = "blocked"
@@ -258,6 +271,9 @@ def evaluate_completion_evidence(evidence_path: Path) -> dict[str, object]:
         "evidence_path": evidence_rel,
         "status": status,
         "confidence_grade": grade,
+        "worker_model": worker_model,
+        "verifier_model": verifier_model,
+        "same_model_self_review": same_model_self_review,
         "covered_scope": covered_scope,
         "uncovered_scope": uncovered_scope,
         "residual_risk": residual_risk,

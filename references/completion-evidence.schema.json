@@ -71,6 +71,17 @@
         "C"
       ]
     },
+    "worker_model": {
+      "type": "string",
+      "minLength": 1
+    },
+    "verifier_model": {
+      "type": "string",
+      "minLength": 1
+    },
+    "same_model_self_review": {
+      "type": "boolean"
+    },
     "evidence_refs": {
       "$ref": "#/$defs/non_empty_string_array"
     }

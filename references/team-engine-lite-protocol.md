@@ -37,6 +37,7 @@ Forbidden:
 - accepting a task without verifier evidence
 - treating `worker_output.self_reported_done = true` as final completion
 - hiding a `hold` or `fail` verdict behind a polished summary
+- making final judgment statements about Worker output before Verifier returns a verdict (e.g., "should be fine", "can ship", "will pass")
 
 ### Worker
 

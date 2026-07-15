@@ -97,6 +97,19 @@ python scripts/verify_action.py --text "<user request>" --check completion-evide
   - 检测 `java.util.Date` / `Stream.parallel()` / `force push` 等违规模式
   - 返回 `verdict`：`pass` / `hold` / `spec_violation`
   - `spec_violation` 是可断言的客观事实，与 `fail`（WorkOrder 完成度不足）区分
+- `lead-prejudgment` 校验会额外确认：
+  - Lead dispatch 文本是否包含预判性语言（如"应该没问题"、"can ship"、"will pass"）
+  - 预判关键词前 15 字符内有"假设"/"assuming"时不触发（合法假设陈述）
+  - 命中预判模式 → `allowed: false`，建议改为假设陈述
+- `yagni` 校验会额外确认：
+  - Worker 产出的 diff 中是否包含未被请求的抽象（interface/factory/abstract/middleware/adapter/proxy/wrapper）
+  - 红线关键词（security/auth/transaction/a11y 等）在 diff 中存在时记录但不阻止检测
+  - 命中 → `allowed: false`，建议删除未被请求的抽象或用 WorkOrder 需求证明其合理性
+- `breaker-status` 校验会额外确认：
+  - 指定层的 circuit breaker 当前状态（closed / open / half_open）
+  - breaker open 时返回 `allowed: false`，建议不要继续执行
+  - breaker closed 时返回 `allowed: true`，可继续执行
+  - 状态来源是 `.skill-harness/breaker-state.json`，escalation 写入 `.skill-harness/escalation-queue.jsonl`
 
 ```bash
 python scripts/verify_action.py --text "<user request>" --check file-handoff --handoff-dir .skill-handoff --pretty
@@ -107,7 +120,37 @@ python scripts/verify_action.py --text "<user request>" --check spec-violation -
 ```
 
 ```bash
+python scripts/verify_action.py --text "<user request>" --check lead-prejudgment --dispatch-text "<Lead dispatch text>" --pretty
+```
+
+```bash
+python scripts/verify_action.py --text "<user request>" --check yagni --diff-file <path-to-diff> --pretty
+```
+
+```bash
+python scripts/verify_action.py --text "<user request>" --check breaker-status --breaker-layer verifier --pretty
+```
+
+```bash
 python scripts/verify_action.py --text "<user request>" --check assistant-delta-contract --pretty
+```
+
+- circuit breaker 状态管理
+
+```bash
+python scripts/circuit_breaker.py --check verifier
+```
+
+```bash
+python scripts/circuit_breaker.py --record-failure verifier --reason "file handoff missing"
+```
+
+```bash
+python scripts/circuit_breaker.py --record-success verifier
+```
+
+```bash
+python scripts/circuit_breaker.py --self-test
 ```
 
 - 机械契约 lint

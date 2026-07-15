@@ -1,0 +1,19 @@
+{
+  "layers": {
+    "routing": {
+      "max_consecutive_failures": 3,
+      "cooldown_seconds": 300,
+      "escalation_sink_path": ".skill-harness/escalation-queue.jsonl"
+    },
+    "verifier": {
+      "max_consecutive_failures": 5,
+      "cooldown_seconds": 600,
+      "escalation_sink_path": ".skill-harness/escalation-queue.jsonl"
+    },
+    "delivery": {
+      "max_consecutive_failures": 3,
+      "cooldown_seconds": 300,
+      "escalation_sink_path": ".skill-harness/escalation-queue.jsonl"
+    }
+  }
+}

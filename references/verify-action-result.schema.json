@@ -32,7 +32,10 @@
         "micro-practice-ledger",
         "completion-evidence",
         "file-handoff",
-        "spec-violation"
+        "spec-violation",
+        "lead-prejudgment",
+        "yagni",
+        "breaker-status"
       ]
     },
     "allowed": {
@@ -275,6 +278,54 @@
         "properties": {
           "details": {
             "$ref": "#/$defs/spec_violation_details"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "check": {
+            "const": "lead-prejudgment"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "details": {
+            "$ref": "#/$defs/lead_prejudgment_details"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "check": {
+            "const": "yagni"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "details": {
+            "$ref": "#/$defs/yagni_details"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "check": {
+            "const": "breaker-status"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "details": {
+            "$ref": "#/$defs/breaker_status_details"
           }
         }
       }
@@ -1263,6 +1314,126 @@
           }
         },
         "spec_file": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "lead_prejudgment_details": {
+      "type": "object",
+      "required": [
+        "dispatch_length",
+        "patterns_checked",
+        "hits"
+      ],
+      "properties": {
+        "dispatch_length": {
+          "type": "integer"
+        },
+        "patterns_checked": {
+          "type": "integer"
+        },
+        "hits": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "pattern",
+              "context"
+            ],
+            "properties": {
+              "pattern": {
+                "type": "string"
+              },
+              "context": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "yagni_details": {
+      "type": "object",
+      "required": [
+        "diff_file",
+        "diff_exists",
+        "added_lines_scanned",
+        "hits",
+        "red_line_keywords_found"
+      ],
+      "properties": {
+        "diff_file": {
+          "type": "string"
+        },
+        "diff_exists": {
+          "type": "boolean"
+        },
+        "added_lines_scanned": {
+          "type": "integer"
+        },
+        "hits": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "label",
+              "match",
+              "context"
+            ],
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "match": {
+                "type": "string"
+              },
+              "context": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "red_line_keywords_found": {
+          "$ref": "#/$defs/string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "breaker_status_details": {
+      "type": "object",
+      "required": [
+        "layer",
+        "breaker_state",
+        "consecutive_failures",
+        "reason",
+        "state_file",
+        "escalation_sink"
+      ],
+      "properties": {
+        "layer": {
+          "type": "string"
+        },
+        "breaker_state": {
+          "enum": [
+            "closed",
+            "open",
+            "half_open"
+          ]
+        },
+        "consecutive_failures": {
+          "type": "integer"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "state_file": {
+          "type": "string"
+        },
+        "escalation_sink": {
           "type": "string"
         }
       },

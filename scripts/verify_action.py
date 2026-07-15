@@ -16,7 +16,11 @@ RESPONSE_PACK_SCRIPT = SCRIPT_DIR / "generate_response_pack.py"
 RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
 EVALUATE_MICRO_PRACTICES_SCRIPT = SCRIPT_DIR / "evaluate_micro_practices.py"
 VERIFY_COMPLETION_EVIDENCE_SCRIPT = SCRIPT_DIR / "verify_completion_evidence.py"
+CIRCUIT_BREAKER_SCRIPT = SCRIPT_DIR / "circuit_breaker.py"
 DEFAULT_CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
+DEFAULT_BREAKER_CONFIG_PATH = SKILL_DIR / "references" / "circuit-breaker-config.json"
+DEFAULT_BREAKER_STATE_FILE = Path(".skill-harness") / "breaker-state.json"
+DEFAULT_BREAKER_ESCALATION_SINK = Path(".skill-harness") / "escalation-queue.jsonl"
 
 
 def load_module(name: str, path: Path):
@@ -38,6 +42,10 @@ micro_practice_evaluator = load_module(
 completion_evidence_verifier = load_module(
     "virtual_team_verify_action_verify_completion_evidence",
     VERIFY_COMPLETION_EVIDENCE_SCRIPT,
+)
+circuit_breaker_module = load_module(
+    "virtual_team_verify_action_circuit_breaker",
+    CIRCUIT_BREAKER_SCRIPT,
 )
 
 
@@ -956,6 +964,215 @@ def _verify_spec_violation(
     }
 
 
+PREJUDGMENT_PATTERNS = [
+    "应该没问题",
+    "肯定能过",
+    "可以 ship",
+    "可以ship",
+    "肯定没问题",
+    "应该能过",
+    "肯定通过",
+    "应该通过",
+    "肯定行",
+    "should be fine",
+    "will pass",
+    "can ship",
+    "definitely pass",
+    "should pass",
+    "no problem",
+]
+
+ASSUMPTION_MARKERS = ["假设", "assuming", "assume"]
+
+
+def _is_assumption_context(text: str, pos: int, window: int = 15) -> bool:
+    """检查关键词所在位置前 window 个字符内是否有假设标记"""
+    start = max(0, pos - window)
+    prefix = text[start:pos].lower()
+    return any(marker in prefix for marker in ASSUMPTION_MARKERS)
+
+
+def _verify_lead_prejudgment(
+    result: dict[str, object],
+    dispatch_text: str | None = None,
+) -> dict[str, object]:
+    """检测 Lead 在 Verifier 出 verdict 前的预判性语言"""
+    text = dispatch_text or ""
+    hits: list[dict[str, str]] = []
+    text_lower = text.lower()
+    for pattern in PREJUDGMENT_PATTERNS:
+        pattern_lower = pattern.lower()
+        search_from = 0
+        while True:
+            idx = text_lower.find(pattern_lower, search_from)
+            if idx == -1:
+                break
+            if not _is_assumption_context(text_lower, idx):
+                context_start = max(0, idx - 10)
+                context_end = min(len(text), idx + len(pattern) + 10)
+                hits.append({
+                    "pattern": pattern,
+                    "context": text[context_start:context_end].strip(),
+                })
+            search_from = idx + len(pattern)
+
+    has_hits = len(hits) > 0
+    if has_hits:
+        summary = f"Lead dispatch contains {len(hits)} prejudgment pattern(s) before Verifier verdict."
+        next_step = "Remove final judgment statements from Lead dispatch; restate as assumptions if needed."
+    else:
+        summary = "No prejudgment patterns detected in Lead dispatch."
+        next_step = "Proceed with normal Lead-to-Worker dispatch."
+
+    return {
+        "allowed": not has_hits,
+        "summary": summary,
+        "details": {
+            "dispatch_length": len(text),
+            "patterns_checked": len(PREJUDGMENT_PATTERNS),
+            "hits": hits,
+        },
+        "recommended_next_step": next_step,
+    }
+
+
+YAGNI_PATTERNS = [
+    {"pattern": r"interface\s+\w+", "label": "new interface"},
+    {"pattern": r"class\s+\w+Factory", "label": "new factory class"},
+    {"pattern": r"abstract\s+class\s+\w+", "label": "new abstract class"},
+    {"pattern": r"middleware", "label": "new middleware"},
+    {"pattern": r"class\s+\w+Adapter", "label": "new adapter"},
+    {"pattern": r"class\s+\w+Proxy", "label": "new proxy"},
+    {"pattern": r"class\s+\w+Wrapper", "label": "new wrapper"},
+]
+
+YAGNI_RED_LINE_KEYWORDS = [
+    "security",
+    "auth",
+    "encrypt",
+    "decrypt",
+    "a11y",
+    "accessibility",
+    "transaction",
+    "backup",
+    "idempotent",
+    "sanitize",
+    "validate",
+    "escape",
+]
+
+
+def _verify_yagni(
+    result: dict[str, object],
+    diff_file: Path | None = None,
+) -> dict[str, object]:
+    """检测 Worker 产出中未被请求的抽象(YAGNI 门禁)"""
+    import re
+
+    if not diff_file:
+        return {
+            "allowed": True,
+            "summary": "No diff file provided; YAGNI check skipped.",
+            "details": {
+                "diff_file": "",
+                "diff_exists": False,
+                "added_lines_scanned": 0,
+                "hits": [],
+                "red_line_keywords_found": [],
+            },
+            "recommended_next_step": "Provide --diff-file to enable YAGNI abstraction scan.",
+        }
+
+    diff_path = diff_file.resolve() if diff_file.is_absolute() else Path.cwd() / diff_file
+    diff_exists = diff_path.exists()
+    hits: list[dict[str, str]] = []
+    red_line_found: list[str] = []
+
+    if diff_exists:
+        content = diff_path.read_text(encoding="utf-8", errors="replace")
+        added_lines = [
+            line[1:] for line in content.splitlines()
+            if line.startswith("+") and not line.startswith("+++")
+        ]
+        content_lower = content.lower()
+        for kw in YAGNI_RED_LINE_KEYWORDS:
+            if kw in content_lower:
+                red_line_found.append(kw)
+
+        for item in YAGNI_PATTERNS:
+            regex = re.compile(item["pattern"], re.IGNORECASE)
+            for line in added_lines:
+                match = regex.search(line)
+                if match:
+                    hits.append({
+                        "label": item["label"],
+                        "match": match.group(),
+                        "context": line.strip()[:120],
+                    })
+
+    has_hits = len(hits) > 0
+    if has_hits:
+        summary = f"YAGNI check found {len(hits)} suspicious abstraction pattern(s)."
+        next_step = "Review hits; remove unrequested abstractions or justify with WorkOrder requirements."
+    else:
+        summary = "No YAGNI violations detected." if diff_exists else "Diff file not found; YAGNI check skipped."
+        next_step = "Proceed with normal verification." if diff_exists else "Provide a valid diff file path."
+
+    return {
+        "allowed": not has_hits,
+        "summary": summary,
+        "details": {
+            "diff_file": str(diff_file),
+            "diff_exists": diff_exists,
+            "added_lines_scanned": len(added_lines) if diff_exists else 0,
+            "hits": hits,
+            "red_line_keywords_found": red_line_found,
+        },
+        "recommended_next_step": next_step,
+    }
+
+
+def _verify_breaker_status(
+    result: dict[str, object],
+    breaker_layer: str,
+    breaker_config: Path | None = None,
+    breaker_state_file: Path | None = None,
+    breaker_escalation_sink: Path | None = None,
+) -> dict[str, object]:
+    """检查指定层的 circuit breaker 状态(advisory,不 hard exit)"""
+    config_path = breaker_config or DEFAULT_BREAKER_CONFIG_PATH
+    state_file = breaker_state_file or DEFAULT_BREAKER_STATE_FILE
+    escalation_sink = breaker_escalation_sink or DEFAULT_BREAKER_ESCALATION_SINK
+    breaker = circuit_breaker_module.CircuitBreaker(
+        config_path=config_path,
+        state_file=state_file,
+        escalation_sink=escalation_sink,
+    )
+    check_result = breaker.check(breaker_layer)
+    state = str(check_result.get("state", "closed"))
+    allowed = bool(check_result.get("allowed", True))
+    consecutive_failures = int(check_result.get("consecutive_failures", 0))
+    if allowed:
+        summary = f"Circuit breaker for layer '{breaker_layer}' is {state}. Action allowed."
+        next_step = "Proceed with the action. Breaker is not blocking."
+    else:
+        summary = f"Circuit breaker for layer '{breaker_layer}' is {state}. Action blocked."
+        next_step = "Do not proceed. Escalate or wait for cooldown. See .skill-harness/escalation-queue.jsonl."
+    return {
+        "allowed": allowed,
+        "summary": summary,
+        "details": {
+            "layer": breaker_layer,
+            "breaker_state": state,
+            "consecutive_failures": consecutive_failures,
+            "reason": str(check_result.get("reason", "")),
+            "state_file": str(state_file),
+            "escalation_sink": str(escalation_sink),
+        },
+        "recommended_next_step": next_step,
+    }
+
+
 def _build_explanation_card(result: dict[str, object]) -> dict[str, object]:
     payload = response_pack.build_response_pack_payload(result)
     return response_contract.build_explanation_card_from_payload(payload)
@@ -974,6 +1191,9 @@ def verify_action(
     handoff_dir: Path | None = None,
     handoff_type: str | None = None,
     worker_output: Path | None = None,
+    dispatch_text: str | None = None,
+    diff_file: Path | None = None,
+    breaker_layer: str | None = None,
 ) -> dict[str, object]:
     if assistant_agents is None:
         assistant_agents = []
@@ -1011,6 +1231,14 @@ def verify_action(
         outcome = _verify_file_handoff(result, repo_path, handoff_dir, handoff_type)
     elif check == "spec-violation":
         outcome = _verify_spec_violation(result, repo_path, worker_output, config)
+    elif check == "lead-prejudgment":
+        outcome = _verify_lead_prejudgment(result, dispatch_text)
+    elif check == "yagni":
+        outcome = _verify_yagni(result, diff_file)
+    elif check == "breaker-status":
+        if not breaker_layer:
+            raise ValueError("--breaker-layer is required for check=breaker-status")
+        outcome = _verify_breaker_status(result, breaker_layer)
     else:
         raise ValueError(f"Unsupported check: {check}")
 
@@ -1068,10 +1296,10 @@ def verify_action(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Verify whether a planned virtual team action matches the router contract.")
-    parser.add_argument("--text", required=True, help="User request text.")
+    parser.add_argument("--self-test", action="store_true", help="Run self-test for all v5.8.0 checks.")
+    parser.add_argument("--text", help="User request text.")
     parser.add_argument(
         "--check",
-        required=True,
         choices=[
             "process-skill",
             "git-workflow",
@@ -1087,6 +1315,9 @@ def parse_args() -> argparse.Namespace:
             "completion-evidence",
             "file-handoff",
             "spec-violation",
+            "lead-prejudgment",
+            "yagni",
+            "breaker-status",
         ],
         help="What to verify before taking action.",
     )
@@ -1120,12 +1351,92 @@ def parse_args() -> argparse.Namespace:
         "--worker-output",
         help="Worker output file path for check=spec-violation.",
     )
+    parser.add_argument(
+        "--dispatch-text",
+        help="Lead dispatch text for check=lead-prejudgment.",
+    )
+    parser.add_argument(
+        "--diff-file",
+        help="Diff file path for check=yagni.",
+    )
+    parser.add_argument(
+        "--breaker-layer",
+        help="Circuit breaker layer name for check=breaker-status (e.g. routing, verifier, delivery).",
+    )
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON output.")
     return parser.parse_args()
 
 
+def self_test() -> int:
+    """自测:验证 v5.8.0 新增 check 能正常执行并返回预期结构"""
+    config = load_config(DEFAULT_CONFIG_PATH)
+    repo_path = Path(".").resolve()
+    test_text = "self-test probe"
+    failures: list[str] = []
+
+    checks: list[tuple[str, str, bool, str]] = [
+        ("file-handoff", "目录不存在时 allowed 应为 false", False, "allowed"),
+        ("completion-evidence", "evidence 不存在时 allowed 应为 false", False, "allowed"),
+        ("lead-prejudgment", "空 dispatch 时 allowed 应为 true", True, "allowed"),
+        ("yagni", "无 diff 时 allowed 应为 true", True, "allowed"),
+        ("spec-violation", "无 worker output 时 allowed 应为 true", True, "allowed"),
+    ]
+
+    for check_name, description, expected_allowed, field_name in checks:
+        try:
+            result = verify_action(
+                text=test_text,
+                config=config,
+                repo_path=repo_path,
+                check=check_name,
+            )
+            actual_allowed = bool(result.get("allowed"))
+            if actual_allowed != expected_allowed:
+                failures.append(
+                    f"FAIL: {check_name} — {description}, expected {field_name}={expected_allowed}, got {actual_allowed}"
+                )
+        except Exception as exc:
+            failures.append(f"FAIL: {check_name} — raised exception: {exc}")
+
+    try:
+        result = verify_action(
+            text=test_text,
+            config=config,
+            repo_path=repo_path,
+            check="breaker-status",
+            breaker_layer="verifier",
+        )
+        breaker_state = str(result.get("details", {}).get("breaker_state", ""))
+        if breaker_state != "closed":
+            failures.append(f"FAIL: breaker-status — expected breaker_state=closed, got {breaker_state}")
+    except Exception as exc:
+        failures.append(f"FAIL: breaker-status — raised exception: {exc}")
+
+    if failures:
+        for f in failures:
+            print(f"  {f}")
+        print(f"\nSelf-test FAILED ({len(failures)} assertion(s))")
+        return 1
+
+    print("Self-test PASSED: all v5.8.0 checks return expected structure")
+    print("  - file-handoff: rejects when handoff dir missing")
+    print("  - completion-evidence: rejects when evidence file missing")
+    print("  - lead-prejudgment: allows empty dispatch")
+    print("  - yagni: allows empty diff")
+    print("  - spec-violation: allows empty worker output")
+    print("  - breaker-status: returns closed state for verifier layer")
+    return 0
+
+
 def main() -> None:
     args = parse_args()
+
+    if args.self_test:
+        raise SystemExit(self_test())
+
+    if not args.text or not args.check:
+        raise SystemExit("--text and --check are required (use --self-test for self-test)")
+
     try:
         result = verify_action(
             text=args.text,
@@ -1139,6 +1450,9 @@ def main() -> None:
             handoff_dir=Path(args.handoff_dir) if args.handoff_dir else None,
             handoff_type=args.handoff_type,
             worker_output=Path(args.worker_output) if args.worker_output else None,
+            dispatch_text=args.dispatch_text,
+            diff_file=Path(args.diff_file) if args.diff_file else None,
+            breaker_layer=args.breaker_layer,
         )
         exit_code = 0
     except Exception as exc:

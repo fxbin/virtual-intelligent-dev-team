@@ -18,6 +18,9 @@
     "<residual risk, or none>"
   ],
   "confidence_grade": "C",
+  "worker_model": "<model name used by Worker, e.g. gpt-4o>",
+  "verifier_model": "<model name used by Verifier, e.g. claude-sonnet-4>",
+  "same_model_self_review": false,
   "evidence_refs": [
     "<verifiable command, or existing local artifact path such as reports/checks.md>"
   ]

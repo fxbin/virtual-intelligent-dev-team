@@ -2491,6 +2491,209 @@
         "skill declines the deep-research request",
         "skill recommends deep-research-forge"
       ]
+    },
+    {
+      "id": 134,
+      "runner": "verify_action",
+      "check": "file-handoff",
+      "categories": [
+        "file-handoff",
+        "contract-output"
+      ],
+      "prompt": "Worker has finished the implementation, verify before delivery.",
+      "expected_output": "file-handoff check should reject when .skill-handoff directory does not exist.",
+      "files": [],
+      "expectations": [
+        "allowed is false",
+        "verify_action_json details.dir_exists is false"
+      ]
+    },
+    {
+      "id": 135,
+      "runner": "verify_action",
+      "check": "file-handoff",
+      "categories": [
+        "file-handoff",
+        "contract-output"
+      ],
+      "prompt": "Worker has finished the implementation, verify before delivery.",
+      "expected_output": "file-handoff check should reject when handoff file exists but handoff metadata is missing or schema invalid.",
+      "files": [],
+      "expectations": [
+        "allowed is false",
+        "verify_action_json details.dir_exists is true",
+        "verify_action_json details.missing_handoff_meta length is not 0"
+      ],
+      "runtime_dependent": true
+    },
+    {
+      "id": 136,
+      "runner": "verify_action",
+      "check": "completion-evidence",
+      "categories": [
+        "completion-evidence",
+        "contract-output"
+      ],
+      "prompt": "The task is complete, confirm delivery.",
+      "expected_output": "completion-evidence check should reject when evidence file does not exist.",
+      "files": [],
+      "expectations": [
+        "allowed is false",
+        "verify_action_json details.decision is missing"
+      ]
+    },
+    {
+      "id": 137,
+      "runner": "verify_action",
+      "check": "completion-evidence",
+      "categories": [
+        "completion-evidence",
+        "model-declaration",
+        "contract-output"
+      ],
+      "prompt": "The task is complete, confirm delivery.",
+      "expected_output": "completion-evidence check should flag same-model self-review warning when worker_model equals verifier_model and status is passed.",
+      "files": [],
+      "expectations": [
+        "allowed is true",
+        "verify_action_json details.verification.warnings length is not 0"
+      ],
+      "runtime_dependent": true
+    },
+    {
+      "id": 138,
+      "runner": "verify_action",
+      "check": "lead-prejudgment",
+      "categories": [
+        "lead-prejudgment",
+        "contract-output"
+      ],
+      "prompt": "Lead dispatches work to Worker.",
+      "expected_output": "lead-prejudgment check should allow when dispatch text is empty (no prejudgment detected).",
+      "files": [],
+      "expectations": [
+        "allowed is true",
+        "verify_action_json details.dispatch_length is 0",
+        "verify_action_json details.hits length is 0"
+      ]
+    },
+    {
+      "id": 139,
+      "runner": "verify_action",
+      "check": "lead-prejudgment",
+      "categories": [
+        "lead-prejudgment",
+        "negative"
+      ],
+      "prompt": "Lead dispatches work to Worker.",
+      "expected_output": "lead-prejudgment check should reject when dispatch text contains prejudgment language like 'should be fine' or 'can ship'.",
+      "files": [],
+      "expectations": [
+        "allowed is false",
+        "verify_action_json details.hits length is not 0"
+      ],
+      "runtime_dependent": true
+    },
+    {
+      "id": 140,
+      "runner": "verify_action",
+      "check": "breaker-status",
+      "categories": [
+        "circuit-breaker",
+        "contract-output"
+      ],
+      "prompt": "Verify before executing the next iteration cycle.",
+      "expected_output": "breaker-status check should allow when circuit breaker is in closed state.",
+      "files": [],
+      "expectations": [
+        "allowed is true",
+        "verify_action_json details.breaker_state is closed"
+      ],
+      "runtime_dependent": true
+    },
+    {
+      "id": 141,
+      "runner": "verify_action",
+      "check": "breaker-status",
+      "categories": [
+        "circuit-breaker",
+        "negative"
+      ],
+      "prompt": "Verify before executing the next iteration cycle.",
+      "expected_output": "breaker-status check should block when circuit breaker is in open state after consecutive failures.",
+      "files": [],
+      "expectations": [
+        "allowed is false",
+        "verify_action_json details.breaker_state is open"
+      ],
+      "runtime_dependent": true
+    },
+    {
+      "id": 142,
+      "runner": "verify_action",
+      "check": "yagni",
+      "categories": [
+        "yagni",
+        "contract-output"
+      ],
+      "prompt": "Worker submitted a diff for review.",
+      "expected_output": "yagni check should allow when no diff file is provided (no unrequested abstractions detected).",
+      "files": [],
+      "expectations": [
+        "allowed is true",
+        "verify_action_json details.diff_exists is false",
+        "verify_action_json details.hits length is 0"
+      ]
+    },
+    {
+      "id": 143,
+      "runner": "verify_action",
+      "check": "yagni",
+      "categories": [
+        "yagni",
+        "negative"
+      ],
+      "prompt": "Worker submitted a diff for review.",
+      "expected_output": "yagni check should reject when diff contains unrequested abstractions like new interface or factory class.",
+      "files": [],
+      "expectations": [
+        "allowed is false",
+        "verify_action_json details.hits length is not 0"
+      ],
+      "runtime_dependent": true
+    },
+    {
+      "id": 144,
+      "runner": "verify_action",
+      "check": "spec-violation",
+      "categories": [
+        "spec-violation",
+        "contract-output"
+      ],
+      "prompt": "Worker output ready for spec compliance check.",
+      "expected_output": "spec-violation check should pass when no worker output is provided (no violations detectable).",
+      "files": [],
+      "expectations": [
+        "allowed is true",
+        "verify_action_json details.verdict is pass",
+        "verify_action_json details.output_exists is false"
+      ]
+    },
+    {
+      "id": 145,
+      "runner": "verify_action",
+      "check": "spec-violation",
+      "categories": [
+        "spec-violation",
+        "negative"
+      ],
+      "prompt": "Worker output ready for spec compliance check.",
+      "expected_output": "spec-violation check should return spec_violation verdict when worker output contains banned patterns like java.util.Date or force push.",
+      "files": [],
+      "expectations": [
+        "verify_action_json details.verdict is spec_violation"
+      ],
+      "runtime_dependent": true
     }
   ]
 }
