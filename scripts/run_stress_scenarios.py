@@ -16,6 +16,8 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -308,18 +310,95 @@ def run_json_parse(
         }
 
 
+def search_callers(
+    function_name: str,
+    search_paths: list[Path],
+    repo_root: Path,
+    require_rg: bool = False,
+    fallback_grep: bool = True,
+) -> tuple[list[str], str]:
+    """搜索函数调用方，优先使用 rg，fallback 到 Python re 模块
+
+    参数:
+        function_name: 要搜索的函数名
+        search_paths: 搜索路径列表
+        repo_root: 仓库根路径（用于生成相对路径）
+        require_rg: True 时无 rg 抛 RuntimeError，不 fallback
+        fallback_grep: True 时无 rg 使用 Python re 模块搜索
+
+    返回:
+        (callers_found, search_engine) — callers 为相对路径列表，engine 为 'rg' / 'python-re' / 'none'
+    """
+    if not function_name:
+        return [], "none"
+
+    rg_available = shutil.which("rg") is not None
+
+    if rg_available:
+        try:
+            cmd = ["rg", "-l", "--no-heading", function_name] + [str(p) for p in search_paths]
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            if proc.returncode == 0:
+                callers = [
+                    line.strip().replace(str(repo_root) + "/", "")
+                    for line in proc.stdout.strip().split("\n")
+                    if line.strip()
+                ]
+                return callers, "rg"
+            return [], "rg"
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            pass
+
+    if require_rg:
+        raise RuntimeError(
+            "rg is required (--require-rg set) but not found in PATH; "
+            "install ripgrep or use --fallback-grep"
+        )
+
+    if not fallback_grep:
+        return [], "none"
+
+    callers: list[str] = []
+    pattern = re.compile(re.escape(function_name))
+    for search_path in search_paths:
+        if not search_path.exists():
+            continue
+        if search_path.is_file():
+            files_to_scan = [search_path]
+        else:
+            files_to_scan = [
+                p for p in search_path.rglob("*")
+                if p.is_file() and p.suffix in (".py", ".md", ".json", ".yaml", ".yml")
+            ]
+        for file_path in files_to_scan:
+            try:
+                content = file_path.read_text(encoding="utf-8", errors="ignore")
+                if pattern.search(content):
+                    rel = str(file_path).replace(str(repo_root) + "/", "")
+                    if rel not in callers:
+                        callers.append(rel)
+            except OSError:
+                continue
+
+    return callers, "python-re"
+
+
 def generate_trace_summary(
     scenario: dict[str, object],
     repo_path: Path,
+    require_rg: bool = False,
+    fallback_grep: bool = True,
 ) -> dict[str, object]:
     """机器校验 trace_summary（obra 约束：非自报，引用真实文件路径 + caller 列表）
 
     参数:
         scenario: 场景 JSON dict
         repo_path: 技能根路径
+        require_rg: True 时无 rg 抛 RuntimeError
+        fallback_grep: True 时无 rg 使用 Python re fallback
 
     返回:
-        trace_summary dict，含 files_verified / callers_found / caller_count / complete
+        trace_summary dict，含 files_verified / callers_found / caller_count / complete / search_engine
     """
     affected_files = scenario.get("affected_files", [])
     if not isinstance(affected_files, list):
@@ -336,24 +415,13 @@ def generate_trace_summary(
             "absolute": str(full_path),
         })
 
-    callers_found: list[str] = []
-    if affected_function:
-        try:
-            cmd = [
-                "rg", "-l", "--no-heading",
-                affected_function,
-                str(repo_path / "scripts"),
-                str(repo_path / "references"),
-            ]
-            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-            if proc.returncode == 0:
-                callers_found = [
-                    line.strip().replace(str(repo_path) + "/", "")
-                    for line in proc.stdout.strip().split("\n")
-                    if line.strip()
-                ]
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            callers_found = []
+    callers_found, search_engine = search_callers(
+        function_name=affected_function,
+        search_paths=[repo_path / "scripts", repo_path / "references"],
+        repo_root=repo_path,
+        require_rg=require_rg,
+        fallback_grep=fallback_grep,
+    )
 
     caller_count = len(callers_found)
     all_files_exist = all(bool(f.get("exists")) for f in files_verified)
@@ -365,6 +433,7 @@ def generate_trace_summary(
         "caller_count": caller_count,
         "all_files_exist": all_files_exist,
         "complete": complete,
+        "search_engine": search_engine,
     }
 
 
@@ -408,6 +477,8 @@ def run_scenario(
     scenario: dict[str, object],
     config: dict[str, object],
     workspace: Path,
+    require_rg: bool = False,
+    fallback_grep: bool = True,
 ) -> dict[str, object]:
     """执行单个场景，生成完整结果（含 trace_summary + fix_scope）
 
@@ -415,6 +486,8 @@ def run_scenario(
         scenario: 场景 JSON dict
         config: routing 配置
         workspace: 临时工作区路径
+        require_rg: True 时无 rg 抛 RuntimeError
+        fallback_grep: True 时无 rg 使用 Python re fallback
 
     返回:
         场景结果 dict
@@ -448,7 +521,11 @@ def run_scenario(
             "error": f"unsupported method: {method}",
         }
 
-    trace_summary = generate_trace_summary(scenario, SKILL_DIR)
+    trace_summary = generate_trace_summary(
+        scenario, SKILL_DIR,
+        require_rg=require_rg,
+        fallback_grep=fallback_grep,
+    )
     fix_scope = compute_fix_scope(scenario, trace_summary)
 
     actual_caught = bool(exec_result.get("actual_caught", False))
@@ -482,11 +559,17 @@ def run_scenario(
     }
 
 
-def run_all_scenarios(workspace: Path) -> dict[str, object]:
-    """加载并执行全部 7 个压测场景，聚合结果
+def run_all_scenarios(
+    workspace: Path,
+    require_rg: bool = False,
+    fallback_grep: bool = True,
+) -> dict[str, object]:
+    """加载并执行全部压测场景，聚合结果
 
     参数:
         workspace: 临时工作区路径
+        require_rg: True 时无 rg 抛 RuntimeError
+        fallback_grep: True 时无 rg 使用 Python re fallback
 
     返回:
         聚合结果 dict，含 scenarios / summary / fix_scope_root_cause_ratio
@@ -496,7 +579,11 @@ def run_all_scenarios(workspace: Path) -> dict[str, object]:
 
     results = []
     for scenario in scenarios:
-        result = run_scenario(scenario, config, workspace)
+        result = run_scenario(
+            scenario, config, workspace,
+            require_rg=require_rg,
+            fallback_grep=fallback_grep,
+        )
         results.append(result)
 
     total = len(results)
@@ -572,7 +659,7 @@ def render_markdown_report(result: dict[str, object]) -> str:
         callers = ts.get("callers_found", [])
         if isinstance(callers, list) and callers:
             lines.append(f"  - callers: {', '.join(callers)}")
-        lines.append(f"- **fix_scope**: {fs.get('scope', '')} (hint={fs.get('hint', '')}, match={fs.get('match', False)})")
+        lines.append(f"- **fix_scope**: {fs.get('scope', '')} (hint={fs.get('hint', '')}, validated={fs.get('validated', False)})")
         lines.append(f"- **执行摘要**: {s.get('exec_summary', '')}")
         if s.get("exec_error"):
             lines.append(f"- **错误**: {s.get('exec_error')}")
@@ -582,7 +669,7 @@ def render_markdown_report(result: dict[str, object]) -> str:
 
 
 def self_test() -> int:
-    """自测：验证场景加载 + trace_summary 生成 + fix_scope 计算
+    """自测：验证场景加载 + trace_summary 生成 + fix_scope 计算 + rg/grep fallback
 
     返回:
         0 表示通过，1 表示失败
@@ -607,17 +694,44 @@ def self_test() -> int:
         failures.append(f"scenario IDs mismatch: {set(scenario_ids)} != {expected_ids}")
 
     for s in scenarios:
-        ts = generate_trace_summary(s, SKILL_DIR)
+        ts = generate_trace_summary(s, SKILL_DIR, fallback_grep=True)
         if not ts.get("complete"):
             failures.append(
                 f"trace_summary incomplete for {s.get('scenario_id')}: "
-                f"files_exist={ts.get('all_files_exist')}, caller_count={ts.get('caller_count')}"
+                f"files_exist={ts.get('all_files_exist')}, caller_count={ts.get('caller_count')}, "
+                f"search_engine={ts.get('search_engine')}"
             )
 
     test_scenario = scenarios[0] if scenarios else {}
     fs = compute_fix_scope(test_scenario, generate_trace_summary(test_scenario, SKILL_DIR))
     if fs.get("scope") not in ("root-cause", "symptom"):
         failures.append(f"fix_scope scope invalid: {fs.get('scope')}")
+    if "validated" not in fs:
+        failures.append("fix_scope missing 'validated' field")
+
+    callers, engine = search_callers(
+        function_name="verify_action",
+        search_paths=[SKILL_DIR / "scripts"],
+        repo_root=SKILL_DIR,
+        fallback_grep=True,
+    )
+    if not callers:
+        failures.append(f"search_callers fallback returned no callers for verify_action (engine={engine})")
+    if engine not in ("rg", "python-re"):
+        failures.append(f"search_callers engine should be 'rg' or 'python-re', got '{engine}'")
+
+    try:
+        search_callers(
+            function_name="verify_action",
+            search_paths=[SKILL_DIR / "scripts"],
+            repo_root=SKILL_DIR,
+            require_rg=True,
+            fallback_grep=False,
+        )
+        if shutil.which("rg") is None:
+            failures.append("require_rg=True should raise RuntimeError when rg unavailable")
+    except RuntimeError:
+        pass
 
     if failures:
         for f in failures:
@@ -629,6 +743,7 @@ def self_test() -> int:
     print(f"  - {len(scenarios)} scenarios loaded")
     print("  - trace_summary machine validation: all files exist + callers found")
     print("  - fix_scope computation: root-cause/symptom correctly determined")
+    print("  - search_callers rg/python-re fallback: working")
     return 0
 
 
@@ -653,6 +768,23 @@ def main() -> None:
         help="Markdown 报告输出路径",
     )
     parser.add_argument(
+        "--require-rg",
+        action="store_true",
+        help="强制要求 rg，无 rg 时 fail 而非 fallback",
+    )
+    parser.add_argument(
+        "--fallback-grep",
+        action="store_true",
+        default=True,
+        help="无 rg 时使用 Python re 模块 fallback（默认启用）",
+    )
+    parser.add_argument(
+        "--no-fallback-grep",
+        dest="fallback_grep",
+        action="store_false",
+        help="禁用 Python re fallback，无 rg 时返回空 callers",
+    )
+    parser.add_argument(
         "--self-test",
         action="store_true",
         help="运行自测",
@@ -668,7 +800,11 @@ def main() -> None:
     else:
         workspace = Path(tempfile.mkdtemp(prefix="stress-scenarios-"))
 
-    result = run_all_scenarios(workspace)
+    result = run_all_scenarios(
+        workspace,
+        require_rg=args.require_rg,
+        fallback_grep=args.fallback_grep,
+    )
 
     if args.markdown:
         report_path = Path(args.markdown)
