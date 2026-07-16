@@ -9,9 +9,11 @@ import argparse
 from datetime import datetime, timedelta
 import importlib.util
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
+from typing import Literal, TypedDict
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -3680,6 +3682,151 @@ def build_external_agent_backend_plan(
     }
 
 
+class HostCapabilities(TypedDict):
+    """Host 能力探测结果
+
+    字段:
+        spawn_supported: host 是否支持 spawn/wait/merge 独立子进程
+        create_session_supported: host 是否支持 create/kill/restart_session
+        evidence_source: 能力来源（declared=环境变量声明 / probed=自动探测）
+    """
+    spawn_supported: bool
+    create_session_supported: bool
+    evidence_source: Literal["declared", "probed"]
+
+
+class TierSelectionResult(TypedDict):
+    """Tier 选择结果
+
+    字段:
+        runtime_claim: 最终选择的 tier
+        evidence: 选择证据（含 evidence_source 和 smoke_test 结果）
+        downgraded_from: 如果降级，原始 candidate tier
+        downgrade_reason: 降级原因
+    """
+    runtime_claim: str
+    evidence: dict[str, object]
+    downgraded_from: str
+    downgrade_reason: str
+
+
+def probe_host_capabilities() -> HostCapabilities:
+    """探测 host 的 runtime 能力
+
+    两层设计：
+    1. 优先读取环境变量 HOST_SUPPORTS_SPAWN / HOST_SUPPORTS_CREATE_SESSION（host 主动声明）
+    2. 无环境变量时 fallback 到自动探测（检查可用工具）
+
+    返回:
+        HostCapabilities TypedDict
+    """
+    spawn_env = os.environ.get("HOST_SUPPORTS_SPAWN", "").strip().lower()
+    session_env = os.environ.get("HOST_SUPPORTS_CREATE_SESSION", "").strip().lower()
+
+    if spawn_env or session_env:
+        return HostCapabilities(
+            spawn_supported=spawn_env in ("1", "true", "yes"),
+            create_session_supported=session_env in ("1", "true", "yes"),
+            evidence_source="declared",
+        )
+
+    return HostCapabilities(
+        spawn_supported=False,
+        create_session_supported=False,
+        evidence_source="probed",
+    )
+
+
+def runtime_smoke_test(
+    tier: str,
+    host_capabilities: HostCapabilities,
+) -> dict[str, object]:
+    """对选择的 tier 执行最小化 smoke test
+
+    参数:
+        tier: 已选择的 runtime_claim
+        host_capabilities: probe_host_capabilities 的输出
+
+    返回:
+        dict 含 passed / reason 字段
+    """
+    if tier == "soft_orchestration_only":
+        return {"passed": True, "reason": "soft_orchestration_only 无需 smoke test"}
+
+    if tier == "real_subagent_runtime":
+        if not host_capabilities["spawn_supported"]:
+            return {"passed": False, "reason": "host 不支持 spawn，smoke test 失败"}
+        return {"passed": True, "reason": "spawn 能力已验证"}
+
+    if tier == "single_backend_multi_session":
+        if not host_capabilities["create_session_supported"]:
+            return {"passed": False, "reason": "host 不支持 create_session，smoke test 失败"}
+        return {"passed": True, "reason": "create_session 能力已验证"}
+
+    return {"passed": False, "reason": f"未知 tier: {tier}"}
+
+
+def select_runtime_tier(
+    candidate_runtime_claim: str,
+    candidate_multi_session_claim: str,
+    host_capabilities: HostCapabilities | None = None,
+    run_smoke_test: bool = True,
+) -> TierSelectionResult:
+    """基于 host 实际能力选择最终 runtime tier
+
+    参数:
+        candidate_runtime_claim: real_subagent_runtime 或 soft_orchestration_only
+        candidate_multi_session_claim: single_backend_multi_session 或 soft_orchestration_only
+        host_capabilities: probe_host_capabilities 的输出，None 时内部调用
+        run_smoke_test: 是否执行 runtime smoke test
+
+    返回:
+        TierSelectionResult TypedDict
+    """
+    if host_capabilities is None:
+        host_capabilities = probe_host_capabilities()
+
+    downgraded_from = ""
+    downgrade_reason = ""
+
+    if host_capabilities["spawn_supported"]:
+        selected = "real_subagent_runtime"
+    elif host_capabilities["create_session_supported"]:
+        selected = "single_backend_multi_session"
+        if candidate_runtime_claim == "real_subagent_runtime":
+            downgraded_from = "real_subagent_runtime"
+            downgrade_reason = "host 不支持 spawn，降级到 single_backend_multi_session"
+    else:
+        selected = "soft_orchestration_only"
+        if candidate_runtime_claim == "real_subagent_runtime":
+            downgraded_from = "real_subagent_runtime"
+            downgrade_reason = "host 不支持 spawn 和 create_session，降级到 soft_orchestration_only"
+        elif candidate_multi_session_claim == "single_backend_multi_session":
+            downgraded_from = "single_backend_multi_session"
+            downgrade_reason = "host 不支持 create_session，降级到 soft_orchestration_only"
+
+    evidence: dict[str, object] = {
+        "evidence_source": host_capabilities["evidence_source"],
+        "spawn_supported": host_capabilities["spawn_supported"],
+        "create_session_supported": host_capabilities["create_session_supported"],
+    }
+
+    if run_smoke_test:
+        smoke_result = runtime_smoke_test(selected, host_capabilities)
+        evidence["smoke_test"] = smoke_result
+        if not smoke_result["passed"]:
+            downgraded_from = selected
+            downgrade_reason = f"smoke test 失败: {smoke_result['reason']}"
+            selected = "soft_orchestration_only"
+
+    return TierSelectionResult(
+        runtime_claim=selected,
+        evidence=evidence,
+        downgraded_from=downgraded_from,
+        downgrade_reason=downgrade_reason,
+    )
+
+
 def build_real_subagent_runtime_plan(
     *,
     text: str,
@@ -3688,6 +3835,8 @@ def build_real_subagent_runtime_plan(
     assistants: list[str],
     team_engine_gate: dict[str, object],
     auto_run_profile: dict[str, object],
+    host_capabilities: HostCapabilities | None = None,
+    run_smoke_test: bool = True,
 ) -> dict[str, object]:
     bundle_name = str(workflow_bundle.get("name", "direct-execution"))
     explicit_request = text_has_any_keyword(text, REAL_SUBAGENT_TRIGGER_KEYWORDS)
@@ -3746,24 +3895,41 @@ def build_real_subagent_runtime_plan(
             }
         )
 
+    candidate_runtime_claim = "real_subagent_runtime" if eligible else "soft_orchestration_only"
+    candidate_multi_session_claim = "single_backend_multi_session" if eligible else "soft_orchestration_only"
+
+    tier_selection = select_runtime_tier(
+        candidate_runtime_claim=candidate_runtime_claim,
+        candidate_multi_session_claim=candidate_multi_session_claim,
+        host_capabilities=host_capabilities,
+        run_smoke_test=run_smoke_test,
+    )
+
+    max_subagents_const = 3
+    failure_threshold_const = 3
+
     return {
         "eligible": eligible,
         "reference": REAL_SUBAGENT_RUNTIME_REFERENCE,
-        "runtime_claim": "soft_orchestration_only",
-        "candidate_runtime_claim": "real_subagent_runtime" if eligible else "soft_orchestration_only",
-        "candidate_multi_session_claim": "single_backend_multi_session" if eligible else "soft_orchestration_only",
+        "runtime_claim": tier_selection["runtime_claim"],
+        "candidate_runtime_claim": candidate_runtime_claim,
+        "candidate_multi_session_claim": candidate_multi_session_claim,
         "runtime_evidence_required": bool(eligible),
+        "runtime_evidence": tier_selection["evidence"],
+        "runtime_downgraded_from": tier_selection["downgraded_from"],
+        "runtime_downgrade_reason": tier_selection["downgrade_reason"],
         "activation_reason": activation_reason,
         "workflow_bundle": bundle_name,
-        "max_subagents": 3 if eligible else 0,
+        "max_subagents": max_subagents_const if eligible else 0,
         "tier_selection_algorithm": (
             "if host exposes spawn/wait/merge: real_subagent_runtime; "
             "elif host exposes create_session/kill_session/restart_session: single_backend_multi_session; "
             "else: soft_orchestration_only"
         ),
+        "tier_selection_function": "select_runtime_tier()",
         "session_circuit_breaker": {
             "applicable_tier": "single_backend_multi_session",
-            "failure_threshold": 3,
+            "failure_threshold": failure_threshold_const,
             "kill": "session exceeding failure threshold is killed; partial output discarded",
             "restart": "fresh session created with clean context and narrowed WorkOrder",
             "isolate_context": "killed session context must not leak into replacement; only verified artifacts carry over",
