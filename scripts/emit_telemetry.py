@@ -32,6 +32,7 @@ from circuit_breaker import CircuitBreaker
 
 DEFAULT_TELEMETRY_DIR = Path(".skill-metrics")
 DEFAULT_TELEMETRY_FILE = DEFAULT_TELEMETRY_DIR / "telemetry.jsonl"
+ABSTRACTION_KEYWORDS_PATH = SCRIPT_DIR / "abstraction_keywords.yaml"
 
 LAYER_VALUES = frozenset({
     "planning",
@@ -60,11 +61,57 @@ SLO_LATENCY_TARGETS = {
     "verifier": 15.0,
 }
 
-ABSTRACTION_PATTERN = re.compile(
-    r"^\s*(?:class|def|module|config)\s+\w+",
-    re.MULTILINE,
-)
 TOKEN_SPLIT_PATTERN = re.compile(r"[^\w]+")
+
+
+def load_abstraction_keywords(
+    config_path: Path = ABSTRACTION_KEYWORDS_PATH,
+    lang: str | None = None,
+) -> list[str]:
+    """从 abstraction_keywords.yaml 加载关键字列表
+
+    参数:
+        config_path: yaml 配置路径
+        lang: 语言标识（如 'rust'），None 时加载 core 档
+
+    返回:
+        关键字列表
+    """
+    if not config_path.exists():
+        return ["class", "def", "module", "config", "interface", "type", "struct", "trait", "enum"]
+
+    try:
+        import yaml
+    except ImportError:
+        return ["class", "def", "module", "config", "interface", "type", "struct", "trait", "enum"]
+
+    with config_path.open("r", encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+
+    if lang and lang in data.get("extended", {}):
+        keywords = data["extended"][lang]
+    else:
+        keywords = data.get("core", [])
+
+    return [str(kw) for kw in keywords] if keywords else ["class", "def", "module", "config"]
+
+
+def build_abstraction_pattern(keywords: list[str]) -> re.Pattern[str]:
+    """根据关键字列表构建 ABSTRACTION_PATTERN 正则
+
+    参数:
+        keywords: 关键字列表
+
+    返回:
+        编译后的 re.Pattern
+    """
+    if not keywords:
+        keywords = ["class", "def", "module", "config"]
+    pattern = r"^\s*(?:" + "|".join(re.escape(kw) for kw in keywords) + r")\s+\w+"
+    return re.compile(pattern, re.MULTILINE)
+
+
+ABSTRACTION_PATTERN = build_abstraction_pattern(load_abstraction_keywords())
 
 
 def _utc_now() -> str:
@@ -442,8 +489,14 @@ def main() -> int:
     parser.add_argument("--sampling-rate", type=float, default=DEFAULT_SAMPLING_RATE, help="采样率")
     parser.add_argument("--known-shortcut", default="", help="采样率<1.0 时的天花板+升级路径")
     parser.add_argument("--repo", default=".", help="仓库根路径")
+    parser.add_argument("--lang", default=None, help="目标语言（如 rust/kotlin/scala，默认加载 core 档）")
     parser.add_argument("--self-test", action="store_true", help="运行自测")
     args = parser.parse_args()
+
+    global ABSTRACTION_PATTERN
+    if args.lang:
+        keywords = load_abstraction_keywords(lang=args.lang)
+        ABSTRACTION_PATTERN = build_abstraction_pattern(keywords)
 
     if args.self_test:
         return self_test()

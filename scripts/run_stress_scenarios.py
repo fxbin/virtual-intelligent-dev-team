@@ -532,15 +532,18 @@ def run_scenario(
     vulnerability_found = expected_caught and not actual_caught
     false_positive = not expected_caught and actual_caught
 
-    status = "passed"
     if vulnerability_found:
-        status = "vulnerability"
+        status = "failed"
     elif false_positive:
-        status = "false-positive"
+        status = "failed"
     elif not trace_summary.get("complete", False):
-        status = "trace-incomplete"
+        status = "failed"
     elif exec_result.get("error"):
-        status = "error"
+        status = "failed"
+    elif not expected_caught and not actual_caught:
+        status = "correctly_not_caught"
+    else:
+        status = "passed"
 
     return {
         "scenario_id": scenario_id,
@@ -589,19 +592,34 @@ def run_all_scenarios(
     total = len(results)
     vulnerabilities = sum(1 for r in results if r.get("vulnerability_found"))
     passed = sum(1 for r in results if r.get("status") == "passed")
-    errors = sum(1 for r in results if r.get("status") == "error")
+    correctly_not_caught = sum(1 for r in results if r.get("status") == "correctly_not_caught")
+    failed = sum(1 for r in results if r.get("status") == "failed")
     trace_incomplete = sum(1 for r in results if r.get("status") == "trace-incomplete")
 
     root_cause_count = sum(1 for r in results if r.get("fix_scope", {}).get("scope") == "root-cause")
     fix_scope_root_cause_ratio = root_cause_count / total if total > 0 else 0.0
 
+    if failed > 0:
+        scenario_outcome = "semantic_error"
+    elif correctly_not_caught > 0:
+        scenario_outcome = "semantic_warning"
+    else:
+        scenario_outcome = "all_scenarios_passed"
+
+    consistency_error = ""
+    if scenario_outcome == "all_scenarios_passed" and failed > 0:
+        consistency_error = "scenario_outcome=all_scenarios_passed 但存在 status=failed 场景，语义不一致"
+
     return {
-        "ok": errors == 0,
+        "ok": failed == 0,
         "total_scenarios": total,
         "vulnerabilities_found": vulnerabilities,
         "scenarios_passed": passed,
-        "scenarios_error": errors,
+        "scenarios_correctly_not_caught": correctly_not_caught,
+        "scenarios_failed": failed,
         "trace_incomplete": trace_incomplete,
+        "scenario_outcome": scenario_outcome,
+        "scenario_outcome_consistency_error": consistency_error,
         "fix_scope_root_cause_ratio": round(fix_scope_root_cause_ratio, 4),
         "scenarios": results,
     }
@@ -620,10 +638,14 @@ def render_markdown_report(result: dict[str, object]) -> str:
     lines.append("# P2-15 压测报告")
     lines.append("")
     lines.append(f"- 场景总数: {result.get('total_scenarios', 0)}")
-    lines.append(f"- 通过: {result.get('scenarios_passed', 0)}")
+    lines.append(f"- 通过 (passed): {result.get('scenarios_passed', 0)}")
+    lines.append(f"- 正确未捕获 (correctly_not_caught): {result.get('scenarios_correctly_not_caught', 0)}")
+    lines.append(f"- 失败 (failed): {result.get('scenarios_failed', 0)}")
     lines.append(f"- 漏洞发现: {result.get('vulnerabilities_found', 0)}")
     lines.append(f"- trace 不完整: {result.get('trace_incomplete', 0)}")
-    lines.append(f"- 错误: {result.get('scenarios_error', 0)}")
+    lines.append(f"- 场景总览: {result.get('scenario_outcome', '')}")
+    if result.get("scenario_outcome_consistency_error"):
+        lines.append(f"- **一致性错误**: {result.get('scenario_outcome_consistency_error')}")
     lines.append(f"- fix_scope root-cause 比例: {result.get('fix_scope_root_cause_ratio', 0)}")
     lines.append("")
 

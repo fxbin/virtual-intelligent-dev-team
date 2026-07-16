@@ -209,7 +209,7 @@ python scripts/inspect_decision_log.py --health-report [--window 30d] [--repo .]
 | 字段 | 来源 | 说明 |
 |---|---|---|
 | `layer` | 枚举 | 七层之一 |
-| `slo_target` | 本协议 §3 | 该层 SLO 阈值 |
+| `slo_target_seconds` | 本协议 §3 | 该层 SLO 阈值（单位：秒） |
 | `p99_latency_seconds` | telemetry.jsonl 滚动窗口 | 最近 20 次该层 latency 的 p99 |
 | `slo_status` | 计算 | met / violated / insufficient_data |
 | `failure_count_window` | telemetry.jsonl | 窗口内 outcome=failure 计数 |

@@ -1,0 +1,36 @@
+# ABSTRACTION_PATTERN 关键字配置
+# 唯一 source of truth，emit_telemetry.py 从此文件加载
+# 修改关键字只需改此文件，无需改正则表达式
+#
+# author: fxbin
+# version: 1.0.0
+
+version: "1.0.0"
+
+# v6.0.1 核心档：覆盖主流语言的核心抽象定义
+# 投入产出比最高，立即支持
+core:
+  - class
+  - def
+  - module
+  - config
+  - interface
+  - type
+  - struct
+  - trait
+  - enum
+
+# 按语言分组的扩展档（v6.1.0 计划支持）
+# 当前 emit_telemetry.py 仅加载 core，扩展档留作 forward compatibility
+extended:
+  rust:
+    - impl
+    - fn
+  kotlin:
+    - object
+  scala:
+    - given
+  swift:
+    - protocol
+  elixir:
+    - protocol
