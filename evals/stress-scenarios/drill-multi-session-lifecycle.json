@@ -1,0 +1,27 @@
+{
+  "scenario_id": "drill-multi-session-lifecycle",
+  "description": "multi_session tier 下 drill 命令的 session 生命周期管理：host 支持 create_session 时 drill 应在 multi_session tier 执行，session 可被 kill/restart",
+  "target_layer": "drill",
+  "failure_type": "multi-session-lifecycle",
+  "trigger": {
+    "method": "routing_tier_selection",
+    "setup_description": "构造 HostCapabilities(spawn=false, session=true)，验证 drill 层在 multi_session tier 下不降级，session circuit breaker 可用",
+    "setup_data": {
+      "spawn_supported": false,
+      "create_session_supported": true,
+      "expected_tier": "single_backend_multi_session",
+      "run_smoke_test": true
+    }
+  },
+  "expected": {
+    "caught": true,
+    "behavior": "drill 层在 multi_session tier 下应正常执行，session 可作为 circuit breaker 单元被 kill/restart"
+  },
+  "affected_files": [
+    "scripts/route_request.py",
+    "references/real-subagent-runtime-protocol.md"
+  ],
+  "affected_function": "select_runtime_tier",
+  "fix_scope_hint": "symptom",
+  "fix_scope_reason": "drill 层 session 生命周期管理依赖 routing 层 tier selection 结果，局部验证即可"
+}

@@ -310,6 +310,67 @@ def run_json_parse(
         }
 
 
+def run_routing_tier_selection(
+    scenario: dict[str, object],
+    workspace: Path,
+) -> dict[str, object]:
+    """执行 routing_tier_selection 类场景（测试 select_runtime_tier 边界条件）
+
+    参数:
+        scenario: 场景 JSON dict
+        workspace: 临时工作区路径
+
+    返回:
+        执行结果 dict，含 actual_caught / selected_tier / expected_tier / evidence
+    """
+    trigger = scenario.get("trigger", {})
+    if not isinstance(trigger, dict):
+        trigger = {}
+    setup_data = trigger.get("setup_data", {})
+    if not isinstance(setup_data, dict):
+        setup_data = {}
+
+    spawn_supported = bool(setup_data.get("spawn_supported", False))
+    create_session_supported = bool(setup_data.get("create_session_supported", False))
+    expected_tier = str(setup_data.get("expected_tier", "soft_orchestration_only"))
+    run_smoke = bool(setup_data.get("run_smoke_test", True))
+
+    host_caps = route_request.HostCapabilities(
+        spawn_supported=spawn_supported,
+        create_session_supported=create_session_supported,
+        evidence_source="declared",
+    )
+
+    try:
+        result = route_request.select_runtime_tier(
+            candidate_runtime_claim="real_subagent_runtime",
+            candidate_multi_session_claim="single_backend_multi_session",
+            host_capabilities=host_caps,
+            run_smoke_test=run_smoke,
+        )
+        selected_tier = result["runtime_claim"]
+        actual_caught = selected_tier == expected_tier
+        return {
+            "actual_caught": actual_caught,
+            "allowed": actual_caught,
+            "summary": f"selected={selected_tier}, expected={expected_tier}, downgraded_from={result['downgraded_from']}",
+            "selected_tier": selected_tier,
+            "expected_tier": expected_tier,
+            "evidence": result["evidence"],
+            "error": None,
+        }
+    except Exception as exc:
+        return {
+            "actual_caught": False,
+            "allowed": None,
+            "summary": f"select_runtime_tier raised: {exc}",
+            "selected_tier": None,
+            "expected_tier": expected_tier,
+            "evidence": None,
+            "error": repr(exc),
+        }
+
+
 def search_callers(
     function_name: str,
     search_paths: list[Path],
@@ -513,6 +574,8 @@ def run_scenario(
         exec_result = run_file_operation(scenario, scenario_workspace)
     elif method == "json_parse":
         exec_result = run_json_parse(scenario, scenario_workspace)
+    elif method == "routing_tier_selection":
+        exec_result = run_routing_tier_selection(scenario, scenario_workspace)
     else:
         exec_result = {
             "actual_caught": False,
@@ -699,8 +762,8 @@ def self_test() -> int:
     failures: list[str] = []
 
     scenarios = load_all_scenarios()
-    if len(scenarios) != 7:
-        failures.append(f"expected 7 scenarios, got {len(scenarios)}")
+    if len(scenarios) != 12:
+        failures.append(f"expected 12 scenarios, got {len(scenarios)}")
 
     scenario_ids = [str(s.get("scenario_id", "")) for s in scenarios]
     expected_ids = {
@@ -711,6 +774,11 @@ def self_test() -> int:
         "baseline-deleted",
         "json-corrupt",
         "resume-plan-drift",
+        "routing-tier-selection-boundary",
+        "routing-soft-fallback-downgrade",
+        "routing-circuit-breaker-escalation",
+        "drill-multi-session-lifecycle",
+        "drill-soft-orchestration-degradation",
     }
     if set(scenario_ids) != expected_ids:
         failures.append(f"scenario IDs mismatch: {set(scenario_ids)} != {expected_ids}")

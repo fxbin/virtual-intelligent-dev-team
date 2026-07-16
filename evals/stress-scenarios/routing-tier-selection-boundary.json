@@ -1,0 +1,26 @@
+{
+  "scenario_id": "routing-tier-selection-boundary",
+  "description": "host 同时声明 spawn 和 create_session 时，select_runtime_tier 应优先选择 real_subagent_runtime（边界：同时支持时选最高 tier）",
+  "target_layer": "routing",
+  "failure_type": "tier-selection-boundary",
+  "trigger": {
+    "method": "routing_tier_selection",
+    "setup_description": "构造 HostCapabilities(spawn=true, session=true)，验证 select_runtime_tier 返回 real_subagent_runtime",
+    "setup_data": {
+      "spawn_supported": true,
+      "create_session_supported": true,
+      "expected_tier": "real_subagent_runtime",
+      "run_smoke_test": true
+    }
+  },
+  "expected": {
+    "caught": true,
+    "behavior": "select_runtime_tier 应返回 real_subagent_runtime，evidence_source=declared，smoke_test.passed=true"
+  },
+  "affected_files": [
+    "scripts/route_request.py"
+  ],
+  "affected_function": "select_runtime_tier",
+  "fix_scope_hint": "root-cause",
+  "fix_scope_reason": "select_runtime_tier 是共享选择函数，所有 routing 调用方均受益于一次修复"
+}

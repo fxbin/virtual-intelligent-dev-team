@@ -1,0 +1,27 @@
+{
+  "scenario_id": "drill-soft-orchestration-degradation",
+  "description": "soft_orchestration_only tier 下 drill 命令的降级行为：host 不支持任何 isolation 时 drill 应降级执行，known-shortcut 标注 no session kill/restart/isolation",
+  "target_layer": "drill",
+  "failure_type": "soft-orchestration-degradation",
+  "trigger": {
+    "method": "routing_tier_selection",
+    "setup_description": "构造 HostCapabilities(spawn=false, session=false)，验证 drill 层在 soft_orchestration_only tier 下降级执行，downgraded_from 非空",
+    "setup_data": {
+      "spawn_supported": false,
+      "create_session_supported": false,
+      "expected_tier": "soft_orchestration_only",
+      "run_smoke_test": true
+    }
+  },
+  "expected": {
+    "caught": true,
+    "behavior": "drill 层在 soft_orchestration_only tier 下应降级执行，downgraded_from=real_subagent_runtime，known-shortcut: no session kill/restart/isolation"
+  },
+  "affected_files": [
+    "scripts/route_request.py",
+    "references/real-subagent-runtime-protocol.md"
+  ],
+  "affected_function": "select_runtime_tier",
+  "fix_scope_hint": "symptom",
+  "fix_scope_reason": "drill 层降级行为依赖 routing 层 tier selection 结果，局部验证即可"
+}

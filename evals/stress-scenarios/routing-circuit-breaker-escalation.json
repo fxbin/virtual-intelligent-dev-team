@@ -1,0 +1,27 @@
+{
+  "scenario_id": "routing-circuit-breaker-escalation",
+  "description": "host 仅声明 create_session 时，select_runtime_tier 应选择 single_backend_multi_session（边界：session only 时选中间 tier，circuit breaker 以 session 为单位）",
+  "target_layer": "routing",
+  "failure_type": "circuit-breaker-escalation",
+  "trigger": {
+    "method": "routing_tier_selection",
+    "setup_description": "构造 HostCapabilities(spawn=false, session=true)，验证 select_runtime_tier 返回 single_backend_multi_session 且 downgraded_from=real_subagent_runtime",
+    "setup_data": {
+      "spawn_supported": false,
+      "create_session_supported": true,
+      "expected_tier": "single_backend_multi_session",
+      "run_smoke_test": true
+    }
+  },
+  "expected": {
+    "caught": true,
+    "behavior": "select_runtime_tier 应返回 single_backend_multi_session，downgraded_from=real_subagent_runtime，session circuit breaker 生效"
+  },
+  "affected_files": [
+    "scripts/route_request.py",
+    "references/real-subagent-runtime-protocol.md"
+  ],
+  "affected_function": "select_runtime_tier",
+  "fix_scope_hint": "root-cause",
+  "fix_scope_reason": "中间 tier 选择逻辑是 circuit breaker escalation 的前置条件，2 kills 同 reason 升级依赖此路径"
+}

@@ -1,0 +1,26 @@
+{
+  "scenario_id": "routing-soft-fallback-downgrade",
+  "description": "host 不声明任何能力时，select_runtime_tier 应降级到 soft_orchestration_only，并记录 downgraded_from 和 downgrade_reason",
+  "target_layer": "routing",
+  "failure_type": "soft-fallback-downgrade",
+  "trigger": {
+    "method": "routing_tier_selection",
+    "setup_description": "构造 HostCapabilities(spawn=false, session=false)，验证 select_runtime_tier 返回 soft_orchestration_only 且 downgraded_from 非空",
+    "setup_data": {
+      "spawn_supported": false,
+      "create_session_supported": false,
+      "expected_tier": "soft_orchestration_only",
+      "run_smoke_test": true
+    }
+  },
+  "expected": {
+    "caught": true,
+    "behavior": "select_runtime_tier 应返回 soft_orchestration_only，downgraded_from=real_subagent_runtime，downgrade_reason 非空"
+  },
+  "affected_files": [
+    "scripts/route_request.py"
+  ],
+  "affected_function": "select_runtime_tier",
+  "fix_scope_hint": "root-cause",
+  "fix_scope_reason": "降级逻辑是共享函数的核心路径，所有不支持 spawn 的 host 均走此路径"
+}
