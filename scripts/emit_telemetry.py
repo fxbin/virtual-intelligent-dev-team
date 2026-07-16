@@ -29,37 +29,22 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from circuit_breaker import CircuitBreaker
+from observability_config import (
+    BREAKER_STATES,
+    DEFAULT_SAMPLING_RATE,
+    DRIFT_CRITICAL_THRESHOLD,
+    DRIFT_WARN_THRESHOLD,
+    LAYER_VALUES,
+    OUTCOME_VALUES,
+    SLO_LATENCY_TARGETS,
+)
 
 DEFAULT_TELEMETRY_DIR = Path(".skill-metrics")
 DEFAULT_TELEMETRY_FILE = DEFAULT_TELEMETRY_DIR / "telemetry.jsonl"
 ABSTRACTION_KEYWORDS_PATH = SCRIPT_DIR / "abstraction_keywords.yaml"
 
-LAYER_VALUES = frozenset({
-    "planning",
-    "routing",
-    "delivery",
-    "iteration",
-    "release",
-    "drill",
-    "verifier",
-})
-
-OUTCOME_VALUES = frozenset({"success", "failure", "held", "degraded"})
-BREAKER_STATES = frozenset({"closed", "open", "half_open"})
-
-DRIFT_WARN_THRESHOLD = 0.30
-DRIFT_CRITICAL_THRESHOLD = 0.50
-DEFAULT_SAMPLING_RATE = 1.0
-
-SLO_LATENCY_TARGETS = {
-    "planning": 30.0,
-    "routing": 10.0,
-    "delivery": 120.0,
-    "iteration": 90.0,
-    "release": 60.0,
-    "drill": 300.0,
-    "verifier": 15.0,
-}
+# 向后兼容：常量已在 observability_config 中定义，此处通过 import 暴露
+# 外部模块仍可 from emit_telemetry import DRIFT_CRITICAL_THRESHOLD 等
 
 TOKEN_SPLIT_PATTERN = re.compile(r"[^\w]+")
 
@@ -112,6 +97,81 @@ def build_abstraction_pattern(keywords: list[str]) -> re.Pattern[str]:
 
 
 ABSTRACTION_PATTERN = build_abstraction_pattern(load_abstraction_keywords())
+
+
+def validate_abstraction_keywords_schema(
+    config_path: Path = ABSTRACTION_KEYWORDS_PATH,
+) -> list[str]:
+    """校验 abstraction_keywords.yaml 的 schema 结构
+
+    校验规则：
+    1. 文件必须存在
+    2. 顶层必须有 version 字段且为非空字符串
+    3. 顶层必须有 core 字段且为非空 list
+    4. core 中每个元素必须为非空字符串
+    5. 顶层必须有 extended 字段且为 dict（可为空）
+    6. extended 中每个 value 必须为 list[str]
+
+    参数:
+        config_path: yaml 配置路径
+
+    返回:
+        错误信息列表，空列表表示通过
+    """
+    errors: list[str] = []
+
+    if not config_path.exists():
+        return [f"abstraction_keywords.yaml not found at {config_path}"]
+
+    try:
+        import yaml
+    except ImportError:
+        return ["PyYAML not installed, cannot validate abstraction_keywords.yaml schema"]
+
+    try:
+        with config_path.open("r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+    except yaml.YAMLError as exc:
+        return [f"abstraction_keywords.yaml YAML parse error: {exc}"]
+
+    if not isinstance(data, dict):
+        return ["abstraction_keywords.yaml top-level must be a mapping"]
+
+    version = data.get("version")
+    if not isinstance(version, str) or not version.strip():
+        errors.append("abstraction_keywords.yaml: 'version' must be a non-empty string")
+
+    core = data.get("core")
+    if not isinstance(core, list):
+        errors.append("abstraction_keywords.yaml: 'core' must be a list")
+    elif not core:
+        errors.append("abstraction_keywords.yaml: 'core' must not be empty")
+    else:
+        for i, item in enumerate(core):
+            if not isinstance(item, str) or not item.strip():
+                errors.append(
+                    f"abstraction_keywords.yaml: core[{i}] must be a non-empty string"
+                )
+
+    extended = data.get("extended")
+    if extended is None:
+        errors.append("abstraction_keywords.yaml: 'extended' field is missing (can be empty dict)")
+    elif not isinstance(extended, dict):
+        errors.append("abstraction_keywords.yaml: 'extended' must be a mapping")
+    else:
+        for lang, kws in extended.items():
+            if not isinstance(kws, list):
+                errors.append(
+                    f"abstraction_keywords.yaml: extended.{lang} must be a list"
+                )
+                continue
+            for i, item in enumerate(kws):
+                if not isinstance(item, str) or not item.strip():
+                    errors.append(
+                        f"abstraction_keywords.yaml: extended.{lang}[{i}] must be a non-empty string"
+                    )
+
+    return errors
 
 
 def _utc_now() -> str:
@@ -463,6 +523,21 @@ def self_test() -> int:
     if verifier_record["drift_score"] != 0.0:
         failures.append("FAIL: 非 delivery 层 drift_score 应强制 0.0")
 
+    # schema 校验：默认 abstraction_keywords.yaml 必须通过
+    schema_errors = validate_abstraction_keywords_schema()
+    if schema_errors:
+        failures.append(
+            "FAIL: 默认 abstraction_keywords.yaml schema 校验失败: "
+            + "; ".join(schema_errors)
+        )
+
+    # schema 校验：构造非法 yaml（core 缺失）必须报错
+    bad_yaml = tmpdir / "bad-abstraction-keywords.yaml"
+    bad_yaml.write_text("version: \"1.0.0\"\nextended: {}\n", encoding="utf-8")
+    bad_errors = validate_abstraction_keywords_schema(config_path=bad_yaml)
+    if not bad_errors:
+        failures.append("FAIL: 缺失 core 字段的 yaml 应报 schema 错误")
+
     if failures:
         for f in failures:
             print(f"[SELF-TEST] {f}")
@@ -475,6 +550,15 @@ def main() -> int:
     """CLI 入口"""
     if "--self-test" in sys.argv:
         return self_test()
+
+    if "--validate-schema" in sys.argv:
+        errors = validate_abstraction_keywords_schema()
+        if errors:
+            for e in errors:
+                print(f"[ERROR] {e}")
+            return 1
+        print("[OK] abstraction_keywords.yaml schema 校验通过")
+        return 0
 
     parser = argparse.ArgumentParser(
         description="层间 telemetry 写入器 + intent drift 探针"
@@ -491,6 +575,11 @@ def main() -> int:
     parser.add_argument("--repo", default=".", help="仓库根路径")
     parser.add_argument("--lang", default=None, help="目标语言（如 rust/kotlin/scala，默认加载 core 档）")
     parser.add_argument("--self-test", action="store_true", help="运行自测")
+    parser.add_argument(
+        "--validate-schema",
+        action="store_true",
+        help="校验 abstraction_keywords.yaml schema 后退出（早期拦截，无需其他必填参数）",
+    )
     args = parser.parse_args()
 
     global ABSTRACTION_PATTERN
