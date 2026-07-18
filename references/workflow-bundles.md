@@ -53,9 +53,9 @@ Use workflow bundles when routing should return more than a lead agent. A bundle
   3. If `hold`: generate remediation plan with priority order
   4. Resume anchor: release-gate report
 
-## 6. `bounded-iteration`
+## 6. `root-cause-remediate`
 
-- **Use when**: optimization loops, benchmark comparison, repeated retries
+- **Use when**: bounded iteration, optimization loops, benchmark comparison, repeated retries, or evidence-backed root-cause remediation
 - **Sequence**:
   1. Lock objective: target outcome, baseline, metric, constraints, max rounds
   2. Each round: define candidate → state hypothesis → validate → record evidence → decide (`keep`/`retry`/`rollback`/`stop`)
@@ -71,15 +71,51 @@ Use workflow bundles when routing should return more than a lead agent. A bundle
   3. Analyze signals and decide ramp/hold/rollback
   4. Resume anchor: beta status report
 
+## 8. `quick-slice-deliver`
+
+- **Use when**: narrow implementation, bug fix, or small refactor
+- **Sequence**: lock scope and acceptance criteria → establish feedback loop → implement the smallest coherent slice → preserve targeted verification
+- **Resume anchor**: `.skill-delivery/current-slice.md`
+
+## 9. `post-release-close-loop`
+
+- **Use when**: telemetry, support signals, or real-user feedback arrive after release
+- **Sequence**: collect signals → triage severity and affected area → decide monitor/iterate/escalate → write back to product or governance anchors
+- **Resume anchor**: `.skill-post-release/triage-summary.md`
+
+## 10. `capture-project-knowledge`
+
+- **Use when**: repository AI onboarding, `AGENTS.md`, or project-local `.agents/skills/` capture
+- **Sequence**: inventory verified project facts → identify software-risk lanes → delegate context writing to `skill-forge` → validate every reference
+- **Resume anchor**: `AGENTS.md`
+
+## 11. `multi-expert-execution`
+
+- **Use when**: multiple specialist perspectives materially change a frontend-performance, system-refactor, or architecture-split decision
+- **Sequence**: define independent expert scopes → require real runtime evidence before spawning → synthesize one decision → preserve a domain-specific progress anchor
+- **Fallback**: clearly labeled specialist lenses under `soft_orchestration_only`
+
+## 12. `direct-execution`
+
+- **Use when**: a simple single-domain question or no larger reusable journey is justified
+- **Sequence**: keep the route lightweight → answer or execute the smallest next action
+- **Resume anchor**: none
+
 ## Bundle Confidence Levels
 
 | Bundle | Confidence | Source |
 |--------|-----------|--------|
 | `ship-hold-remediate` | 0.98 | process-skill (explicit release gate) |
 | `plan-first-build` | 0.96 | process-skill (explicit planning request) |
+| `capture-project-knowledge` | 0.94 | process-skill (project knowledge capture) |
 | `root-cause-remediate` | 0.93 | process-skill (explicit iteration) |
+| `multi-expert-execution` | 0.90 | multi-domain keyword |
+| `beta-feedback-ramp` | 0.90 | lead+keyword |
+| `post-release-close-loop` | 0.89 | keyword |
 | `audit-fix-deliver` | 0.88 | keyword+lead |
-| `govern-change-safely` | 0.85 | keyword+lead |
+| `product-spec-deliver` | 0.86 | lead-default |
+| `govern-change-safely` | 0.82 | lead-default |
+| `quick-slice-deliver` | 0.72 | keyword+lead |
 | `direct-execution` | 0.35 | fallback (no strong bundle match) |
 
 Use bundle as explicit execution journey when `bundle_confidence >= 0.6`. Keep execution lightweight when `bundle_confidence < 0.6`.

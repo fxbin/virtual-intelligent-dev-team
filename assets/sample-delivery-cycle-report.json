@@ -87,6 +87,11 @@
             "evidence": "only checkout API and regression test artifacts changed"
           },
           {
+            "gate_id": "acceptance_criteria_gate",
+            "passed": true,
+            "evidence": "checkout regression acceptance criteria are satisfied"
+          },
+          {
             "gate_id": "tests_or_verification_gate",
             "passed": true,
             "evidence": "npm test -- checkout-api passed"
@@ -95,6 +100,11 @@
             "gate_id": "role_separation_gate",
             "passed": true,
             "evidence": "worker produced output; verifier passed it; lead accepts only after DeliveryCycleReport"
+          },
+          {
+            "gate_id": "delivery_cycle_report_gate",
+            "passed": true,
+            "evidence": "DeliveryCycleReport records identities, gates, evidence, and next state"
           }
         ],
         "confirmed_issues": [],
@@ -119,8 +129,10 @@
     "producer_can_self_pass": false,
     "checked_gates": [
       "scope_gate",
+      "acceptance_criteria_gate",
       "tests_or_verification_gate",
-      "role_separation_gate"
+      "role_separation_gate",
+      "delivery_cycle_report_gate"
     ],
     "verifier_verdict": "pass",
     "confirmed_issues": [],

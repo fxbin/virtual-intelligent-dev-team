@@ -89,12 +89,14 @@ Allowed verdicts:
 - `pass`
 - `fail`
 - `hold`
+- `spec_violation`
 
 Rules:
 
 - `pass` requires all required gates checked and passed.
 - `fail` requires a non-empty `RemediationPatch`.
 - `hold` requires a blocker, missing evidence, permission gap, or route-changing ambiguity.
+- `spec_violation` requires an objective spec reference, concrete evidence, and a non-empty `RemediationPatch`; it follows `spec_violation -> retrying` or `spec_violation -> escalated`.
 - The Verifier should reference concrete artifacts, commands, tests, logs, or file paths whenever possible.
 
 ## Default Acceptance Gates
@@ -129,7 +131,7 @@ Rules:
 
 Retry is allowed only when:
 
-- Verifier verdict is `fail`
+- Verifier verdict is `fail` or `spec_violation`
 - `cycle_count < max_cycles`
 - `RemediationPatch.instructions` is non-empty
 - Worker restarts from the previous `ImplementationOutput` plus the remediation patch

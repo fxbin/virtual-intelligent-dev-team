@@ -57,6 +57,9 @@
     "intent_confirmation": {
       "$ref": "#/$defs/intent_confirmation"
     },
+    "scope_boundary": {
+      "$ref": "#/$defs/scope_boundary"
+    },
     "completion_evidence": {
       "$ref": "#/$defs/completion_evidence"
     },
@@ -105,6 +108,34 @@
   },
   "additionalProperties": false,
   "$defs": {
+    "scope_boundary": {
+      "type": "object",
+      "required": [
+        "status",
+        "reason",
+        "recommended_skill",
+        "next_step"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "in_scope",
+            "out_of_scope",
+            "insufficient_information"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        },
+        "recommended_skill": {
+          "type": "string"
+        },
+        "next_step": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
     "string_array": {
       "type": "array",
       "items": {
@@ -821,10 +852,17 @@
         "reference",
         "runtime_claim",
         "candidate_runtime_claim",
+        "candidate_multi_session_claim",
         "runtime_evidence_required",
+        "runtime_evidence",
+        "runtime_downgraded_from",
+        "runtime_downgrade_reason",
         "activation_reason",
         "workflow_bundle",
         "max_subagents",
+        "tier_selection_algorithm",
+        "tier_selection_function",
+        "session_circuit_breaker",
         "spawn_policy",
         "agents",
         "merge_policy",
@@ -843,8 +881,57 @@
         "candidate_runtime_claim": {
           "type": "string"
         },
+        "candidate_multi_session_claim": {
+          "type": "string"
+        },
         "runtime_evidence_required": {
           "type": "boolean"
+        },
+        "runtime_evidence": {
+          "type": "object",
+          "required": [
+            "evidence_source",
+            "spawn_supported",
+            "wait_supported",
+            "merge_supported",
+            "create_session_supported",
+            "kill_session_supported",
+            "restart_session_supported",
+            "real_chain_ready",
+            "session_chain_ready",
+            "candidate_ceiling",
+            "smoke_test"
+          ],
+          "properties": {
+            "evidence_source": {
+              "enum": ["declared", "probed"]
+            },
+            "spawn_supported": {"type": "boolean"},
+            "wait_supported": {"type": "boolean"},
+            "merge_supported": {"type": "boolean"},
+            "create_session_supported": {"type": "boolean"},
+            "kill_session_supported": {"type": "boolean"},
+            "restart_session_supported": {"type": "boolean"},
+            "real_chain_ready": {"type": "boolean"},
+            "session_chain_ready": {"type": "boolean"},
+            "candidate_ceiling": {"type": "string"},
+            "smoke_test": {
+              "type": "object",
+              "required": ["passed", "reason"],
+              "properties": {
+                "passed": {"type": "boolean"},
+                "reason": {"type": "string"}
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "runtime_downgraded_from": {
+          "type": "string"
+        },
+        "runtime_downgrade_reason": {
+          "type": "string"
         },
         "activation_reason": {
           "type": "string"
@@ -855,6 +942,34 @@
         "max_subagents": {
           "type": "integer",
           "minimum": 0
+        },
+        "tier_selection_algorithm": {
+          "type": "string"
+        },
+        "tier_selection_function": {
+          "type": "string"
+        },
+        "session_circuit_breaker": {
+          "type": "object",
+          "required": [
+            "applicable_tier",
+            "failure_threshold",
+            "kill",
+            "restart",
+            "isolate_context",
+            "escalation",
+            "owner"
+          ],
+          "properties": {
+            "applicable_tier": {"type": "string"},
+            "failure_threshold": {"type": "integer", "minimum": 1},
+            "kill": {"type": "string"},
+            "restart": {"type": "string"},
+            "isolate_context": {"type": "string"},
+            "escalation": {"type": "string"},
+            "owner": {"type": "string"}
+          },
+          "additionalProperties": false
         },
         "spawn_policy": {
           "type": "object",
@@ -918,17 +1033,25 @@
           "type": "object",
           "required": [
             "unavailable_runtime",
+            "multi_session_unavailable",
             "malformed_output",
-            "role_boundary_violation"
+            "role_boundary_violation",
+            "session_killed"
           ],
           "properties": {
             "unavailable_runtime": {
+              "type": "string"
+            },
+            "multi_session_unavailable": {
               "type": "string"
             },
             "malformed_output": {
               "type": "string"
             },
             "role_boundary_violation": {
+              "type": "string"
+            },
+            "session_killed": {
               "type": "string"
             }
           },

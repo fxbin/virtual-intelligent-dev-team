@@ -1,6 +1,7 @@
 # Real Subagent Runtime - Execution Guide
 
-**版本：** 1.0.0  
+**版本：** 1.0.1
+**最后更新：** 2026-07-18
 **定位：** 真实 Subagent 运行时的实际调用执行指南  
 **适用：** Virtual Intelligent Dev Team 的 real_subagent_runtime 模式
 
@@ -60,7 +61,10 @@
 满足以下条件之一：
 - [ ] 用户显式要求："multi-agent" / "subagents" / "parallel agents" / "spawn agents" / "多 agent" / "并行 agent"
 - [ ] 用户要求 `/auto` 且工作流在白名单中
-- [ ] Lead 判断任务需要并行执行（需向用户说明理由）
+
+高风险或复杂度只能让 Lead **提出** subagent 方案，不能单独构成激活条件。
+若用户未显式要求且 `/auto` 不满足白名单，必须保持
+`soft_orchestration_only`，不得由 Lead 自行升级。
 
 本次激活原因：{activation_reason}
 ```
@@ -107,8 +111,10 @@ subagent_runtime_plan:
     conflict_resolution: "Verifier fail → Lead 裁决"
   fallback:
     unavailable_runtime: "降级为串行单 Agent 执行"
+    multi_session_unavailable: "降级为 soft orchestration，并声明无 session isolation"
     malformed_output: "标记为 hold，要求重试或人工介入"
     role_boundary_violation: "拒绝接受，要求修正"
+    session_killed: "丢弃未验证输出，使用干净上下文和收窄后的 WorkOrder 重启"
 ```
 
 ---
@@ -211,7 +217,7 @@ Prompt:
 **角色边界：**
 - 你不能编辑文件
 - 你必须返回 VerificationReport
-- 你可以输出 verdict: pass / fail / hold
+- 你可以输出 verdict: pass / fail / hold / spec_violation
 
 **Worker 输出：**
 
@@ -232,7 +238,7 @@ Worker 2 (模块 B):
 返回 JSON 格式的 VerificationReport：
 {
   "role": "verifier",
-  "verdict": "pass | fail | hold",
+  "verdict": "pass | fail | hold | spec_violation",
   "verified_workers": [
     {
       "worker_id": "worker_1",
@@ -280,6 +286,7 @@ Worker 2 (模块 B):
 3. 决策：
    - 如果 verdict = pass → 接受所有实现
    - 如果 verdict = fail → 应用 remediation_patch 或要求 Worker 重试
+   - 如果 verdict = spec_violation → 引用客观规范证据并携带 remediation_patch 重试，或升级处理规范缺口
    - 如果 verdict = hold → 向用户请求判断
 
 4. 生成 DeliveryCycleReport：
@@ -506,7 +513,7 @@ Lead → DeliveryCycleReport
 在 Virtual Intelligent Dev Team 执行 Subagent 调用时，检查：
 
 - [ ] 是否先声明了 runtime_claim？
-- [ ] 是否满足激活条件（用户显式要求或 `/auto`）？
+- [ ] 是否满足唯一激活条件（用户显式要求或 `/auto` 白名单）？
 - [ ] 是否产出了 SubagentRuntimePlan？
 - [ ] 每个 Agent 是否有独立的 Prompt？
 - [ ] 每个 Agent 的 write_scope 是否不重叠？

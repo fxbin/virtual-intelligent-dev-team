@@ -61,10 +61,14 @@ Worker→Verifier、Lead→Worker、Verifier→Lead 的每次交接都必须产�
 
 1. **存在性检查**:当前 cycle 的交接物文件是否存在
 2. **schema 检查**:文件是否包含 `handoff` 元数据且字段合法
-3. **角色匹配检查**:`from_role` 和 `to_role` 是否符合交接方向(Worker→Verifier / Verifier→Lead / Verifier→Worker)
-4. **类型枚举检查**:`artifact_type` 是否在允许枚举内
+3. **完整字段检查**:`from_role`、`to_role`、`artifact_type`、`artifact_path`、`timestamp` 五个字段均非空
+4. **精确角色契约检查**:每种 `artifact_type` 必须匹配上表中唯一的 `from_role → to_role`,不能只满足任意合法方向
+5. **类型枚举检查**:`artifact_type` 是否在允许枚举内
+6. **路径身份检查**:`artifact_path` 必须是 repo 内相对路径,解析后必须恰好指向当前被验证的 JSON 文件
+7. **时间戳检查**:`timestamp` 必须是带时区的 ISO 8601 时间戳
+8. **过滤命中检查**:传入 `--handoff-type` 时,目录中至少有一个该类型 artifact；其他类型不能冒充命中
 
-任一检查失败 → `allowed: false`,Verifier 不启动。
+任一检查失败 → `allowed: false`,Verifier 不启动。目录中任一 JSON artifact 元数据损坏时也 fail closed，不能靠另一个合法文件掩盖。
 
 ## 与 Worker Verifier Cycle Protocol 的关系
 

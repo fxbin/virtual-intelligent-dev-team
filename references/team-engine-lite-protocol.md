@@ -106,6 +106,7 @@ Legal states:
 - `retrying`
 - `passed`
 - `failed`
+- `spec_violation`
 - `hold`
 - `escalated`
 - `human_resolved`
@@ -123,7 +124,10 @@ verifying -> passed
 verifying -> retrying
 verifying -> hold
 verifying -> failed
+verifying -> spec_violation
 retrying -> running
+spec_violation -> retrying
+spec_violation -> escalated
 passed -> accepted
 hold -> escalated
 failed -> escalated
@@ -139,6 +143,7 @@ Hard rules:
 - `retrying` requires `remediation_patch`
 - `passed` requires `verification_report.verdict = pass`
 - `failed` or `hold` requires blocker evidence or human escalation
+- `spec_violation` requires an objective spec reference, evidence, and a remediation patch
 - `cycle_count > max_cycles` must become `escalated`
 - `human_resolved` requires human decision record(介入者、决策、理由)
 - `resumed` 只能从 `human_resolved` 转入
@@ -215,7 +220,7 @@ verification_report:
   task_id:
   cycle_id:
   verifier_role:
-  verdict: "pass | fail | hold"
+  verdict: "pass | fail | hold | spec_violation"
   checked_gates:
     - gate_id:
       passed:

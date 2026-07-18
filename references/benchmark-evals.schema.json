@@ -164,7 +164,8 @@
           "enum": [
             "route",
             "verify_action",
-            "release_gate"
+            "release_gate",
+            "stress_scenarios"
           ]
         },
         "prompt": {
@@ -213,8 +214,40 @@
             "assistant-delta-contract",
             "auto-mode",
             "micro-practice-ledger",
-            "completion-evidence"
+            "completion-evidence",
+            "file-handoff",
+            "spec-violation",
+            "lead-prejudgment",
+            "yagni",
+            "breaker-status",
+            "contract-lock",
+            "observability-schema"
           ]
+        },
+        "fixture": {
+          "enum": [
+            "missing-handoff",
+            "invalid-handoff-metadata",
+            "missing-completion-evidence",
+            "completion-same-model-review",
+            "lead-prejudgment",
+            "breaker-closed",
+            "breaker-open",
+            "yagni-abstraction",
+            "java-spec-violation"
+          ]
+        },
+        "handoff_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dispatch_text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "breaker_layer": {
+          "type": "string",
+          "minLength": 1
         },
         "process_skill": {
           "type": "string",

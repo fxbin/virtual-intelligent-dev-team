@@ -32,6 +32,8 @@ VERIFY_ACTION_SCRIPT = SCRIPT_DIR / "verify_action.py"
 CIRCUIT_BREAKER_SCRIPT = SCRIPT_DIR / "circuit_breaker.py"
 BASELINE_REGISTRY_SCRIPT = SCRIPT_DIR / "register_benchmark_baseline.py"
 DEFAULT_CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
+EXPECTED_SCENARIO_COUNT = 12
+MIN_ROOT_CAUSE_RATIO = 0.8
 
 
 def load_module(name: str, path: Path):
@@ -228,12 +230,17 @@ def run_file_operation(
 
     registry_path = baselines_dir / "registry.json"
     registry_path.write_text(json.dumps({
-        "entries": [{
+        "baselines": [{
             "label": label,
-            "registration_time": "2026-07-15T00:00:00Z",
-            "source_report_path": str(benchmark_path),
-            "stored_report_path": str(benchmark_path),
-            "summary": "stress test baseline",
+            "registered_at": "2026-07-15T00:00:00Z",
+            "source_report": str(benchmark_path),
+            "stored_report": str(benchmark_path),
+            "notes": "stress test baseline",
+            "summary": {
+                "overall_passed": True,
+                "evals_passed": 1,
+                "evals_total": 1,
+            },
         }]
     }, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -243,10 +250,11 @@ def run_file_operation(
 
     config = load_config()
     iter_result = verify_action_module.verify_action(
-        text="stress test baseline deletion scenario",
+        text="Run another iteration against the stable baseline and stop on regression.",
         config=config,
-        repo_path=SKILL_DIR,
+        repo_path=workspace,
         check="iteration",
+        iteration_workspace=baseline_workspace,
     )
     iter_summary = str(iter_result.get("summary", ""))
     iter_allowed = bool(iter_result.get("allowed"))
@@ -331,13 +339,21 @@ def run_routing_tier_selection(
         setup_data = {}
 
     spawn_supported = bool(setup_data.get("spawn_supported", False))
+    wait_supported = bool(setup_data.get("wait_supported", False))
+    merge_supported = bool(setup_data.get("merge_supported", False))
     create_session_supported = bool(setup_data.get("create_session_supported", False))
+    kill_session_supported = bool(setup_data.get("kill_session_supported", False))
+    restart_session_supported = bool(setup_data.get("restart_session_supported", False))
     expected_tier = str(setup_data.get("expected_tier", "soft_orchestration_only"))
     run_smoke = bool(setup_data.get("run_smoke_test", True))
 
     host_caps = route_request.HostCapabilities(
         spawn_supported=spawn_supported,
+        wait_supported=wait_supported,
+        merge_supported=merge_supported,
         create_session_supported=create_session_supported,
+        kill_session_supported=kill_session_supported,
+        restart_session_supported=restart_session_supported,
         evidence_source="declared",
     )
 
@@ -657,15 +673,30 @@ def run_all_scenarios(
     passed = sum(1 for r in results if r.get("status") == "passed")
     correctly_not_caught = sum(1 for r in results if r.get("status") == "correctly_not_caught")
     failed = sum(1 for r in results if r.get("status") == "failed")
-    trace_incomplete = sum(1 for r in results if r.get("status") == "trace-incomplete")
+    trace_incomplete = sum(
+        1 for r in results if not bool((r.get("trace_summary") or {}).get("complete"))
+    )
 
-    root_cause_count = sum(1 for r in results if r.get("fix_scope", {}).get("scope") == "root-cause")
+    root_cause_count = sum(
+        1
+        for r in results
+        if r.get("fix_scope", {}).get("scope") == "root-cause"
+        and bool(r.get("fix_scope", {}).get("validated"))
+    )
     fix_scope_root_cause_ratio = root_cause_count / total if total > 0 else 0.0
 
-    if failed > 0:
+    count_ok = total == EXPECTED_SCENARIO_COUNT
+    root_cause_ratio_ok = fix_scope_root_cause_ratio >= MIN_ROOT_CAUSE_RATIO
+    gate_ok = (
+        count_ok
+        and failed == 0
+        and correctly_not_caught == 0
+        and trace_incomplete == 0
+        and root_cause_ratio_ok
+    )
+
+    if not gate_ok:
         scenario_outcome = "semantic_error"
-    elif correctly_not_caught > 0:
-        scenario_outcome = "semantic_warning"
     else:
         scenario_outcome = "all_scenarios_passed"
 
@@ -674,8 +705,10 @@ def run_all_scenarios(
         consistency_error = "scenario_outcome=all_scenarios_passed 但存在 status=failed 场景，语义不一致"
 
     return {
-        "ok": failed == 0,
+        "ok": gate_ok,
         "total_scenarios": total,
+        "expected_scenario_count": EXPECTED_SCENARIO_COUNT,
+        "scenario_count_ok": count_ok,
         "vulnerabilities_found": vulnerabilities,
         "scenarios_passed": passed,
         "scenarios_correctly_not_caught": correctly_not_caught,
@@ -684,6 +717,8 @@ def run_all_scenarios(
         "scenario_outcome": scenario_outcome,
         "scenario_outcome_consistency_error": consistency_error,
         "fix_scope_root_cause_ratio": round(fix_scope_root_cause_ratio, 4),
+        "min_root_cause_ratio": MIN_ROOT_CAUSE_RATIO,
+        "root_cause_ratio_ok": root_cause_ratio_ok,
         "scenarios": results,
     }
 
@@ -905,6 +940,7 @@ def main() -> None:
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:
         print(json.dumps(result, ensure_ascii=False))
+    raise SystemExit(0 if bool(result.get("ok")) else 1)
 
 
 if __name__ == "__main__":

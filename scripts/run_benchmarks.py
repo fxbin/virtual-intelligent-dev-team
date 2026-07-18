@@ -13,6 +13,7 @@ from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
 import re
+import time
 
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
@@ -25,6 +26,7 @@ RESPONSE_PACK_SCRIPT = SKILL_DIR / "scripts" / "generate_response_pack.py"
 RESPONSE_CONTRACT_SCRIPT = SKILL_DIR / "scripts" / "response_contract.py"
 VERIFY_ACTION_SCRIPT = SKILL_DIR / "scripts" / "verify_action.py"
 RELEASE_GATE_SCRIPT = SKILL_DIR / "scripts" / "run_release_gate.py"
+STRESS_SCENARIOS_SCRIPT = SKILL_DIR / "scripts" / "run_stress_scenarios.py"
 CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 EVALS_PATH = SKILL_DIR / "evals" / "evals.json"
 DEFAULT_OUTPUT_DIR = SKILL_DIR / "evals" / "benchmark-results"
@@ -44,6 +46,7 @@ offline_loop_drill = load_module("virtual_team_offline_loop_drill_benchmark", OF
 response_pack = load_module("virtual_team_response_pack_benchmark", RESPONSE_PACK_SCRIPT)
 response_contract = load_module("virtual_team_response_contract_benchmark", RESPONSE_CONTRACT_SCRIPT)
 verify_action = load_module("virtual_team_verify_action_benchmark", VERIFY_ACTION_SCRIPT)
+stress_scenarios = load_module("virtual_team_stress_scenarios_benchmark", STRESS_SCENARIOS_SCRIPT)
 MISSING = object()
 INTEGER_RE = re.compile(r"^-?\d+$")
 FLOAT_RE = re.compile(r"^-?\d+\.\d+$")
@@ -207,12 +210,23 @@ def read_nested(data: object, path: str, default: object = MISSING) -> object:
     aliases = {
         "priority_routing agent": "reason.priority_routing.agent",
     }
-    path = aliases.get(path, path)
+    path = aliases.get(path, path).replace(" ", ".")
     current = data
     for part in path.split("."):
-        if not isinstance(current, dict) or part not in current:
-            return default
-        current = current[part]
+        if isinstance(current, dict):
+            if part not in current:
+                return default
+            current = current[part]
+            continue
+        if isinstance(current, list):
+            projected: list[object] = []
+            for item in current:
+                if not isinstance(item, dict) or part not in item:
+                    return default
+                projected.append(item[part])
+            current = projected
+            continue
+        return default
     return current
 
 
@@ -282,17 +296,18 @@ def parse_field_expectation(
         if operator in expectation:
             field, expected = expectation.split(operator, 1)
             value = read_nested(data, field.strip(), default=MISSING)
-            numeric_value = as_numeric(value)
             expected_value = as_numeric(parse_scalar_literal(expected))
-            if value is MISSING or numeric_value is None or expected_value is None:
+            numeric_values = [as_numeric(item) for item in value] if isinstance(value, list) else [as_numeric(value)]
+            if value is MISSING or not numeric_values or any(item is None for item in numeric_values) or expected_value is None:
                 return False, f"{context_label}.{field.strip()}={value!r}"
+            comparable_values = [float(item) for item in numeric_values if item is not None]
             if operator == " >= ":
-                return numeric_value >= expected_value, f"{context_label}.{field.strip()}={value!r}"
+                return all(item >= expected_value for item in comparable_values), f"{context_label}.{field.strip()}={value!r}"
             if operator == " <= ":
-                return numeric_value <= expected_value, f"{context_label}.{field.strip()}={value!r}"
+                return all(item <= expected_value for item in comparable_values), f"{context_label}.{field.strip()}={value!r}"
             if operator == " > ":
-                return numeric_value > expected_value, f"{context_label}.{field.strip()}={value!r}"
-            return numeric_value < expected_value, f"{context_label}.{field.strip()}={value!r}"
+                return all(item > expected_value for item in comparable_values), f"{context_label}.{field.strip()}={value!r}"
+            return all(item < expected_value for item in comparable_values), f"{context_label}.{field.strip()}={value!r}"
 
     if " contains " in expectation:
         field, expected = expectation.split(" contains ", 1)
@@ -314,28 +329,38 @@ def parse_field_expectation(
     if " is not " in expectation:
         field, expected = expectation.split(" is not ", 1)
         value = read_nested(data, field.strip(), default=MISSING)
+        if expected == "empty":
+            values = value if isinstance(value, list) else [value]
+            return (
+                value is not MISSING
+                and bool(values)
+                and all(item is not None and hasattr(item, "__len__") and len(item) > 0 for item in values),
+                f"{context_label}.{field.strip()}={value!r}",
+            )
         expected_value = parse_scalar_literal(expected)
+        values = value if isinstance(value, list) else [value]
         if expected_value is None:
-            return value is not None and value is not MISSING, f"{context_label}.{field.strip()}={value!r}"
+            return all(item is not None and item is not MISSING for item in values), f"{context_label}.{field.strip()}={value!r}"
         if isinstance(expected_value, bool):
-            return value is not expected_value, f"{context_label}.{field.strip()}={value!r}"
+            return all(item is not expected_value for item in values), f"{context_label}.{field.strip()}={value!r}"
         if isinstance(expected_value, (int, float)) and not isinstance(expected_value, bool):
-            numeric_value = as_numeric(value)
-            return numeric_value is not None and numeric_value != float(expected_value), f"{context_label}.{field.strip()}={value!r}"
-        return str(value) != str(expected_value), f"{context_label}.{field.strip()}={value!r}"
+            numeric_values = [as_numeric(item) for item in values]
+            return all(item is not None and item != float(expected_value) for item in numeric_values), f"{context_label}.{field.strip()}={value!r}"
+        return all(str(item) != str(expected_value) for item in values), f"{context_label}.{field.strip()}={value!r}"
 
     if " is " in expectation:
         field, expected = expectation.split(" is ", 1)
         value = read_nested(data, field.strip(), default=MISSING)
         expected_value = parse_scalar_literal(expected)
+        values = value if isinstance(value, list) else [value]
         if expected_value is None:
-            return value is None, f"{context_label}.{field.strip()}={value!r}"
+            return bool(values) and all(item is None for item in values), f"{context_label}.{field.strip()}={value!r}"
         if isinstance(expected_value, bool):
-            return value is expected_value, f"{context_label}.{field.strip()}={value!r}"
+            return bool(values) and all(item is expected_value for item in values), f"{context_label}.{field.strip()}={value!r}"
         if isinstance(expected_value, (int, float)) and not isinstance(expected_value, bool):
-            numeric_value = as_numeric(value)
-            return numeric_value is not None and numeric_value == float(expected_value), f"{context_label}.{field.strip()}={value!r}"
-        return str(value) == str(expected_value), f"{context_label}.{field.strip()}={value!r}"
+            numeric_values = [as_numeric(item) for item in values]
+            return bool(numeric_values) and all(item is not None and item == float(expected_value) for item in numeric_values), f"{context_label}.{field.strip()}={value!r}"
+        return bool(values) and all(str(item) == str(expected_value) for item in values), f"{context_label}.{field.strip()}={value!r}"
 
     return False, f"unsupported expectation for {context_label}"
 
@@ -367,6 +392,14 @@ def parse_expectation(
         inner_expectation = expectation.removeprefix("release_gate_json ")
         release_payload = extra_payloads.get("release_gate_json", {})
         return parse_field_expectation(inner_expectation, release_payload, context_label="release_gate_json")
+    if expectation.startswith("stress_scenarios_json "):
+        inner_expectation = expectation.removeprefix("stress_scenarios_json ")
+        stress_payload = extra_payloads.get("stress_scenarios_json", {})
+        return parse_field_expectation(
+            inner_expectation,
+            stress_payload,
+            context_label="stress_scenarios_json",
+        )
     if expectation == "assistant_agents is empty":
         value = result.get("assistant_agents")
         return value == [], f"assistant_agents={value!r}"
@@ -398,6 +431,109 @@ def parse_expectation(
     return parse_field_expectation(expectation, result, context_label="result")
 
 
+def prepare_verify_action_fixture(
+    item: dict[str, object],
+    temp_root: Path,
+) -> tuple[Path, dict[str, object]]:
+    """Materialize deterministic files for verify_action benchmark cases."""
+    fixture = str(item.get("fixture", "")).strip()
+    if not fixture and str(item.get("check", "")).strip() == "observability-schema":
+        return SKILL_DIR, {}
+    if not fixture:
+        return REPO_ROOT, {}
+
+    repo_path = temp_root / "repo"
+    repo_path.mkdir(parents=True, exist_ok=True)
+    kwargs: dict[str, object] = {}
+
+    if fixture == "missing-handoff":
+        pass
+    elif fixture == "invalid-handoff-metadata":
+        handoff_dir = repo_path / ".skill-handoff"
+        handoff_dir.mkdir(parents=True, exist_ok=True)
+        (handoff_dir / "invalid.json").write_text(
+            json.dumps({"payload": "handoff metadata intentionally missing"}),
+            encoding="utf-8",
+        )
+    elif fixture == "missing-completion-evidence":
+        pass
+    elif fixture == "completion-same-model-review":
+        evidence_path = repo_path / ".skill-evidence" / "completion-evidence.json"
+        evidence_path.parent.mkdir(parents=True, exist_ok=True)
+        evidence_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": "completion-evidence/v1",
+                    "generated_at": "2026-07-18T12:00:00Z",
+                    "source_request": "Benchmark same-model review warning.",
+                    "evidence_action": "python -m unittest",
+                    "result": {"status": "passed", "summary": "tests passed", "exit_code": 0},
+                    "covered_scope": ["benchmark fixture"],
+                    "uncovered_scope": ["none"],
+                    "residual_risk": ["none"],
+                    "confidence_grade": "A",
+                    "worker_model": "fixture-model",
+                    "verifier_model": "fixture-model",
+                    "same_model_self_review": True,
+                    "known_shortcuts": [],
+                    "evidence_refs": ["python -m unittest"],
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        kwargs["completion_evidence"] = evidence_path
+    elif fixture == "lead-prejudgment":
+        kwargs["dispatch_text"] = "This should be fine and can ship before Verifier runs."
+    elif fixture in {"breaker-closed", "breaker-open"}:
+        breaker_state = "closed" if fixture == "breaker-closed" else "open"
+        state_path = repo_path / ".skill-harness" / "breaker-state.json"
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(
+            json.dumps(
+                {
+                    "layers": {
+                        "verifier": {
+                            "state": breaker_state,
+                            "consecutive_failures": 0 if breaker_state == "closed" else 3,
+                            "last_failure_time": time.time() if breaker_state == "open" else None,
+                            "last_failure_reason": "benchmark fixture" if breaker_state == "open" else "",
+                            "opened_at": time.time() if breaker_state == "open" else None,
+                            "half_open_probe_sent": False,
+                        }
+                    }
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        kwargs.update(
+            {
+                "breaker_layer": "verifier",
+                "breaker_config": SKILL_DIR / "references" / "circuit-breaker-config.json",
+                "breaker_state_file": state_path,
+                "breaker_escalation_sink": repo_path / ".skill-harness" / "escalation-queue.jsonl",
+            }
+        )
+    elif fixture == "yagni-abstraction":
+        diff_path = repo_path / "worker.diff"
+        diff_path.write_text(
+            "diff --git a/Payment.java b/Payment.java\n+public interface PaymentStrategy {}\n",
+            encoding="utf-8",
+        )
+        kwargs["diff_file"] = diff_path
+    elif fixture == "java-spec-violation":
+        worker_output = repo_path / "worker-output.txt"
+        worker_output.write_text("Added java.util.Date to the public API.", encoding="utf-8")
+        kwargs["worker_output"] = worker_output
+    else:
+        raise RuntimeError(f"Unsupported verify_action benchmark fixture: {fixture}")
+
+    return repo_path, kwargs
+
+
 def evaluate_evals(config: dict[str, object]) -> dict[str, object]:
     payload = load_json(EVALS_PATH)
     response_contract.validate_benchmark_evals_payload(payload)
@@ -409,6 +545,7 @@ def evaluate_evals(config: dict[str, object]) -> dict[str, object]:
     category_totals: Counter[str] = Counter()
     category_passed: Counter[str] = Counter()
 
+    stress_payload_cache: dict[str, object] | None = None
     for item in evals:
         if not isinstance(item, dict):
             continue
@@ -430,15 +567,22 @@ def evaluate_evals(config: dict[str, object]) -> dict[str, object]:
             assistant_agents = item.get("assistant_agents", [])
             if not isinstance(assistant_agents, list):
                 assistant_agents = []
-            result = verify_action.verify_action(
-                text=prompt,
-                config=config,
-                repo_path=REPO_ROOT,
-                check=check,
-                process_skill=str(item.get("process_skill", "")).strip() or None,
-                lead_agent=str(item.get("lead_agent", "")).strip() or None,
-                assistant_agents=[str(agent) for agent in assistant_agents if str(agent).strip() != ""],
-            )
+            with tempfile.TemporaryDirectory(prefix=f"virtual-team-verify-action-eval-{item.get('id')}-") as tmp:
+                fixture_repo, fixture_kwargs = prepare_verify_action_fixture(item, Path(tmp))
+                verify_kwargs: dict[str, object] = {
+                    "text": prompt,
+                    "config": config,
+                    "repo_path": fixture_repo,
+                    "check": check,
+                    "process_skill": str(item.get("process_skill", "")).strip() or None,
+                    "lead_agent": str(item.get("lead_agent", "")).strip() or None,
+                    "assistant_agents": [str(agent) for agent in assistant_agents if str(agent).strip() != ""],
+                    "handoff_type": str(item.get("handoff_type", "")).strip() or None,
+                    "dispatch_text": str(item.get("dispatch_text", "")) or None,
+                    "breaker_layer": str(item.get("breaker_layer", "")).strip() or None,
+                }
+                verify_kwargs.update(fixture_kwargs)
+                result = verify_action.verify_action(**verify_kwargs)
             extra_payloads["verify_action_json"] = result
         elif runner == "release_gate":
             summary = item.get("release_gate_summary", {})
@@ -601,6 +745,12 @@ def evaluate_evals(config: dict[str, object]) -> dict[str, object]:
                     completion_evidence=completion_evidence_path,
                 )
             extra_payloads["release_gate_json"] = result
+        elif runner == "stress_scenarios":
+            if stress_payload_cache is None:
+                with tempfile.TemporaryDirectory(prefix="virtual-team-stress-eval-") as tmp:
+                    stress_payload_cache = stress_scenarios.run_all_scenarios(Path(tmp))
+            result = stress_payload_cache
+            extra_payloads["stress_scenarios_json"] = result
         else:
             raise RuntimeError(f"Unsupported eval runner: {runner}")
         failures: list[str] = []

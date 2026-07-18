@@ -55,6 +55,8 @@ RESPONSE_CONTRACT_SCRIPT = SKILL_DIR / "scripts" / "response_contract.py"
 VALIDATOR_SCRIPT = SKILL_DIR / "scripts" / "validate_virtual_team.py"
 VERIFY_ACTION_SCRIPT = SKILL_DIR / "scripts" / "verify_action.py"
 CONTRACT_LINT_SCRIPT = SKILL_DIR / "scripts" / "lint_virtual_team_contract.py"
+TEAM_ENGINE_DRILL_SCRIPT = SKILL_DIR / "scripts" / "run_team_engine_drill.py"
+CIRCUIT_BREAKER_SCRIPT = SKILL_DIR / "scripts" / "circuit_breaker.py"
 INIT_HARNESS_CONSTRAINTS_SCRIPT = SKILL_DIR / "scripts" / "init_harness_constraints.py"
 SKILL_SNAPSHOT_SCRIPT = SKILL_DIR / "scripts" / "skill_snapshot.py"
 VERSION_SYNC_SCRIPT = REPO_ROOT / "scripts" / "sync_virtual_intelligent_dev_team_version.py"
@@ -115,6 +117,8 @@ response_pack = load_module("virtual_intelligent_dev_team_response_pack", GENERA
 response_contract = load_module("virtual_intelligent_dev_team_response_contract", RESPONSE_CONTRACT_SCRIPT)
 verify_action = load_module("virtual_intelligent_dev_team_verify_action", VERIFY_ACTION_SCRIPT)
 contract_lint = load_module("virtual_intelligent_dev_team_contract_lint", CONTRACT_LINT_SCRIPT)
+team_engine_drill = load_module("virtual_intelligent_dev_team_team_engine_drill", TEAM_ENGINE_DRILL_SCRIPT)
+circuit_breaker = load_module("virtual_intelligent_dev_team_circuit_breaker", CIRCUIT_BREAKER_SCRIPT)
 harness_constraints_init = load_module(
     "virtual_intelligent_dev_team_harness_constraints_init",
     INIT_HARNESS_CONSTRAINTS_SCRIPT,
@@ -586,6 +590,73 @@ class RoutingTests(unittest.TestCase):
         self.assertIn("architecture-specialist", result["multi_expert_roles"])
         self.assertIn("data-persistence-specialist", result["multi_expert_roles"])
         self.assertIn("delivery-devops-specialist", result["multi_expert_roles"])
+
+    def test_runtime_tier_never_exceeds_request_candidate_ceiling(self) -> None:
+        full_capabilities = {
+            "spawn_supported": True,
+            "wait_supported": True,
+            "merge_supported": True,
+            "create_session_supported": True,
+            "kill_session_supported": True,
+            "restart_session_supported": True,
+            "evidence_source": "declared",
+        }
+
+        result = route_request.select_runtime_tier(
+            "soft_orchestration_only",
+            "soft_orchestration_only",
+            full_capabilities,
+        )
+
+        self.assertEqual("soft_orchestration_only", result["runtime_claim"])
+        self.assertEqual("soft_orchestration_only", result["evidence"]["candidate_ceiling"])
+
+    def test_runtime_tier_requires_complete_atomic_capability_chain(self) -> None:
+        partial_capabilities = {
+            "spawn_supported": True,
+            "wait_supported": False,
+            "merge_supported": True,
+            "create_session_supported": True,
+            "kill_session_supported": False,
+            "restart_session_supported": True,
+            "evidence_source": "declared",
+        }
+
+        result = route_request.select_runtime_tier(
+            "real_subagent_runtime",
+            "single_backend_multi_session",
+            partial_capabilities,
+        )
+
+        self.assertEqual("soft_orchestration_only", result["runtime_claim"])
+        self.assertFalse(result["evidence"]["real_chain_ready"])
+        self.assertFalse(result["evidence"]["session_chain_ready"])
+        self.assertEqual("real_subagent_runtime", result["downgraded_from"])
+
+    def test_response_pack_preserves_runtime_selection_evidence(self) -> None:
+        environment = {
+            "HOST_SUPPORTS_SPAWN": "1",
+            "HOST_SUPPORTS_WAIT": "1",
+            "HOST_SUPPORTS_MERGE": "1",
+            "HOST_SUPPORTS_CREATE_SESSION": "1",
+            "HOST_SUPPORTS_KILL_SESSION": "1",
+            "HOST_SUPPORTS_RESTART_SESSION": "1",
+        }
+        with mock.patch.dict("os.environ", environment, clear=False):
+            result = route_request.route_request(
+                "Use multi-agent execution to refactor this Java helper and run its tests.",
+                load_config(),
+                repo_path=REPO_ROOT,
+            )
+
+        payload = response_pack.build_response_pack_payload(result)
+        self.assertFalse(result["intent_confirmation"]["required"])
+        runtime = payload["real_subagent_runtime"]
+        self.assertEqual("real_subagent_runtime", runtime["runtime_claim"])
+        self.assertTrue(runtime["runtime_evidence"]["real_chain_ready"])
+        self.assertEqual("select_runtime_tier()", runtime["tier_selection_function"])
+        self.assertIn("session_circuit_breaker", runtime)
+        response_contract.validate_response_pack_payload(payload)
 
     def test_bug_slice_activates_feedback_loop_first_micro_practice(self) -> None:
         result = route_request.route_request(
@@ -1134,6 +1205,31 @@ class RoutingTests(unittest.TestCase):
         self.assertTrue(result["intent_confirmation"]["required"])
         self.assertIn("product-opportunity", result["intent_confirmation"]["option_ids"])
         self.assertIn("technical-feasibility", result["intent_confirmation"]["option_ids"])
+        self.assertEqual("insufficient_information", result["scope_boundary"]["status"])
+
+    def test_cross_skill_requests_decline_and_recommend_the_owner_skill(self) -> None:
+        cases = [
+            (
+                "用 virtual-intelligent-dev-team 帮我写一本 50 万字的连载网文小说。",
+                "novel-studio",
+            ),
+            (
+                "对三家竞品公司做完整的深度研究报告，包含时间线和竞品截面。",
+                "deep-research-forge",
+            ),
+        ]
+        for prompt, recommended_skill in cases:
+            with self.subTest(recommended_skill=recommended_skill):
+                result = route_request.route_request(prompt, load_config(), repo_path=REPO_ROOT)
+                payload = response_pack.build_response_pack_payload(result)
+                markdown = response_pack.build_response_pack(result)
+
+                self.assertEqual("out_of_scope", result["scope_boundary"]["status"])
+                self.assertEqual(recommended_skill, result["scope_boundary"]["recommended_skill"])
+                self.assertEqual("decline-and-reroute", payload["team_dispatch"]["workflow_bundle"])
+                self.assertEqual("out_of_scope", payload["scope_boundary"]["status"])
+                self.assertIn(recommended_skill, markdown)
+                response_contract.validate_response_pack_payload(payload)
 
     def test_fuzzy_idea_requires_intent_confirmation_before_hard_route(self) -> None:
         result = route_request.route_request(
@@ -4618,6 +4714,7 @@ class ValidatorScriptTests(unittest.TestCase):
             drift = version_sync.check_all(repo_copy)
             self.assertTrue(drift["changed"]["README.md"])
             self.assertTrue(drift["changed"]["skills-index.json"])
+            self.assertTrue(drift["changed"]["virtual-intelligent-dev-team/README.md"])
             self.assertTrue(drift["changed"]["virtual-intelligent-dev-team/references/routing-rules.json"])
 
             result = version_sync.sync_all(repo_copy)
@@ -4625,6 +4722,7 @@ class ValidatorScriptTests(unittest.TestCase):
             self.assertEqual("v9.9.9", result["version"])
             self.assertTrue(result["changed"]["README.md"])
             self.assertTrue(result["changed"]["skills-index.json"])
+            self.assertTrue(result["changed"]["virtual-intelligent-dev-team/README.md"])
             self.assertTrue(result["changed"]["virtual-intelligent-dev-team/references/routing-rules.json"])
             self.assertIn("`v9.9.9`", (repo_copy / "README.md").read_text(encoding="utf-8"))
             skills_payload = json.loads((repo_copy / "skills-index.json").read_text(encoding="utf-8"))
@@ -4778,6 +4876,239 @@ class ValidatorScriptTests(unittest.TestCase):
 
         self.assertFalse(result["allowed"])
         self.assertEqual("Code Audit Council", result["details"]["expected_lead_agent"])
+
+    def test_verify_action_file_handoff_enforces_exact_contract_path_and_timestamp(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            handoff_dir = root / ".skill-handoff"
+            handoff_dir.mkdir(parents=True)
+            artifact = handoff_dir / "work-order.json"
+            artifact.write_text(
+                json.dumps(
+                    {
+                        "handoff": {
+                            "from_role": "Worker",
+                            "to_role": "Verifier",
+                            "artifact_type": "WorkOrder",
+                            "artifact_path": ".skill-handoff/another-file.json",
+                            "timestamp": "2026-07-18T12:00:00",
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            result = verify_action.verify_action(
+                text="Implement this API change and verify it.",
+                config=load_config(),
+                repo_path=root,
+                check="file-handoff",
+            )
+
+            self.assertFalse(result["allowed"])
+            self.assertTrue(result["details"]["invalid_contracts"])
+            self.assertTrue(result["details"]["invalid_paths"])
+            self.assertTrue(result["details"]["invalid_timestamps"])
+            response_contract.validate_verify_action_result(result)
+
+    def test_verify_action_file_handoff_filter_requires_matching_artifact(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            handoff_dir = root / ".skill-handoff"
+            handoff_dir.mkdir(parents=True)
+            artifact = handoff_dir / "implementation.json"
+            artifact.write_text(
+                json.dumps(
+                    {
+                        "handoff": {
+                            "from_role": "Worker",
+                            "to_role": "Verifier",
+                            "artifact_type": "ImplementationOutput",
+                            "artifact_path": ".skill-handoff/implementation.json",
+                            "timestamp": "2026-07-18T12:00:00Z",
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            result = verify_action.verify_action(
+                text="Implement this API change and verify it.",
+                config=load_config(),
+                repo_path=root,
+                check="file-handoff",
+                handoff_type="WorkOrder",
+            )
+
+            self.assertFalse(result["allowed"])
+            self.assertEqual(0, result["details"]["matching_files"])
+
+    def test_verify_action_contract_lock_rejects_signed_content_mismatch(self) -> None:
+        with make_tempdir() as tmp:
+            contract_path = Path(tmp) / "contract-spec.json"
+            contract_path.write_text(
+                json.dumps(
+                    {
+                        "fields": {
+                            "frontend": {"user_id": "number"},
+                            "backend": {"userId": "string"},
+                        },
+                        "signatures": {
+                            "frontend_lead": {"accepted": True},
+                            "backend_lead": {"accepted": True},
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            result = verify_action.verify_action(
+                text="Align the frontend flow with the backend API contract.",
+                config=load_config(),
+                repo_path=REPO_ROOT,
+                check="contract-lock",
+                contract_spec=contract_path,
+            )
+
+            self.assertFalse(result["allowed"])
+            self.assertFalse(result["details"]["content_consistent"])
+            self.assertTrue(result["details"]["content_mismatches"])
+
+    def test_verify_action_spec_violation_enforces_state_field_ownership(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            worker_output = root / "worker-output.txt"
+            worker_output.write_text(
+                "The delivery layer modified plan.goal during delivery phase.",
+                encoding="utf-8",
+            )
+
+            result = verify_action.verify_action(
+                text="Implement this API change.",
+                config=load_config(),
+                repo_path=root,
+                check="spec-violation",
+                worker_output=worker_output,
+            )
+
+            self.assertFalse(result["allowed"])
+            self.assertEqual("spec_violation", result["details"]["verdict"])
+            self.assertTrue(
+                any("state field 'plan'" in item["evidence"] for item in result["details"]["violations"])
+            )
+
+    def test_verify_action_iteration_rejects_deleted_registered_baseline(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            workspace = root / ".skill-iterations"
+            registry = workspace / "baselines" / "registry.json"
+            registry.parent.mkdir(parents=True)
+            missing_report = workspace / "baselines" / "stable" / "benchmark-results.json"
+            registry.write_text(
+                json.dumps(
+                    {
+                        "baselines": [
+                            {
+                                "label": "stable",
+                                "stored_report": str(missing_report),
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            result = verify_action.verify_action(
+                text="Run another iteration and compare it against the stable baseline.",
+                config=load_config(),
+                repo_path=root,
+                check="iteration",
+                iteration_workspace=workspace,
+            )
+
+            self.assertFalse(result["allowed"])
+            self.assertEqual(0, result["details"]["valid_baseline_count"])
+            self.assertTrue(result["details"]["missing_baselines"])
+
+    def test_verify_action_iteration_accepts_existing_registered_baseline(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            workspace = root / ".skill-iterations"
+            report = workspace / "baselines" / "stable" / "benchmark-results.json"
+            report.parent.mkdir(parents=True)
+            report.write_text(json.dumps({"summary": {"passed": 1, "total": 1}}), encoding="utf-8")
+            registry = workspace / "baselines" / "registry.json"
+            registry.write_text(
+                json.dumps(
+                    {
+                        "baselines": [
+                            {
+                                "label": "stable",
+                                "stored_report": str(report),
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            result = verify_action.verify_action(
+                text="Run another iteration and compare it against the stable baseline.",
+                config=load_config(),
+                repo_path=root,
+                check="iteration",
+                iteration_workspace=workspace,
+            )
+
+            self.assertTrue(result["allowed"])
+            self.assertEqual(["stable"], result["details"]["valid_baselines"])
+
+    def test_verify_action_cli_returns_nonzero_when_action_is_blocked(self) -> None:
+        with make_tempdir() as tmp:
+            proc = subprocess.run(
+                [
+                    sys.executable,
+                    str(VERIFY_ACTION_SCRIPT),
+                    "--text",
+                    "Implement this API change.",
+                    "--check",
+                    "file-handoff",
+                    "--repo",
+                    tmp,
+                    "--config",
+                    str(CONFIG_PATH),
+                ],
+                cwd=str(REPO_ROOT),
+                check=False,
+                text=True,
+                capture_output=True,
+                encoding="utf-8",
+            )
+
+            self.assertEqual(1, proc.returncode, msg=proc.stdout + proc.stderr)
+            self.assertFalse(json.loads(proc.stdout)["allowed"])
+
+    def test_circuit_breaker_corrupt_state_fails_closed(self) -> None:
+        with make_tempdir() as tmp:
+            root = Path(tmp)
+            config_path = root / "breaker-config.json"
+            state_path = root / "breaker-state.json"
+            escalation_path = root / "escalation.jsonl"
+            config_path.write_text(json.dumps({"layers": {"verifier": {}}}), encoding="utf-8")
+            state_path.write_text("{not-json", encoding="utf-8")
+            breaker = circuit_breaker.CircuitBreaker(
+                config_path=config_path,
+                state_file=state_path,
+                escalation_sink=escalation_path,
+            )
+
+            result = breaker.check("verifier")
+
+            self.assertFalse(result["allowed"])
+            self.assertEqual("open", result["state"])
+            self.assertTrue(result["fail_closed"])
+            with self.assertRaises(RuntimeError):
+                breaker.record_failure("verifier", "must not overwrite corrupt state")
 
     def test_verify_action_auto_mode_requires_setup_before_go(self) -> None:
         result = verify_action.verify_action(
@@ -5092,6 +5423,25 @@ class ValidatorScriptTests(unittest.TestCase):
                 msg="\n".join(result["errors"]),
             )
 
+    def test_contract_lint_fails_on_missing_dot_relative_index_reference(self) -> None:
+        with make_tempdir() as tmp:
+            fixture_dir = Path(tmp) / "virtual-intelligent-dev-team-fixture"
+            copy_skill_fixture(fixture_dir)
+            index_path = fixture_dir / "references" / "playbook-index.md"
+            index_path.write_text(
+                index_path.read_text(encoding="utf-8")
+                + "\n[missing local protocol](./does-not-exist.md)\n",
+                encoding="utf-8",
+            )
+
+            result = contract_lint.lint_contract(fixture_dir)
+
+            self.assertFalse(result["ok"])
+            self.assertTrue(
+                any("references missing files" in message for message in result["errors"]),
+                msg="\n".join(result["errors"]),
+            )
+
     def test_contract_lint_fails_on_sidecar_schema_version_mismatch_fixture(self) -> None:
         with make_tempdir() as tmp:
             fixture_dir = Path(tmp) / "virtual-intelligent-dev-team-fixture"
@@ -5144,6 +5494,28 @@ class ValidatorScriptTests(unittest.TestCase):
 
 
 class OfflineLoopDrillScriptTests(unittest.TestCase):
+    def test_team_engine_drill_rejects_pass_with_missing_required_gate(self) -> None:
+        sample = json.loads(json.dumps(team_engine_drill.load_sample()))
+        required_gate = sample["work_order"]["acceptance_gates"][0]
+        checked = sample["cycles"][-1]["verification_report"]["checked_gates"]
+        sample["cycles"][-1]["verification_report"]["checked_gates"] = [
+            item for item in checked if item["gate_id"] != required_gate
+        ]
+
+        result = team_engine_drill.run_drill(sample)
+
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("checks every WorkOrder acceptance gate" in error for error in result["errors"]))
+
+    def test_team_engine_drill_rejects_cross_task_cycle_identity(self) -> None:
+        sample = json.loads(json.dumps(team_engine_drill.load_sample()))
+        sample["cycles"][0]["implementation_output"]["task_id"] = "another-task"
+
+        result = team_engine_drill.run_drill(sample)
+
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("implementation task_id matches work order" in error for error in result["errors"]))
+
     def test_offline_drill_covers_release_gate_hold_bootstrap(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp) / "offline-drill"
@@ -5293,6 +5665,31 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
             with self.subTest(expectation=expectation):
                 assert_field_expectation(self, expectation, payload, label="response_pack_json")
 
+    def test_benchmark_field_expectation_projects_nested_scenario_lists(self) -> None:
+        payload = {
+            "scenarios": [
+                {
+                    "status": "passed",
+                    "trace_summary": {"complete": True, "caller_count": 2},
+                    "exec_summary": "first scenario passed",
+                },
+                {
+                    "status": "passed",
+                    "trace_summary": {"complete": True, "caller_count": 1},
+                    "exec_summary": "second scenario passed",
+                },
+            ]
+        }
+
+        for expectation in [
+            "scenarios status is passed",
+            "scenarios trace_summary.complete is true",
+            "scenarios trace_summary.caller_count >= 1",
+            "scenarios exec_summary is not empty",
+        ]:
+            with self.subTest(expectation=expectation):
+                assert_field_expectation(self, expectation, payload, label="stress_scenarios_json")
+
     def test_benchmark_field_expectation_supports_null_on_router_snapshot(self) -> None:
         result = verify_action.verify_action(
             text="Refactor this Flask service and then commit and push the branch.",
@@ -5414,6 +5811,52 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
                     "categories": ["release-gate"]
                 }
             ]
+        }
+        with make_tempdir() as tmp:
+            fixture_path = Path(tmp) / "evals.json"
+            fixture_path.write_text(json.dumps(fixture, ensure_ascii=False, indent=2), encoding="utf-8")
+            with mock.patch.object(benchmark_runner, "EVALS_PATH", fixture_path):
+                result = benchmark_runner.evaluate_evals(config)
+
+        self.assertEqual(2, result["passed"])
+        self.assertEqual(2, result["total"])
+
+    def test_evaluate_evals_materializes_breaker_fixtures(self) -> None:
+        config = load_config()
+        fixture = {
+            "skill_name": "virtual-intelligent-dev-team",
+            "evals": [
+                {
+                    "id": 9003,
+                    "runner": "verify_action",
+                    "check": "breaker-status",
+                    "fixture": "breaker-closed",
+                    "breaker_layer": "verifier",
+                    "prompt": "Verify before executing the next iteration cycle.",
+                    "expected_output": "closed breaker fixture is allowed",
+                    "files": [],
+                    "expectations": [
+                        "allowed is true",
+                        "verify_action_json details.breaker_state is closed",
+                    ],
+                    "categories": ["circuit-breaker"],
+                },
+                {
+                    "id": 9004,
+                    "runner": "verify_action",
+                    "check": "breaker-status",
+                    "fixture": "breaker-open",
+                    "breaker_layer": "verifier",
+                    "prompt": "Verify before executing the next iteration cycle.",
+                    "expected_output": "open breaker fixture is blocked",
+                    "files": [],
+                    "expectations": [
+                        "allowed is false",
+                        "verify_action_json details.breaker_state is open",
+                    ],
+                    "categories": ["circuit-breaker", "negative"],
+                },
+            ],
         }
         with make_tempdir() as tmp:
             fixture_path = Path(tmp) / "evals.json"

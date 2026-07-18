@@ -54,7 +54,9 @@ TEAM_WORK_ORDER_TEMPLATE_PATH = SKILL_DIR / "assets" / "team-work-order-template
 DELIVERY_CYCLE_REPORT_TEMPLATE_PATH = SKILL_DIR / "assets" / "delivery-cycle-report-template.json"
 EXTERNAL_AGENT_BACKEND_PLAN_TEMPLATE_PATH = SKILL_DIR / "assets" / "external-agent-backend-plan-template.json"
 SAMPLE_DELIVERY_CYCLE_REPORT_PATH = SKILL_DIR / "assets" / "sample-delivery-cycle-report.json"
-MARKDOWN_PATH_RE = re.compile(r"(?<![\w./-])((?:assets|references|scripts)/[A-Za-z0-9_./-]+\.(?:md|json|py))(?![\w./-])")
+MARKDOWN_PATH_RE = re.compile(
+    r"(?<![\w./-])((?:(?:assets|references|scripts)/|\./)[A-Za-z0-9_./-]+\.(?:md|json|py))(?![\w./-])"
+)
 SCRIPT_COMMAND_RE = re.compile(r"python\s+(scripts/[A-Za-z0-9_.-]+\.py)\b")
 SCHEMA_VERSION_RE = re.compile(r"版本：`([^`]+)`")
 

@@ -789,9 +789,9 @@ python scripts/run_stress_scenarios.py --self-test
 ```
 
 - `run_stress_scenarios.py` 输出契约：
-  - `ok` / `total_scenarios` / `scenarios_passed` / `scenarios_error` / `vulnerabilities_found` / `trace_incomplete` / `fix_scope_root_cause_ratio`
+  - `ok` / `total_scenarios` / `expected_scenario_count` / `scenarios_passed` / `scenarios_failed` / `vulnerabilities_found` / `trace_incomplete` / `fix_scope_root_cause_ratio`
   - 每个场景携带 `trace_summary`（机器校验：真实文件路径 + caller 列表，非空或场景 fail）和 `fix_scope`（`root-cause` / `symptom`）
-  - 通过门禁：7 场景全部执行，`trace_summary` 全非空，`fix_scope` root-cause 比例 >= 80%
+  - 通过门禁：12 场景全部执行、无 `correctly_not_caught` 或 `failed`、`trace_summary` 全非空、`fix_scope` root-cause 比例 >= 80%；任一不满足时 CLI 非零退出
 
 - benchmark compare
 

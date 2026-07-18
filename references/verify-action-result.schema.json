@@ -799,6 +799,14 @@
       "type": "object",
       "required": [
         "needs_iteration",
+        "iteration_workspace",
+        "registry_path",
+        "registry_exists",
+        "registry_error",
+        "baseline_count",
+        "valid_baseline_count",
+        "valid_baselines",
+        "missing_baselines",
         "workflow_bundle",
         "progress_anchor_recommended",
         "resume_artifacts",
@@ -811,6 +819,32 @@
       "properties": {
         "needs_iteration": {
           "type": "boolean"
+        },
+        "iteration_workspace": {
+          "type": "string"
+        },
+        "registry_path": {
+          "type": "string"
+        },
+        "registry_exists": {
+          "type": "boolean"
+        },
+        "registry_error": {
+          "type": "string"
+        },
+        "baseline_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "valid_baseline_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "valid_baselines": {
+          "$ref": "#/$defs/string_array"
+        },
+        "missing_baselines": {
+          "$ref": "#/$defs/string_array"
         },
         "workflow_bundle": {
           "type": "string"
@@ -1226,6 +1260,9 @@
         "from_role",
         "to_role",
         "artifact_type",
+        "artifact_path",
+        "timestamp",
+        "matches_filter",
         "valid"
       ],
       "properties": {
@@ -1240,6 +1277,15 @@
         },
         "artifact_type": {
           "type": "string"
+        },
+        "artifact_path": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
+        },
+        "matches_filter": {
+          "type": "boolean"
         },
         "valid": {
           "type": "boolean"
@@ -1269,10 +1315,14 @@
         "handoff_dir",
         "dir_exists",
         "total_files",
+        "matching_files",
         "files_checked",
         "missing_handoff_meta",
         "invalid_directions",
         "invalid_types",
+        "invalid_contracts",
+        "invalid_paths",
+        "invalid_timestamps",
         "filter_type"
       ],
       "properties": {
@@ -1283,6 +1333,9 @@
           "type": "boolean"
         },
         "total_files": {
+          "type": "integer"
+        },
+        "matching_files": {
           "type": "integer"
         },
         "files_checked": {
@@ -1298,6 +1351,15 @@
           "$ref": "#/$defs/string_array"
         },
         "invalid_types": {
+          "$ref": "#/$defs/string_array"
+        },
+        "invalid_contracts": {
+          "$ref": "#/$defs/string_array"
+        },
+        "invalid_paths": {
+          "$ref": "#/$defs/string_array"
+        },
+        "invalid_timestamps": {
           "$ref": "#/$defs/string_array"
         },
         "filter_type": {
@@ -1444,6 +1506,7 @@
         "breaker_state",
         "consecutive_failures",
         "reason",
+        "fail_closed",
         "state_file",
         "escalation_sink"
       ],
@@ -1464,6 +1527,9 @@
         "reason": {
           "type": "string"
         },
+        "fail_closed": {
+          "type": "boolean"
+        },
         "state_file": {
           "type": "string"
         },
@@ -1480,7 +1546,10 @@
         "spec_exists",
         "signatures_complete",
         "both_accepted",
-        "missing_parties"
+        "missing_parties",
+        "content_consistent",
+        "content_mismatches",
+        "parse_error"
       ],
       "properties": {
         "contract_spec": {
@@ -1500,6 +1569,15 @@
           "items": {
             "type": "string"
           }
+        },
+        "content_consistent": {
+          "type": "boolean"
+        },
+        "content_mismatches": {
+          "$ref": "#/$defs/string_array"
+        },
+        "parse_error": {
+          "type": "string"
         }
       },
       "additionalProperties": false

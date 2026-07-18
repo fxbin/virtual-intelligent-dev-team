@@ -122,7 +122,7 @@ If the task is simple and clearly single-domain, keep routing lightweight.
 12. For broad, repeated-failure, release, beta, multi-agent, or drift-prone work, apply goal framing: success evidence, stop condition, and non-goals must be explicit before implementation.
 13. For code-facing routes, apply the Harness constraint gate before implementation: create or refresh `.skill-harness/engineering-constraints.md`.
 14. For changes that add or retire guards, fallbacks, adapters, duplicate owners, compatibility paths, schema, persistence, or source-of-truth behavior, apply anti-entropy governance before choosing delete, compat, or confirmation paths.
-15. For code-facing, release-facing, Git-facing, or remediation routes, apply Team Engine Lite: Worker can produce, Verifier can pass/fail/hold, and Lead can accept only after a DeliveryCycleReport.
+15. For code-facing, release-facing, Git-facing, or remediation routes, apply Team Engine Lite: Worker can produce, Verifier can return pass/fail/hold/spec_violation, and Lead can accept only after a DeliveryCycleReport.
 16. If the user explicitly asks for multi-agent / subagent / parallel agent execution, or `/auto` reaches an eligible workflow, build a controlled real subagent runtime plan with three tiers: `real_subagent_runtime` (host exposes spawn / wait / merge), `single_backend_multi_session` (host exposes create_session / kill_session / restart_session; session is the circuit-breaker unit), or `soft_orchestration_only` (no isolation; `known-shortcut:` ceiling). The host downgrades to the highest tier it can actually enforce; never upgrade beyond proven capability.
 17. If external Agent backends are available but real subagent runtime is not proven, check whether the host supports `single_backend_multi_session` (session-level circuit breaking) before falling back to `soft_orchestration_only`. `soft_orchestration_only` is the last resort with a `known-shortcut:` ceiling (no session kill / restart / context isolation).
 18. **Real Subagent Execution Guide**: When spawning Worker/Verifier/Explorer agents, use actual Agent tool invocations with independent prompts and contexts. See [references/subagent-exec-guide.md](references/subagent-exec-guide.md) for complete execution templates including Worker-Verifier cycles, parallel implementation, and Explorer-Worker patterns.
@@ -299,12 +299,22 @@ python scripts/validate_virtual_team.py --pretty
 
 ## Runtime Routing
 
-Runtime routing rules (primary routes, stage council overlays, score model, thresholds, and fallback rules) and workflow bundle definitions (7 bundles with use-when / sequence / resume anchor / confidence levels) live in dedicated reference files:
+Runtime routing rules (primary routes, stage council overlays, score model, thresholds, and fallback rules) and workflow bundle definitions (12 bundles with use-when / sequence / resume anchor / confidence levels) live in dedicated reference files:
 
 - [references/runtime-routing-rules.md](references/runtime-routing-rules.md) — Primary Routes, Stage Council Overlays, Routing Score Model, Thresholds, Fallback Rules
-- [references/workflow-bundles.md](references/workflow-bundles.md) — 7 workflow bundle definitions and Bundle Confidence Levels
+- [references/workflow-bundles.md](references/workflow-bundles.md) — 12 workflow bundle definitions and Bundle Confidence Levels
 
 ## Release Notes
+
+### v6.0.2 (2026-07-18)
+
+复检收口版本。运行时 tier 现在同时受请求 eligibility 与完整能力链约束；
+breaker、Verifier、file handoff、Team Engine drill 和 stress gate 改为
+fail-closed。Response Pack、benchmark runner/check、`spec_violation`、workflow
+bundle、路由示例和版本元数据合同已同步，发布证据必须来自可执行门禁。
+
+`v6.0.1` 中“无破坏性 schema 变更”的声明不再作为发布依据；新增字段已经在
+sidecar schema、生成器、渲染器、eval 和回归测试中统一登记。
 
 ### v6.0.1 (2026-07-16)
 

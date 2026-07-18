@@ -112,7 +112,8 @@ contract lock 是 Verifier 的第一道 gate(`acceptance_gates[0]`)。
 1. **存在性检查**:contract-spec 文件必须存在
 2. **签署完整性检查**:signatures 必须包含 frontend_lead 和 backend_lead
 3. **签署有效性检查**:双方的 accepted 必须均为 true
-4. **版本一致性检查**:contract-spec 的 version 必须与 WorkOrder 引用的版本一致
+4. **内容一致性检查**:若文件分别声明 `fields.frontend` 与 `fields.backend`,字段名和类型必须完全一致；若使用标准 `contract-spec/v1`,必须提供共享的 `request_schema` 与 `response_schema`
+5. **版本一致性检查**:Team Engine 调用方还必须比较 contract-spec 的 version 与 WorkOrder 引用版本；独立 `verify_action.py --check contract-lock` 只验证传入文件自身及双方内容一致性
 
 ### 检查结果
 
@@ -121,6 +122,7 @@ contract lock 是 Verifier 的第一道 gate(`acceptance_gates[0]`)。
 | contract-spec 文件不存在 | fail | hard fail,Worker 不得开始实现 |
 | signatures 缺失任一方 | fail | hard fail,要求补签 |
 | 任一方 accepted=false | fail | hard fail,要求重新协商 |
+| 双方签名通过但字段名/类型不一致 | fail | hard fail,先统一内容再重新签署 |
 | 版本不一致 | fail | hard fail,要求重新签署 |
 | 全部通过 | pass | Worker 可开始实现 |
 

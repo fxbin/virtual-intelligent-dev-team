@@ -460,9 +460,10 @@
       "name": "frontend_backend_contract",
       "text": "Redesign this React admin page and align the frontend flow with the backend API contract.",
       "expect": {
-        "lead_agent": "API Contract Sentinel",
+        "lead_agent": "World-Class Product Architect",
         "assistant_agents_contains": [
-          "World-Class Product Architect"
+          "API Contract Sentinel",
+          "Technical Trinity"
         ],
         "needs_git_workflow": false,
         "priority_agent": null
@@ -1119,12 +1120,12 @@
       }
     },
     {
-      "name": "verify_iteration_profile_allowed",
+      "name": "verify_iteration_profile_requires_registered_baseline",
       "text": "Run another iteration, benchmark it against the baseline, and stop if the result regresses.",
       "check": "iteration",
       "expect": {
-        "allowed": true,
-        "summary_contains": "enabled",
+        "allowed": false,
+        "summary_contains": "baseline registry",
         "detail_equals": {
           "needs_iteration": true
         }

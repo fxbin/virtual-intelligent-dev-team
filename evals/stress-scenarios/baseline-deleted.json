@@ -1,6 +1,6 @@
 {
   "scenario_id": "baseline-deleted",
-  "description": "bounded iteration 的 stable baseline benchmark-results.json 被删除后，iteration check 未检测到 baseline 缺失",
+  "description": "bounded iteration 的 stable baseline benchmark-results.json 被删除后，iteration check 必须 fail closed",
   "target_layer": "iteration",
   "failure_type": "baseline-missing",
   "trigger": {
@@ -12,8 +12,8 @@
     }
   },
   "expected": {
-    "caught": false,
-    "behavior": "iteration check 只检查 needs_iteration 标志，不校验 baseline 文件是否存在 → 漏洞：baseline 被删后 iteration 仍可继续"
+    "caught": true,
+    "behavior": "iteration check 必须校验 registry 及其 stored_report；baseline 被删后返回 allowed=false"
   },
   "affected_files": [
     "references/baseline-registry.md",

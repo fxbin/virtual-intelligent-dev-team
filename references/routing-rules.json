@@ -1,7 +1,7 @@
 {
   "meta": {
     "author": "fxbin",
-    "version": "v6.0.0",
+    "version": "v6.0.2",
     "updated": "2026-07-15"
   },
   "thresholds": {
@@ -1829,6 +1829,7 @@
         {"keyword": "API 安全", "score": 5},
         {"keyword": "契约优先", "score": 6},
         {"keyword": "API版本", "score": 6},
+        {"keyword": "API 版本", "score": 6},
         {"keyword": "版本管理", "score": 5},
         {"keyword": "schema演进", "score": 5},
         {"keyword": "schema evolution", "score": 5},

@@ -431,6 +431,46 @@ def is_frontend_checkout_context(text: str, git_hits: list[str]) -> bool:
     return any(keyword_matches(lowered, keyword) for keyword in frontend_context_keywords)
 
 
+def is_frontend_backend_contract_context(text: str) -> bool:
+    """Keep product/UX ownership when a frontend flow also touches an API contract."""
+    lowered = text.lower()
+    frontend_cues = [
+        "frontend",
+        "front-end",
+        "react",
+        "next.js",
+        "page",
+        "dashboard",
+        "form",
+        "user flow",
+        "login flow",
+        "ui",
+        "ux",
+        "页面",
+        "表单",
+        "交互",
+        "用户流",
+        "前端",
+    ]
+    contract_cues = [
+        "backend api",
+        "api contract",
+        "backend contract",
+        "frontend-backend",
+        "auth api",
+        "error state",
+        "后端 api",
+        "api 契约",
+        "接口契约",
+        "后端接口",
+        "接口失败",
+        "联调",
+    ]
+    return any(keyword_matches(lowered, cue) for cue in frontend_cues) and any(
+        keyword_matches(lowered, cue) for cue in contract_cues
+    )
+
+
 def is_domain_checkout_context(text: str, git_hits: list[str]) -> bool:
     if len(git_hits) == 0:
         return False
@@ -2154,6 +2194,67 @@ def is_fuzzy_intent_request(text: str) -> bool:
     return len(category_hits) >= 2 or len(choice_hits) > 0
 
 
+def build_scope_boundary(text: str, *, unknown_only: bool) -> dict[str, str]:
+    """Classify explicit cross-skill requests before an execution route is claimed."""
+    if text_has_any_keyword(
+        text,
+        ["写一本", "小说", "网文", "连载", "novel writing", "write a novel"],
+    ):
+        return {
+            "status": "out_of_scope",
+            "reason": "The request is long-form fiction production, not software delivery.",
+            "recommended_skill": "novel-studio",
+            "next_step": "Route the request to novel-studio or another novel-forge skill.",
+        }
+    if text_has_any_keyword(
+        text,
+        ["深度研究报告", "deep research report", "竞品公司", "竞品截面", "时间线和竞品"],
+    ):
+        return {
+            "status": "out_of_scope",
+            "reason": "The request is evidence-led company or competitor research, not software delivery.",
+            "recommended_skill": "deep-research-forge",
+            "next_step": "Route the request to deep-research-forge.",
+        }
+    concrete_software_task = text_has_any_keyword(
+        text,
+        [
+            "implement",
+            "implementation",
+            "refactor",
+            "fix",
+            "bug",
+            "api",
+            "code",
+            "unit test",
+            "run tests",
+            ".py",
+            ".java",
+            ".ts",
+            ".js",
+            "实现",
+            "重构",
+            "修复",
+            "代码",
+            "接口",
+            "测试",
+        ],
+    )
+    if unknown_only and not concrete_software_task:
+        return {
+            "status": "insufficient_information",
+            "reason": "No concrete software task, stack, artifact, or delivery action was detected.",
+            "recommended_skill": "",
+            "next_step": "Ask for the concrete software task, affected artifact, and desired outcome.",
+        }
+    return {
+        "status": "in_scope",
+        "reason": "The request contains a concrete software delivery or governance signal.",
+        "recommended_skill": "",
+        "next_step": "Proceed with the selected software workflow.",
+    }
+
+
 def build_intent_confirmation_options(language: str) -> list[dict[str, str]]:
     if language == "zh":
         return [
@@ -2253,7 +2354,27 @@ def build_intent_confirmation(
     fuzzy_hits = keyword_hits(text, FUZZY_INTENT_KEYWORDS)
     category_hits = detect_intent_categories(text)
     route_choice_hits = keyword_hits(text, ROUTE_CHOICE_KEYWORDS)
-    required = need_clarify or is_fuzzy_intent_request(text)
+    explicit_multi_agent_execution = (
+        text_has_any_keyword(text, REAL_SUBAGENT_TRIGGER_KEYWORDS)
+        and text_has_any_keyword(
+            text,
+            [
+                "implement",
+                "implementation",
+                "refactor",
+                "fix",
+                "run tests",
+                "verify",
+                "实现",
+                "重构",
+                "修复",
+                "测试",
+                "验证",
+                "验收",
+            ],
+        )
+    )
+    required = (need_clarify or is_fuzzy_intent_request(text)) and not explicit_multi_agent_execution
     options = build_intent_confirmation_options(language) if required else []
     provisional_route = {
         "lead_agent": lead_agent,
@@ -3578,6 +3699,7 @@ def build_team_engine_gate(
             "retrying",
             "passed",
             "failed",
+            "spec_violation",
             "hold",
             "escalated",
             "accepted",
@@ -3686,12 +3808,17 @@ class HostCapabilities(TypedDict):
     """Host 能力探测结果
 
     字段:
-        spawn_supported: host 是否支持 spawn/wait/merge 独立子进程
-        create_session_supported: host 是否支持 create/kill/restart_session
+        spawn_supported/wait_supported/merge_supported: real-subagent 完整链路
+        create_session_supported/kill_session_supported/restart_session_supported:
+            multi-session 完整生命周期
         evidence_source: 能力来源（declared=环境变量声明 / probed=自动探测）
     """
     spawn_supported: bool
+    wait_supported: bool
+    merge_supported: bool
     create_session_supported: bool
+    kill_session_supported: bool
+    restart_session_supported: bool
     evidence_source: Literal["declared", "probed"]
 
 
@@ -3714,25 +3841,41 @@ def probe_host_capabilities() -> HostCapabilities:
     """探测 host 的 runtime 能力
 
     两层设计：
-    1. 优先读取环境变量 HOST_SUPPORTS_SPAWN / HOST_SUPPORTS_CREATE_SESSION（host 主动声明）
+    1. 优先读取六个原子能力环境变量（host 主动声明）
     2. 无环境变量时 fallback 到自动探测（检查可用工具）
 
     返回:
         HostCapabilities TypedDict
     """
-    spawn_env = os.environ.get("HOST_SUPPORTS_SPAWN", "").strip().lower()
-    session_env = os.environ.get("HOST_SUPPORTS_CREATE_SESSION", "").strip().lower()
+    env_names = {
+        "spawn_supported": "HOST_SUPPORTS_SPAWN",
+        "wait_supported": "HOST_SUPPORTS_WAIT",
+        "merge_supported": "HOST_SUPPORTS_MERGE",
+        "create_session_supported": "HOST_SUPPORTS_CREATE_SESSION",
+        "kill_session_supported": "HOST_SUPPORTS_KILL_SESSION",
+        "restart_session_supported": "HOST_SUPPORTS_RESTART_SESSION",
+    }
+    declared = {
+        field: os.environ.get(env_name, "").strip().lower()
+        for field, env_name in env_names.items()
+    }
 
-    if spawn_env or session_env:
+    if any(declared.values()):
         return HostCapabilities(
-            spawn_supported=spawn_env in ("1", "true", "yes"),
-            create_session_supported=session_env in ("1", "true", "yes"),
+            **{
+                field: value in ("1", "true", "yes")
+                for field, value in declared.items()
+            },
             evidence_source="declared",
         )
 
     return HostCapabilities(
         spawn_supported=False,
+        wait_supported=False,
+        merge_supported=False,
         create_session_supported=False,
+        kill_session_supported=False,
+        restart_session_supported=False,
         evidence_source="probed",
     )
 
@@ -3754,14 +3897,22 @@ def runtime_smoke_test(
         return {"passed": True, "reason": "soft_orchestration_only 无需 smoke test"}
 
     if tier == "real_subagent_runtime":
-        if not host_capabilities["spawn_supported"]:
-            return {"passed": False, "reason": "host 不支持 spawn，smoke test 失败"}
-        return {"passed": True, "reason": "spawn 能力已验证"}
+        required = ("spawn_supported", "wait_supported", "merge_supported")
+        missing = [name.removesuffix("_supported") for name in required if not host_capabilities.get(name, False)]
+        if missing:
+            return {"passed": False, "reason": f"host 缺少 {'/'.join(missing)}，smoke test 失败"}
+        return {"passed": True, "reason": "spawn/wait/merge 完整链路已声明"}
 
     if tier == "single_backend_multi_session":
-        if not host_capabilities["create_session_supported"]:
-            return {"passed": False, "reason": "host 不支持 create_session，smoke test 失败"}
-        return {"passed": True, "reason": "create_session 能力已验证"}
+        required = (
+            "create_session_supported",
+            "kill_session_supported",
+            "restart_session_supported",
+        )
+        missing = [name.removesuffix("_supported") for name in required if not host_capabilities.get(name, False)]
+        if missing:
+            return {"passed": False, "reason": f"host 缺少 {'/'.join(missing)}，smoke test 失败"}
+        return {"passed": True, "reason": "create_session/kill_session/restart_session 完整链路已声明"}
 
     return {"passed": False, "reason": f"未知 tier: {tier}"}
 
@@ -3786,29 +3937,60 @@ def select_runtime_tier(
     if host_capabilities is None:
         host_capabilities = probe_host_capabilities()
 
+    allowed_candidates = ["soft_orchestration_only"]
+    if candidate_multi_session_claim == "single_backend_multi_session":
+        allowed_candidates.append("single_backend_multi_session")
+    if candidate_runtime_claim == "real_subagent_runtime":
+        allowed_candidates.append("real_subagent_runtime")
+
+    real_chain_ready = all(
+        bool(host_capabilities.get(name, False))
+        for name in ("spawn_supported", "wait_supported", "merge_supported")
+    )
+    session_chain_ready = all(
+        bool(host_capabilities.get(name, False))
+        for name in (
+            "create_session_supported",
+            "kill_session_supported",
+            "restart_session_supported",
+        )
+    )
+    host_candidates = ["soft_orchestration_only"]
+    if session_chain_ready:
+        host_candidates.append("single_backend_multi_session")
+    if real_chain_ready:
+        host_candidates.append("real_subagent_runtime")
+
+    tier_rank = {
+        "soft_orchestration_only": 0,
+        "single_backend_multi_session": 1,
+        "real_subagent_runtime": 2,
+    }
+    enforceable = set(allowed_candidates) & set(host_candidates)
+    selected = max(enforceable, key=lambda tier: tier_rank[tier])
+    candidate_ceiling = max(allowed_candidates, key=lambda tier: tier_rank[tier])
     downgraded_from = ""
     downgrade_reason = ""
-
-    if host_capabilities["spawn_supported"]:
-        selected = "real_subagent_runtime"
-    elif host_capabilities["create_session_supported"]:
-        selected = "single_backend_multi_session"
-        if candidate_runtime_claim == "real_subagent_runtime":
-            downgraded_from = "real_subagent_runtime"
-            downgrade_reason = "host 不支持 spawn，降级到 single_backend_multi_session"
-    else:
-        selected = "soft_orchestration_only"
-        if candidate_runtime_claim == "real_subagent_runtime":
-            downgraded_from = "real_subagent_runtime"
-            downgrade_reason = "host 不支持 spawn 和 create_session，降级到 soft_orchestration_only"
-        elif candidate_multi_session_claim == "single_backend_multi_session":
-            downgraded_from = "single_backend_multi_session"
-            downgrade_reason = "host 不支持 create_session，降级到 soft_orchestration_only"
+    if tier_rank[selected] < tier_rank[candidate_ceiling]:
+        downgraded_from = candidate_ceiling
+        if selected == "single_backend_multi_session":
+            downgrade_reason = "host 未证明 spawn/wait/merge 完整链路，降级到 single_backend_multi_session"
+        else:
+            downgrade_reason = (
+                "host 未证明候选 tier 所需的完整能力链，降级到 soft_orchestration_only"
+            )
 
     evidence: dict[str, object] = {
         "evidence_source": host_capabilities["evidence_source"],
-        "spawn_supported": host_capabilities["spawn_supported"],
-        "create_session_supported": host_capabilities["create_session_supported"],
+        "spawn_supported": bool(host_capabilities.get("spawn_supported", False)),
+        "wait_supported": bool(host_capabilities.get("wait_supported", False)),
+        "merge_supported": bool(host_capabilities.get("merge_supported", False)),
+        "create_session_supported": bool(host_capabilities.get("create_session_supported", False)),
+        "kill_session_supported": bool(host_capabilities.get("kill_session_supported", False)),
+        "restart_session_supported": bool(host_capabilities.get("restart_session_supported", False)),
+        "real_chain_ready": real_chain_ready,
+        "session_chain_ready": session_chain_ready,
+        "candidate_ceiling": candidate_ceiling,
     }
 
     if run_smoke_test:
@@ -4410,6 +4592,13 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
             "agent": lead_agent,
             "matched_keywords": ["audit-batch-fix"],
         }
+    elif (
+        is_frontend_backend_contract_context(routed_text)
+        and (priority_route or {}).get("agent") != "Code Audit Council"
+    ):
+        lead_agent = "World-Class Product Architect"
+        scores[lead_agent] = max(scores.get(lead_agent, 0), 6)
+        lead_score = scores[lead_agent]
     lead_agent = rebalance_git_lead_for_semantic_owner(
         lead_agent=lead_agent,
         priority_route=priority_route,
@@ -4421,6 +4610,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
     process_only = lead_score == 0 and len(process_skills) > 0
     language_only = lead_score == 0 and len(process_skills) == 0 and len(detected_languages) > 0
     unknown_only = lead_score == 0 and len(process_skills) == 0 and len(detected_languages) == 0
+    scope_boundary = build_scope_boundary(routed_text, unknown_only=unknown_only)
     if process_only:
         lead_agent = pick_process_lead_agent(process_skills=process_skills, config=config)
         lead_score = scores.get(lead_agent, 0)
@@ -4564,7 +4754,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
     )
     intent_confirmation = build_intent_confirmation(
         text=routed_text,
-        need_clarify=need_clarify,
+        need_clarify=need_clarify and scope_boundary["status"] != "out_of_scope",
         lead_agent=lead_agent,
         workflow_bundle=workflow_bundle,
     )
@@ -4742,6 +4932,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "auto_run_profile": auto_run_profile,
         "clarifying_question": clarifying_question,
         "intent_confirmation": intent_confirmation,
+        "scope_boundary": scope_boundary,
         "workflow_bundle": workflow_bundle.get("name"),
         "bundle_confidence": workflow_bundle.get("confidence"),
         "workflow_bundle_source": workflow_bundle.get("source"),

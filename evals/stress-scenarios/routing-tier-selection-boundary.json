@@ -1,14 +1,18 @@
 {
   "scenario_id": "routing-tier-selection-boundary",
-  "description": "host 同时声明 spawn 和 create_session 时，select_runtime_tier 应优先选择 real_subagent_runtime（边界：同时支持时选最高 tier）",
+  "description": "host 同时完整声明 spawn/wait/merge 与 create_session/kill_session/restart_session 时，select_runtime_tier 应优先选择 real_subagent_runtime",
   "target_layer": "routing",
   "failure_type": "tier-selection-boundary",
   "trigger": {
     "method": "routing_tier_selection",
-    "setup_description": "构造 HostCapabilities(spawn=true, session=true)，验证 select_runtime_tier 返回 real_subagent_runtime",
+    "setup_description": "构造 HostCapabilities(real chain=true, session lifecycle chain=true)，验证 select_runtime_tier 返回 real_subagent_runtime",
     "setup_data": {
       "spawn_supported": true,
+      "wait_supported": true,
+      "merge_supported": true,
       "create_session_supported": true,
+      "kill_session_supported": true,
+      "restart_session_supported": true,
       "expected_tier": "real_subagent_runtime",
       "run_smoke_test": true
     }

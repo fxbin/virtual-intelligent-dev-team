@@ -42,3 +42,13 @@ Recommended flow:
 2. confirm the round is promotion-eligible
 3. promote the kept candidate into a new label
 4. decide whether that new label should replace the current stable baseline
+
+## Verification Rule
+
+`verify_action.py --check iteration` treats the registry and every registered `stored_report` as one integrity boundary.
+
+- malformed registry JSON fails closed
+- a registry entry whose stored report was deleted or moved fails closed
+- callers may pass `--iteration-workspace`; otherwise verification uses `<repo>/.skill-iterations`
+
+Do not infer that a label is usable merely because it still exists in `registry.json`.

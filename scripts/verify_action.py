@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime
 import importlib.util
 import json
+import re
 from pathlib import Path
 
 
@@ -234,14 +236,66 @@ def _verify_release_gate(result: dict[str, object]) -> dict[str, object]:
     }
 
 
-def _verify_iteration(result: dict[str, object]) -> dict[str, object]:
-    allowed = bool(result.get("needs_iteration"))
+def _verify_iteration(
+    result: dict[str, object],
+    repo_path: Path,
+    iteration_workspace: Path | None = None,
+) -> dict[str, object]:
+    iteration_enabled = bool(result.get("needs_iteration"))
     profile = result.get("iteration_profile", {})
     if not isinstance(profile, dict):
         profile = {}
+    workspace = (
+        iteration_workspace.resolve()
+        if iteration_workspace is not None
+        else (repo_path / ".skill-iterations").resolve()
+    )
+    registry_path = workspace / "baselines" / "registry.json"
+    registry_exists = registry_path.is_file()
+    registry_error = ""
+    baseline_entries: list[dict[str, object]] = []
+    if registry_exists:
+        try:
+            registry_payload = json.loads(registry_path.read_text(encoding="utf-8"))
+            raw_entries = registry_payload.get("baselines", []) if isinstance(registry_payload, dict) else []
+            if not isinstance(raw_entries, list):
+                raise ValueError("baselines must be an array")
+            baseline_entries = [entry for entry in raw_entries if isinstance(entry, dict)]
+        except (json.JSONDecodeError, OSError, ValueError) as exc:
+            registry_error = f"{type(exc).__name__}: {exc}"
+
+    missing_baselines: list[str] = []
+    valid_baselines: list[str] = []
+    for entry in baseline_entries:
+        label = str(entry.get("label", "<unlabeled>"))
+        stored_value = str(entry.get("stored_report", "")).strip()
+        if not stored_value:
+            missing_baselines.append(f"{label}: stored_report missing")
+            continue
+        stored_path = Path(stored_value)
+        if not stored_path.is_absolute():
+            stored_path = (repo_path / stored_path).resolve()
+        if stored_path.is_file():
+            valid_baselines.append(label)
+        else:
+            missing_baselines.append(f"{label}: {stored_path}")
+
+    baseline_ready = (
+        registry_exists
+        and not registry_error
+        and len(baseline_entries) > 0
+        and len(valid_baselines) == len(baseline_entries)
+    )
+    allowed = iteration_enabled and baseline_ready
     if allowed:
-        summary = "Bounded iteration is enabled for this request."
-        next_step = "Use the iteration profile and process_plan to keep the loop evidence-driven and bounded."
+        summary = f"Bounded iteration is enabled with {len(valid_baselines)} valid baseline(s)."
+        next_step = "Use the registered baseline and iteration profile to keep the loop evidence-driven and bounded."
+    elif iteration_enabled:
+        summary = "Bounded iteration is requested but its baseline registry is missing, invalid, or points to deleted reports."
+        next_step = (
+            "Register or repair a baseline with python scripts/register_benchmark_baseline.py "
+            "before running the next iteration cycle."
+        )
     else:
         summary = "Bounded iteration is not required for this request."
         next_step = "Stay on the direct execution path unless the user explicitly asks for benchmarking, retries, or another round."
@@ -250,6 +304,14 @@ def _verify_iteration(result: dict[str, object]) -> dict[str, object]:
         "summary": summary,
         "details": {
             "needs_iteration": bool(result.get("needs_iteration")),
+            "iteration_workspace": str(workspace),
+            "registry_path": str(registry_path),
+            "registry_exists": registry_exists,
+            "registry_error": registry_error,
+            "baseline_count": len(baseline_entries),
+            "valid_baseline_count": len(valid_baselines),
+            "valid_baselines": valid_baselines,
+            "missing_baselines": missing_baselines,
             "workflow_bundle": result.get("workflow_bundle"),
             "progress_anchor_recommended": result.get("progress_anchor_recommended"),
             "resume_artifacts": result.get("resume_artifacts", []),
@@ -801,6 +863,24 @@ ALLOWED_HANDOFF_DIRECTIONS = {
     ("Verifier", "Worker"),
 }
 
+HANDOFF_CONTRACT = {
+    "WorkOrder": ("Lead", "Worker"),
+    "ImplementationOutput": ("Worker", "Verifier"),
+    "VerificationReport": ("Verifier", "Lead"),
+    "DeliveryCycleReport": ("Verifier", "Lead"),
+    "RemediationPatch": ("Verifier", "Worker"),
+}
+
+
+def _valid_handoff_timestamp(value: str) -> bool:
+    if not value.strip():
+        return False
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return parsed.tzinfo is not None
+
 
 def _verify_file_handoff(
     result: dict[str, object],
@@ -819,7 +899,11 @@ def _verify_file_handoff(
     missing_handoff_meta: list[str] = []
     invalid_directions: list[str] = []
     invalid_types: list[str] = []
+    invalid_contracts: list[str] = []
+    invalid_paths: list[str] = []
+    invalid_timestamps: list[str] = []
     total_files = 0
+    matching_files = 0
 
     if dir_exists:
         for entry in sorted(handoff_path.iterdir()):
@@ -834,28 +918,80 @@ def _verify_file_handoff(
                 if not isinstance(meta, dict):
                     missing_handoff_meta.append(rel)
                     continue
+                required_fields = (
+                    "from_role",
+                    "to_role",
+                    "artifact_type",
+                    "artifact_path",
+                    "timestamp",
+                )
+                missing_fields = [field for field in required_fields if not str(meta.get(field, "")).strip()]
+                if missing_fields:
+                    missing_handoff_meta.append(f"{rel}: missing {', '.join(missing_fields)}")
                 from_role = str(meta.get("from_role", ""))
                 to_role = str(meta.get("to_role", ""))
                 artifact_type = str(meta.get("artifact_type", ""))
+                artifact_path = str(meta.get("artifact_path", ""))
+                timestamp = str(meta.get("timestamp", ""))
                 if (from_role, to_role) not in ALLOWED_HANDOFF_DIRECTIONS:
                     invalid_directions.append(f"{rel}: {from_role}->{to_role}")
                 if artifact_type not in ALLOWED_HANDOFF_TYPES:
                     invalid_types.append(f"{rel}: {artifact_type}")
+                expected_direction = HANDOFF_CONTRACT.get(artifact_type)
+                if expected_direction is not None and (from_role, to_role) != expected_direction:
+                    invalid_contracts.append(
+                        f"{rel}: {artifact_type} requires {expected_direction[0]}->{expected_direction[1]}, "
+                        f"got {from_role}->{to_role}"
+                    )
+                path_valid = False
+                if artifact_path and not Path(artifact_path).is_absolute():
+                    declared_path = (repo_path / artifact_path).resolve()
+                    try:
+                        declared_path.relative_to(repo_path.resolve())
+                        path_valid = declared_path == entry.resolve()
+                    except ValueError:
+                        path_valid = False
+                if not path_valid:
+                    invalid_paths.append(f"{rel}: artifact_path={artifact_path!r}")
+                timestamp_valid = _valid_handoff_timestamp(timestamp)
+                if not timestamp_valid:
+                    invalid_timestamps.append(f"{rel}: timestamp={timestamp!r}")
                 if handoff_type and artifact_type != handoff_type:
-                    continue
+                    matches_filter = False
+                else:
+                    matches_filter = True
+                    matching_files += 1
+                contract_valid = (
+                    not missing_fields
+                    and (from_role, to_role) in ALLOWED_HANDOFF_DIRECTIONS
+                    and artifact_type in ALLOWED_HANDOFF_TYPES
+                    and expected_direction == (from_role, to_role)
+                    and path_valid
+                    and timestamp_valid
+                )
                 files_checked.append({
                     "file": rel,
                     "from_role": from_role,
                     "to_role": to_role,
                     "artifact_type": artifact_type,
-                    "valid": (from_role, to_role) in ALLOWED_HANDOFF_DIRECTIONS
-                    and artifact_type in ALLOWED_HANDOFF_TYPES,
+                    "artifact_path": artifact_path,
+                    "timestamp": timestamp,
+                    "matches_filter": matches_filter,
+                    "valid": contract_valid,
                 })
             except (json.JSONDecodeError, OSError):
                 missing_handoff_meta.append(rel)
 
-    has_failures = bool(missing_handoff_meta or invalid_directions or invalid_types)
-    allowed = dir_exists and total_files > 0 and not has_failures
+    has_failures = bool(
+        missing_handoff_meta
+        or invalid_directions
+        or invalid_types
+        or invalid_contracts
+        or invalid_paths
+        or invalid_timestamps
+    )
+    required_file_count = matching_files if handoff_type else total_files
+    allowed = dir_exists and required_file_count > 0 and not has_failures
 
     if not dir_exists:
         summary = f"Handoff directory '{dir_rel}' does not exist. No file handoffs found."
@@ -863,11 +999,14 @@ def _verify_file_handoff(
     elif total_files == 0:
         summary = f"Handoff directory '{dir_rel}' exists but contains no JSON artifacts."
         next_step = "Write WorkOrder/ImplementationOutput/VerificationReport to the handoff directory."
+    elif handoff_type and matching_files == 0:
+        summary = f"No handoff artifact matches required type '{handoff_type}'."
+        next_step = f"Write a valid {handoff_type} artifact before invoking the next role."
     elif has_failures:
-        summary = "Handoff artifacts exist but some have invalid schema or direction."
-        next_step = "Fix handoff metadata: each file needs from_role/to_role/artifact_type/timestamp."
+        summary = "Handoff artifacts exist but some have invalid metadata, role contract, timestamp, or path identity."
+        next_step = "Fix all five handoff metadata fields and make artifact_path identify the file being verified."
     else:
-        summary = f"All {total_files} handoff artifact(s) passed schema and direction checks."
+        summary = f"All {required_file_count} required handoff artifact(s) passed schema, identity, and direction checks."
         next_step = "Proceed to Verifier; file handoff contract is satisfied."
 
     return {
@@ -877,10 +1016,14 @@ def _verify_file_handoff(
             "handoff_dir": dir_rel,
             "dir_exists": dir_exists,
             "total_files": total_files,
+            "matching_files": matching_files,
             "files_checked": files_checked,
             "missing_handoff_meta": missing_handoff_meta,
             "invalid_directions": invalid_directions,
             "invalid_types": invalid_types,
+            "invalid_contracts": invalid_contracts,
+            "invalid_paths": invalid_paths,
+            "invalid_timestamps": invalid_timestamps,
             "filter_type": handoff_type,
         },
         "recommended_next_step": next_step,
@@ -922,6 +1065,10 @@ def _verify_spec_violation(
             except OSError:
                 output_text = ""
 
+    state_ownership_constraint = (
+        "State fields must be written only by the owner layers declared in references/state-schema-spec.md"
+    )
+    constraints.append(state_ownership_constraint)
     violations: list[dict[str, str]] = []
     if constraints and output_text:
         output_text_lower = output_text.lower()
@@ -934,6 +1081,36 @@ def _verify_spec_violation(
             if "force push" in constraint_lower or "force-push" in constraint_lower:
                 if "force push" in output_text_lower or "force-push" in output_text_lower:
                     violations.append({"constraint": constraint, "evidence": "force push mentioned in output"})
+
+        mutation_detected = bool(
+            re.search(r"\b(modif(?:y|ied)|writ(?:e|es|ten)|updat(?:e|ed)|overwrit(?:e|ten)|mutat(?:e|ed))\b", output_text_lower)
+        )
+        state_owners = {
+            "plan": {"layer1", "layer 1", "planning"},
+            "route": {"layer2", "layer 2", "routing"},
+            "delivery": {"layer3", "layer 3", "delivery", "layer7", "layer 7", "layer7_subgraph"},
+            "iteration": {"layer4", "layer 4", "iteration"},
+            "release": {"layer5", "layer 5", "release"},
+        }
+        all_layer_markers = set().union(*state_owners.values())
+        if mutation_detected:
+            for field, allowed_writers in state_owners.items():
+                if not re.search(rf"\b{re.escape(field)}(?:\.|\b)", output_text_lower):
+                    continue
+                observed_writers = {
+                    marker for marker in all_layer_markers if marker in output_text_lower
+                }
+                unauthorized = sorted(observed_writers - allowed_writers)
+                if unauthorized:
+                    violations.append(
+                        {
+                            "constraint": state_ownership_constraint,
+                            "evidence": (
+                                f"mutation of state field '{field}' mentions unauthorized writer(s): "
+                                f"{', '.join(unauthorized)}"
+                            ),
+                        }
+                    )
 
     has_violations = len(violations) > 0
     if not worker_output:
@@ -968,7 +1145,7 @@ def _verify_spec_violation(
             "output_exists": output_exists,
             "verdict": verdict,
             "violations": violations,
-            "spec_file": "references/routing-rules.json",
+            "spec_file": "references/routing-rules.json; references/state-schema-spec.md",
         },
         "recommended_next_step": next_step,
     }
@@ -1176,6 +1353,7 @@ def _verify_breaker_status(
             "breaker_state": state,
             "consecutive_failures": consecutive_failures,
             "reason": str(check_result.get("reason", "")),
+            "fail_closed": bool(check_result.get("fail_closed", False)),
             "state_file": str(state_file),
             "escalation_sink": str(escalation_sink),
         },
@@ -1203,6 +1381,9 @@ def _verify_contract_lock(
                 "signatures_complete": False,
                 "both_accepted": False,
                 "missing_parties": [],
+                "content_consistent": False,
+                "content_mismatches": [],
+                "parse_error": "",
             },
             "recommended_next_step": "Provide --contract-spec to enable contract lock verification.",
         }
@@ -1212,12 +1393,16 @@ def _verify_contract_lock(
     signatures_complete = False
     both_accepted = False
     missing_parties: list[str] = []
+    content_consistent = False
+    content_mismatches: list[str] = []
+    parse_error = ""
 
     if spec_exists:
         try:
             spec_data = json.loads(spec_path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
+        except (json.JSONDecodeError, OSError) as exc:
             spec_data = {}
+            parse_error = f"{type(exc).__name__}: {exc}"
         signatures = spec_data.get("signatures", {}) if isinstance(spec_data, dict) else {}
         frontend = signatures.get("frontend_lead", {}) if isinstance(signatures, dict) else {}
         backend = signatures.get("backend_lead", {}) if isinstance(signatures, dict) else {}
@@ -1228,6 +1413,39 @@ def _verify_contract_lock(
         signatures_complete = len(missing_parties) == 0
         if signatures_complete:
             both_accepted = bool(frontend.get("accepted", False)) and bool(backend.get("accepted", False))
+        fields = spec_data.get("fields") if isinstance(spec_data, dict) else None
+        if isinstance(fields, dict) and ("frontend" in fields or "backend" in fields):
+            frontend_fields = fields.get("frontend", {})
+            backend_fields = fields.get("backend", {})
+            if not isinstance(frontend_fields, dict) or not isinstance(backend_fields, dict):
+                content_mismatches.append("fields.frontend and fields.backend must both be objects")
+            else:
+                frontend_keys = set(str(key) for key in frontend_fields)
+                backend_keys = set(str(key) for key in backend_fields)
+                if frontend_keys != backend_keys:
+                    content_mismatches.append(
+                        "field names differ: "
+                        f"frontend={sorted(frontend_keys)}, backend={sorted(backend_keys)}"
+                    )
+                for field_name in sorted(frontend_keys & backend_keys):
+                    if frontend_fields.get(field_name) != backend_fields.get(field_name):
+                        content_mismatches.append(
+                            f"field '{field_name}' type differs: "
+                            f"frontend={frontend_fields.get(field_name)!r}, "
+                            f"backend={backend_fields.get(field_name)!r}"
+                        )
+            content_consistent = len(content_mismatches) == 0
+        else:
+            # Canonical contract-spec/v1 has one shared request/response schema.
+            content_consistent = bool(
+                isinstance(spec_data, dict)
+                and isinstance(spec_data.get("request_schema"), dict)
+                and isinstance(spec_data.get("response_schema"), dict)
+            )
+            if not content_consistent and not parse_error:
+                content_mismatches.append(
+                    "contract must provide canonical request_schema/response_schema or comparable frontend/backend fields"
+                )
 
     if not spec_exists:
         summary = "Contract-spec file not found; contract lock failed."
@@ -1238,12 +1456,15 @@ def _verify_contract_lock(
     elif not both_accepted:
         summary = "Contract-spec signatures exist but not both accepted; contract lock failed."
         next_step = "Re-negotiate contract terms; both parties must set accepted=true."
+    elif not content_consistent:
+        summary = "Contract-spec signatures are accepted but the contract content is invalid or inconsistent."
+        next_step = "Align frontend/backend field names and types, or provide the canonical shared request/response schema, then re-sign."
     else:
-        summary = "Contract lock passed: contract-spec exists and both parties signed."
+        summary = "Contract lock passed: contract-spec content is consistent and both parties signed."
         next_step = "Proceed with normal verification."
 
     return {
-        "allowed": spec_exists and signatures_complete and both_accepted,
+        "allowed": spec_exists and signatures_complete and both_accepted and content_consistent,
         "summary": summary,
         "details": {
             "contract_spec": str(contract_spec),
@@ -1251,6 +1472,9 @@ def _verify_contract_lock(
             "signatures_complete": signatures_complete,
             "both_accepted": both_accepted,
             "missing_parties": missing_parties,
+            "content_consistent": content_consistent,
+            "content_mismatches": content_mismatches,
+            "parse_error": parse_error,
         },
         "recommended_next_step": next_step,
     }
@@ -1351,7 +1575,11 @@ def verify_action(
     dispatch_text: str | None = None,
     diff_file: Path | None = None,
     breaker_layer: str | None = None,
+    breaker_config: Path | None = None,
+    breaker_state_file: Path | None = None,
+    breaker_escalation_sink: Path | None = None,
     contract_spec: Path | None = None,
+    iteration_workspace: Path | None = None,
 ) -> dict[str, object]:
     if assistant_agents is None:
         assistant_agents = []
@@ -1372,7 +1600,7 @@ def verify_action(
     elif check == "release-gate":
         outcome = _verify_release_gate(result)
     elif check == "iteration":
-        outcome = _verify_iteration(result)
+        outcome = _verify_iteration(result, repo_path, iteration_workspace)
     elif check == "workflow-bundle":
         outcome = _verify_workflow_bundle(result)
     elif check == "bundle-bootstrap":
@@ -1396,7 +1624,13 @@ def verify_action(
     elif check == "breaker-status":
         if not breaker_layer:
             raise ValueError("--breaker-layer is required for check=breaker-status")
-        outcome = _verify_breaker_status(result, breaker_layer)
+        outcome = _verify_breaker_status(
+            result,
+            breaker_layer,
+            breaker_config,
+            breaker_state_file,
+            breaker_escalation_sink,
+        )
     elif check == "contract-lock":
         outcome = _verify_contract_lock(result, contract_spec)
     elif check == "observability-schema":
@@ -1527,9 +1761,16 @@ def parse_args() -> argparse.Namespace:
         "--breaker-layer",
         help="Circuit breaker layer name for check=breaker-status (e.g. routing, verifier, delivery).",
     )
+    parser.add_argument("--breaker-config", help="Circuit breaker config path for check=breaker-status.")
+    parser.add_argument("--breaker-state-file", help="Circuit breaker state path for check=breaker-status.")
+    parser.add_argument("--breaker-escalation-sink", help="Circuit breaker escalation sink for check=breaker-status.")
     parser.add_argument(
         "--contract-spec",
         help="Contract-spec file path for check=contract-lock.",
+    )
+    parser.add_argument(
+        "--iteration-workspace",
+        help="Iteration workspace for check=iteration. Defaults to <repo>/.skill-iterations.",
     )
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON output.")
     return parser.parse_args()
@@ -1654,9 +1895,13 @@ def main() -> None:
             dispatch_text=args.dispatch_text,
             diff_file=Path(args.diff_file) if args.diff_file else None,
             breaker_layer=args.breaker_layer,
+            breaker_config=Path(args.breaker_config) if args.breaker_config else None,
+            breaker_state_file=Path(args.breaker_state_file) if args.breaker_state_file else None,
+            breaker_escalation_sink=Path(args.breaker_escalation_sink) if args.breaker_escalation_sink else None,
             contract_spec=Path(args.contract_spec) if args.contract_spec else None,
+            iteration_workspace=Path(args.iteration_workspace) if args.iteration_workspace else None,
         )
-        exit_code = 0
+        exit_code = 0 if bool(result.get("ok")) and bool(result.get("allowed")) else 1
     except Exception as exc:
         result = {"ok": False, "error": str(exc)}
         exit_code = 2

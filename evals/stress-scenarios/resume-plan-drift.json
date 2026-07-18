@@ -1,6 +1,6 @@
 {
   "scenario_id": "resume-plan-drift",
-  "description": "resume state 的 plan 字段被 layer1 之外的层篡改（违反 state-schema-spec 所有权规则），spec-violation check 未检测到",
+  "description": "resume state 的 plan 字段被 layer1 之外的层篡改（违反 state-schema-spec 所有权规则），spec-violation check 必须检测并阻断",
   "target_layer": "planning",
   "failure_type": "state-ownership-violation",
   "trigger": {
@@ -13,8 +13,8 @@
     }
   },
   "expected": {
-    "caught": false,
-    "behavior": "spec-violation 只检查 worker output 对 agent constraints 的违反（如 java.util.date / force push），不检查 state schema 所有权 → 漏洞：plan 字段被篡改未被拦截"
+    "caught": true,
+    "behavior": "spec-violation 同时检查 state-schema-spec 所有权；delivery 层修改 plan 字段时返回 spec_violation"
   },
   "affected_files": [
     "references/state-schema-spec.md",

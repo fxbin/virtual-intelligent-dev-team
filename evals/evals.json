@@ -1524,7 +1524,7 @@
         "external-agent-backend",
         "contract-output"
       ],
-      "prompt": "Use Codex, Claude Code, or OpenCode as separate agents to implement and verify this risky refactor.",
+      "prompt": "Use Codex, Claude Code, or OpenCode as separate agents to refactor src/payment.py without changing behavior, run its unit tests, and independently verify the patch.",
       "expected_output": "External Agent backend orchestration should stay a soft orchestration claim unless real runtime evidence exists.",
       "files": [],
       "expectations": [
@@ -1548,7 +1548,7 @@
         "real-subagent-runtime",
         "contract-output"
       ],
-      "prompt": "Use real subagents in parallel to implement this risky payment API refactor and independently verify it.",
+      "prompt": "Use real subagents in parallel to refactor src/payment_api.py without changing the public contract, run its unit tests, and independently verify the patch.",
       "expected_output": "Explicit real-subagent requests should expose controlled runtime eligibility, keep the current route soft until runtime evidence exists, and require Lead-owned merge plus verifier evidence.",
       "files": [
         "references/real-subagent-runtime-protocol.md",
@@ -2452,9 +2452,10 @@
         "negative"
       ],
       "expectations": [
-        "request is recognized as out-of-scope",
-        "skill declines the novel-writing request",
-        "skill recommends novel-forge or novel-studio"
+        "scope_boundary.status is out_of_scope",
+        "scope_boundary.recommended_skill is novel-studio",
+        "response_pack_json scope_boundary.status is out_of_scope",
+        "response_pack_json team_dispatch.workflow_bundle is decline-and-reroute"
       ]
     },
     {
@@ -2469,9 +2470,9 @@
         "negative"
       ],
       "expectations": [
-        "request is recognized as insufficient-information",
-        "skill does not fabricate a software task",
-        "skill asks for a concrete software task description"
+        "scope_boundary.status is insufficient_information",
+        "scope_boundary.next_step contains concrete software task",
+        "clarifying_question is not null"
       ]
     },
     {
@@ -2487,15 +2488,17 @@
         "negative"
       ],
       "expectations": [
-        "request is recognized as cross-skill misroute",
-        "skill declines the deep-research request",
-        "skill recommends deep-research-forge"
+        "scope_boundary.status is out_of_scope",
+        "scope_boundary.recommended_skill is deep-research-forge",
+        "response_pack_json scope_boundary.status is out_of_scope",
+        "response_pack_json team_dispatch.workflow_bundle is decline-and-reroute"
       ]
     },
     {
       "id": 134,
       "runner": "verify_action",
       "check": "file-handoff",
+      "fixture": "missing-handoff",
       "categories": [
         "file-handoff",
         "contract-output"
@@ -2512,6 +2515,7 @@
       "id": 135,
       "runner": "verify_action",
       "check": "file-handoff",
+      "fixture": "invalid-handoff-metadata",
       "categories": [
         "file-handoff",
         "contract-output"
@@ -2530,6 +2534,7 @@
       "id": 136,
       "runner": "verify_action",
       "check": "completion-evidence",
+      "fixture": "missing-completion-evidence",
       "categories": [
         "completion-evidence",
         "contract-output"
@@ -2546,16 +2551,17 @@
       "id": 137,
       "runner": "verify_action",
       "check": "completion-evidence",
+      "fixture": "completion-same-model-review",
       "categories": [
         "completion-evidence",
         "model-declaration",
         "contract-output"
       ],
       "prompt": "The task is complete, confirm delivery.",
-      "expected_output": "completion-evidence check should flag same-model self-review warning when worker_model equals verifier_model and status is passed.",
+      "expected_output": "completion-evidence check should block completion and flag a same-model self-review warning when worker_model equals verifier_model and status is passed.",
       "files": [],
       "expectations": [
-        "allowed is true",
+        "allowed is false",
         "verify_action_json details.verification.warnings length is not 0"
       ],
       "runtime_dependent": true
@@ -2581,6 +2587,7 @@
       "id": 139,
       "runner": "verify_action",
       "check": "lead-prejudgment",
+      "fixture": "lead-prejudgment",
       "categories": [
         "lead-prejudgment",
         "negative"
@@ -2598,6 +2605,8 @@
       "id": 140,
       "runner": "verify_action",
       "check": "breaker-status",
+      "fixture": "breaker-closed",
+      "breaker_layer": "verifier",
       "categories": [
         "circuit-breaker",
         "contract-output"
@@ -2615,6 +2624,8 @@
       "id": 141,
       "runner": "verify_action",
       "check": "breaker-status",
+      "fixture": "breaker-open",
+      "breaker_layer": "verifier",
       "categories": [
         "circuit-breaker",
         "negative"
@@ -2649,6 +2660,7 @@
       "id": 143,
       "runner": "verify_action",
       "check": "yagni",
+      "fixture": "yagni-abstraction",
       "categories": [
         "yagni",
         "negative"
@@ -2683,11 +2695,12 @@
       "id": 145,
       "runner": "verify_action",
       "check": "spec-violation",
+      "fixture": "java-spec-violation",
       "categories": [
         "spec-violation",
         "negative"
       ],
-      "prompt": "Worker output ready for spec compliance check.",
+      "prompt": "Implement this Java service update and check the worker output for spec compliance.",
       "expected_output": "spec-violation check should return spec_violation verdict when worker output contains banned patterns like java.util.Date or force push.",
       "files": [],
       "expectations": [
@@ -2723,12 +2736,13 @@
         "p1-5"
       ],
       "prompt": "Review this API contract for backward compatibility and breaking changes.",
-      "expected_output": "API contract review should route to API Contract Sentinel and expose contract lock reference.",
+      "expected_output": "Explicit review keeps Code Audit Council as semantic lead and attaches API Contract Sentinel for contract semantics.",
       "files": [
         "references/contract-lock-protocol.md"
       ],
       "expectations": [
-        "lead_agent is API Contract Sentinel"
+        "lead_agent is Code Audit Council",
+        "assistant_agents contains API Contract Sentinel"
       ]
     },
     {
@@ -2924,12 +2938,12 @@
         "p1-12"
       ],
       "prompt": "Refactor this Java helper function.",
-      "expected_output": "Complexity ladder should not alter lead agent assignment.",
+      "expected_output": "A Java refactor should preserve the language specialist as lead while the complexity ladder only shapes execution depth.",
       "files": [
         "references/complexity-ladder.md"
       ],
       "expectations": [
-        "lead_agent is Technical Trinity"
+        "lead_agent is Java Virtuoso"
       ]
     },
     {
@@ -3003,6 +3017,7 @@
     {
       "id": 218,
       "runner": "verify_action",
+      "check": "observability-schema",
       "categories": [
         "observability",
         "p2-16"
@@ -3023,6 +3038,7 @@
     {
       "id": 219,
       "runner": "verify_action",
+      "check": "observability-schema",
       "categories": [
         "observability",
         "p2-16"
@@ -3043,6 +3059,7 @@
     {
       "id": 220,
       "runner": "verify_action",
+      "check": "observability-schema",
       "categories": [
         "observability",
         "p2-16"
@@ -3067,8 +3084,8 @@
         "stress-scenarios",
         "p2-15"
       ],
-      "prompt": "Run all 7 stress scenarios and verify every scenario executes without error",
-      "expected_output": "run_stress_scenarios reports total_scenarios=7, scenarios_passed=7, scenarios_error=0.",
+      "prompt": "Run all 12 stress scenarios and verify every scenario executes without error",
+      "expected_output": "run_stress_scenarios reports total_scenarios=12, scenarios_passed=12, scenarios_failed=0.",
       "files": [
         "scripts/run_stress_scenarios.py",
         "evals/stress-scenarios/frontend-backend-contract-mismatch.json",
@@ -3081,9 +3098,9 @@
       ],
       "expectations": [
         "stress_scenarios_json ok is true",
-        "stress_scenarios_json total_scenarios is 7",
-        "stress_scenarios_json scenarios_passed is 7",
-        "stress_scenarios_json scenarios_error is 0"
+        "stress_scenarios_json total_scenarios is 12",
+        "stress_scenarios_json scenarios_passed is 12",
+        "stress_scenarios_json scenarios_failed is 0"
       ],
       "runtime_dependent": true
     },
@@ -3095,7 +3112,7 @@
         "p2-15",
         "trace-summary"
       ],
-      "prompt": "Verify trace_summary is non-empty and complete for all 7 stress scenarios (machine-validated, not self-reported)",
+      "prompt": "Verify trace_summary is non-empty and complete for all 12 stress scenarios (machine-validated, not self-reported)",
       "expected_output": "trace_incomplete=0; every scenario.trace_summary.complete is true with real file paths and caller lists.",
       "files": [
         "scripts/run_stress_scenarios.py"
@@ -3117,13 +3134,13 @@
         "fix-scope"
       ],
       "prompt": "Verify fix_scope root-cause ratio meets 80% threshold (root-cause fix over symptom fix)",
-      "expected_output": "fix_scope_root_cause_ratio >= 0.8; at least 6 of 7 scenarios marked root-cause.",
+      "expected_output": "fix_scope_root_cause_ratio >= 0.8; at least 10 of 12 scenarios marked root-cause.",
       "files": [
         "scripts/run_stress_scenarios.py"
       ],
       "expectations": [
         "stress_scenarios_json fix_scope_root_cause_ratio >= 0.8",
-        "stress_scenarios_json scenarios fix_scope.scope contains root-cause"
+        "stress_scenarios_json root_cause_ratio_ok is true"
       ],
       "runtime_dependent": true
     },

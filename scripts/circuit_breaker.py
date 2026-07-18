@@ -39,6 +39,7 @@ class CircuitBreaker:
         self.config_path = config_path or DEFAULT_CONFIG_PATH
         self.state_file = state_file or DEFAULT_STATE_FILE
         self.escalation_sink = escalation_sink or DEFAULT_ESCALATION_SINK
+        self._state_load_error: str | None = None
         self._config: dict[str, object] = self._load_config()
         self._state: dict[str, object] = self._load_state()
 
@@ -53,9 +54,20 @@ class CircuitBreaker:
             return {"layers": {}}
         try:
             with self.state_file.open("r", encoding="utf-8") as f:
-                return json.load(f)
-        except (json.JSONDecodeError, OSError):
+                payload = json.load(f)
+            if not isinstance(payload, dict) or not isinstance(payload.get("layers"), dict):
+                raise ValueError("breaker state must be an object with a layers object")
+            return payload
+        except (json.JSONDecodeError, OSError, ValueError) as exc:
+            self._state_load_error = f"{type(exc).__name__}: {exc}"
             return {"layers": {}}
+
+    def _require_healthy_state(self) -> None:
+        if self._state_load_error is not None:
+            raise RuntimeError(
+                f"breaker state is unreadable; repair or remove '{self.state_file}' explicitly: "
+                f"{self._state_load_error}"
+            )
 
     def _save_state(self) -> None:
         self.state_file.parent.mkdir(parents=True, exist_ok=True)
@@ -99,10 +111,29 @@ class CircuitBreaker:
 
     def get_state(self, layer: str) -> dict[str, object]:
         """读取指定层的 breaker 状态"""
+        if self._state_load_error is not None:
+            return {
+                "state": "open",
+                "consecutive_failures": 0,
+                "fail_closed": True,
+                "load_error": self._state_load_error,
+            }
         return dict(self._get_layer_state(layer))
 
     def check(self, layer: str) -> dict[str, object]:
         """检查指定层的 breaker 状态,返回是否允许通过(HardGate)"""
+        if self._state_load_error is not None:
+            return {
+                "allowed": False,
+                "state": "open",
+                "layer": layer,
+                "reason": (
+                    f"Breaker state is unreadable and therefore fails closed: "
+                    f"{self._state_load_error}"
+                ),
+                "consecutive_failures": 0,
+                "fail_closed": True,
+            }
         layer_state = self._get_layer_state(layer)
         current_state = str(layer_state.get("state", "closed"))
         now = time.time()
@@ -156,6 +187,7 @@ class CircuitBreaker:
 
     def record_failure(self, layer: str, reason: str) -> dict[str, object]:
         """记录失败(ExternalCounter),可能触发 breaker open"""
+        self._require_healthy_state()
         layer_state = self._get_layer_state(layer)
         max_failures = int(self._get_layer_config(layer).get("max_consecutive_failures", 3))
         current = int(layer_state.get("consecutive_failures", 0))
@@ -191,6 +223,7 @@ class CircuitBreaker:
 
     def record_success(self, layer: str) -> dict[str, object]:
         """记录成功,重置计数器(HalfOpenProbe 恢复)"""
+        self._require_healthy_state()
         layer_state = self._get_layer_state(layer)
         layer_state["consecutive_failures"] = 0
         layer_state["state"] = "closed"
@@ -268,6 +301,17 @@ def self_test() -> int:
     if not check_recovery["allowed"]:
         failures.append("FAIL: breaker should be closed after record_success")
 
+    corrupt_state = tmpdir / "corrupt-state.json"
+    corrupt_state.write_text("{not-json", encoding="utf-8")
+    corrupt_breaker = CircuitBreaker(
+        config_path=config_path,
+        state_file=corrupt_state,
+        escalation_sink=escalation_sink,
+    )
+    corrupt_check = corrupt_breaker.check("verifier")
+    if corrupt_check["allowed"] or corrupt_check.get("state") != "open":
+        failures.append("FAIL: corrupt breaker state must fail closed")
+
     import shutil
     shutil.rmtree(tmpdir)
 
@@ -282,6 +326,7 @@ def self_test() -> int:
     print("  - HardGate: breaker open blocks check()")
     print("  - EscalationSink: escalation queue file written")
     print("  - HalfOpenProbe: record_success resets to closed")
+    print("  - Corrupt state: unreadable state fails closed")
     return 0
 
 

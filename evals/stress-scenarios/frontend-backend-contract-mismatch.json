@@ -21,8 +21,8 @@
     }
   },
   "expected": {
-    "caught": false,
-    "behavior": "contract-lock 只校验签名存在与 accepted 状态，不校验字段内容一致性 → 漏洞：字段类型不匹配未被拦截"
+    "caught": true,
+    "behavior": "contract-lock 在签名之外比较前后端字段名和类型；内容不一致时返回 allowed=false"
   },
   "affected_files": [
     "references/contract-lock-protocol.md",

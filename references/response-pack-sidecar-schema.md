@@ -25,6 +25,7 @@
 - `micro_practices`
 - `stage_councils`
 - 可选：`intent_confirmation`
+- 可选：`scope_boundary`
 - `next_action`
 - `resume`
 - `git_workflow`
@@ -149,6 +150,17 @@
 - `bundle_confidence`
 - `workflow_bundle_source`
 
+## `scope_boundary`
+
+用于阻断跨 skill 误路由，或标记软件任务信息不足：
+
+- `status`: `in_scope | out_of_scope | insufficient_information`
+- `reason`
+- `recommended_skill`
+- `next_step`
+
+当 `status=out_of_scope` 时，Response Pack 必须使用 `decline-and-reroute`，不得保留 Team Engine、真实 subagent 或交付起盘声明。
+
 ## `next_action`
 
 - `smallest_executable_action`
@@ -225,14 +237,29 @@
 - `reference`
 - `runtime_claim`
 - `candidate_runtime_claim`
+- `candidate_multi_session_claim`
 - `runtime_evidence_required`
+- `runtime_evidence`
+- `runtime_downgraded_from`
+- `runtime_downgrade_reason`
 - `activation_reason`
 - `workflow_bundle`
 - `max_subagents`
+- `tier_selection_algorithm`
+- `tier_selection_function`
+- `session_circuit_breaker`
 - `spawn_policy`
 - `agents`
 - `merge_policy`
 - `fallback`
+
+`runtime_evidence` records all six atomic capabilities, the derived
+`real_chain_ready` / `session_chain_ready` decisions, the candidate ceiling,
+and the smoke-test result. A single `spawn` or `create_session` flag is not
+sufficient evidence for a higher tier.
+
+`fallback` includes `unavailable_runtime`, `multi_session_unavailable`,
+`malformed_output`, `role_boundary_violation`, and `session_killed`.
 
 `spawn_policy`:
 

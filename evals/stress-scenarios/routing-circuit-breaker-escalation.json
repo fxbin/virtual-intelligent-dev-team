@@ -1,14 +1,16 @@
 {
   "scenario_id": "routing-circuit-breaker-escalation",
-  "description": "host 仅声明 create_session 时，select_runtime_tier 应选择 single_backend_multi_session（边界：session only 时选中间 tier，circuit breaker 以 session 为单位）",
+  "description": "host 完整声明 create_session/kill_session/restart_session 且不具备 spawn/wait/merge 时，select_runtime_tier 应选择 single_backend_multi_session",
   "target_layer": "routing",
   "failure_type": "circuit-breaker-escalation",
   "trigger": {
     "method": "routing_tier_selection",
-    "setup_description": "构造 HostCapabilities(spawn=false, session=true)，验证 select_runtime_tier 返回 single_backend_multi_session 且 downgraded_from=real_subagent_runtime",
+    "setup_description": "构造 HostCapabilities(real chain=false, session lifecycle chain=true)，验证 select_runtime_tier 返回 single_backend_multi_session 且 downgraded_from=real_subagent_runtime",
     "setup_data": {
       "spawn_supported": false,
       "create_session_supported": true,
+      "kill_session_supported": true,
+      "restart_session_supported": true,
       "expected_tier": "single_backend_multi_session",
       "run_smoke_test": true
     }

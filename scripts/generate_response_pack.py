@@ -582,6 +582,9 @@ def build_response_pack_payload(
     micro_practices = normalize_micro_practices(result, selected_language)
     stage_councils = normalize_stage_councils(result, selected_language)
     intent_confirmation = normalize_intent_confirmation(result, selected_language)
+    raw_scope_boundary = result.get("scope_boundary", {})
+    scope_boundary = raw_scope_boundary if isinstance(raw_scope_boundary, dict) else {}
+    out_of_scope = str(scope_boundary.get("status", "")) == "out_of_scope"
     none_text = "无" if selected_language == "zh" else "none"
     not_required_text = "当前不需要" if selected_language == "zh" else "not required"
     direct_step_text = (
@@ -610,6 +613,42 @@ def build_response_pack_payload(
                 "update_command": not_required_text,
                 "evaluation_command": not_required_text,
                 "resume_anchor": pending_text,
+                "schema": not_required_text,
+                "evaluation_schema": not_required_text,
+            },
+        }
+    elif out_of_scope:
+        lead = "Scope Boundary Router"
+        assistants = []
+        workflow_bundle = "decline-and-reroute"
+        workflow_bundle_source = "scope-boundary"
+        bundle_confidence = 1.0
+        process_skills = []
+        progress_anchor = None
+        resume_artifacts = []
+        bundle_bootstrap = {}
+        harness_constraints = {}
+        team_engine_gate = {}
+        external_agent_backend_plan = {}
+        real_subagent_runtime = {}
+        beta_validation_plan = {}
+        needs_planning = False
+        needs_iteration = False
+        stage_councils = {
+            **stage_councils,
+            "enabled": False,
+            "active_councils": [],
+            "councils": [],
+        }
+        micro_practices = {
+            "names": [],
+            "items": [],
+            "ledger": {
+                "required": False,
+                "command": not_required_text,
+                "update_command": not_required_text,
+                "evaluation_command": not_required_text,
+                "resume_anchor": not_required_text,
                 "schema": not_required_text,
                 "evaluation_schema": not_required_text,
             },
@@ -736,10 +775,26 @@ def build_response_pack_payload(
                 "key_decision": f"Treat `{lead}` / `{workflow_bundle}` as provisional, not confirmed.",
                 "main_risks": "Skipping confirmation can collapse product opportunity, prototype exploration, technical feasibility, architecture risk, and delivery planning into the wrong execution path.",
             }
+    elif out_of_scope:
+        recommended_skill = str(scope_boundary.get("recommended_skill", ""))
+        if selected_language == "zh":
+            execution_result = {
+                "key_conclusion": "该请求不属于软件交付团队的职责边界。",
+                "key_decision": f"拒绝伪造软件执行链，转交 `{recommended_skill}`。",
+                "main_risks": "继续执行会造成跨 skill 误路由和错误完成声明。",
+            }
+        else:
+            execution_result = {
+                "key_conclusion": "This request is outside the software delivery team's scope.",
+                "key_decision": f"Decline the software workflow and route to `{recommended_skill}`.",
+                "main_risks": "Continuing would create a cross-skill misroute and a false completion claim.",
+            }
 
     next_action_text = localized_workflow_steps[0] if localized_workflow_steps else direct_step_text
     if isinstance(intent_confirmation, dict):
         next_action_text = str(intent_confirmation.get("question", next_action_text))
+    elif out_of_scope:
+        next_action_text = str(scope_boundary.get("next_step", next_action_text))
     elif bool(harness_constraints.get("required")):
         artifact = harness_constraints.get("artifact", ".skill-harness/engineering-constraints.md")
         next_action_text = (
@@ -814,6 +869,13 @@ def build_response_pack_payload(
             "dual_sign_required": bool(privy.get("dual_sign_required")),
         },
     }
+    if scope_boundary:
+        payload["scope_boundary"] = {
+            "status": str(scope_boundary.get("status", "in_scope")),
+            "reason": str(scope_boundary.get("reason", "")),
+            "recommended_skill": str(scope_boundary.get("recommended_skill", "")),
+            "next_step": str(scope_boundary.get("next_step", "")),
+        }
     if isinstance(intent_confirmation, dict):
         payload["intent_confirmation"] = intent_confirmation
     if bool(team_engine_gate):
@@ -879,13 +941,23 @@ def build_response_pack_payload(
                 real_subagent_runtime.get("candidate_runtime_claim", ""),
                 selected_language,
             ),
+            "candidate_multi_session_claim": format_missing(
+                real_subagent_runtime.get("candidate_multi_session_claim", ""),
+                selected_language,
+            ),
             "runtime_evidence_required": bool(real_subagent_runtime.get("runtime_evidence_required")),
+            "runtime_evidence": real_subagent_runtime.get("runtime_evidence", {}),
+            "runtime_downgraded_from": str(real_subagent_runtime.get("runtime_downgraded_from", "")),
+            "runtime_downgrade_reason": str(real_subagent_runtime.get("runtime_downgrade_reason", "")),
             "activation_reason": format_missing(
                 real_subagent_runtime.get("activation_reason", ""),
                 selected_language,
             ),
             "workflow_bundle": format_missing(real_subagent_runtime.get("workflow_bundle", ""), selected_language),
             "max_subagents": int(real_subagent_runtime.get("max_subagents", 0)),
+            "tier_selection_algorithm": str(real_subagent_runtime.get("tier_selection_algorithm", "")),
+            "tier_selection_function": str(real_subagent_runtime.get("tier_selection_function", "")),
+            "session_circuit_breaker": real_subagent_runtime.get("session_circuit_breaker", {}),
             "spawn_policy": real_subagent_runtime.get("spawn_policy", {}),
             "agents": [
                 item for item in real_subagent_runtime.get("agents", []) if isinstance(item, dict)
@@ -1069,6 +1141,7 @@ def build_response_pack(
     intent_confirmation = (
         payload["intent_confirmation"] if isinstance(payload.get("intent_confirmation"), dict) else None
     )
+    scope_boundary = payload["scope_boundary"] if isinstance(payload.get("scope_boundary"), dict) else None
     next_action = payload["next_action"] if isinstance(payload.get("next_action"), dict) else {}
     resume = payload["resume"] if isinstance(payload.get("resume"), dict) else {}
     git_workflow = payload["git_workflow"] if isinstance(payload.get("git_workflow"), dict) else {}
@@ -1113,6 +1186,30 @@ def build_response_pack(
             f"- Workflow source explanation: {team_dispatch.get('workflow_source_explanation', 'No extra source explanation is available.')}",
             "",
         ]
+
+    if isinstance(scope_boundary, dict) and scope_boundary.get("status") != "in_scope":
+        if selected_language == "zh":
+            lines.extend(
+                [
+                    "## 职责边界",
+                    f"- 状态：{scope_boundary.get('status', '未知')}",
+                    f"- 原因：{scope_boundary.get('reason', '无')}",
+                    f"- 推荐 skill：{scope_boundary.get('recommended_skill') or '无'}",
+                    f"- 下一步：{scope_boundary.get('next_step', '无')}",
+                    "",
+                ]
+            )
+        else:
+            lines.extend(
+                [
+                    "## Scope Boundary",
+                    f"- Status: {scope_boundary.get('status', 'unknown')}",
+                    f"- Reason: {scope_boundary.get('reason', 'n/a')}",
+                    f"- Recommended skill: {scope_boundary.get('recommended_skill') or 'n/a'}",
+                    f"- Next step: {scope_boundary.get('next_step', 'n/a')}",
+                    "",
+                ]
+            )
 
     if isinstance(intent_confirmation, dict):
         options = intent_confirmation.get("options", [])
@@ -1518,10 +1615,16 @@ def build_response_pack(
                     f"- 是否符合条件：{format_bool(real_subagent_runtime.get('eligible'), selected_language)}",
                     f"- Runtime claim：{real_subagent_runtime.get('runtime_claim', '无')}",
                     f"- 候选 runtime claim：{real_subagent_runtime.get('candidate_runtime_claim', '无')}",
+                    f"- 候选 multi-session claim：{real_subagent_runtime.get('candidate_multi_session_claim', '无')}",
                     f"- 是否需要 runtime evidence：{format_bool(real_subagent_runtime.get('runtime_evidence_required'), selected_language)}",
+                    f"- Runtime evidence：{json.dumps(real_subagent_runtime.get('runtime_evidence', {}), ensure_ascii=False, sort_keys=True)}",
+                    f"- 降级来源：{real_subagent_runtime.get('runtime_downgraded_from') or '无'}",
+                    f"- 降级原因：{real_subagent_runtime.get('runtime_downgrade_reason') or '无'}",
                     f"- 参考协议：{real_subagent_runtime.get('reference', '无')}",
                     f"- 激活原因：{real_subagent_runtime.get('activation_reason', '无')}",
                     f"- 最大 subagent 数：{real_subagent_runtime.get('max_subagents', 0)}",
+                    f"- Tier 选择函数：{real_subagent_runtime.get('tier_selection_function', '无')}",
+                    f"- Session 熔断单元：{json.dumps(real_subagent_runtime.get('session_circuit_breaker', {}), ensure_ascii=False, sort_keys=True)}",
                     "",
                 ]
             )
@@ -1532,10 +1635,16 @@ def build_response_pack(
                     f"- Eligible: {format_bool(real_subagent_runtime.get('eligible'), selected_language)}",
                     f"- Runtime claim: {real_subagent_runtime.get('runtime_claim', 'n/a')}",
                     f"- Candidate runtime claim: {real_subagent_runtime.get('candidate_runtime_claim', 'n/a')}",
+                    f"- Candidate multi-session claim: {real_subagent_runtime.get('candidate_multi_session_claim', 'n/a')}",
                     f"- Runtime evidence required: {format_bool(real_subagent_runtime.get('runtime_evidence_required'), selected_language)}",
+                    f"- Runtime evidence: {json.dumps(real_subagent_runtime.get('runtime_evidence', {}), ensure_ascii=False, sort_keys=True)}",
+                    f"- Downgraded from: {real_subagent_runtime.get('runtime_downgraded_from') or 'n/a'}",
+                    f"- Downgrade reason: {real_subagent_runtime.get('runtime_downgrade_reason') or 'n/a'}",
                     f"- Reference: {real_subagent_runtime.get('reference', 'n/a')}",
                     f"- Activation reason: {real_subagent_runtime.get('activation_reason', 'n/a')}",
                     f"- Max subagents: {real_subagent_runtime.get('max_subagents', 0)}",
+                    f"- Tier selection function: {real_subagent_runtime.get('tier_selection_function', 'n/a')}",
+                    f"- Session circuit breaker: {json.dumps(real_subagent_runtime.get('session_circuit_breaker', {}), ensure_ascii=False, sort_keys=True)}",
                     "",
                 ]
             )

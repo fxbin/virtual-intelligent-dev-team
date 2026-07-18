@@ -274,6 +274,8 @@ def evaluate_completion_evidence(evidence_path: Path) -> dict[str, object]:
         "worker_model": worker_model,
         "verifier_model": verifier_model,
         "same_model_self_review": same_model_self_review,
+        "blockers": blockers,
+        "warnings": warnings,
         "covered_scope": covered_scope,
         "uncovered_scope": uncovered_scope,
         "residual_risk": residual_risk,

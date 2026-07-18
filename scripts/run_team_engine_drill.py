@@ -19,7 +19,8 @@ LEGAL_TRANSITIONS = {
     "spawned": {"running"},
     "running": {"produced"},
     "produced": {"verifying"},
-    "verifying": {"passed", "retrying", "hold", "failed"},
+    "verifying": {"passed", "retrying", "hold", "failed", "spec_violation"},
+    "spec_violation": {"retrying", "escalated"},
     "retrying": {"running"},
     "passed": {"accepted"},
     "hold": {"escalated"},
@@ -43,8 +44,8 @@ def validate_transition(previous: str, current: str, checks: list[str], errors: 
     require(current in allowed, f"legal transition {previous} -> {current}", checks, errors)
 
 
-def run_drill() -> dict[str, Any]:
-    sample = load_sample()
+def run_drill(sample: dict[str, Any] | None = None) -> dict[str, Any]:
+    sample = sample if sample is not None else load_sample()
     work_order = sample["work_order"]
     cycles = sample["cycles"]
     report = sample["delivery_cycle_report"]
@@ -72,6 +73,10 @@ def run_drill() -> dict[str, Any]:
         errors,
     )
     require(len(cycles) <= int(work_order["max_cycles"]), "cycle count stays within max_cycles", checks, errors)
+    required_gates = {
+        str(gate) for gate in work_order.get("acceptance_gates", []) if str(gate).strip()
+    }
+    require(bool(required_gates), "WorkOrder declares required acceptance gates", checks, errors)
 
     state = "planned"
     for next_state in ["spawned", "running", "produced", "verifying"]:
@@ -84,8 +89,38 @@ def run_drill() -> dict[str, Any]:
         verdict = verification_report["verdict"]
 
         require(
+            implementation_output.get("task_id") == work_order.get("task_id"),
+            f"cycle {index} implementation task_id matches work order",
+            checks,
+            errors,
+        )
+        require(
+            implementation_output.get("cycle_id") == cycle.get("cycle_id"),
+            f"cycle {index} implementation cycle_id matches cycle",
+            checks,
+            errors,
+        )
+        require(
+            implementation_output.get("worker_role") == work_order.get("worker_role"),
+            f"cycle {index} worker role matches work order",
+            checks,
+            errors,
+        )
+        require(
             implementation_output["self_reported_done"] is True,
             f"cycle {index} worker reports done only before verification",
+            checks,
+            errors,
+        )
+        require(
+            verification_report.get("task_id") == work_order.get("task_id"),
+            f"cycle {index} verification task_id matches work order",
+            checks,
+            errors,
+        )
+        require(
+            verification_report.get("cycle_id") == cycle.get("cycle_id"),
+            f"cycle {index} verification cycle_id matches cycle",
             checks,
             errors,
         )
@@ -96,23 +131,60 @@ def run_drill() -> dict[str, Any]:
             errors,
         )
 
-        if verdict == "fail":
+        checked = verification_report.get("checked_gates", [])
+        if not isinstance(checked, list):
+            checked = []
+        checked_gate_ids = [
+            str(item.get("gate_id", ""))
+            for item in checked
+            if isinstance(item, dict) and str(item.get("gate_id", "")).strip()
+        ]
+        require(
+            len(checked_gate_ids) == len(set(checked_gate_ids)),
+            f"cycle {index} checked gates are unique",
+            checks,
+            errors,
+        )
+
+        if verdict in {"fail", "spec_violation"}:
             remediation_patch = verification_report.get("remediation_patch")
             require(
                 bool(remediation_patch and remediation_patch.get("instructions")),
-                f"cycle {index} fail includes remediation_patch instructions",
+                f"cycle {index} {verdict} includes remediation_patch instructions",
                 checks,
                 errors,
             )
-            validate_transition("verifying", "retrying", checks, errors)
+            if verdict == "spec_violation":
+                require(
+                    bool(verification_report.get("confirmed_issues"))
+                    and bool(verification_report.get("evidence_refs")),
+                    f"cycle {index} spec_violation includes objective issue and evidence",
+                    checks,
+                    errors,
+                )
+                validate_transition("verifying", "spec_violation", checks, errors)
+                validate_transition("spec_violation", "retrying", checks, errors)
+            else:
+                validate_transition("verifying", "retrying", checks, errors)
             validate_transition("retrying", "running", checks, errors)
             state = "verifying"
         elif verdict == "pass":
             require(verification_report.get("remediation_patch") is None, f"cycle {index} pass has no remediation_patch", checks, errors)
-            checked = verification_report.get("checked_gates", [])
             require(
-                bool(checked) and all(item.get("passed") for item in checked),
-                f"cycle {index} pass checks all listed gates",
+                required_gates.issubset(set(checked_gate_ids)),
+                f"cycle {index} pass checks every WorkOrder acceptance gate",
+                checks,
+                errors,
+            )
+            require(
+                bool(checked)
+                and all(
+                    isinstance(item, dict)
+                    and item.get("passed") is True
+                    and bool(str(item.get("evidence", "")).strip())
+                    for item in checked
+                ),
+                f"cycle {index} pass gives positive evidence for all checked gates",
                 checks,
                 errors,
             )
@@ -125,8 +197,33 @@ def run_drill() -> dict[str, Any]:
             errors.append(f"unsupported verifier verdict: {verdict}")
 
     require(report["cycle_count"] == len(cycles), "DeliveryCycleReport cycle_count matches cycle list", checks, errors)
+    for identity_field in ("task_id", "workflow_bundle", "lead_role", "worker_role", "verifier_role", "max_cycles"):
+        require(
+            report.get(identity_field) == work_order.get(identity_field),
+            f"DeliveryCycleReport {identity_field} matches WorkOrder",
+            checks,
+            errors,
+        )
     require(report["producer_can_self_pass"] is False, "DeliveryCycleReport preserves self-pass prohibition", checks, errors)
     require(report["verifier_verdict"] == cycles[-1]["verification_report"]["verdict"], "DeliveryCycleReport matches final verifier verdict", checks, errors)
+    final_checked = cycles[-1]["verification_report"].get("checked_gates", [])
+    final_gate_ids = {
+        str(item.get("gate_id", ""))
+        for item in final_checked
+        if isinstance(item, dict) and str(item.get("gate_id", "")).strip()
+    }
+    report_checked = report.get("checked_gates", [])
+    report_gate_ids = {
+        str(item.get("gate_id", "")) if isinstance(item, dict) else str(item)
+        for item in report_checked
+        if str(item.get("gate_id", "") if isinstance(item, dict) else item).strip()
+    }
+    require(
+        report_gate_ids == final_gate_ids,
+        "DeliveryCycleReport checked_gates matches final VerificationReport",
+        checks,
+        errors,
+    )
     require(
         report["backend_orchestration_verdict"] in {"pass", "pass_with_watch", "simulated", "hold", "escalated"},
         "backend orchestration verdict is recognized",

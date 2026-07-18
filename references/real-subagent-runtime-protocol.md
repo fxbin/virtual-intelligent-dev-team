@@ -25,15 +25,19 @@ Never claim `real_subagent_runtime` when the current host only simulates roles i
 ### Tier Selection Algorithm
 
 ```
-if host exposes spawn / wait / merge:
+if request candidate allows real_subagent_runtime and host proves spawn / wait / merge:
     runtime_claim = real_subagent_runtime
-elif host exposes create_session / kill_session / restart_session:
+elif request candidate allows single_backend_multi_session and host proves create_session / kill_session / restart_session:
     runtime_claim = single_backend_multi_session
 else:
     runtime_claim = soft_orchestration_only
 ```
 
 The router emits `candidate_runtime_claim` based on request eligibility; the host downgrades to a lower tier when the required capability is missing. The host must never upgrade beyond what it can actually enforce.
+
+Each operation is independent evidence. `spawn=true` without `wait=true` and
+`merge=true`, or `create_session=true` without `kill_session=true` and
+`restart_session=true`, is incomplete and must fail closed to a lower tier.
 
 ## Session as Circuit Breaker Unit
 

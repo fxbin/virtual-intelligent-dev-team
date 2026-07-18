@@ -9,6 +9,8 @@
     "setup_data": {
       "spawn_supported": false,
       "create_session_supported": true,
+      "kill_session_supported": true,
+      "restart_session_supported": true,
       "expected_tier": "single_backend_multi_session",
       "run_smoke_test": true
     }
@@ -22,6 +24,6 @@
     "references/real-subagent-runtime-protocol.md"
   ],
   "affected_function": "select_runtime_tier",
-  "fix_scope_hint": "symptom",
-  "fix_scope_reason": "drill 层 session 生命周期管理依赖 routing 层 tier selection 结果，局部验证即可"
+  "fix_scope_hint": "root-cause",
+  "fix_scope_reason": "select_runtime_tier 是 routing 与 drill 共用的能力链边界；一次修复会约束所有 multi-session 调用方"
 }
