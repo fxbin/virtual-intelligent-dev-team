@@ -308,6 +308,14 @@ Runtime routing rules (primary routes, stage council overlays, score model, thre
 
 ## Release Notes
 
+### v6.0.4 (2026-07-19)
+
+HTML Deck 完成整体视觉与叙事重构：以任务调度、证据档案和闭环管线建立
+主题原生视觉语法，替换旧版紫蓝渐变与等权卡片结构；新增 overview wall、
+点击进入演示、Esc 返回总览和自适应 16:9 舞台。11 页内容重新编排为责任链、
+六层闭环、专家调度、workflow atlas、fail-closed runtime、14 状态机与系统覆盖面，
+演示页不再暴露页码和制作元信息，PPTX 仍保持不生产边界。
+
 ### v6.0.3 (2026-07-19)
 
 公开说明与 HTML Deck 已按运行时真源重新对齐：核心架构统一为六层闭环、

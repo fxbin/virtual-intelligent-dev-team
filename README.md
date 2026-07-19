@@ -1,6 +1,6 @@
 # Virtual Intelligent Dev Team
 
-[![Version](https://img.shields.io/badge/version-v6.0.3-8b5cf6?style=flat-square)](./VERSION)
+[![Version](https://img.shields.io/badge/version-v6.0.4-8b5cf6?style=flat-square)](./VERSION)
 [![License](https://img.shields.io/badge/license-MIT-10b981?style=flat-square)](./LICENSE)
 [![Status](https://img.shields.io/badge/status-production--ready-f59e0b?style=flat-square)]()
 [![Archetype](https://img.shields.io/badge/archetype-router-06b6d4?style=flat-square)](./SKILL.md)
@@ -21,7 +21,7 @@
 | 入口 | 说明 | 链接 |
 | --- | --- | --- |
 | 落地页 | 项目总览：定位 / 痛点 / 六层闭环 / Team Engine Lite / 8 Agent / Quick Start | [fxbin.github.io/virtual-intelligent-dev-team](https://fxbin.github.io/virtual-intelligent-dev-team) |
-| 演示文稿 | 11 页 HTML 在线演示（← → 翻页 · F 全屏） | [Deck](https://fxbin.github.io/virtual-intelligent-dev-team/deck.html) |
+| 演示文稿 | 11 页 HTML 总览墙与在线演示（点击进入 · ← → 翻页 · Esc 总览 · F 全屏） | [Deck](https://fxbin.github.io/virtual-intelligent-dev-team/deck.html) |
 | 闭环架构 | 六层 Closure、Delivery 子图与 Stage Council overlay | [Architecture](https://fxbin.github.io/virtual-intelligent-dev-team/architecture.html) |
 | 工程化四支柱 | Harness 门禁 · Team Engine Lite · 反熵治理 · 自优化循环 | [Engineering](https://fxbin.github.io/virtual-intelligent-dev-team/engineering.html) |
 | 8 Agent 角色图谱 | 8 个专家的职责、领域与证据要求 | [Agents](https://fxbin.github.io/virtual-intelligent-dev-team/agents.html) |

@@ -11,7 +11,7 @@
 2. 再看 [usage-guide.md](usage-guide.md)
 3. 最后按需看 [design-philosophy.md](design-philosophy.md)
 
-如果你想先看可视化总览，直接打开 [deck.html](deck.html)。HTML Deck 是唯一演示文稿真源，仓库不再维护独立 PPTX。
+如果你想先看可视化总览，直接打开 [deck.html](deck.html)：入口是 11 页总览墙，可点击任意页面进入演示，使用方向键翻页、Esc 返回总览、F 切换全屏。HTML Deck 是唯一演示文稿真源，仓库不再维护独立 PPTX。
 
 ## 推荐阅读顺序
 
