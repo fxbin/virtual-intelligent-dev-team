@@ -181,10 +181,13 @@ python scripts/verify_action.py --text "<user request>" --check completion-evide
 
 - Worker 只能产出实现或修复，不能给自己 `pass`
 - Verifier 必须独立输出 `VerificationReport`
-- Verifier `fail` 必须给 `RemediationPatch`
+- Verifier `fail` 或 `spec_violation` 必须给 `RemediationPatch`，其中 `spec_violation` 还必须引用客观 spec 与证据
 - Lead 只能在 `DeliveryCycleReport.next_state = accepted` 后接受结果
-- 显式 subagent 请求会生成 `SubagentRuntimePlan`，但默认 `runtime_claim = soft_orchestration_only`
-- 只有宿主提供 spawn / wait / merge 运行证据时，才允许升级为 `real_subagent_runtime`
+- 显式 subagent 请求会先生成候选 runtime tier；宿主只能维持或向下降级，不能越过请求候选上限
+- `spawn / wait / merge` 全部有证据并通过 smoke test，才允许使用 `real_subagent_runtime`
+- `create_session / kill_session / restart_session` 全部有证据并通过 smoke test，才允许使用 `single_backend_multi_session`
+- 任一能力缺失都 fail closed 到更低 tier，最终保底为带 `known-shortcut:` 的 `soft_orchestration_only`
+- Lead→Worker、Worker→Verifier、Verifier→Lead 交接必须落到 `.skill-handoff/` 文件；角色方向、路径身份、带时区时间戳与 schema 都必须通过校验
 
 离线检查：
 
@@ -237,6 +240,8 @@ flowchart TD
 - `.skill-delivery/current-slice.md`
 - `.skill-delivery/status.yaml`
 - `.skill-evidence/completion-evidence.json`
+- Response Pack Markdown 与同名 JSON sidecar
+- `.skill-handoff/` 下的五类 Team Engine 交接文件
 - `docs/progress/MASTER.md`
 - Team Engine Lite 的 WorkOrder / DeliveryCycleReport / backend orchestration plan
 - beta / release / feedback 相关输出

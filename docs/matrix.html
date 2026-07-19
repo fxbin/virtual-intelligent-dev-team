@@ -404,8 +404,8 @@
             </tr>
             <tr>
               <td class="cell-dim">Subagent runtime</td>
-              <td class="cell-ours"><span class="marker">●</span><span class="text">显式请求时输出受控计划，真实执行必须有宿主 spawn / wait / merge 证据</span></td>
-              <td class="cell-theirs"><span class="marker">○</span><span class="text">容易把角色扮演误称为真实多 Agent runtime</span></td>
+              <td class="cell-ours"><span class="marker">●</span><span class="text">请求候选上限 + 六项原子能力证据 + smoke test 共同决定三级 runtime</span></td>
+              <td class="cell-theirs"><span class="marker">○</span><span class="text">容易把单个能力标志或角色扮演误称为真实多 Agent runtime</span></td>
             </tr>
             <tr>
               <td class="cell-dim">离线验证</td>
@@ -425,9 +425,9 @@
         <div class="desc">覆盖路由、交付、迭代、发布、治理、验证等关键能力切片</div>
       </div>
       <div class="kpi-card">
-        <div class="num">7</div>
-        <div class="label">层闭环</div>
-        <div class="desc">规划 → 路由 → 交付 → 迭代 → 发布 → 演练 → 团队引擎</div>
+        <div class="num">6 + 1</div>
+        <div class="label">闭环 + 交付子图</div>
+        <div class="desc">规划 → 路由 → 交付 → 迭代 → 发布 → 演练；Team Engine Lite 内嵌于交付</div>
       </div>
       <div class="kpi-card">
         <div class="num">8</div>
@@ -440,7 +440,7 @@
   <!-- 页脚 -->
   <footer>
     <div class="footer-inner">
-      <span>Virtual Intelligent Dev Team · v5.7.6 · MIT License</span>
+      <span>Virtual Intelligent Dev Team · v6.0.3 · MIT License</span>
       <div class="footer-links">
         <a href="index.html">← Back to Home</a>
         <a href="architecture.html">Architecture</a>

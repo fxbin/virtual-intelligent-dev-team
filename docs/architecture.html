@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="author" content="fxbin">
-<title>Seven Closure Layers — Virtual Intelligent Dev Team</title>
+<title>Six Closure Layers + Delivery Subgraph — Virtual Intelligent Dev Team</title>
 <style>
   /* === 设计 Token（machine-hallucination 配色） === */
   :root {
@@ -127,7 +127,7 @@
     margin-bottom: 64px;
   }
 
-  /* === 七层卡片 === */
+  /* === 六层闭环 + Delivery 子图卡片 === */
   .layers {
     display: flex;
     flex-direction: column;
@@ -350,15 +350,15 @@
   <main>
     <!-- 页头 -->
     <div class="page-head">
-      <h1>Seven Closure Layers</h1>
-      <p class="sub">从规划到交付的七层闭环协调</p>
+      <h1>Six Closure Layers + Delivery Subgraph</h1>
+      <p class="sub">六层闭环协调 · Team Engine Lite 交付子图 · Stage Council 可选叠加</p>
     </div>
 
     <p class="lead">
-      不只是"选谁来回答"，而是把复杂软件工作的七层闭环打通。每层都有明确的触发条件、核心机制和结构化产物，避免高风险任务直接动手、避免单轮建议无执行路径。
+      不只是"选谁来回答"，而是把复杂软件工作的六层闭环打通，并在 Delivery closure 内嵌 Team Engine Lite。每层都有明确的触发条件、核心机制和结构化产物；交付子图负责独立验收，但不重复计作第七层。
     </p>
 
-    <!-- 七层闭环 -->
+    <!-- 六层闭环 + Delivery 子图 -->
     <section class="layers">
       <!-- L1 规划闭环 -->
       <article class="layer-card">
@@ -491,17 +491,17 @@
         </div>
       </article>
 
-      <!-- L7 Team Engine Lite 闭环 -->
+      <!-- Delivery 子图：Team Engine Lite -->
       <article class="layer-card">
         <div class="layer-head">
-          <div class="layer-num">L7</div>
+          <div class="layer-num">D1</div>
           <div class="layer-title">
-            <h2>Team Engine Lite 闭环</h2>
-            <div class="layer-name-en">Team Engine Lite Closure</div>
+            <h2>Team Engine Lite 交付子图</h2>
+            <div class="layer-name-en">Delivery Verification Subgraph</div>
           </div>
           <div class="layer-trigger">触发：code-facing · release-facing · Git remediation</div>
         </div>
-        <p class="layer-mech">Worker 负责产出，Verifier 负责验收，Lead 只能根据 DeliveryCycleReport 接受，不让同一个角色既当选手又当裁判。</p>
+        <p class="layer-mech">Worker 负责产出，Verifier 负责验收，Lead 只能根据 DeliveryCycleReport 接受。14 状态机覆盖 <code>spec_violation</code> 与人工恢复；runtime tier 必须同时满足请求候选上限和完整宿主能力链，证据不完整即降级。</p>
         <div class="layer-artifacts">
           <div class="artifacts-label">关键产物</div>
           <ul>
@@ -522,7 +522,7 @@
           <h3>Stage Council</h3>
         </div>
         <p>
-          产品发现和原型设计的阶段专家团是七层之上的可选 overlay：只在阶段专家会改变产物顺序时展开，不替代顶层 lead、workflow bundle 或 Team Engine Lite 验收。包含 <code>product-discovery-council</code> 与 <code>prototype-design-council</code> 两个阶段。
+          产品发现和原型设计的阶段专家团是六层闭环之上的可选 overlay：只在阶段专家会改变产物顺序时展开，不替代顶层 lead、workflow bundle 或 Team Engine Lite 验收。包含 <code>product-discovery-council</code> 与 <code>prototype-design-council</code> 两个阶段。
         </p>
         <div class="overlay-councils">
           <div class="council-item">
@@ -541,7 +541,7 @@
   <!-- 页脚 -->
   <footer>
     <div class="footer-inner">
-      <span>Virtual Intelligent Dev Team · v5.7.6 · MIT License</span>
+      <span>Virtual Intelligent Dev Team · v6.0.3 · MIT License</span>
       <div class="footer-links">
         <a href="index.html">← Back to Home</a>
         <a href="architecture.html">Architecture</a>

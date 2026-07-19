@@ -1,15 +1,15 @@
 # Virtual Intelligent Dev Team
 
-[![Version](https://img.shields.io/badge/version-v6.0.2-8b5cf6?style=flat-square)](./VERSION)
+[![Version](https://img.shields.io/badge/version-v6.0.3-8b5cf6?style=flat-square)](./VERSION)
 [![License](https://img.shields.io/badge/license-MIT-10b981?style=flat-square)](./LICENSE)
 [![Status](https://img.shields.io/badge/status-production--ready-f59e0b?style=flat-square)]()
 [![Archetype](https://img.shields.io/badge/archetype-router-06b6d4?style=flat-square)](./SKILL.md)
 [![Agents](https://img.shields.io/badge/specialist_agents-8-3b82f6?style=flat-square)](./references/agent-catalog.md)
-[![Closures](https://img.shields.io/badge/closure_layers-7-a78bfa?style=flat-square)](https://fxbin.github.io/virtual-intelligent-dev-team/architecture.html)
+[![Closures](https://img.shields.io/badge/closure_layers-6-a78bfa?style=flat-square)](https://fxbin.github.io/virtual-intelligent-dev-team/architecture.html)
 [![Languages](https://img.shields.io/badge/language_profiles-13-10b981?style=flat-square)](./references/language-profiles.yaml)
 [![Python](https://img.shields.io/badge/python-3.8+-3776ab?style=flat-square&logo=python&logoColor=white)]()
 
-> **面向复杂软件工作的闭环协调层**：把专家路由 · 计划 · 执行 · 迭代 · Beta · Release · Feedback 收拢成一个可持续迭代的闭环工作流，并以工程约束门禁 · Worker/Verifier 对抗式验收 · 反熵治理 · 自优化循环保障交付质量。
+> **面向复杂软件工作的闭环协调层**：用六层闭环承接专家路由 · 计划 · 执行 · 迭代 · Beta · Release · Feedback，并在 Delivery closure 内嵌 Team Engine Lite 对抗式验收，以工程约束门禁 · 反熵治理 · 自优化循环保障交付质量。
 > 适合接手"单个专家已经不够、单轮回答也不够"的复杂软件任务。
 
 ---
@@ -20,12 +20,12 @@
 
 | 入口 | 说明 | 链接 |
 | --- | --- | --- |
-| 落地页 | 项目总览：定位 / 痛点 / 七层闭环 / 8 Agent / 能力矩阵 / Quick Start | [fxbin.github.io/virtual-intelligent-dev-team](https://fxbin.github.io/virtual-intelligent-dev-team) |
-| 演示文稿 | 11 页 PPT 在线演示（← → 翻页 · F 全屏） | [Deck](https://fxbin.github.io/virtual-intelligent-dev-team/deck.html) |
-| 七层闭环架构 | 七层 Closure 的触发条件、核心机制与关键产物 | [Architecture](https://fxbin.github.io/virtual-intelligent-dev-team/architecture.html) |
+| 落地页 | 项目总览：定位 / 痛点 / 六层闭环 / Team Engine Lite / 8 Agent / Quick Start | [fxbin.github.io/virtual-intelligent-dev-team](https://fxbin.github.io/virtual-intelligent-dev-team) |
+| 演示文稿 | 11 页 HTML 在线演示（← → 翻页 · F 全屏） | [Deck](https://fxbin.github.io/virtual-intelligent-dev-team/deck.html) |
+| 闭环架构 | 六层 Closure、Delivery 子图与 Stage Council overlay | [Architecture](https://fxbin.github.io/virtual-intelligent-dev-team/architecture.html) |
 | 工程化四支柱 | Harness 门禁 · Team Engine Lite · 反熵治理 · 自优化循环 | [Engineering](https://fxbin.github.io/virtual-intelligent-dev-team/engineering.html) |
 | 8 Agent 角色图谱 | 8 个专家的职责、领域与证据要求 | [Agents](https://fxbin.github.io/virtual-intelligent-dev-team/agents.html) |
-| 能力矩阵对比 | 18 个维度对比本项目 vs 普通多专家提示词 vs 通用 Agent 框架 | [Matrix](https://fxbin.github.io/virtual-intelligent-dev-team/matrix.html) |
+| 能力矩阵对比 | 14 个维度对比本项目与普通多专家提示词 | [Matrix](https://fxbin.github.io/virtual-intelligent-dev-team/matrix.html) |
 
 > 本地预览：`open docs/index.html`，或在仓库根目录运行 `python -m http.server 8000` 后访问 `http://localhost:8000/docs/`。
 
@@ -160,7 +160,9 @@
 - anti-entropy governance：对 fallback growth、duplicate owner、adapter / guard 膨胀、delete vs compat 和 source-of-truth 删除边界做治理
 - 显式 `/auto` 自动运行与状态优先恢复
 - Team Engine Lite 的 Worker / Verifier 分离、RemediationPatch 和 DeliveryCycleReport
-- 受控真实 Subagent runtime eligibility：显式 multi-agent/subagent 请求或合格 `/auto` 工作流可生成 `SubagentRuntimePlan`，但只有宿主提供 spawn / wait / merge 证据时才声明真实 runtime
+- 受控真实 Subagent runtime eligibility：显式 multi-agent/subagent 请求或合格 `/auto` 工作流可生成 `SubagentRuntimePlan`；请求候选上限与宿主原子能力链共同决定 runtime tier，任一能力缺失都会 fail closed 到更低层级
+- 文件交接与完成证据：WorkOrder、ImplementationOutput、VerificationReport、RemediationPatch、DeliveryCycleReport 必须落到可校验文件；路径身份、角色方向、带时区时间戳和 schema 任一不符都会阻断验收
+- 结构化 Response Pack：Markdown 与 JSON sidecar 同步生成，scope boundary、runtime evidence、Team Engine 与 resume 信息可直接被 benchmark、automation 和 release gate 消费
 
 ## 核心能力
 
@@ -185,9 +187,9 @@
 - `反熵治理`
   - 遇到 duplicate owner、fallback、adapter、guard 或兼容路径增长时，先判断旧路径该删除、保留兼容，还是需要用户确认。
 - `Team Engine Lite`
-  - code-facing、release-facing、Git-facing 与 remediation 路线默认保留 Worker / Verifier 分离、max-cycle retry、RemediationPatch 和 DeliveryCycleReport。
+  - 作为 Delivery closure 内的交付子图，为 code-facing、release-facing、Git-facing 与 remediation 路线保留 Worker / Verifier 分离、max-cycle retry、RemediationPatch 和 DeliveryCycleReport。
 - `受控真实 Subagent runtime eligibility`
-  - 显式 multi-agent / subagent / parallel agent 请求会生成受控计划、角色边界、spawn policy、merge policy 和 fallback；没有宿主 runtime evidence 时仍保持 `soft_orchestration_only`。
+  - 显式 multi-agent / subagent / parallel agent 请求会生成受控计划、角色边界、spawn policy、merge policy 和 fallback；`spawn / wait / merge` 或 `create_session / kill_session / restart_session` 必须完整成链，且不得超过请求候选上限，否则自动降级。
 - `外部 Agent 后端软编排`
   - 可以把 Codex / Claude Code / OpenCode 当作角色后端，但默认只声明 `soft_orchestration_only`，不虚假声称真实异步多进程 runtime。
 - `有边界的迭代优化`
@@ -201,7 +203,9 @@
 - `Harness 工程约束门禁`
   - 6 个 code-facing bundle（plan-first-build / product-spec-deliver / audit-fix-deliver / govern-change-safely / root-cause-remediate / direct-execution）执行前必须创建 `.skill-harness/engineering-constraints.md`，含 Scope / Non-Negotiable Constraints / Forbidden Changes / Verification Evidence / Rollback And Stop Conditions 五个必填章节，把"实现前先约束"变成硬门禁。
 - `Team Engine Lite 对抗式验收`
-  - Worker 只产不验、Verifier 只验不产、Lead 只能基于 DeliveryCycleReport 接受；11 个合法状态 + 5 个标准对象（WorkOrder / ImplementationOutput / VerificationReport / RemediationPatch / DeliveryCycleReport）；3 级 runtime claim（real_subagent_runtime / single_backend_multi_session / soft_orchestration_only）禁止把角色扮演误称为真实多 Agent runtime。
+  - Worker 只产不验、Verifier 只验不产、Lead 只能基于 DeliveryCycleReport 接受；14 个合法状态（含 `spec_violation / human_resolved / resumed`）+ 5 个标准对象（WorkOrder / ImplementationOutput / VerificationReport / RemediationPatch / DeliveryCycleReport）；3 级 runtime claim（real_subagent_runtime / single_backend_multi_session / soft_orchestration_only）禁止把角色扮演误称为真实多 Agent runtime。
+- `Fail-closed 证据链`
+  - breaker、Verifier、file handoff、Team Engine drill 和 stress gate 默认拒绝不完整或不可重放的证据；Response Pack sidecar 固化 scope boundary、runtime evidence、covered / uncovered scope 与 residual risk。
 - `Anti-Entropy 反熵治理`
   - 遇到 duplicate owner、fallback、adapter、guard 或兼容路径增长时，先分类（code-retirement / contract-carrying-code / derived-state / persistent-state），再选路径（delete-first / compat-exception / confirmation-first），未知依赖不等于活跃依赖证据。
 - `Self-Optimization 自优化循环`
@@ -222,10 +226,11 @@
 | 阶段专家团 | 产品发现与原型设计可按需展开 council overlay | 常见做法要么单专家过载，要么所有任务都进重流程 |
 | Beta 验证 | 分轮内测、模拟用户、cohort ramp、反馈门禁 | 通常只有静态测试计划，没有结构化分轮验证 |
 | 工作流质量 | 触发健康、快路径廉价、证据新鲜度、artifact 懒创建、authority boundary | 容易越改越重，或把方法建议误说成最终权威 |
-| Subagent runtime | 显式请求时输出受控计划，真实执行必须有宿主 spawn / wait / merge 证据 | 容易把角色扮演误称为真实多 Agent runtime |
+| Subagent runtime | 请求候选上限 + 六项原子能力证据 + smoke test 共同决定三级 runtime，缺一即降级 | 容易把单个能力标志或角色扮演误称为真实多 Agent runtime |
 | 离线验证 | offline loop drill 验证回滚与恢复路径 | 很少验证关键闭环路径是否真的跑通 |
 | 工程约束门禁 | code-facing bundle 执行前必须创建 `.skill-harness/engineering-constraints.md`，含 5 个必填章节 | 通常直接进入实现，缺少前置约束门禁 |
-| 对抗式验收 | Worker/Verifier/Lead 分离 + DeliveryCycleReport + 11 状态机 + 3 级 runtime claim | 自产自审，或把角色扮演误称为真实多 Agent runtime |
+| 对抗式验收 | Worker/Verifier/Lead 分离 + DeliveryCycleReport + 14 状态机 + `spec_violation` | 自产自审，或把角色扮演误称为真实多 Agent runtime |
+| 证据链 | 精确 file handoff + schema 校验 + Response Pack JSON sidecar + fail-closed gate | 证据靠自然语言转述，无法稳定重放或被下游消费 |
 | 反熵治理 | delete-first / compat-exception / confirmation-first 三路径决策 + 4 类目标分类 | 不断加 fallback 或 guard，旧路径永不退休 |
 | 自优化循环 | bounded iteration + mutation catalog + offline drill，可对自身 routing/evals 做确定性自优化 | 无自优化能力，或陷入"再来一轮"的无限自转 |
 

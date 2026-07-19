@@ -1,7 +1,7 @@
 # 复杂度 Ladder
 
 > **来源**:ponytail 借鉴 + Sam Newman R4 收敛
-> **用途**:七层闭环逐层判断"该不该保留",防止协议膨胀
+> **用途**:六层闭环与交付子图逐项判断"该不该保留",防止协议膨胀
 > **适用范围**:每次新增协议或加固层后必须走一遍 ladder
 
 ---
@@ -27,9 +27,9 @@
 
 ---
 
-## 二、七层 Ladder 评估结果
+## 二、六层与交付子图 Ladder 评估结果
 
-基于 R4 圆桌讨论的收敛结论,对当前七层闭环的评估:
+基于 R4 圆桌讨论的收敛结论,对当前六层闭环与 Team Engine Lite 子图的评估:
 
 ### 层 1 — Planning(规划)
 
@@ -68,7 +68,7 @@
 - **暴露面**:输入 = 注入场景;输出 = drill 结果 + 韧性报告
 - **合并方式**:Drill 作为层 5 的并行兄弟,不作为层 5 的子步骤
 
-### 层 7 — Team Engine Lite(原第七层闭环)
+### Delivery 子图 — Team Engine Lite（原第七层闭环）
 
 - **步骤 2:降级为 Delivery 内子图**
 - **理由**(Harrison + Simon + Kent R4 分歧 2 收敛):Worker/Verifier/Lead 三角色是 Delivery 内的执行机制,不是独立层。Verifier 独立性由"禁止上游预判下游"硬约束(P0-3)保证,而非独立成层
@@ -82,7 +82,7 @@
 | 触发事件 | 走 ladder 的层 |
 |----------|---------------|
 | 新增协议文件 | 新增的协议对应的层 |
-| P1-6 七层加固 | 全七层 |
+| P1-6 闭环加固 | 六层与交付子图 |
 | 新增 circuit breaker 层 | breaker 对应的层 |
 | 新增 verify_action check | check 对应的层 |
 | spec-evolution 触发 | spec 变更影响的层 |

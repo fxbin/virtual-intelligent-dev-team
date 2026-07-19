@@ -4702,6 +4702,21 @@ class IterationHelperTests(unittest.TestCase):
 
 
 class ValidatorScriptTests(unittest.TestCase):
+    def test_public_docs_match_delivery_subgraph_contract(self) -> None:
+        readme = (SKILL_DIR / "README.md").read_text(encoding="utf-8")
+        deck = (SKILL_DIR / "docs" / "deck.html").read_text(encoding="utf-8")
+        architecture = (SKILL_DIR / "docs" / "architecture.html").read_text(encoding="utf-8")
+
+        self.assertIn("六层闭环", readme)
+        self.assertIn("Team Engine Lite 交付子图", architecture)
+        self.assertIn("12 个 Workflow Bundles", deck)
+        self.assertIn("14 状态机", deck)
+        self.assertEqual(11, deck.count('<section class="slide'))
+        self.assertFalse((SKILL_DIR / "docs" / "assets" / "intro-deck" / "build_pptx.py").exists())
+        self.assertFalse(
+            (SKILL_DIR / "docs" / "assets" / "intro-deck" / "virtual-intelligent-dev-team-intro.pptx").exists()
+        )
+
     def test_version_sync_script_repairs_repo_metadata(self) -> None:
         with make_tempdir() as tmp:
             repo_copy = Path(tmp) / "repo-copy"
@@ -4716,6 +4731,7 @@ class ValidatorScriptTests(unittest.TestCase):
             self.assertTrue(drift["changed"]["skills-index.json"])
             self.assertTrue(drift["changed"]["virtual-intelligent-dev-team/README.md"])
             self.assertTrue(drift["changed"]["virtual-intelligent-dev-team/references/routing-rules.json"])
+            self.assertTrue(drift["changed"]["virtual-intelligent-dev-team/docs/deck.html"])
 
             result = version_sync.sync_all(repo_copy)
 
@@ -4724,7 +4740,12 @@ class ValidatorScriptTests(unittest.TestCase):
             self.assertTrue(result["changed"]["skills-index.json"])
             self.assertTrue(result["changed"]["virtual-intelligent-dev-team/README.md"])
             self.assertTrue(result["changed"]["virtual-intelligent-dev-team/references/routing-rules.json"])
+            self.assertTrue(result["changed"]["virtual-intelligent-dev-team/docs/deck.html"])
             self.assertIn("`v9.9.9`", (repo_copy / "README.md").read_text(encoding="utf-8"))
+            self.assertIn(
+                "v9.9.9",
+                (repo_copy / "virtual-intelligent-dev-team" / "docs" / "deck.html").read_text(encoding="utf-8"),
+            )
             skills_payload = json.loads((repo_copy / "skills-index.json").read_text(encoding="utf-8"))
             target = next(item for item in skills_payload["skills"] if item["id"] == "virtual-intelligent-dev-team")
             self.assertEqual("v9.9.9", target["version"])

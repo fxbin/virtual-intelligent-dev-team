@@ -441,7 +441,7 @@
     </div>
 
     <p class="lead">
-      路由与七层闭环解决的是"谁来做、怎么收口"，但这不够。真实软件工程里 LLM 的痛点是：实现前不约束、自产自审、旧路径永不退休、永远"再来一轮"。这四根支柱就是针对这四个痛点设计的工程化门禁，也是本项目区别于"换几个角色回答"的核心差异化所在。
+      路由、六层闭环与 Delivery 子图解决的是"谁来做、怎么收口"，但这不够。真实软件工程里 LLM 的痛点是：实现前不约束、自产自审、旧路径永不退休、永远"再来一轮"。这四根支柱就是针对这四个痛点设计的工程化门禁，也是本项目区别于"换几个角色回答"的核心差异化所在。
     </p>
 
     <!-- 四大工程化支柱 -->
@@ -479,10 +479,10 @@
             <h2>Team Engine Lite 对抗式验收</h2>
             <div class="pillar-name-en">Worker / Verifier / Lead Separation</div>
           </div>
-          <div class="pillar-tag">11 状态机 · 5 标准对象</div>
+          <div class="pillar-tag">14 状态机 · 5 标准对象</div>
         </div>
         <p class="pillar-mech">
-          Worker 只产不验、Verifier 只验不产、Lead 只能基于 <code>DeliveryCycleReport</code> 接受。配合 3 级 runtime claim（<code>real_subagent_runtime</code> / <code>single_backend_multi_session</code> / <code>soft_orchestration_only</code>），禁止把角色扮演误称为真实多 Agent runtime。没有宿主 spawn / wait / merge 证据时，声明始终保持 <code>soft_orchestration_only</code>。
+          Worker 只产不验、Verifier 只验不产、Lead 只能基于 <code>DeliveryCycleReport</code> 接受。14 状态机显式覆盖 <code>spec_violation</code>、人工介入与恢复。3 级 runtime claim 同时受请求候选上限和原子能力链约束：<code>spawn / wait / merge</code> 或 <code>create_session / kill_session / restart_session</code> 必须完整成链，证据缺失即 fail closed 到更低层级。
         </p>
         <div class="pillar-detail">
           <div class="detail-label">标准对象</div>
@@ -558,7 +558,7 @@
         <div class="pillar-tree">
           <div class="tree-layer">
             <div class="tree-node layer-1">Routing 路由<div class="tree-desc">8 lead · 13 语言 profile</div></div>
-            <div class="tree-node layer-1">7 Closures 七层闭环<div class="tree-desc">Planning → Feedback</div></div>
+            <div class="tree-node layer-1">6 Closures 六层闭环<div class="tree-desc">Planning → Drill</div></div>
           </div>
           <div class="tree-arrow">↓ 工程化门禁层 ↓</div>
           <div class="tree-layer">
@@ -641,7 +641,7 @@
             </tr>
             <tr>
               <td>Runtime 诚实</td>
-              <td class="yes">3 级 runtime claim</td>
+              <td class="yes">候选上限 + 6 项原子能力 + smoke test</td>
               <td class="no">角色扮演误称多 Agent</td>
               <td class="no">部分声明 real runtime</td>
             </tr>
@@ -689,7 +689,7 @@
 
   <footer>
     <div class="footer-inner">
-      <span>Virtual Intelligent Dev Team · v5.7.6</span>
+      <span>Virtual Intelligent Dev Team · v6.0.3</span>
       <div class="footer-links">
         <a href="index.html">Home</a>
         <a href="architecture.html">Architecture</a>

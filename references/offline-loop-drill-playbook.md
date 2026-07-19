@@ -74,9 +74,9 @@ Run this before calling the loop “closed enough” after changes to:
 - pivot logic
 - release gate hold bootstrap logic
 
-## 全七层 Drill 场景(P1-6 扩展)
+## 六层与交付子图 Drill 场景(P1-6 扩展)
 
-现有场景覆盖层 4(Iteration)和层 5(Release)。以下场景扩展到全七层:
+现有场景覆盖层 4(Iteration)和层 5(Release)。以下场景扩展到六层闭环与 Team Engine Lite 子图:
 
 ### 4. Routing 返回错误 Lead
 
@@ -90,7 +90,7 @@ What it proves:
 
 What it proves:
 
-- Delivery 子图(层 3 + 层 7)的 Verifier 失灵能被 circuit breaker 检测
+- Delivery closure(层 3)内 Team Engine Lite 子图的 Verifier 失灵能被 circuit breaker 检测
 - 连续 N 次假 pass 后 breaker open
 - escalation 队列文件有记录
 

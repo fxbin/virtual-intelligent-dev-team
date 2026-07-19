@@ -2,7 +2,7 @@
 
 - **版本**: v6.0.0
 - **生效**: 2026-07-15
-- **范围**: 七层闭环（Planning / Routing / Delivery / Iteration / Release / Drill / Team Engine Lite 子图）的可观测性契约
+- **范围**: 六层闭环（Planning / Routing / Delivery / Iteration / Release / Drill）与 Team Engine Lite 交付子图的可观测性契约
 - **定位**: 给系统装「故障会自己说话」的神经系统，先于压测落地
 
 ---
@@ -208,7 +208,7 @@ python scripts/inspect_decision_log.py --health-report [--window 30d] [--repo .]
 
 | 字段 | 来源 | 说明 |
 |---|---|---|
-| `layer` | 枚举 | 七层之一 |
+| `layer` | 枚举 | 六个 closure 或 verifier 子图之一 |
 | `slo_target_seconds` | 本协议 §3 | 该层 SLO 阈值（单位：秒） |
 | `p99_latency_seconds` | telemetry.jsonl 滚动窗口 | 最近 20 次该层 latency 的 p99 |
 | `slo_status` | 计算 | met / violated / insufficient_data |

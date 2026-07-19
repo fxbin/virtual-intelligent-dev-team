@@ -12,7 +12,7 @@ Route complex software work into the smallest defensible delivery workflow, keep
 
 This skill is not only an expert router. It is a bounded work-loop skill for complex tasks.
 
-It has seven core closure layers plus one optional stage-council overlay:
+It has six core closure layers, one delivery subgraph, and one optional stage-council overlay:
 
 1. `Planning closure`
    - Large rewrites, migrations, and project-wide transformations get a lightweight analysis / plan / progress pack before implementation.
@@ -26,7 +26,9 @@ It has seven core closure layers plus one optional stage-council overlay:
    - Release readiness uses a formal `ship` / `hold` gate and bootstraps the next remediation loop when needed.
 6. `Drill closure`
    - Offline drills verify rollback, resume, and release-gate bootstrap paths.
-7. `Team Engine Lite subgraph`(Delivery closure 内子图,非独立层)
+Delivery subgraph:
+
+- `Team Engine Lite`（Delivery closure 内子图，非独立层）
    - Code-facing delivery uses Worker / Verifier separation, max-cycle retry, remediation patch, controlled real subagent runtime eligibility, external-agent soft orchestration fallback, and a DeliveryCycleReport before Lead acceptance.
    - Verifier 独立性由"禁止上游预判下游"硬约束(P0-3)保证,而非独立成层。详见 `references/team-engine-lite-protocol.md` 和 `references/verifier-extraction-guide.md`。
 Optional overlay:
@@ -305,6 +307,14 @@ Runtime routing rules (primary routes, stage council overlays, score model, thre
 - [references/workflow-bundles.md](references/workflow-bundles.md) — 12 workflow bundle definitions and Bundle Confidence Levels
 
 ## Release Notes
+
+### v6.0.3 (2026-07-19)
+
+公开说明与 HTML Deck 已按运行时真源重新对齐：核心架构统一为六层闭环、
+一个 Team Engine Lite 交付子图和可选 Stage Council overlay；Team Engine
+状态机、12 个 workflow bundles、runtime 能力链、fail-closed handoff 与
+Response Pack 证据边界同步更新。HTML Deck 成为唯一演示文稿，移除重复的
+PPTX 二进制文件及其专用生成脚本。
 
 ### v6.0.2 (2026-07-18)
 

@@ -1,7 +1,7 @@
-# 七层闭环加固协议
+# 六层闭环与交付子图加固协议
 
 > **来源**:Martin Fowler + Adrian Cockcroft + Kelsey + Sam Newman R3 共识
-> **用途**:七层闭环的层间独立校验、状态机提升、降级行为、Drill 扩展、SLO、信息隐藏、人工介入点
+> **用途**:六层闭环与 Team Engine Lite 交付子图的独立校验、状态机提升、降级行为、Drill 扩展、SLO、信息隐藏、人工介入点
 > **前置条件**:P0-4 circuit breaker 已落地(每层 breaker 是加固的基础)
 
 ---
@@ -18,7 +18,7 @@
 | 4 Iteration | VerificationReport(fail)存在、RemediationPatch 非空 | 跳过,保持 baseline |
 | 5 Release | DeliveryCycleReport(accepted)存在 | 拒绝,回退到 Delivery |
 | 6 Drill | 注入场景定义完整 | 跳过该场景 |
-| 7 Team Engine Lite(子图) | WorkOrder 存在、Worker/Verifier 角色已分配 | 拒绝,不启动 cycle |
+| D1 Team Engine Lite 子图 | WorkOrder 存在、Worker/Verifier 角色已分配 | 拒绝,不启动 cycle |
 
 原则:校验失败时,层可以选择降级或回退,但不能跳过校验直接执行。
 
@@ -26,7 +26,7 @@
 
 ## 二、状态机提升(Martin)
 
-Team Engine Lite 的 legal states/transitions 模式向上提升,覆盖全部七层。
+Team Engine Lite 的 legal states/transitions 模式向上提升,覆盖六层闭环与交付子图。
 
 ### 统一状态机模板
 
@@ -63,7 +63,7 @@ layer_state_machine:
 | 4 Iteration | VerificationReport(fail) | keep/stop 决策 | retry 预算耗尽,降级到 escalate |
 | 5 Release | DeliveryCycleReport(accepted) | ship/hold 决策 | gate 失败,降级到 hold+bootstrap |
 | 6 Drill | 注入场景到达 | drill 报告生成 | 场景无法执行,跳过 |
-| 7 子图 | WorkOrder 创建 | DeliveryCycleReport 生成 | max_cycles 耗尽,降级到 escalate |
+| D1 子图 | WorkOrder 创建 | DeliveryCycleReport 生成 | max_cycles 耗尽,降级到 escalate |
 
 ---
 
@@ -79,20 +79,20 @@ layer_state_machine:
 | 4 Iteration | iteration | 3 | 保持 baseline,停止 retry |
 | 5 Release | release | 2 | 降级到 hold,不 ship |
 | 6 Drill | drill | 5 | 跳过该场景,继续下一个 |
-| 7 子图 | verifier | 3 | 降级到 hold,escalate 到人 |
+| D1 子图 | verifier | 3 | 降级到 hold,escalate 到人 |
 
 breaker 配置文件:`references/circuit-breaker-config.json`
 
 ---
 
-## 四、Drill 扩展到全七层(Adrian)
+## 四、Drill 扩展到六层与交付子图(Adrian)
 
-现有 drill 只覆盖 Iteration(层 4)和 Release(层 5)。扩展到全七层:
+现有 drill 只覆盖 Iteration(层 4)和 Release(层 5)。扩展到全部六层与 Team Engine Lite 子图:
 
 | Drill 场景 | 注入的失败 | 验证的层 |
 |-----------|----------|---------|
 | Routing 返回错误 lead agent | 路由到不匹配的 Lead | 层 2 |
-| Verifier 永远 pass | Verifier 失灵 | 层 7 子图 + 层 3 |
+| Verifier 永远 pass | Verifier 失灵 | D1 子图 + 层 3 |
 | baseline 被删 | 基准文件丢失 | 层 4 |
 | JSON corrupt | benchmark JSON 损坏 | 层 4 |
 | resume/plan drift | resume state 与 plan 不一致 | 层 1 + 层 4 |
@@ -133,7 +133,7 @@ SLO 定义是 advisory(不 hard fail),用于可观测性和容量规划。
 | 4 Iteration | VerificationReport(fail) | RemediationPatch + 新 ImplementationOutput | Release 决策 |
 | 5 Release | DeliveryCycleReport(accepted) | ship/hold 决策 | Drill 场景 |
 | 6 Drill | 注入场景 | drill 报告 | 生产流程细节 |
-| 7 子图 | WorkOrder | DeliveryCycleReport | 其他层的 state |
+| D1 子图 | WorkOrder | DeliveryCycleReport | 其他层的 state |
 
 实现方式:hook 注入(P1-19)只加载当前层所需的 spec 条目。
 

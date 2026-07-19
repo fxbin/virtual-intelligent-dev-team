@@ -86,9 +86,9 @@ flowchart TD
     AB -->|否| AK
 ```
 
-## 七层闭环
+## 六层闭环与交付子图
 
-这个项目真正想做强的，不只是"选谁来回答"，而是把复杂软件工作的七层闭环打通：
+这个项目真正想做强的，不只是"选谁来回答"，而是把复杂软件工作的六层闭环打通：
 
 1. 规划闭环
    - 大型改造先规划，再进入执行，不让高风险任务一上来就动手。
@@ -102,10 +102,9 @@ flowchart TD
    - 发布不是一句"能不能发"，而是有门禁、有 blocker、有修复入口，并且 `ship` 必须由结构化 completion evidence 支撑。
 6. 演练闭环
    - 离线演练验证回滚、恢复和发布门禁引导路径确实跑得通。
-7. Team Engine Lite 闭环
-   - Worker 负责产出，Verifier 负责验收，Lead 只能根据 DeliveryCycleReport 接受，不让同一个角色既当选手又当裁判。
+Team Engine Lite 不是第七个独立闭环，而是 Delivery closure 内的交付子图：Worker 负责产出，Verifier 负责验收，Lead 只能根据 DeliveryCycleReport 接受，不让同一个角色既当选手又当裁判。Runtime tier 同时受请求候选上限与宿主完整能力链约束，证据不完整时必须降级。
 
-产品发现和原型设计的 Stage Council 是这七层之上的可选 overlay：它只在阶段专家会改变产物顺序时展开，不替代顶层 lead、workflow bundle 或 Team Engine Lite 验收。
+产品发现和原型设计的 Stage Council 是六层闭环之上的可选 overlay：它只在阶段专家会改变产物顺序时展开，不替代顶层 lead、workflow bundle 或 Team Engine Lite 验收。
 
 ## 设计原则
 

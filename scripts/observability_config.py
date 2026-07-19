@@ -10,7 +10,7 @@ author: fxbin
 
 from __future__ import annotations
 
-# 七层枚举（与 observability-protocol.md §5.1 layer 字段对齐）
+# 六个 closure + verifier 子图枚举（与 observability-protocol.md §5.1 对齐）
 LAYER_VALUES: frozenset[str] = frozenset({
     "planning",
     "routing",

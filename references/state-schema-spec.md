@@ -1,7 +1,7 @@
 # State Schema 规范
 
 > **来源**:Leslie Lamport + Harrison R4 分歧 1 收敛
-> **用途**:统一七层 state schema 但保留层边界(合并容器不合并所有权)
+> **用途**:统一六层闭环与 Team Engine Lite 子图的 state schema,同时保留边界(合并容器不合并所有权)
 > **核心原则**:中间状态可观测,不变量可证明
 
 ---
@@ -166,6 +166,6 @@ state 是快照,journal 是事件流(P1-10)。state 可从 journal replay 重建
 | 现有协议 | 本规范的关系 |
 |---------|------------|
 | `iteration-state-machine.md` | Iteration 层的状态机是本规范 layer 4 的具体实现 |
-| `team-engine-lite-protocol.md` | Team Engine Lite 的状态机是 layer 7 子图的具体实现 |
+| `team-engine-lite-protocol.md` | Team Engine Lite 的状态机是 Delivery 子图的具体实现；状态容器沿用兼容标识 `layer7_subgraph` |
 | `automation-state.schema.json` | 自动化状态文件是 `shared` 字段的持久化形式 |
 | `circuit-breaker-config.json` | 每层 breaker 的状态独立于 layer state |

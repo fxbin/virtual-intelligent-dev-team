@@ -280,7 +280,7 @@ def emit_telemetry(
     """组装并写入一条 telemetry 记录，联动 circuit breaker
 
     参数:
-        layer: 七层之一
+        layer: 六个 closure 或 verifier 子图之一
         step_id: 步骤唯一标识
         latency_seconds: 该层单次执行耗时
         outcome: success / failure / held / degraded
@@ -563,7 +563,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="层间 telemetry 写入器 + intent drift 探针"
     )
-    parser.add_argument("--layer", required=True, help="七层之一")
+    parser.add_argument("--layer", required=True, help="六个 closure 或 verifier 子图之一")
     parser.add_argument("--step-id", required=True, help="步骤唯一标识")
     parser.add_argument("--latency", type=float, required=True, help="该层执行耗时（秒）")
     parser.add_argument("--outcome", required=True, help="success/failure/held/degraded")

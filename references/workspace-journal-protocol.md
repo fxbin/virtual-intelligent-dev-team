@@ -34,7 +34,7 @@
 | reason | 是 | 为什么执行这个动作 |
 | spec_ref | 否 | 引用的 spec 条目(可追溯) |
 | prev_hash | 是 | 上一条 entry 的 SHA-256 hash(因果链) |
-| layer | 否 | 所属层(七层闭环中的哪一层) |
+| layer | 否 | 所属闭环或子图(planning / routing / delivery / iteration / release / drill / verifier) |
 | state_snapshot | 否 | 动作后的 state 快照(用于快速恢复) |
 
 ### 因果链
