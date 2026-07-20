@@ -40,6 +40,8 @@
   - 讲怎么实际使用这个项目，包括手动模式、小切片交付、`/auto`、resume、completion evidence、release、beta 等典型路径
 - `design-philosophy.md`
   - 讲为什么这个项目要这样设计，以及边界在哪里
+- `release-notes.md`
+  - 讲每个版本的变更摘要、字段迁移指南（如 `correctly_not_caught` 枚举迁移）和未实现的计划项
 
 ## 真源在哪里
 

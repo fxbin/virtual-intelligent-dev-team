@@ -161,32 +161,12 @@ If the task is simple and clearly single-domain, keep routing lightweight.
 
 ## Runtime references
 
-Read indexes first; do not flatten the whole skill into this file.
+Read indexes first; do not flatten the whole skill into this file. Authoritative entry points:
 
-- Playbook and protocol index:
-  [references/playbook-index.md](references/playbook-index.md)
-- Execution-quality guardrails:
-  [references/execution-quality-guardrails.md](references/execution-quality-guardrails.md)
-- Output mode selection:
-  [references/mode-selection-protocol.md](references/mode-selection-protocol.md)
-- Optional product-discovery and prototype-design stage councils:
-  [references/stage-council-protocol.md](references/stage-council-protocol.md)
-- Harness engineering constraint gate:
-  [references/harness-engineering-constraint-protocol.md](references/harness-engineering-constraint-protocol.md)
-- Team Engine Lite, Worker / Verifier cycle, controlled real subagent runtime, and external Agent backend soft orchestration:
-  [references/team-engine-lite-protocol.md](references/team-engine-lite-protocol.md),
-  [references/worker-verifier-cycle-protocol.md](references/worker-verifier-cycle-protocol.md),
-  [references/real-subagent-runtime-protocol.md](references/real-subagent-runtime-protocol.md),
-  [references/subagent-exec-guide.md](references/subagent-exec-guide.md) ⭐, and
-  [references/external-agent-backend-orchestration-protocol.md](references/external-agent-backend-orchestration-protocol.md)
-- Scripts, templates, validation, and command entrypoints:
-  [references/tooling-command-index.md](references/tooling-command-index.md)
-- Observability three pillars (metrics / logs / traces) and per-layer SLO:
-  [references/observability-protocol.md](references/observability-protocol.md)
-- Team catalog:
-  [references/agent-catalog.md](references/agent-catalog.md)
-- Maintainer-facing project docs:
-  [README.md](README.md) and [docs/README.md](docs/README.md)
+- [references/playbook-index.md](references/playbook-index.md) — playbooks, protocols, and core reference index
+- [references/tooling-command-index.md](references/tooling-command-index.md) — scripts, commands, and asset entrypoints
+- [references/agent-catalog.md](references/agent-catalog.md) — 8 lead specialists and their constraints
+- Maintainer-facing docs: [README.md](README.md) and [docs/README.md](docs/README.md)
 
 ## Governance & Observability (v5.0+)
 
@@ -227,26 +207,7 @@ The skill exposes a governance layer alongside the routing layer:
   root-cause ratio >= 80%. Field-name consistency enforced by
   `quick_validate.py` (_STRESS_REQUIRED_TOP_FIELDS / _STRESS_VALID_METHODS).
 
-Typical invocations:
-
-```bash
-# Health snapshot
-python scripts/check_harness_health.py --pretty
-
-# Decision log summary (stdout JSON)
-python scripts/inspect_decision_log.py --pretty
-
-# Markdown + HTML report (paths are required)
-python scripts/inspect_decision_log.py \
-  --markdown-output .skill-metrics/decision-log-report.md \
-  --html-output .skill-metrics/decision-log-report.html
-
-# One-shot legacy migration (run once after upgrading)
-python scripts/migrate_governance_events.py --pretty
-
-# Stress scenarios (v6.0.0+): trace_summary + fix_scope gate
-python scripts/run_stress_scenarios.py --pretty
-```
+Typical invocations (health snapshot, decision-log summary, markdown/HTML report, legacy migration) live in [references/tooling-command-index.md](references/tooling-command-index.md) §一; stress scenarios in §九.
 
 ## Language Profile Loading (v5.0+)
 
@@ -307,11 +268,7 @@ Runtime routing rules (primary routes, stage council overlays, score model, thre
 
 完整版本历史、字段迁移指南和 Memory Keeper 计划见 [docs/release-notes.md](docs/release-notes.md)。
 
-### v6.0.4 (2026-07-19)
+### v6.0.5 (2026-07-20)
 
-HTML Deck 完成整体视觉与叙事重构：以任务调度、证据档案和闭环管线建立
-主题原生视觉语法，替换旧版紫蓝渐变与等权卡片结构；新增 overview wall、
-点击进入演示、Esc 返回总览和自适应 16:9 舞台。11 页内容重新编排为责任链、
-六层闭环、专家调度、workflow atlas、fail-closed runtime、14 状态机与系统覆盖面，
-演示页不再暴露页码和制作元信息，PPTX 仍保持不生产边界。
-
+HTML Deck 按 GitHub Pages 发布边界拆分为稳定入口、独立样式与交互脚本；发布门禁
+校验必需资源并阻止历史 PPTX 产物回流，公开目录只保留当前演示实现。
