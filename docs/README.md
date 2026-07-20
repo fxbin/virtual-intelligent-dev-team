@@ -13,6 +13,19 @@
 
 如果你想先看可视化总览，直接打开 [deck.html](deck.html)：入口是 11 页总览墙，可点击任意页面进入演示，使用方向键翻页、Esc 返回总览、F 切换全屏。HTML Deck 是唯一演示文稿真源，仓库不再维护独立 PPTX。
 
+## Deck 与 GitHub Pages
+
+公开访问地址始终保持为 `deck.html`，新版本直接覆盖这个稳定入口，不保留
+`deck-v*.html` 一类并行旧页面。Git 历史负责版本追溯，发布目录只保留当前实现：
+
+- `deck.html`：11 页语义内容与演示结构
+- `assets/deck/deck.css`：视觉系统与响应式布局
+- `assets/deck/deck.js`：总览、翻页、键盘与全屏交互
+
+`index.html`、`architecture.html`、`engineering.html`、`agents.html` 和
+`matrix.html` 是站点配套说明页，不属于待删除的旧 Deck。历史 PPTX 及其生成脚本
+不再进入发布产物。
+
 ## 推荐阅读顺序
 
 如果你是第一次接触这个项目：
