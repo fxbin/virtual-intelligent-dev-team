@@ -2,6 +2,7 @@
 
 Use workflow bundles when routing should return more than a lead agent. A bundle is the smallest reusable delivery journey for a recurring request shape.
 
+<a id="plan-first-build"></a>
 ## 1. `plan-first-build`
 
 - **Use when**: rewrite, migration, architecture overhaul, or "plan first" requests
@@ -14,6 +15,7 @@ Use workflow bundles when routing should return more than a lead agent. A bundle
   6. Hand back to normal implementation routing
 - **Resume anchor**: `docs/progress/MASTER.md`
 
+<a id="product-spec-deliver"></a>
 ## 2. `product-spec-deliver`
 
 - **Use when**: product scope, user flow, acceptance criteria, or frontend/backend contract alignment
@@ -26,6 +28,7 @@ Use workflow bundles when routing should return more than a lead agent. A bundle
   6. Surface frontend/backend contract questions before implementation
 - **Resume anchors**: `.skill-product/current-slice.md`, `.skill-product/acceptance-criteria.md`
 
+<a id="audit-fix-deliver"></a>
 ## 3. `audit-fix-deliver`
 
 - **Use when**: review findings and remediation path in one motion
@@ -35,6 +38,7 @@ Use workflow bundles when routing should return more than a lead agent. A bundle
   3. If P0/P1/P2 batch fixes requested: freeze findings, build batch order, fix one batch, verify, commit
   4. Resume anchor: last verified batch
 
+<a id="govern-change-safely"></a>
 ## 4. `govern-change-safely`
 
 - **Use when**: Git workflow, branch strategy, PR sequencing, or merge safety
@@ -44,6 +48,7 @@ Use workflow bundles when routing should return more than a lead agent. A bundle
   3. Execute with rollback plan
   4. Verify clean state before proceeding
 
+<a id="ship-hold-remediate"></a>
 ## 5. `ship-hold-remediate`
 
 - **Use when**: release readiness decisions
@@ -53,6 +58,7 @@ Use workflow bundles when routing should return more than a lead agent. A bundle
   3. If `hold`: generate remediation plan with priority order
   4. Resume anchor: release-gate report
 
+<a id="root-cause-remediate"></a>
 ## 6. `root-cause-remediate`
 
 - **Use when**: bounded iteration, optimization loops, benchmark comparison, repeated retries, or evidence-backed root-cause remediation
@@ -62,6 +68,7 @@ Use workflow bundles when routing should return more than a lead agent. A bundle
   3. Closure: finalize ledger, write reflection, preserve patterns
 - **Caps**: live requests ≤3 rounds, offline ≤120 rounds, same hypothesis ≤2 retries
 
+<a id="beta-feedback-ramp"></a>
 ## 7. `beta-feedback-ramp`
 
 - **Use when**: staged validation or rollout risk control
@@ -71,30 +78,35 @@ Use workflow bundles when routing should return more than a lead agent. A bundle
   3. Analyze signals and decide ramp/hold/rollback
   4. Resume anchor: beta status report
 
+<a id="quick-slice-deliver"></a>
 ## 8. `quick-slice-deliver`
 
 - **Use when**: narrow implementation, bug fix, or small refactor
 - **Sequence**: lock scope and acceptance criteria → establish feedback loop → implement the smallest coherent slice → preserve targeted verification
 - **Resume anchor**: `.skill-delivery/current-slice.md`
 
+<a id="post-release-close-loop"></a>
 ## 9. `post-release-close-loop`
 
 - **Use when**: telemetry, support signals, or real-user feedback arrive after release
 - **Sequence**: collect signals → triage severity and affected area → decide monitor/iterate/escalate → write back to product or governance anchors
 - **Resume anchor**: `.skill-post-release/triage-summary.md`
 
+<a id="capture-project-knowledge"></a>
 ## 10. `capture-project-knowledge`
 
 - **Use when**: repository AI onboarding, `AGENTS.md`, or project-local `.agents/skills/` capture
 - **Sequence**: inventory verified project facts → identify software-risk lanes → delegate context writing to `skill-forge` → validate every reference
 - **Resume anchor**: `AGENTS.md`
 
+<a id="multi-expert-execution"></a>
 ## 11. `multi-expert-execution`
 
 - **Use when**: multiple specialist perspectives materially change a frontend-performance, system-refactor, or architecture-split decision
 - **Sequence**: define independent expert scopes → require real runtime evidence before spawning → synthesize one decision → preserve a domain-specific progress anchor
 - **Fallback**: clearly labeled specialist lenses under `soft_orchestration_only`
 
+<a id="direct-execution"></a>
 ## 12. `direct-execution`
 
 - **Use when**: a simple single-domain question or no larger reusable journey is justified
@@ -119,3 +131,16 @@ Use workflow bundles when routing should return more than a lead agent. A bundle
 | `direct-execution` | 0.35 | fallback (no strong bundle match) |
 
 Use bundle as explicit execution journey when `bundle_confidence >= 0.6`. Keep execution lightweight when `bundle_confidence < 0.6`.
+
+## Pseudo-bundles (not delivery journeys)
+
+The following strings can appear in the `workflow_bundle` field but are intentionally excluded from the canonical 12 and from delivery enumeration. They represent sink states, not reusable delivery journeys, and have no sequence, resume anchor, or confidence level.
+
+<a id="decline-and-reroute"></a>
+### `decline-and-reroute`
+
+- **Emitted by**: `scripts/generate_response_pack.py` when scope-boundary detection refuses an out-of-skill request (e.g. novel writing, deep research)
+- **Asserted by**: evals 131, 133 (negative / cross-skill rejection cases)
+- **Why not a bundle**: it does not deliver work — it returns the user to the correct skill. Treat it as a sentinel value distinct from the 12 delivery bundles above.
+
+Schemas intentionally keep `workflow_bundle` as a free-form `string` (no enum) so pseudo-bundles like this can coexist with the canonical 12. The 12 entries above remain the authoritative delivery set; any new delivery bundle must be added here and in `scripts/route_request.py` in the same pass.

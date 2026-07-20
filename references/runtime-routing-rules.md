@@ -9,11 +9,17 @@ This document defines the primary routes, stage council overlays, score model, t
 | review / audit / security | audit-fix-deliver | Code Audit Council | Technical Trinity when implementation follow-up dominates |
 | git / branch / pr / push | govern-change-safely | Git Workflow Guardian | Technical Trinity when git is incidental |
 | rewrite / migration / plan-first | plan-first-build | Technical Trinity | Sentinel Architect (NB) when risk or research-first signals dominate |
-| iteration / retry / optimize | bounded-iteration | Technical Trinity | Sentinel Architect (NB) when repeated failures require root-cause discipline |
+| iteration / retry / optimize | root-cause-remediate (process-skill: `bounded-iteration`) | Technical Trinity | Sentinel Architect (NB) when repeated failures require root-cause discipline |
 | release / ship / hold | ship-hold-remediate | Technical Trinity | Git Workflow Guardian when delivery governance overtakes release evidence |
 | beta / staged validation / rollout feedback | beta-feedback-ramp | World-Class Product Architect | Technical Trinity when product signals are weak and implementation dominates |
-| data pipeline / ETL / stream processing | data-pipeline-govern | Data Pipeline Guardian | Technical Trinity when infrastructure-only |
-| API design / contract / versioning | api-contract-govern | API Contract Sentinel | Technical Trinity when implementation-only |
+| product scope / UX / acceptance criteria / contract alignment | product-spec-deliver | World-Class Product Architect | Technical Trinity when implementation dominates |
+
+The full set of 12 workflow bundles (including `quick-slice-deliver`, `post-release-close-loop`, `capture-project-knowledge`, `multi-expert-execution`, and `direct-execution`) is defined in [workflow-bundles.md](workflow-bundles.md) with stable `bundle_id` anchors.
+
+**Notes on routing vs. process-skill vs. lead**:
+
+- The `iteration / retry / optimize` row delivers work through the `root-cause-remediate` bundle; `bounded-iteration` is the process-skill id activated under that bundle, not a separate bundle.
+- `Data Pipeline Guardian` and `API Contract Sentinel` are lead agents in [agent-catalog.md](agent-catalog.md), routed by `routing-rules.json` keyword/skill matching. They do not own dedicated workflow bundles — their requests flow through the bundle that matches the request shape (typically `direct-execution` for single-domain questions, `product-spec-deliver` or `multi-expert-execution` when scope spans domains).
 
 ## Stage Council Overlays
 

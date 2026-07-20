@@ -262,7 +262,7 @@ python scripts/validate_virtual_team.py --pretty
 Runtime routing rules (primary routes, stage council overlays, score model, thresholds, and fallback rules) and workflow bundle definitions (12 bundles with use-when / sequence / resume anchor / confidence levels) live in dedicated reference files:
 
 - [references/runtime-routing-rules.md](references/runtime-routing-rules.md) — Primary Routes, Stage Council Overlays, Routing Score Model, Thresholds, Fallback Rules
-- [references/workflow-bundles.md](references/workflow-bundles.md) — 12 workflow bundle definitions and Bundle Confidence Levels
+- [references/workflow-bundles.md](references/workflow-bundles.md) — 12 workflow bundle definitions and Bundle Confidence Levels (each bundle has a stable `bundle_id` anchor for external reference; pseudo-bundles like `decline-and-reroute` are documented separately)
 
 ## Release Notes
 
