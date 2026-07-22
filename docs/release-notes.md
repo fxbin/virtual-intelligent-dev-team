@@ -3,6 +3,17 @@
 本文件维护 `virtual-intelligent-dev-team` 的版本历史、字段迁移指南和未实现的计划项。
 `SKILL.md` 只保留最新一版的 changelog 链接,完整记录在此。
 
+## v6.0.8 (2026-07-22)
+
+- 治理事件只读写 `.skill-metrics/decision-log.jsonl`，删除旧日志迁移脚本、容忍分支、
+  可配置旧路径与对应文档入口；不会删除任何 operator 已有数据文件。
+- Frontend hook 不再声明不存在的 `language-profiles.yaml#typescript`；路由构建 hook
+  前会校验 spec 文件存在性与语言 profile 可解析性，悬空引用 fail-closed。
+- 健康检查明确允许首次部署尚未生成 decision log，并新增首次部署、悬空 profile、
+  兼容链残留和 Frontend hook 的回归覆盖。
+- Git 工作流护栏保留 porcelain 状态列的前导空格，并将删除项纳入暂存清单，避免
+  首条未暂存改动误阻断 G0 或 G1/G2 对删除内容失明。
+
 ## v6.0.7 (2026-07-22)
 
 - 发布 workflow 固定 Python 3.11，并在执行 `validate_virtual_team.py` 前从

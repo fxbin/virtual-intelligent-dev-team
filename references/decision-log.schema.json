@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:skill-hub:virtual-intelligent-dev-team:decision-log.schema",
   "title": "Virtual Intelligent Dev Team Decision Log Entry",
-  "description": "Append-only governance decision log. One JSON object per line. Backward-compatible extension of the legacy governance_events.jsonl format; legacy entries are migrated by scripts/migrate_governance_events.py with defaults for the four v5.0 fields (decision, verifier, reason, evidence).",
+  "description": "Canonical append-only governance decision log. One JSON object per line, written to .skill-metrics/decision-log.jsonl.",
   "type": "object",
   "required": [
     "decision",
@@ -31,7 +31,7 @@
         "fallback_engaged",
         "intent_confirmation_requested"
       ],
-      "description": "Semantic decision kind. Legacy entries default to route_selected."
+      "description": "Semantic decision kind emitted by the current decision-log contract."
     },
     "lead_agent": {
       "type": "string",
@@ -45,7 +45,7 @@
         "hold",
         "n_a"
       ],
-      "description": "Independent verification outcome. n_a means no verifier ran (typical for routing-only entries). Legacy entries default to n_a."
+      "description": "Independent verification outcome. n_a means no verifier ran (typical for routing-only entries)."
     },
     "risk_level": {
       "type": "string",
@@ -67,7 +67,7 @@
     "reason": {
       "type": "string",
       "minLength": 0,
-      "description": "Short human-readable rationale. Legacy entries default to empty string. Free-form prose, not validated."
+      "description": "Short human-readable rationale. Free-form prose, not validated."
     },
     "evidence": {
       "type": "string",

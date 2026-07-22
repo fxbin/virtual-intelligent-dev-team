@@ -2061,6 +2061,50 @@ class RoutingTests(unittest.TestCase):
 
 
 class GuardrailTests(unittest.TestCase):
+    def test_g1_includes_staged_deletion(self) -> None:
+        with make_tempdir() as tmp:
+            repo = Path(tmp)
+            git("init", cwd=repo)
+            configure_repo(repo)
+            demo_file = repo / "demo.txt"
+            demo_file.write_text("base\n", encoding="utf-8")
+            git("add", "demo.txt", cwd=repo)
+            git("commit", "-m", "chore: init repo", cwd=repo)
+            demo_file.unlink()
+            git("add", "-u", cwd=repo)
+
+            result = guardrail.validate_stage(
+                repo=repo,
+                stage="G1",
+                commit_message=None,
+                max_staged_files=20,
+            )
+
+        self.assertEqual(["demo.txt"], result["details"]["staged_files"])
+        self.assertEqual(1, result["details"]["staged_count"])
+
+    def test_g0_preserves_unstaged_status_column(self) -> None:
+        with make_tempdir() as tmp:
+            repo = Path(tmp)
+            git("init", cwd=repo)
+            configure_repo(repo)
+            (repo / "demo.txt").write_text("base\n", encoding="utf-8")
+            git("add", "demo.txt", cwd=repo)
+            git("commit", "-m", "chore: init repo", cwd=repo)
+            (repo / "demo.txt").write_text("base\nchange\n", encoding="utf-8")
+
+            checkpoint = guardrail.get_repo_checkpoint(repo)
+            result = guardrail.validate_stage(
+                repo=repo,
+                stage="G0",
+                commit_message=None,
+                max_staged_files=20,
+            )
+
+        self.assertEqual(0, checkpoint["staged_changes"])
+        self.assertEqual(1, checkpoint["unstaged_changes"])
+        self.assertTrue(result["passed"])
+
     def test_g0_blocks_preexisting_staged_changes(self) -> None:
         with make_tempdir() as tmp:
             repo = Path(tmp)
@@ -4749,11 +4793,61 @@ class HarnessHealthTests(unittest.TestCase):
         self.assertEqual([], result["missing_bundle_ids"])
         self.assertEqual([], result["duplicate_bundle_ids"])
 
+    def test_decision_log_is_optional_on_first_deploy(self) -> None:
+        with make_tempdir() as tmp:
+            result = harness_health._check_decision_log(
+                Path(tmp),
+                harness_health.DECISION_LOG_DEFAULT,
+            )
+
+        self.assertTrue(result["passed"])
+        self.assertFalse(result["initialized"])
+        self.assertEqual(0, result["entries"])
+
     def test_frontend_hook_specs_follow_current_agent_catalog(self) -> None:
         self.assertNotIn("Frontend Virtuoso", route_request.HOOK_SPEC_MAP)
         product_specs = route_request.HOOK_SPEC_MAP["World-Class Product Architect"]
         self.assertIn("routing-rules.json#frontend-profile", product_specs["spec_sections"])
-        self.assertIn("language-profiles.yaml#typescript", product_specs["spec_sections"])
+        self.assertFalse(
+            any(section.startswith("language-profiles.yaml#") for section in product_specs["spec_sections"])
+        )
+
+    def test_hook_spec_references_resolve_and_reject_unknown_profiles(self) -> None:
+        current = route_request.validate_hook_spec_references(SKILL_DIR)
+        self.assertTrue(current["ok"], current["errors"])
+
+        broken = {
+            "Broken Frontend Lead": {
+                "spec_files": ["references/routing-rules.json"],
+                "spec_sections": ["language-profiles.yaml#missing_frontend_profile"],
+            }
+        }
+        invalid = route_request.validate_hook_spec_references(SKILL_DIR, broken)
+        self.assertFalse(invalid["ok"])
+        self.assertIn(
+            "Broken Frontend Lead: unknown language profile missing_frontend_profile",
+            invalid["errors"],
+        )
+
+    def test_retired_governance_log_compatibility_has_no_live_references(self) -> None:
+        retired_tokens = [
+            "governance_" + "events.jsonl",
+            "migrate_" + "governance_" + "events",
+        ]
+        checked_paths = [
+            SKILL_DIR / "SKILL.md",
+            SKILL_DIR / "scripts" / "route_request.py",
+            SKILL_DIR / "scripts" / "check_harness_health.py",
+            SKILL_DIR / "references" / "decision-log.schema.json",
+            SKILL_DIR / "references" / "tooling-command-index.md",
+        ]
+        for path in checked_paths:
+            text = path.read_text(encoding="utf-8")
+            for token in retired_tokens:
+                self.assertNotIn(token, text, f"{path}: {token}")
+        self.assertFalse(
+            (SKILL_DIR / "scripts" / ("migrate_" + "governance_" + "events.py")).exists()
+        )
 
 
 class ValidatorScriptTests(unittest.TestCase):

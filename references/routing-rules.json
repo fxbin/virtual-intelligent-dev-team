@@ -1,8 +1,8 @@
 {
   "meta": {
     "author": "fxbin",
-    "version": "v6.0.7",
-    "updated": "2026-07-15"
+    "version": "v6.0.8",
+    "updated": "2026-07-22"
   },
   "thresholds": {
     "max_agent_score": 20,
@@ -70,7 +70,6 @@
     "fast_track_control": {
       "quota_per_24h": 3,
       "cooldown_minutes": 30,
-      "metrics_file": ".skill-metrics/decision-log.jsonl",
       "window_hours": 24,
       "write_event_log": true
     },

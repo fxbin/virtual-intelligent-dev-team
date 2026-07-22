@@ -3251,6 +3251,27 @@
         "real_subagent_runtime.fallback.multi_session_unavailable is not empty",
         "real_subagent_runtime.fallback.session_killed is not empty"
       ]
+    },
+    {
+      "id": 228,
+      "runner": "route",
+      "categories": [
+        "hook-injection",
+        "frontend",
+        "regression"
+      ],
+      "prompt": "Redesign this React dashboard and align the frontend states with the API contract.",
+      "expected_output": "Frontend ownership stays with World-Class Product Architect and hook directives contain only resolvable current spec references.",
+      "files": [
+        "scripts/route_request.py",
+        "references/hook-injection-protocol.md",
+        "references/language-profiles.yaml"
+      ],
+      "expectations": [
+        "lead_agent is World-Class Product Architect",
+        "hook_directives.spec_sections contains routing-rules.json#frontend-profile",
+        "hook_directives.spec_files contains references/execution-quality-guardrails.md"
+      ]
     }
   ]
 }

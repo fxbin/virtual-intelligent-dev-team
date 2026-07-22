@@ -197,10 +197,6 @@ python scripts/inspect_decision_log.py \
   --html-output .skill-metrics/decision-log-report.html
 ```
 
-```bash
-python scripts/migrate_governance_events.py --pretty
-```
-
 - benchmark eval 配置契约见：
   - `references/benchmark-evals.schema.json`
 - benchmark 结果契约见：

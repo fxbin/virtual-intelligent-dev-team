@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Health check for the virtual-intelligent-dev-team harness (v5.0+).
 
-Five checks, in priority order:
+Six checks, in priority order:
 
 1. Agent Identity: every lead agent named in `agent_rules` carries positive or
    negative keywords AND is documented under a `## N. <Name>` header in
@@ -13,9 +13,10 @@ Five checks, in priority order:
    language profile referenced by `language-profiles.yaml`.
 4. Workflow Bundles: the canonical bundle playbook reference files exist
    (the full 12-bundle catalog lives in `references/workflow-bundles.md`).
-5. Decision Log: the v5.0 decision log is readable (or absent-but-allowed
-   during the first deploy); legacy `governance_events.jsonl` is reported as
-   a migration hint.
+5. Decision Log: the canonical decision log is readable when present and is
+   absent-but-allowed during the first deploy.
+6. Language Profiles: the context profile file exists and exposes at least one
+   profile entry.
 
 Usage:
     python scripts/check_harness_health.py [--repo <path>] [--pretty]
@@ -40,7 +41,6 @@ ROUTING_RULES_PATH = SKILL_DIR / "references" / "routing-rules.json"
 AGENT_CATALOG_PATH = SKILL_DIR / "references" / "agent-catalog.md"
 LANGUAGE_PROFILES_PATH = SKILL_DIR / "references" / "language-profiles.yaml"
 DECISION_LOG_DEFAULT = ".skill-metrics/decision-log.jsonl"
-LEGACY_GOVERNANCE_LOG = ".skill-metrics/governance_events.jsonl"
 
 # Canonical bundle playbook references — these are the bundle journeys backed by a
 # dedicated playbook file. The full 12-entry bundle catalog lives in workflow-bundles.md.
@@ -199,16 +199,14 @@ def _check_workflow_bundles(skill_dir: Path) -> dict:
 def _check_decision_log(repo_path: Path, log_path: str) -> dict:
     """Decision log must be readable when present."""
     full_path = repo_path / log_path
-    legacy_path = repo_path / LEGACY_GOVERNANCE_LOG
 
     if not full_path.exists():
-        detail = f"log not yet created at {log_path} (first deploy?)"
-        passed = legacy_path.exists()  # Tolerate legacy-only state during migration
         return {
             "name": "decision_log",
-            "passed": passed,
-            "detail": detail,
-            "legacy_log_present": legacy_path.exists(),
+            "passed": True,
+            "detail": f"log not yet created at {log_path}; allowed for first deploy",
+            "entries": 0,
+            "initialized": False,
         }
 
     try:
@@ -219,7 +217,7 @@ def _check_decision_log(repo_path: Path, log_path: str) -> dict:
             "name": "decision_log",
             "passed": False,
             "detail": f"failed to read {full_path}: {exc!r}",
-            "legacy_log_present": legacy_path.exists(),
+            "initialized": True,
         }
 
     parsed = 0
@@ -244,7 +242,7 @@ def _check_decision_log(repo_path: Path, log_path: str) -> dict:
         "entries": parsed,
         "invalid_lines": invalid,
         "last_event": last_event,
-        "legacy_log_present": legacy_path.exists(),
+        "initialized": True,
     }
 
 

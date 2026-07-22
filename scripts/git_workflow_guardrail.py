@@ -55,7 +55,10 @@ def run_git(repo: Path, *args: str) -> str:
     if proc.returncode != 0:
         stderr = (proc.stderr or "").strip()
         raise RuntimeError(f"Command failed: {' '.join(cmd)}; stderr={stderr}")
-    return (proc.stdout or "").strip()
+    # Keep leading porcelain status columns intact.  A global ``strip()`` turns
+    # the first `` M path`` entry into ``M path`` and falsely reports an
+    # unstaged change as staged during G0.
+    return (proc.stdout or "").rstrip()
 
 
 def run_git_optional(repo: Path, *args: str) -> tuple[int, str]:
@@ -79,7 +82,7 @@ def current_branch(repo: Path) -> str:
 
 
 def list_staged_files(repo: Path) -> list[str]:
-    output = run_git(repo, "diff", "--cached", "--name-only", "--diff-filter=ACMR")
+    output = run_git(repo, "diff", "--cached", "--name-only", "--diff-filter=ACMRD")
     if output == "":
         return []
     return [line.strip() for line in output.splitlines() if line.strip()]

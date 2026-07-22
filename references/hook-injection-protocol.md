@@ -52,7 +52,7 @@ Harrison 的区分:
 | Sentinel Architect | `routing-rules.json#architecture`, `anti-entropy-governance.md` |
 | Code Audit Council | `routing-rules.json#audit`, `execution-quality-guardrails.md` |
 | Git Workflow Guardian | `routing-rules.json#git-workflow`, `git-workflow-playbook.md` |
-| World-Class Product Architect | `routing-rules.json#product`, `routing-rules.json#frontend-profile`, `language-profiles.yaml#typescript`, `goal-framing-protocol.md`, `execution-quality-guardrails.md` |
+| World-Class Product Architect | `routing-rules.json#product`, `routing-rules.json#frontend-profile`, `goal-framing-protocol.md`, `execution-quality-guardrails.md` |
 | Technical Trinity | `routing-rules.json#fullstack`, `execution-quality-guardrails.md` |
 | Data Pipeline Guardian | `routing-rules.json#data`, `execution-quality-guardrails.md` |
 
@@ -111,6 +111,9 @@ route_request.py 路由完成后,在路由结果中新增 `hook_directives` 字�
 | spec_sections | 需注入的 spec 条目(文件#章节)列表 |
 | state_snapshot_ref | journal 中的 state snapshot 引用 |
 | inject_target | 注入目标角色(worker/verifier/lead) |
+
+`language-profiles.yaml#<profile>` 只允许引用文件中真实存在的 `profiles.<profile>`；
+路由构建 hook 前会执行解析校验，悬空 profile 会 fail-closed。
 
 ---
 

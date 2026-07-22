@@ -174,8 +174,6 @@ The skill exposes a governance layer alongside the routing layer:
 
 - **Decision log**: every route decision appends one JSON line to
   `.skill-metrics/decision-log.jsonl`. Schema: `references/decision-log.schema.json`.
-  Legacy `governance_events.jsonl` entries can be migrated with
-  `scripts/migrate_governance_events.py` (one-shot, idempotent).
 - **Agent manifest**: each lead agent in `references/agent-catalog.md` and
   `references/routing-rules.json` declares `Constraints` (hard
   guardrails the LLM must enforce) and `Evidence Requirements` (what the
@@ -207,7 +205,7 @@ The skill exposes a governance layer alongside the routing layer:
   root-cause ratio >= 80%. Field-name consistency enforced by
   `quick_validate.py` (_STRESS_REQUIRED_TOP_FIELDS / _STRESS_VALID_METHODS).
 
-Typical invocations (health snapshot, decision-log summary, markdown/HTML report, legacy migration) live in [references/tooling-command-index.md](references/tooling-command-index.md) §一; stress scenarios in §九.
+Typical invocations (health snapshot, decision-log summary, markdown/HTML report) live in [references/tooling-command-index.md](references/tooling-command-index.md) §一; stress scenarios in §九.
 
 ## Language Profile Loading (v5.0+)
 
@@ -268,7 +266,7 @@ Runtime routing rules (primary routes, stage council overlays, score model, thre
 
 完整版本历史、字段迁移指南和 Memory Keeper 计划见 [docs/release-notes.md](docs/release-notes.md)。
 
-### v6.0.7 (2026-07-22)
+### v6.0.8 (2026-07-22)
 
-发布工作流在 clean Python 环境中显式安装运行时依赖；negative eval 的布尔标记与
-分类口径统一，并由回归测试阻止统计再次漂移。
+治理日志只保留当前 `decision-log.jsonl` 契约；Frontend hook 引用在运行前做可解析性
+校验，首次部署健康检查、兼容链残留扫描和 Git 暂存状态识别由回归测试锁定。

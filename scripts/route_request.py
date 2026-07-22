@@ -18,6 +18,7 @@ from typing import Literal, TypedDict
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 DEFAULT_CONFIG_PATH = SCRIPT_DIR.parent / "references" / "routing-rules.json"
+DECISION_LOG_PATH = ".skill-metrics/decision-log.jsonl"
 RESUME_FROM_AUTOMATION_STATE_SCRIPT = SCRIPT_DIR / "resume_from_automation_state.py"
 ASCII_WORD_CLASS = "a-z0-9"
 TRACK_REGULAR = "regular track"
@@ -1079,8 +1080,8 @@ def parse_iso_time(value: str) -> datetime | None:
         return None
 
 
-def load_governance_events(repo_path: Path, metrics_file: str) -> list[dict[str, object]]:
-    file_path = repo_path / metrics_file
+def load_decision_log_entries(repo_path: Path) -> list[dict[str, object]]:
+    file_path = repo_path / DECISION_LOG_PATH
     if not file_path.exists():
         return []
     events: list[dict[str, object]] = []
@@ -1101,9 +1102,8 @@ def load_governance_events(repo_path: Path, metrics_file: str) -> list[dict[str,
     return events
 
 
-def append_governance_event(
+def append_decision_log_entry(
     repo_path: Path,
-    metrics_file: str,
     payload: dict[str, object],
     *,
     decision: str | None = None,
@@ -1111,16 +1111,8 @@ def append_governance_event(
     reason: str | None = None,
     evidence: str | None = None,
 ) -> None:
-    """Append one entry to the governance decision log.
-
-    v5.0 extension: callers may pass four extra governance fields
-    (``decision``, ``verifier``, ``reason``, ``evidence``). They are stored
-    alongside the legacy ``payload`` dict so existing call sites continue to
-    work unchanged. The destination path defaults to the v5.0 decision log;
-    legacy ``governance_events.jsonl`` paths still work for one-shot
-    migration scripts.
-    """
-    file_path = repo_path / metrics_file
+    """Append one canonical entry to `.skill-metrics/decision-log.jsonl`."""
+    file_path = repo_path / DECISION_LOG_PATH
     file_path.parent.mkdir(parents=True, exist_ok=True)
     enriched: dict[str, object] = dict(payload)
     if decision is not None:
@@ -1137,11 +1129,10 @@ def append_governance_event(
 
 def get_fast_track_stats(
     repo_path: Path,
-    metrics_file: str,
     window_hours: int,
 ) -> dict[str, object]:
     now = datetime.now()
-    events = load_governance_events(repo_path, metrics_file)
+    events = load_decision_log_entries(repo_path)
     window_start = now - timedelta(hours=max(window_hours, 1))
 
     count_24h = 0
@@ -1219,7 +1210,6 @@ def get_governance_defaults(config: dict[str, object]) -> dict[str, object]:
     fast_control_defaults = {
         "quota_per_24h": 3,
         "cooldown_minutes": 30,
-        "metrics_file": ".skill-metrics/governance_events.jsonl",
         "window_hours": 24,
         "write_event_log": True,
     }
@@ -1283,9 +1273,6 @@ def get_governance_defaults(config: dict[str, object]) -> dict[str, object]:
             ),
             "cooldown_minutes": int(
                 fast_track_control.get("cooldown_minutes", fast_control_defaults["cooldown_minutes"])
-            ),
-            "metrics_file": str(
-                fast_track_control.get("metrics_file", fast_control_defaults["metrics_file"])
             ),
             "window_hours": int(
                 fast_track_control.get("window_hours", fast_control_defaults["window_hours"])
@@ -1371,7 +1358,6 @@ def should_use_fast_track(
 
     quota_per_24h = max(int(fast_control.get("quota_per_24h", 3)), 0)
     cooldown_minutes = max(int(fast_control.get("cooldown_minutes", 30)), 0)
-    metrics_file = str(fast_control.get("metrics_file", ".skill-metrics/governance_events.jsonl"))
     window_hours = max(int(fast_control.get("window_hours", 24)), 1)
 
     rationale: list[str] = []
@@ -1405,7 +1391,6 @@ def should_use_fast_track(
 
     stats = get_fast_track_stats(
         repo_path=repo_path,
-        metrics_file=metrics_file,
         window_hours=window_hours,
     )
     if selected:
@@ -1435,7 +1420,7 @@ def should_use_fast_track(
         "policy": {
             "quota_per_24h": quota_per_24h,
             "cooldown_minutes": cooldown_minutes,
-            "metrics_file": metrics_file,
+            "decision_log_path": DECISION_LOG_PATH,
             "window_hours": window_hours,
             "min_objective_signals_for_fast_track": min_objective_signals,
         },
@@ -4501,7 +4486,7 @@ HOOK_SPEC_MAP: dict[str, dict[str, list[str]]] = {
     },
     "World-Class Product Architect": {
         "spec_files": ["references/routing-rules.json", "references/goal-framing-protocol.md", "references/execution-quality-guardrails.md"],
-        "spec_sections": ["routing-rules.json#product", "routing-rules.json#frontend-profile", "language-profiles.yaml#typescript"],
+        "spec_sections": ["routing-rules.json#product", "routing-rules.json#frontend-profile"],
     },
     "Technical Trinity": {
         "spec_files": ["references/routing-rules.json", "references/execution-quality-guardrails.md"],
@@ -4514,12 +4499,59 @@ HOOK_SPEC_MAP: dict[str, dict[str, list[str]]] = {
 }
 
 
+def validate_hook_spec_references(
+    skill_dir: Path | None = None,
+    hook_spec_map: dict[str, dict[str, list[str]]] | None = None,
+) -> dict[str, object]:
+    """Validate that hook files exist and language-profile sections resolve."""
+    resolved_skill_dir = (skill_dir or SCRIPT_DIR.parent).resolve()
+    spec_map = HOOK_SPEC_MAP if hook_spec_map is None else hook_spec_map
+    language_profile_path = resolved_skill_dir / "references" / "language-profiles.yaml"
+    profile_names: set[str] = set()
+    if language_profile_path.exists():
+        profile_names = {
+            match.group(1)
+            for match in re.finditer(
+                r"^  ([A-Za-z0-9_-]+):\s*$",
+                language_profile_path.read_text(encoding="utf-8"),
+                re.MULTILINE,
+            )
+        }
+
+    errors: list[str] = []
+    for lead_agent, mapping in spec_map.items():
+        for spec_file in mapping.get("spec_files", []):
+            if not (resolved_skill_dir / spec_file).is_file():
+                errors.append(f"{lead_agent}: missing spec file {spec_file}")
+        for spec_section in mapping.get("spec_sections", []):
+            if "#" not in spec_section:
+                errors.append(f"{lead_agent}: malformed spec section {spec_section}")
+                continue
+            filename, section = spec_section.split("#", 1)
+            section_path = resolved_skill_dir / "references" / filename
+            if not section_path.is_file():
+                errors.append(f"{lead_agent}: missing section file references/{filename}")
+                continue
+            if filename == "language-profiles.yaml" and section not in profile_names:
+                errors.append(f"{lead_agent}: unknown language profile {section}")
+
+    return {
+        "ok": not errors,
+        "checked_agents": len(spec_map),
+        "language_profiles": sorted(profile_names),
+        "errors": errors,
+    }
+
+
 def build_hook_directives(lead_agent: str) -> dict[str, object]:
     """根据 lead_agent 构建 hook 注入指令(P1-19)
 
     将相关 spec 条目通过 hook 挂载进 Worker 的上下文,
     Worker 不需要手动找规范。
     """
+    validation = validate_hook_spec_references()
+    if not validation["ok"]:
+        raise RuntimeError(f"Invalid hook spec references: {validation['errors']}")
     mapping = HOOK_SPEC_MAP.get(lead_agent, {})
     return {
         "spec_files": mapping.get("spec_files", []),
@@ -4693,13 +4725,9 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
     if not isinstance(fast_track_control, dict):
         fast_track_control = {}
     if bool(fast_track_control.get("write_event_log", True)):
-        metrics_file = str(
-            fast_track_control.get("metrics_file", ".skill-metrics/decision-log.jsonl")
-        )
         try:
-            append_governance_event(
+            append_decision_log_entry(
                 repo_path=repo_path,
-                metrics_file=metrics_file,
                 payload={
                     "timestamp": now_iso(),
                     "lead_agent": lead_agent,
