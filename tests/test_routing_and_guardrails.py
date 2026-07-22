@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 from contextlib import contextmanager
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -59,7 +60,10 @@ TEAM_ENGINE_DRILL_SCRIPT = SKILL_DIR / "scripts" / "run_team_engine_drill.py"
 CIRCUIT_BREAKER_SCRIPT = SKILL_DIR / "scripts" / "circuit_breaker.py"
 INIT_HARNESS_CONSTRAINTS_SCRIPT = SKILL_DIR / "scripts" / "init_harness_constraints.py"
 SKILL_SNAPSHOT_SCRIPT = SKILL_DIR / "scripts" / "skill_snapshot.py"
+HARNESS_HEALTH_SCRIPT = SKILL_DIR / "scripts" / "check_harness_health.py"
+BUILD_VERIFY_ACTION_EVAL_FIXTURE_SCRIPT = SKILL_DIR / "scripts" / "build_verify_action_eval_fixture.py"
 VERSION_SYNC_SCRIPT = REPO_ROOT / "scripts" / "sync_virtual_intelligent_dev_team_version.py"
+PUBLISH_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "publish-virtual-intelligent-dev-team.yml"
 CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 
 
@@ -124,6 +128,7 @@ harness_constraints_init = load_module(
     INIT_HARNESS_CONSTRAINTS_SCRIPT,
 )
 skill_snapshot = load_module("virtual_intelligent_dev_team_skill_snapshot", SKILL_SNAPSHOT_SCRIPT)
+harness_health = load_module("virtual_intelligent_dev_team_harness_health", HARNESS_HEALTH_SCRIPT)
 version_sync = load_module("repo_sync_virtual_intelligent_dev_team_version", VERSION_SYNC_SCRIPT)
 
 
@@ -4701,7 +4706,172 @@ class IterationHelperTests(unittest.TestCase):
                 iteration_loop.run_loop(workspace=workspace, plan_path=plan_path, resume=True)
 
 
+class HarnessHealthTests(unittest.TestCase):
+    def test_agent_catalog_read_failure_is_fail_closed(self) -> None:
+        with make_tempdir() as tmp:
+            catalog_agents, catalog_error = harness_health._load_catalog_agents(Path(tmp))
+
+        result = harness_health._check_agent_identity(
+            {"Java Virtuoso": {"positive": ["java"], "negative": []}},
+            catalog_agents,
+            catalog_error=catalog_error,
+        )
+
+        self.assertFalse(result["passed"])
+        self.assertEqual(["Java Virtuoso"], result["missing_catalog"])
+        self.assertIn("failed to read", result["catalog_error"])
+
+    def test_workflow_bundle_health_requires_all_stable_ids(self) -> None:
+        with make_tempdir() as tmp:
+            skill_dir = Path(tmp) / "skill"
+            for rel_path in harness_health.CANONICAL_BUNDLE_REFS:
+                path = skill_dir / rel_path
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("# playbook\n", encoding="utf-8")
+
+            bundle_ids = harness_health.CANONICAL_BUNDLE_IDS[:-1]
+            catalog = skill_dir / "references" / "workflow-bundles.md"
+            catalog.write_text(
+                "\n".join(f'<a id="{bundle_id}"></a>' for bundle_id in bundle_ids),
+                encoding="utf-8",
+            )
+
+            result = harness_health._check_workflow_bundles(skill_dir)
+
+        self.assertFalse(result["passed"])
+        self.assertEqual(["direct-execution"], result["missing_bundle_ids"])
+        self.assertEqual([], result["missing_playbooks"])
+
+    def test_current_workflow_bundle_catalog_is_complete(self) -> None:
+        result = harness_health._check_workflow_bundles(SKILL_DIR)
+
+        self.assertTrue(result["passed"])
+        self.assertEqual([], result["missing_bundle_ids"])
+        self.assertEqual([], result["duplicate_bundle_ids"])
+
+    def test_frontend_hook_specs_follow_current_agent_catalog(self) -> None:
+        self.assertNotIn("Frontend Virtuoso", route_request.HOOK_SPEC_MAP)
+        product_specs = route_request.HOOK_SPEC_MAP["World-Class Product Architect"]
+        self.assertIn("routing-rules.json#frontend-profile", product_specs["spec_sections"])
+        self.assertIn("language-profiles.yaml#typescript", product_specs["spec_sections"])
+
+
 class ValidatorScriptTests(unittest.TestCase):
+    def test_verify_action_blind_adapter_is_state_isolated_and_json_clean(self) -> None:
+        cases = [
+            (
+                "/auto go Is this version ready to ship? Run the formal release gate.",
+                "auto-mode",
+                False,
+            ),
+            (
+                "Verify observability telemetry schema and health report",
+                "observability-schema",
+                True,
+            ),
+            (
+                "Worker has finished the implementation without a handoff directory; verify before delivery.",
+                "file-handoff",
+                False,
+            ),
+            (
+                "The task claims completion without a completion-evidence file; confirm delivery.",
+                "completion-evidence",
+                False,
+            ),
+            (
+                "Lead dispatches work to Worker without any dispatch text.",
+                "lead-prejudgment",
+                True,
+            ),
+            (
+                "Worker requested review without providing a diff file.",
+                "yagni",
+                True,
+            ),
+        ]
+
+        for prompt, check, expected_allowed in cases:
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(BUILD_VERIFY_ACTION_EVAL_FIXTURE_SCRIPT),
+                    "--text",
+                    prompt,
+                    "--check",
+                    check,
+                    "--evals",
+                    str(SKILL_DIR / "evals" / "evals.json"),
+                ],
+                cwd=str(SKILL_DIR),
+                text=True,
+                capture_output=True,
+                encoding="utf-8",
+                check=True,
+            )
+            payload = json.loads(result.stdout)
+            self.assertIs(payload["allowed"], expected_allowed)
+
+    def test_verify_action_eval_lookup_keys_are_unique(self) -> None:
+        eval_payload = json.loads((SKILL_DIR / "evals" / "evals.json").read_text(encoding="utf-8"))
+        lookup_keys: dict[tuple[str, str], list[int]] = {}
+        for case in eval_payload["evals"]:
+            if case.get("runner") != "verify_action":
+                continue
+            key = (str(case.get("prompt", "")), str(case.get("check", "")))
+            lookup_keys.setdefault(key, []).append(int(case["id"]))
+
+        duplicates = {key: ids for key, ids in lookup_keys.items() if len(ids) > 1}
+        self.assertEqual({}, duplicates)
+
+    def test_negative_eval_flag_and_category_stay_in_sync(self) -> None:
+        eval_payload = json.loads((SKILL_DIR / "evals" / "evals.json").read_text(encoding="utf-8"))
+        mismatches: list[int] = []
+        for case in eval_payload["evals"]:
+            categories = case.get("categories", [])
+            category_is_negative = isinstance(categories, list) and "negative" in categories
+            if bool(case.get("negative")) != category_is_negative:
+                mismatches.append(int(case["id"]))
+
+        self.assertEqual([], mismatches)
+
+    def test_publish_workflow_installs_runtime_dependencies_before_validation(self) -> None:
+        workflow = PUBLISH_WORKFLOW.read_text(encoding="utf-8")
+        setup_position = workflow.find("uses: actions/setup-python@v6")
+        install_position = workflow.find(
+            "python -m pip install -r virtual-intelligent-dev-team/requirements.txt"
+        )
+        validate_position = workflow.find(
+            "python virtual-intelligent-dev-team/scripts/validate_virtual_team.py --pretty"
+        )
+
+        self.assertGreaterEqual(setup_position, 0)
+        self.assertGreater(install_position, setup_position)
+        self.assertGreater(validate_position, install_position)
+
+    def test_eval_skill_sources_resolve_to_current_headings(self) -> None:
+        skill_text = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+        eval_payload = json.loads((SKILL_DIR / "evals" / "evals.json").read_text(encoding="utf-8"))
+
+        def normalize_heading(heading: str) -> str:
+            normalized = re.sub(r"[^\w\s-]", "", heading.lower()).strip()
+            return re.sub(r"[\s-]+", "-", normalized)
+
+        heading_anchors = {
+            normalize_heading(heading)
+            for heading in re.findall(r"^#{1,6}\s+(.+?)\s*$", skill_text, re.MULTILINE)
+        }
+        skill_sources = {
+            str(case.get("source"))
+            for case in eval_payload["evals"]
+            if str(case.get("source", "")).startswith("doc:SKILL.md#")
+        }
+
+        self.assertTrue(skill_sources)
+        for source in skill_sources:
+            anchor = source[len("doc:SKILL.md#") :]
+            self.assertIn(anchor, heading_anchors, source)
+
     def test_public_docs_match_delivery_subgraph_contract(self) -> None:
         readme = (SKILL_DIR / "README.md").read_text(encoding="utf-8")
         deck = (SKILL_DIR / "docs" / "deck.html").read_text(encoding="utf-8")

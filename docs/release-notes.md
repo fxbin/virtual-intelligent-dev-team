@@ -3,6 +3,24 @@
 本文件维护 `virtual-intelligent-dev-team` 的版本历史、字段迁移指南和未实现的计划项。
 `SKILL.md` 只保留最新一版的 changelog 链接,完整记录在此。
 
+## v6.0.7 (2026-07-22)
+
+- 发布 workflow 固定 Python 3.11，并在执行 `validate_virtual_team.py` 前从
+  `requirements.txt` 安装 `jsonschema` 与 `PyYAML`，消除本地隐式依赖造成的 CI 假绿。
+- negative eval 统一同时携带 `negative: true` 与 `negative` category，使分类汇总、
+  `negative_cases` 清单和仓库 validator 使用同一口径。
+- 增加发布步骤顺序与 negative taxonomy 一致性回归锁，阻止依赖安装或统计字段再次漂移。
+
+## v6.0.6 (2026-07-22)
+
+复检收口版本。`check_harness_health.py` 现在会实际读取 Agent Catalog，并核对
+`workflow-bundles.md` 中 12 个稳定 bundle ID；任一真源缺失、不可读或重复都会
+fail-closed。清理已退出角色 `Frontend Virtuoso` 的 hook / contract 残留，将前端
+spec 注入归并到 `World-Class Product Architect`；修复 eval 到 SKILL.md 的失效锚点，
+通过 fixture adapter 隔离 blind audit 的 `.skill-*` 状态并保持 JSON stdout 纯净；
+补齐 reference 与 smoke-test 索引、公共 Python 依赖说明，并删除一次性
+`deletion_pass.py` 阶段工具。
+
 ## v6.0.5 (2026-07-20)
 
 HTML Deck 按 GitHub Pages 发布边界拆分为稳定入口、独立样式与交互脚本；发布门禁

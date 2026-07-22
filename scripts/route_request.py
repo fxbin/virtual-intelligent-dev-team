@@ -4483,10 +4483,6 @@ HOOK_SPEC_MAP: dict[str, dict[str, list[str]]] = {
         "spec_files": ["references/routing-rules.json", "references/execution-quality-guardrails.md"],
         "spec_sections": ["routing-rules.json#java-profile", "language-profiles.yaml#java"],
     },
-    "Frontend Virtuoso": {
-        "spec_files": ["references/routing-rules.json", "references/execution-quality-guardrails.md"],
-        "spec_sections": ["routing-rules.json#frontend-profile", "language-profiles.yaml#typescript"],
-    },
     "API Contract Sentinel": {
         "spec_files": ["references/routing-rules.json", "references/execution-quality-guardrails.md"],
         "spec_sections": ["routing-rules.json#api-contract"],
@@ -4504,8 +4500,8 @@ HOOK_SPEC_MAP: dict[str, dict[str, list[str]]] = {
         "spec_sections": ["routing-rules.json#git-workflow"],
     },
     "World-Class Product Architect": {
-        "spec_files": ["references/routing-rules.json", "references/goal-framing-protocol.md"],
-        "spec_sections": ["routing-rules.json#product"],
+        "spec_files": ["references/routing-rules.json", "references/goal-framing-protocol.md", "references/execution-quality-guardrails.md"],
+        "spec_sections": ["routing-rules.json#product", "routing-rules.json#frontend-profile", "language-profiles.yaml#typescript"],
     },
     "Technical Trinity": {
         "spec_files": ["references/routing-rules.json", "references/execution-quality-guardrails.md"],

@@ -1842,9 +1842,10 @@
       "categories": [
         "blind-routing",
         "single-domain",
-        "lightweight-route"
+        "lightweight-route",
+        "negative"
       ],
-      "source": "doc:SKILL.md#quick-examples (direct answer for simple single-domain)",
+      "source": "doc:SKILL.md#quick-examples",
       "negative": true,
       "runner": "route"
     },
@@ -1867,7 +1868,7 @@
         "multi-expert",
         "architecture"
       ],
-      "source": "doc:SKILL.md#multi-expert-execution (microservices split)",
+      "source": "doc:SKILL.md#quick-examples",
       "runner": "route"
     },
     {
@@ -1883,7 +1884,7 @@
         "blind-routing",
         "planning"
       ],
-      "source": "doc:SKILL.md#pre-development-planning",
+      "source": "doc:SKILL.md#workflow",
       "runner": "route"
     },
     {
@@ -1898,7 +1899,7 @@
         "blind-routing",
         "quick-slice"
       ],
-      "source": "doc:SKILL.md#quick-slice-delivery",
+      "source": "doc:SKILL.md#workflow",
       "runner": "route"
     },
     {
@@ -1914,7 +1915,7 @@
         "blind-routing",
         "release-gate"
       ],
-      "source": "doc:SKILL.md#release-gate (formal ship/hold)",
+      "source": "doc:SKILL.md#workflow",
       "runner": "route"
     },
     {
@@ -1930,7 +1931,7 @@
         "blind-routing",
         "root-cause"
       ],
-      "source": "doc:SKILL.md#root-cause-discipline",
+      "source": "doc:SKILL.md#workflow",
       "runner": "route"
     },
     {
@@ -2044,7 +2045,7 @@
         "frontend",
         "boundary-guard"
       ],
-      "source": "doc:SKILL.md#quick-examples (React performance multi-expert)",
+      "source": "doc:SKILL.md#quick-examples",
       "runner": "route"
     },
     {
@@ -2066,7 +2067,7 @@
         "architecture",
         "boundary-guard"
       ],
-      "source": "doc:SKILL.md#multi-expert-execution (system refactor plan)",
+      "source": "doc:SKILL.md#quick-examples",
       "runner": "route"
     },
     {
@@ -2503,7 +2504,7 @@
         "file-handoff",
         "contract-output"
       ],
-      "prompt": "Worker has finished the implementation, verify before delivery.",
+      "prompt": "Worker has finished the implementation without a handoff directory; verify before delivery.",
       "expected_output": "file-handoff check should reject when .skill-handoff directory does not exist.",
       "files": [],
       "expectations": [
@@ -2520,7 +2521,7 @@
         "file-handoff",
         "contract-output"
       ],
-      "prompt": "Worker has finished the implementation, verify before delivery.",
+      "prompt": "Worker has finished the implementation with malformed handoff metadata; verify before delivery.",
       "expected_output": "file-handoff check should reject when handoff file exists but handoff metadata is missing or schema invalid.",
       "files": [],
       "expectations": [
@@ -2539,7 +2540,7 @@
         "completion-evidence",
         "contract-output"
       ],
-      "prompt": "The task is complete, confirm delivery.",
+      "prompt": "The task claims completion without a completion-evidence file; confirm delivery.",
       "expected_output": "completion-evidence check should reject when evidence file does not exist.",
       "files": [],
       "expectations": [
@@ -2557,7 +2558,7 @@
         "model-declaration",
         "contract-output"
       ],
-      "prompt": "The task is complete, confirm delivery.",
+      "prompt": "The task claims completion after a same-model review; confirm delivery evidence.",
       "expected_output": "completion-evidence check should block completion and flag a same-model self-review warning when worker_model equals verifier_model and status is passed.",
       "files": [],
       "expectations": [
@@ -2574,7 +2575,7 @@
         "lead-prejudgment",
         "contract-output"
       ],
-      "prompt": "Lead dispatches work to Worker.",
+      "prompt": "Lead dispatches work to Worker without any dispatch text.",
       "expected_output": "lead-prejudgment check should allow when dispatch text is empty (no prejudgment detected).",
       "files": [],
       "expectations": [
@@ -2592,13 +2593,17 @@
         "lead-prejudgment",
         "negative"
       ],
-      "prompt": "Lead dispatches work to Worker.",
+      "prompt": "Lead dispatches work to Worker while prejudging that the result should be fine and can ship.",
       "expected_output": "lead-prejudgment check should reject when dispatch text contains prejudgment language like 'should be fine' or 'can ship'.",
-      "files": [],
+      "files": [
+        "scripts/verify_action.py",
+        "references/execution-quality-guardrails.md"
+      ],
       "expectations": [
         "allowed is false",
         "verify_action_json details.hits length is not 0"
       ],
+      "negative": true,
       "runtime_dependent": true
     },
     {
@@ -2611,7 +2616,7 @@
         "circuit-breaker",
         "contract-output"
       ],
-      "prompt": "Verify before executing the next iteration cycle.",
+      "prompt": "Verify the closed circuit breaker before executing the next iteration cycle.",
       "expected_output": "breaker-status check should allow when circuit breaker is in closed state.",
       "files": [],
       "expectations": [
@@ -2630,13 +2635,17 @@
         "circuit-breaker",
         "negative"
       ],
-      "prompt": "Verify before executing the next iteration cycle.",
+      "prompt": "Verify the open circuit breaker before executing the next iteration cycle.",
       "expected_output": "breaker-status check should block when circuit breaker is in open state after consecutive failures.",
-      "files": [],
+      "files": [
+        "scripts/verify_action.py",
+        "references/circuit-breaker-protocol.md"
+      ],
       "expectations": [
         "allowed is false",
         "verify_action_json details.breaker_state is open"
       ],
+      "negative": true,
       "runtime_dependent": true
     },
     {
@@ -2647,7 +2656,7 @@
         "yagni",
         "contract-output"
       ],
-      "prompt": "Worker submitted a diff for review.",
+      "prompt": "Worker requested review without providing a diff file.",
       "expected_output": "yagni check should allow when no diff file is provided (no unrequested abstractions detected).",
       "files": [],
       "expectations": [
@@ -2665,13 +2674,17 @@
         "yagni",
         "negative"
       ],
-      "prompt": "Worker submitted a diff for review.",
+      "prompt": "Worker submitted a diff containing an unrequested interface and factory abstraction for review.",
       "expected_output": "yagni check should reject when diff contains unrequested abstractions like new interface or factory class.",
-      "files": [],
+      "files": [
+        "scripts/verify_action.py",
+        "references/yagni-guardrail.md"
+      ],
       "expectations": [
         "allowed is false",
         "verify_action_json details.hits length is not 0"
       ],
+      "negative": true,
       "runtime_dependent": true
     },
     {
@@ -2702,10 +2715,14 @@
       ],
       "prompt": "Implement this Java service update and check the worker output for spec compliance.",
       "expected_output": "spec-violation check should return spec_violation verdict when worker output contains banned patterns like java.util.Date or force push.",
-      "files": [],
+      "files": [
+        "scripts/verify_action.py",
+        "references/execution-quality-guardrails.md"
+      ],
       "expectations": [
         "verify_action_json details.verdict is spec_violation"
       ],
+      "negative": true,
       "runtime_dependent": true
     },
     {
@@ -3194,7 +3211,8 @@
       "categories": [
         "multi-session",
         "p2-14",
-        "lightweight-route"
+        "lightweight-route",
+        "negative"
       ],
       "prompt": "Fix this simple typo in the README file.",
       "expected_output": "Simple single-domain fix does not trigger multi-agent eligibility; all three tiers default to soft_orchestration_only.",

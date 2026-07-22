@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import redirect_stdout
 from datetime import datetime
 import importlib.util
+from io import StringIO
 import json
 import re
 from pathlib import Path
@@ -1497,7 +1499,9 @@ def _verify_observability_schema(
     issues: list[str] = []
 
     try:
-        emit_exit = emit_telemetry_module.self_test()
+        self_test_output = StringIO()
+        with redirect_stdout(self_test_output):
+            emit_exit = emit_telemetry_module.self_test()
         details["emit_self_test_exit"] = emit_exit
         if emit_exit != 0:
             issues.append("emit_telemetry.py self-test failed")

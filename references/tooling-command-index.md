@@ -8,6 +8,12 @@
 
 ## 一、最常用入口
 
+- 首次运行维护脚本时安装公共依赖
+
+```bash
+python -m pip install -r requirements.txt
+```
+
 - 路由检查
 
 ```bash
@@ -18,6 +24,18 @@ python scripts/route_request.py --text "<user request>" --config references/rout
 
 ```bash
 python scripts/validate_virtual_team.py --pretty
+```
+
+- 全链路冒烟测试（路由 → 校验 → 发布门禁的端到端 smoke test）
+
+```bash
+python scripts/smoke_test_full_pipeline.py
+```
+
+- `verify_action` blind audit fixture 适配器（仅供 eval gate 调用，隔离 `.skill-*` 状态）
+
+```bash
+python scripts/build_verify_action_eval_fixture.py --text "<exact eval prompt>" --check <check-name> --evals evals/evals.json
 ```
 
 - Team Engine Lite 离线 drill

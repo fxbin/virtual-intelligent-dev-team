@@ -2,8 +2,8 @@
   "router_command": "python scripts/route_request.py --text {prompt}",
   "expectation_prefix": "",
   "response_pack_command": "python scripts/generate_response_pack.py --text {prompt} --json-output {json_out} --output {md_out}",
-  "verify_action_command": "python scripts/verify_action.py --text {prompt} --check {check} --repo .",
-  "verify_action_command_with_lead": "python scripts/verify_action.py --text {prompt} --check {check} --lead-agent {lead_agent} --repo .",
+  "verify_action_command": "python scripts/build_verify_action_eval_fixture.py --text {prompt} --check {check} --evals evals/evals.json",
+  "verify_action_command_with_lead": "python scripts/build_verify_action_eval_fixture.py --text {prompt} --check {check} --evals evals/evals.json",
   "release_gate_command": "python scripts/build_release_gate_eval_fixture.py --eval-id {eval_id} --evals evals/evals.json --output {json_out}",
   "note": "Declares this skill's deterministic router and generators so skill-forge's blind audit (--blind) can execute eval expectations. router emits JSON to stdout; response_pack_command writes a JSON sidecar consumed by response_pack_json.* assertions; verify_action_command handles verify_action runner evals; release_gate_command builds the per-eval fixture and runs the gate. Expectations use the field-op-value DSL documented in skill-forge/references/evaluation-gate-protocol.md."
 }

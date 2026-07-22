@@ -268,7 +268,7 @@ Runtime routing rules (primary routes, stage council overlays, score model, thre
 
 完整版本历史、字段迁移指南和 Memory Keeper 计划见 [docs/release-notes.md](docs/release-notes.md)。
 
-### v6.0.5 (2026-07-20)
+### v6.0.7 (2026-07-22)
 
-HTML Deck 按 GitHub Pages 发布边界拆分为稳定入口、独立样式与交互脚本；发布门禁
-校验必需资源并阻止历史 PPTX 产物回流，公开目录只保留当前演示实现。
+发布工作流在 clean Python 环境中显式安装运行时依赖；negative eval 的布尔标记与
+分类口径统一，并由回归测试阻止统计再次漂移。

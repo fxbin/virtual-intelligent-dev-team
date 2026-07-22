@@ -3,14 +3,16 @@
 
 Five checks, in priority order:
 
-1. Agent Identity: every lead agent named in `agent_rules` is documented in
+1. Agent Identity: every lead agent named in `agent_rules` carries positive or
+   negative keywords AND is documented under a `## N. <Name>` header in
    `references/agent-catalog.md`.
 2. Agent Manifest: every lead agent in `agent_rules` carries
    `constraints` and `evidence_requirements` fields (v5.0 schema).
 3. Routing Rules: `routing-rules.json` is parseable, has matching
    `process_skill_lead_agents` ↔ `process_skill_rules` keys, and lists every
    language profile referenced by `language-profiles.yaml`.
-4. Workflow Bundles: the canonical bundle reference files exist.
+4. Workflow Bundles: the canonical bundle playbook reference files exist
+   (the full 12-bundle catalog lives in `references/workflow-bundles.md`).
 5. Decision Log: the v5.0 decision log is readable (or absent-but-allowed
    during the first deploy); legacy `governance_events.jsonl` is reported as
    a migration hint.
@@ -27,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -39,8 +42,8 @@ LANGUAGE_PROFILES_PATH = SKILL_DIR / "references" / "language-profiles.yaml"
 DECISION_LOG_DEFAULT = ".skill-metrics/decision-log.jsonl"
 LEGACY_GOVERNANCE_LOG = ".skill-metrics/governance_events.jsonl"
 
-# Canonical bundle references — these are the bundle entries now inlined in SKILL.md.
-# Note: workflow-bundles.md and iteration-protocol.md were sedimented into SKILL.md in v5.5.
+# Canonical bundle playbook references — these are the bundle journeys backed by a
+# dedicated playbook file. The full 12-entry bundle catalog lives in workflow-bundles.md.
 CANONICAL_BUNDLE_REFS = (
     "references/pre-development-planning-playbook.md",
     "references/quick-slice-delivery-playbook.md",
@@ -53,16 +56,62 @@ CANONICAL_BUNDLE_REFS = (
     "references/git-workflow-playbook.md",
 )
 
+CANONICAL_BUNDLE_IDS = (
+    "plan-first-build",
+    "product-spec-deliver",
+    "audit-fix-deliver",
+    "govern-change-safely",
+    "ship-hold-remediate",
+    "root-cause-remediate",
+    "beta-feedback-ramp",
+    "quick-slice-deliver",
+    "post-release-close-loop",
+    "capture-project-knowledge",
+    "multi-expert-execution",
+    "direct-execution",
+)
 
-def _check_agent_identity(agent_rules: dict[str, dict]) -> dict:
-    """Each agent must appear in routing-rules.json with positive or negative keywords."""
-    missing = [name for name, rules in agent_rules.items() if not rules.get("positive") and not rules.get("negative")]
+BUNDLE_ANCHOR_RE = re.compile(r'^<a id="([^"]+)"></a>$', re.MULTILINE)
+
+
+def _check_agent_identity(
+    agent_rules: dict[str, dict],
+    catalog_agents: set[str],
+    *,
+    catalog_error: str | None = None,
+) -> dict:
+    """Each agent must carry positive or negative keywords AND be documented in agent-catalog.md."""
+    missing_keywords = [name for name, rules in agent_rules.items() if not rules.get("positive") and not rules.get("negative")]
+    missing_catalog = [name for name in agent_rules if name not in catalog_agents]
+    missing = missing_keywords + [n for n in missing_catalog if n not in missing_keywords]
+    keyword_ok = len(agent_rules) - len(missing_keywords)
+    catalog_ok = len(agent_rules) - len(missing_catalog)
+    detail = f"{keyword_ok}/{len(agent_rules)} agents have keyword entries; {catalog_ok}/{len(agent_rules)} documented in agent-catalog.md"
+    if catalog_error:
+        detail = f"{detail}; {catalog_error}"
     return {
         "name": "agent_identity",
-        "passed": len(missing) == 0,
-        "detail": f"{len(agent_rules) - len(missing)}/{len(agent_rules)} agents have keyword entries",
-        "missing": missing,
+        "passed": len(missing) == 0 and catalog_error is None,
+        "detail": detail,
+        "missing_keywords": missing_keywords,
+        "missing_catalog": missing_catalog,
+        "catalog_error": catalog_error,
     }
+
+
+def _load_catalog_agents(skill_dir: Path) -> tuple[set[str], str | None]:
+    """Parse agent names from `## N. <Name>` headers in agent-catalog.md.
+
+    Catalog availability is part of the runtime contract, so read failures are returned
+    to the caller and must fail the health check closed.
+    """
+    catalog_path = skill_dir / "references" / "agent-catalog.md"
+    try:
+        text = catalog_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        return set(), f"failed to read references/agent-catalog.md: {exc}"
+    # Match `## 1. Java Virtuoso` style headers (numbered agent entries only).
+    return {m.group(1).strip() for m in re.finditer(r"^##\s+\d+\.\s+(.+)$", text, re.M)}, None
 
 
 def _check_agent_manifest(agent_rules: dict[str, dict]) -> dict:
@@ -113,16 +162,37 @@ def _check_routing_rules(config: dict) -> dict:
 
 
 def _check_workflow_bundles(skill_dir: Path) -> dict:
-    """All canonical bundle reference files must exist under references/."""
-    missing: list[str] = []
+    """Canonical bundle playbooks and all 12 stable bundle IDs must exist."""
+    missing_playbooks: list[str] = []
     for rel in CANONICAL_BUNDLE_REFS:
         if not (skill_dir / rel).exists():
-            missing.append(rel)
+            missing_playbooks.append(rel)
+
+    catalog_path = skill_dir / "references" / "workflow-bundles.md"
+    catalog_error: str | None = None
+    anchors: list[str] = []
+    try:
+        anchors = BUNDLE_ANCHOR_RE.findall(catalog_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError) as exc:
+        catalog_error = f"failed to read references/workflow-bundles.md: {exc}"
+
+    anchor_counts = {bundle_id: anchors.count(bundle_id) for bundle_id in CANONICAL_BUNDLE_IDS}
+    missing_bundle_ids = [bundle_id for bundle_id, count in anchor_counts.items() if count == 0]
+    duplicate_bundle_ids = [bundle_id for bundle_id, count in anchor_counts.items() if count > 1]
+    detected_count = len(CANONICAL_BUNDLE_IDS) - len(missing_bundle_ids)
+    passed = not missing_playbooks and catalog_error is None and not missing_bundle_ids and not duplicate_bundle_ids
     return {
         "name": "workflow_bundles",
-        "passed": not missing,
-        "detail": f"{len(CANONICAL_BUNDLE_REFS) - len(missing)}/{len(CANONICAL_BUNDLE_REFS)} canonical bundle references accessible",
-        "missing": missing,
+        "passed": passed,
+        "detail": (
+            f"{len(CANONICAL_BUNDLE_REFS) - len(missing_playbooks)}/{len(CANONICAL_BUNDLE_REFS)} "
+            f"canonical bundle playbook files accessible; {detected_count}/{len(CANONICAL_BUNDLE_IDS)} "
+            "stable bundle IDs cataloged"
+        ),
+        "missing_playbooks": missing_playbooks,
+        "missing_bundle_ids": missing_bundle_ids,
+        "duplicate_bundle_ids": duplicate_bundle_ids,
+        "catalog_error": catalog_error,
     }
 
 
@@ -219,7 +289,8 @@ def check_health(repo_path: Path, log_path: str = DECISION_LOG_DEFAULT) -> dict:
         }
 
     agent_rules = config.get("agent_rules", {})
-    checks.append(_check_agent_identity(agent_rules))
+    catalog_agents, catalog_error = _load_catalog_agents(SKILL_DIR)
+    checks.append(_check_agent_identity(agent_rules, catalog_agents, catalog_error=catalog_error))
     checks.append(_check_agent_manifest(agent_rules))
     checks.append(_check_routing_rules(config))
     checks.append(_check_workflow_bundles(SKILL_DIR))
@@ -229,7 +300,7 @@ def check_health(repo_path: Path, log_path: str = DECISION_LOG_DEFAULT) -> dict:
     failed = [c for c in checks if not c["passed"]]
     if not failed:
         verdict = "HEALTHY"
-    elif any(c["name"] in {"agent_manifest", "routing_rules"} for c in failed):
+    elif any(c["name"] in {"agent_identity", "agent_manifest", "routing_rules", "workflow_bundles"} for c in failed):
         verdict = "BROKEN"
     else:
         verdict = "DEGRADED"

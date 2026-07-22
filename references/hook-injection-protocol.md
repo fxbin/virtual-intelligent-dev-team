@@ -48,12 +48,11 @@ Harrison 的区分:
 | Lead Agent | 需注入的 spec 条目 |
 |------------|-------------------|
 | Java Virtuoso | `routing-rules.json#java-profile`, `language-profiles.yaml#java`, `execution-quality-guardrails.md` |
-| Frontend Virtuoso | `routing-rules.json#frontend-profile`, `language-profiles.yaml#typescript`, `execution-quality-guardrails.md` |
 | API Contract Sentinel | `routing-rules.json#api-contract`, `execution-quality-guardrails.md` |
 | Sentinel Architect | `routing-rules.json#architecture`, `anti-entropy-governance.md` |
 | Code Audit Council | `routing-rules.json#audit`, `execution-quality-guardrails.md` |
 | Git Workflow Guardian | `routing-rules.json#git-workflow`, `git-workflow-playbook.md` |
-| World-Class Product Architect | `routing-rules.json#product`, `goal-framing-protocol.md` |
+| World-Class Product Architect | `routing-rules.json#product`, `routing-rules.json#frontend-profile`, `language-profiles.yaml#typescript`, `goal-framing-protocol.md`, `execution-quality-guardrails.md` |
 | Technical Trinity | `routing-rules.json#fullstack`, `execution-quality-guardrails.md` |
 | Data Pipeline Guardian | `routing-rules.json#data`, `execution-quality-guardrails.md` |
 

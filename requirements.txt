@@ -1,0 +1,6 @@
+# 运行时公共依赖
+# generate_response_pack.py / verify_action.py / route_request.py 通过 response_contract.py
+# 依赖 jsonschema 做 sidecar 校验；check_language_profiles.py / emit_telemetry.py 依赖 PyYAML
+# 解析 language-profiles.yaml 与 abstraction_keywords.yaml。
+jsonschema>=4.0
+PyYAML>=5.1

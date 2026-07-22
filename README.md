@@ -1,6 +1,6 @@
 # Virtual Intelligent Dev Team
 
-[![Version](https://img.shields.io/badge/version-v6.0.5-8b5cf6?style=flat-square)](./VERSION)
+[![Version](https://img.shields.io/badge/version-v6.0.7-8b5cf6?style=flat-square)](./VERSION)
 [![License](https://img.shields.io/badge/license-MIT-10b981?style=flat-square)](./LICENSE)
 [![Status](https://img.shields.io/badge/status-production--ready-f59e0b?style=flat-square)]()
 [![Archetype](https://img.shields.io/badge/archetype-router-06b6d4?style=flat-square)](./SKILL.md)
@@ -44,6 +44,16 @@
 ---
 
 ## 🚀 5 分钟快速上手
+
+### 0. 运行维护脚本前安装依赖
+
+直接调用 skill 不需要额外安装；如果要运行路由、schema、遥测或回归脚本，先执行：
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+`requirements.txt` 统一声明 `jsonschema` 与 `PyYAML`，避免不同维护环境依赖隐式存在。
 
 ### 1. 最简单的使用场景（小切片交付）
 
@@ -307,6 +317,8 @@ virtual-intelligent-dev-team/
   - [docs/design-philosophy.md](docs/design-philosophy.md)
 - 文档索引：
   - [docs/README.md](docs/README.md)
+- 端到端示例：
+  - [assets/end-to-end-example.md](assets/end-to-end-example.md)
 
 如果你想先上手：
 

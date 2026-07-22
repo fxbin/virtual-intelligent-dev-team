@@ -55,12 +55,31 @@ Quick reference for playbooks and protocols used by core scripts.
 | [workflow-quality-baseline.md](./workflow-quality-baseline.md) | regression-cases.json | Workflow quality baseline |
 | [trigger-health-baseline.md](./trigger-health-baseline.md) | regression-cases.json | Trigger health diagnostics |
 | [observability-protocol.md](./observability-protocol.md) | emit_telemetry.py, inspect_decision_log.py, verify_action.py | Observability three pillars and per-layer SLO |
+| [workflow-bundles.md](./workflow-bundles.md) | check_harness_health.py | 12 workflow bundle definitions and confidence levels |
+| [state-schema-spec.md](./state-schema-spec.md) | verify_action.py | State field ownership and layer-write contract |
 
 ## Supporting References
+
+Conceptual references not bound to a single script — they document protocols, schemas, and patterns consumed across the workflow.
 
 | File | Purpose |
 |------|---------|
 | [subagent-exec-guide.md](./subagent-exec-guide.md) | Subagent spawning patterns |
+| [coordination-handoff-templates.md](./coordination-handoff-templates.md) | Templates for structured lead-to-assistant handoffs |
+| [dispatch-activation-cards.md](./dispatch-activation-cards.md) | Cards for framing assistant activation prompts |
+| [evidence-ledger-schema.md](./evidence-ledger-schema.md) | Schema for recording bounded-iteration rounds |
+| [loop-orchestration.md](./loop-orchestration.md) | Multi-round optimization loop execution model |
+| [mutation-catalog-patterns.md](./mutation-catalog-patterns.md) | Deterministic skill-file mutation patterns |
+| [self-optimization-architecture.md](./self-optimization-architecture.md) | Turns one-shot dispatch into controlled optimization loops |
+| [spec-evolution-protocol.md](./spec-evolution-protocol.md) | Evolves specs from static rules to self-updating contracts |
+| [yagni-guardrail.md](./yagni-guardrail.md) | Detects unrequested abstractions to prevent over-building |
+| [complexity-ladder.md](./complexity-ladder.md) | Five-step test for retaining or cutting layers |
+| [contract-lock-protocol.md](./contract-lock-protocol.md) | Forces signed contract-spec before cross-team WorkOrders |
+| [failure-runbook.md](./failure-runbook.md) | Retry, escalation, and recovery paths per failure mode |
+| [hook-injection-protocol.md](./hook-injection-protocol.md) | Injects spec context into workers via hooks |
+| [layer-reinforcement-protocol.md](./layer-reinforcement-protocol.md) | Independent checks and fallbacks for the six layers |
+| [verifier-extraction-guide.md](./verifier-extraction-guide.md) | Pain-driven rules for extracting the Verifier node |
+| [workspace-journal-protocol.md](./workspace-journal-protocol.md) | Append-only event journal for durable progress |
 | SKILL.md Output template | Response structure requirements |
 
 ---

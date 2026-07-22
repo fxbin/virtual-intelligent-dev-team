@@ -10,7 +10,7 @@
 
 当 WorkOrder 满足以下任一条件时,必须执行 contract lock:
 
-- Lead 是前端角色(Frontend Virtuoso / Technical Trinity),且任务涉及 API 调用
+- Lead 是前端角色(World-Class Product Architect / Technical Trinity),且任务涉及 API 调用
 - Lead 是后端角色(API Contract Sentinel / Java Virtuoso / Data Pipeline Guardian),且任务涉及前端消费的接口
 - WorkOrder 的 `input_artifacts` 或 `output_artifacts` 包含 API 端点、schema 或接口定义
 - workflow_bundle 是 `plan-first-build` 或 `product-spec-deliver` 且涉及跨端协作
