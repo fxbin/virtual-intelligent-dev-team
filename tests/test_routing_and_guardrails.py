@@ -4968,32 +4968,46 @@ class ValidatorScriptTests(unittest.TestCase):
 
     def test_public_docs_match_delivery_subgraph_contract(self) -> None:
         readme = (SKILL_DIR / "README.md").read_text(encoding="utf-8")
-        deck = (SKILL_DIR / "docs" / "deck.html").read_text(encoding="utf-8")
-        deck_css = (SKILL_DIR / "docs" / "assets" / "deck" / "deck.css").read_text(encoding="utf-8")
-        deck_script = (SKILL_DIR / "docs" / "assets" / "deck" / "deck.js").read_text(encoding="utf-8")
-        architecture = (SKILL_DIR / "docs" / "architecture.html").read_text(encoding="utf-8")
         version = (SKILL_DIR / "VERSION").read_text(encoding="utf-8").strip()
+        docs_dir = SKILL_DIR / "docs"
+        html_names = ("index.html", "architecture.html", "engineering.html", "agents.html", "matrix.html")
+        html_pages = {
+            name: (docs_dir / name).read_text(encoding="utf-8")
+            for name in html_names
+        }
+        site_css = (docs_dir / "assets" / "site.css").read_text(encoding="utf-8")
+        site_script = (docs_dir / "assets" / "site.js").read_text(encoding="utf-8")
+        pages_workflow = (SKILL_DIR / ".github" / "workflows" / "pages.yml").read_text(encoding="utf-8")
 
         self.assertIn("六层闭环", readme)
-        self.assertIn("Team Engine Lite 交付子图", architecture)
-        self.assertIn("12 个 Workflow Bundles", deck)
-        self.assertIn("14 状态机", deck)
-        self.assertEqual(11, deck.count('<section class="slide'))
-        self.assertIn('data-mode="overview"', deck)
-        self.assertIn('class="overview-wall"', deck)
-        self.assertIn(f'href="assets/deck/deck.css?v={version}"', deck)
-        self.assertIn(f'src="assets/deck/deck.js?v={version}"', deck)
-        self.assertNotIn("<style>", deck)
-        self.assertIn("function setMode(mode", deck_script)
-        self.assertIn("setMode('overview')", deck_script)
-        self.assertIn("setMode('present'", deck_script)
-        self.assertNotIn("slide-num", deck)
-        self.assertNotIn("01 / 11", deck)
-        self.assertNotIn("--accent-purple", deck_css)
-        self.assertFalse((SKILL_DIR / "docs" / "assets" / "intro-deck" / "build_pptx.py").exists())
-        self.assertFalse(
-            (SKILL_DIR / "docs" / "assets" / "intro-deck" / "virtual-intelligent-dev-team-intro.pptx").exists()
-        )
+        self.assertFalse((docs_dir / "deck.html").exists())
+        self.assertFalse((docs_dir / "assets" / "deck" / "deck.css").exists())
+        self.assertFalse((docs_dir / "assets" / "deck" / "deck.js").exists())
+        self.assertFalse((docs_dir / ".nojekyll").exists())
+
+        for name, page in html_pages.items():
+            self.assertIn(f'href="assets/site.css?v={version}"', page, name)
+            self.assertIn(f'src="assets/site.js?v={version}"', page, name)
+            self.assertIn('class="skip-link"', page, name)
+            self.assertIn("data-nav-toggle", page, name)
+            self.assertNotIn("<style", page, name)
+            self.assertNotIn("style=", page, name)
+            self.assertNotIn("deck.html", page, name)
+
+        self.assertEqual(12, html_pages["architecture.html"].count('class="bundle-item"'))
+        self.assertIn("14-state machine", html_pages["architecture.html"])
+        self.assertIn("Team Engine Lite", html_pages["architecture.html"])
+        self.assertIn("Anti-entropy", html_pages["engineering.html"])
+        self.assertIn("AGENT / 08", html_pages["agents.html"])
+        self.assertIn("14 dimensions", html_pages["matrix.html"])
+        self.assertIn("--accent: #e4572e", site_css)
+        self.assertIn("prefers-reduced-motion", site_css)
+        self.assertIn('root.classList.add("js")', site_script)
+        self.assertIn("navigator.clipboard.writeText", site_script)
+        self.assertIn("actions/configure-pages@v5", pages_workflow)
+        self.assertIn("actions/upload-pages-artifact@v4", pages_workflow)
+        self.assertIn("actions/deploy-pages@v4", pages_workflow)
+        self.assertIn("path: ./docs", pages_workflow)
 
     def test_version_sync_script_repairs_repo_metadata(self) -> None:
         with make_tempdir() as tmp:
@@ -5009,7 +5023,7 @@ class ValidatorScriptTests(unittest.TestCase):
             self.assertTrue(drift["changed"]["skills-index.json"])
             self.assertTrue(drift["changed"]["virtual-intelligent-dev-team/README.md"])
             self.assertTrue(drift["changed"]["virtual-intelligent-dev-team/references/routing-rules.json"])
-            self.assertTrue(drift["changed"]["virtual-intelligent-dev-team/docs/deck.html"])
+            self.assertTrue(drift["changed"]["virtual-intelligent-dev-team/docs/index.html"])
 
             result = version_sync.sync_all(repo_copy)
 
@@ -5018,11 +5032,11 @@ class ValidatorScriptTests(unittest.TestCase):
             self.assertTrue(result["changed"]["skills-index.json"])
             self.assertTrue(result["changed"]["virtual-intelligent-dev-team/README.md"])
             self.assertTrue(result["changed"]["virtual-intelligent-dev-team/references/routing-rules.json"])
-            self.assertTrue(result["changed"]["virtual-intelligent-dev-team/docs/deck.html"])
+            self.assertTrue(result["changed"]["virtual-intelligent-dev-team/docs/index.html"])
             self.assertIn("`v9.9.9`", (repo_copy / "README.md").read_text(encoding="utf-8"))
             self.assertIn(
                 "v9.9.9",
-                (repo_copy / "virtual-intelligent-dev-team" / "docs" / "deck.html").read_text(encoding="utf-8"),
+                (repo_copy / "virtual-intelligent-dev-team" / "docs" / "index.html").read_text(encoding="utf-8"),
             )
             skills_payload = json.loads((repo_copy / "skills-index.json").read_text(encoding="utf-8"))
             target = next(item for item in skills_payload["skills"] if item["id"] == "virtual-intelligent-dev-team")

@@ -266,7 +266,7 @@ Runtime routing rules (primary routes, stage council overlays, score model, thre
 
 完整版本历史、字段迁移指南和 Memory Keeper 计划见 [docs/release-notes.md](docs/release-notes.md)。
 
-### v6.0.8 (2026-07-22)
+### v6.0.10 (2026-07-23)
 
-治理日志只保留当前 `decision-log.jsonl` 契约；Frontend hook 引用在运行前做可解析性
-校验，首次部署健康检查、兼容链残留扫描和 Git 暂存状态识别由回归测试锁定。
+Pages artifact action 升级到 v4，并删除 custom Actions 静态部署链不使用的
+`.nojekyll`；发布门禁与回归覆盖改为校验真实 artifact 边界。

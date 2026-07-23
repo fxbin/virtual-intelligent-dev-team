@@ -1,1233 +1,216 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="author" content="fxbin">
-    <meta name="description" content="Virtual Intelligent Dev Team - 面向复杂软件工作的闭环协调层。8 个专家 Agent、6 层闭环、1 个交付子图、13 种语言、12 个工作流包。">
-    <title>Virtual Intelligent Dev Team · 面向复杂软件工作的闭环协调层</title>
-    <style>
-        /* ============================================================
-         * 设计令牌（Linear 风格，严格遵循规范）
-         * machine-hallucination 配色：数据深空 + 数据紫 + 数据青 + 数据粉
-         * ink 紫 #9B4DCA 对比度不足，降级为装饰色；正文用浅紫 #c4b5fd
-         * ============================================================ */
-        :root {
-            --bg: #0A0A1A;
-            --bg-card: #13102a;
-            --bg-elevated: #1a1535;
-            --bg-code: #0f0820;
-            --border: #2a1f4d;
-            --border-soft: #1f1738;
-            --text: #ffffff;
-            --text-muted: #c4b5fd;
-            --text-dim: #8b6fc0;
-            --brand: #9B4DCA;
-            --brand-soft: #c4b5fd;
-            --accent: #00CED1;
-            --secondary: #FF1493;
-            --success: #00CED1;
-            --warning: #FF1493;
-            --danger: #FF1493;
-            --radius-sm: 8px;
-            --radius-md: 12px;
-            --radius-lg: 16px;
-            --font-sans: -apple-system, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
-            --font-mono: "SF Mono", "JetBrains Mono", "Menlo", monospace;
-            color-scheme: dark;
-        }
-
-        /* ============================================================
-         * 基础重置
-         * ============================================================ */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-            scroll-padding-top: 80px;
-        }
-
-        body {
-            background: var(--bg);
-            color: var(--text);
-            font-family: var(--font-sans);
-            font-size: 16px;
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            overflow-x: hidden;
-        }
-
-        a {
-            color: inherit;
-            text-decoration: none;
-            transition: color 0.2s ease;
-        }
-
-        a:hover {
-            color: var(--brand-soft);
-        }
-
-        /* ============================================================
-         * 容器
-         * ============================================================ */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 24px;
-        }
-
-        /* ============================================================
-         * 顶部导航：固定顶部，半透明背景 + backdrop-blur
-         * 这是页面唯一允许使用 backdrop-filter 的位置
-         * ============================================================ */
-        .nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 100;
-            background: rgba(10, 10, 26, 0.72);
-            backdrop-filter: saturate(180%) blur(16px);
-            -webkit-backdrop-filter: saturate(180%) blur(16px);
-            border-bottom: 1px solid var(--border);
-        }
-
-        .nav-inner {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 24px;
-            height: 64px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .nav-brand {
-            font-weight: 700;
-            font-size: 18px;
-            letter-spacing: 0.04em;
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .nav-brand-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--brand);
-            display: inline-block;
-        }
-
-        .nav-links {
-            display: flex;
-            align-items: center;
-            gap: 28px;
-        }
-
-        .nav-links a {
-            font-size: 14px;
-            color: var(--text-muted);
-            font-weight: 500;
-        }
-
-        .nav-links a:hover {
-            color: var(--text);
-        }
-
-        .nav-links a.cta-link {
-            color: var(--text);
-            border: 1px solid var(--border-soft);
-            padding: 6px 14px;
-            border-radius: var(--radius-sm);
-        }
-
-        .nav-links a.cta-link:hover {
-            border-color: var(--brand);
-            color: var(--brand-soft);
-        }
-
-        /* ============================================================
-         * 通用 Section 间距：至少 80px
-         * ============================================================ */
-        section {
-            padding: 96px 0;
-        }
-
-        .section-eyebrow {
-            font-size: 13px;
-            font-weight: 600;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: var(--brand-soft);
-            margin-bottom: 16px;
-        }
-
-        .section-title {
-            font-size: 40px;
-            font-weight: 700;
-            letter-spacing: -0.01em;
-            color: var(--text);
-            margin-bottom: 16px;
-            line-height: 1.2;
-        }
-
-        .section-subtitle {
-            font-size: 18px;
-            color: var(--text-muted);
-            max-width: 640px;
-            margin-bottom: 56px;
-            line-height: 1.6;
-        }
-
-        /* ============================================================
-         * Hero：满屏高度
-         * ============================================================ */
-        .hero {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding-top: 96px;
-            padding-bottom: 64px;
-            position: relative;
-        }
-
-        .hero-inner {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 24px;
-            width: 100%;
-        }
-
-        .hero-badges {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-
-        .hero-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 13px;
-            color: var(--text-muted);
-            font-weight: 500;
-            letter-spacing: 0.02em;
-        }
-
-        .hero-badge-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            display: inline-block;
-        }
-
-        .hero-badge-dot.brand { background: var(--brand); }
-        .hero-badge-dot.success { background: var(--success); }
-        .hero-badge-dot.warning { background: var(--warning); }
-
-        .hero h1 {
-            font-size: 64px;
-            font-weight: 700;
-            color: var(--text);
-            letter-spacing: -0.02em;
-            line-height: 1.05;
-            margin-bottom: 24px;
-        }
-
-        .hero-subtitle {
-            font-size: 28px;
-            color: var(--text-muted);
-            font-weight: 500;
-            line-height: 1.3;
-            margin-bottom: 24px;
-            letter-spacing: -0.005em;
-        }
-
-        .hero-desc {
-            font-size: 16px;
-            color: var(--text-dim);
-            max-width: 640px;
-            line-height: 1.7;
-            margin-bottom: 56px;
-        }
-
-        .hero-kpis {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 40px;
-            margin-bottom: 56px;
-        }
-
-        .hero-kpi {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .hero-kpi-number {
-            font-size: 48px;
-            font-weight: 700;
-            color: var(--brand);
-            line-height: 1;
-            letter-spacing: -0.02em;
-            font-family: var(--font-mono);
-        }
-
-        .hero-kpi-label {
-            font-size: 14px;
-            color: var(--text-muted);
-            font-weight: 500;
-            letter-spacing: 0.04em;
-        }
-
-        .hero-cta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 14px 24px;
-            font-size: 15px;
-            font-weight: 600;
-            border-radius: var(--radius-sm);
-            transition: all 0.2s ease;
-            cursor: pointer;
-            border: 1px solid transparent;
-            font-family: var(--font-sans);
-        }
-
-        .btn-primary {
-            background: var(--brand);
-            color: #ffffff;
-            border-color: var(--brand);
-        }
-
-        .btn-primary:hover {
-            background: #9B4DCA;
-            border-color: #9B4DCA;
-            color: #ffffff;
-        }
-
-        .btn-secondary {
-            background: transparent;
-            color: var(--text);
-            border-color: var(--border-soft);
-        }
-
-        .btn-secondary:hover {
-            border-color: var(--brand);
-            color: var(--brand-soft);
-        }
-
-        .btn-large {
-            padding: 18px 36px;
-            font-size: 16px;
-        }
-
-        /* ============================================================
-         * 痛点 Section
-         * ============================================================ */
-        .pain-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
-        }
-
-        .pain-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 36px 32px;
-            transition: border-color 0.2s ease;
-        }
-
-        .pain-card:hover {
-            border-color: var(--border-soft);
-        }
-
-        .pain-index {
-            font-family: var(--font-mono);
-            font-size: 13px;
-            color: var(--brand-soft);
-            letter-spacing: 0.1em;
-            margin-bottom: 20px;
-        }
-
-        .pain-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: 12px;
-            line-height: 1.3;
-        }
-
-        .pain-desc {
-            font-size: 15px;
-            color: var(--text-muted);
-            line-height: 1.7;
-        }
-
-        /* ============================================================
-         * 六层闭环 + Delivery 子图 Section
-         * ============================================================ */
-        .closure-list {
-            display: flex;
-            flex-direction: column;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            overflow: hidden;
-            background: var(--bg-card);
-        }
-
-        .closure-row {
-            display: grid;
-            grid-template-columns: 80px 200px 1fr;
-            align-items: center;
-            padding: 24px 32px;
-            border-bottom: 1px solid var(--border);
-            transition: background 0.2s ease;
-        }
-
-        .closure-row:last-child {
-            border-bottom: none;
-        }
-
-        .closure-row:hover {
-            background: var(--bg-elevated);
-        }
-
-        .closure-num {
-            font-family: var(--font-mono);
-            font-size: 14px;
-            color: var(--brand);
-            font-weight: 600;
-            letter-spacing: 0.05em;
-        }
-
-        .closure-name {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--text);
-            letter-spacing: -0.005em;
-        }
-
-        .closure-desc {
-            font-size: 14px;
-            color: var(--text-muted);
-            line-height: 1.6;
-        }
-
-        /* ============================================================
-         * Agents Section（4x2 网格）
-         * ============================================================ */
-        .agents-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-        }
-
-        .agent-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            padding: 28px 24px;
-            transition: all 0.2s ease;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .agent-card:hover {
-            border-color: var(--brand);
-            transform: translateY(-2px);
-        }
-
-        .agent-symbol {
-            font-size: 18px;
-            color: var(--brand);
-            margin-bottom: 16px;
-            font-family: var(--font-mono);
-        }
-
-        .agent-name {
-            font-size: 17px;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: 8px;
-            line-height: 1.3;
-            letter-spacing: -0.005em;
-        }
-
-        .agent-tagline {
-            font-size: 13px;
-            color: var(--text-muted);
-            line-height: 1.6;
-            margin-bottom: 16px;
-            flex: 1;
-        }
-
-        .agent-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-top: 8px;
-        }
-
-        .agent-tag {
-            font-size: 11px;
-            color: var(--text-dim);
-            padding: 4px 10px;
-            background: var(--bg-elevated);
-            border-radius: 999px;
-            font-family: var(--font-mono);
-            letter-spacing: 0.02em;
-        }
-
-        /* ============================================================
-         * 能力矩阵 Section
-         * ============================================================ */
-        .matrix-wrap {
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            overflow: hidden;
-            background: var(--bg-card);
-        }
-
-        .matrix-header,
-        .matrix-row {
-            display: grid;
-            grid-template-columns: 1.4fr 1fr 1fr;
-            align-items: center;
-        }
-
-        .matrix-header {
-            background: var(--bg-elevated);
-            padding: 18px 32px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .matrix-header > div {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-dim);
-            letter-spacing: 0.14em;
-            text-transform: uppercase;
-        }
-
-        .matrix-row {
-            padding: 22px 32px;
-            border-bottom: 1px solid var(--border);
-            transition: background 0.2s ease;
-        }
-
-        .matrix-row:last-child {
-            border-bottom: none;
-        }
-
-        .matrix-row:hover {
-            background: var(--bg-elevated);
-        }
-
-        .matrix-dim {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        .matrix-vidt {
-            font-size: 14px;
-            color: var(--brand-soft);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .matrix-vidt::before {
-            content: "●";
-            color: var(--brand);
-            font-size: 10px;
-        }
-
-        .matrix-other {
-            font-size: 14px;
-            color: var(--text-dim);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .matrix-other::before {
-            content: "○";
-            color: var(--text-dim);
-            font-size: 10px;
-        }
-
-        /* ============================================================
-         * Quick Start Section
-         * ============================================================ */
-        .quick-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
-        }
-
-        .quick-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 32px 28px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .quick-label {
-            font-size: 12px;
-            color: var(--brand-soft);
-            font-weight: 600;
-            letter-spacing: 0.16em;
-            text-transform: uppercase;
-            margin-bottom: 14px;
-        }
-
-        .quick-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: 12px;
-            letter-spacing: -0.005em;
-        }
-
-        .quick-desc {
-            font-size: 14px;
-            color: var(--text-muted);
-            line-height: 1.7;
-            margin-bottom: 24px;
-        }
-
-        .quick-code {
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 18px 20px;
-            font-family: var(--font-mono);
-            font-size: 13px;
-            line-height: 1.7;
-            color: var(--text-muted);
-            overflow-x: auto;
-            margin-top: auto;
-        }
-
-        .code-comment {
-            color: var(--text-dim);
-        }
-
-        .code-keyword {
-            color: var(--brand-soft);
-            font-weight: 600;
-        }
-
-        .code-string {
-            color: var(--success);
-        }
-
-        .code-flag {
-            color: var(--accent);
-        }
-
-        /* ============================================================
-         * CTA Section
-         * ============================================================ */
-        .cta-section {
-            text-align: center;
-            padding: 128px 0;
-            border-top: 1px solid var(--border);
-        }
-
-        .cta-title {
-            font-size: 48px;
-            font-weight: 700;
-            color: var(--text);
-            letter-spacing: -0.02em;
-            line-height: 1.2;
-            margin-bottom: 16px;
-        }
-
-        .cta-subtitle {
-            font-size: 18px;
-            color: var(--text-muted);
-            margin-bottom: 40px;
-            max-width: 560px;
-            margin-left: auto;
-            margin-right: auto;
-            line-height: 1.6;
-        }
-
-        .cta-meta {
-            margin-top: 28px;
-            font-size: 13px;
-            color: var(--text-dim);
-            font-family: var(--font-mono);
-            letter-spacing: 0.04em;
-        }
-
-        /* ============================================================
-         * Footer
-         * ============================================================ */
-        footer {
-            border-top: 1px solid var(--border);
-            padding: 48px 0;
-            background: var(--bg);
-        }
-
-        .footer-inner {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 24px;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
-            gap: 24px;
-        }
-
-        .footer-copy {
-            font-size: 13px;
-            color: var(--text-dim);
-            font-family: var(--font-mono);
-            letter-spacing: 0.02em;
-        }
-
-        .footer-links {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 24px;
-        }
-
-        .footer-links a {
-            font-size: 13px;
-            color: var(--text-muted);
-            font-weight: 500;
-        }
-
-        .footer-links a:hover {
-            color: var(--brand-soft);
-        }
-
-        /* ============================================================
-         * 响应式：移动端单列
-         * ============================================================ */
-        @media (max-width: 960px) {
-            .nav-links {
-                gap: 16px;
-            }
-            .nav-links a:not(.cta-link) {
-                display: none;
-            }
-            .hero h1 {
-                font-size: 44px;
-            }
-            .hero-subtitle {
-                font-size: 22px;
-            }
-            .hero-kpis {
-                gap: 36px;
-            }
-            .hero-kpi-number {
-                font-size: 36px;
-            }
-            .section-title {
-                font-size: 30px;
-            }
-            .cta-title {
-                font-size: 32px;
-            }
-            .pain-grid,
-            .agents-grid,
-            .quick-grid {
-                grid-template-columns: 1fr;
-            }
-            .closure-row {
-                grid-template-columns: 56px 1fr;
-                gap: 12px;
-                padding: 20px 24px;
-            }
-            .closure-desc {
-                grid-column: 1 / -1;
-                padding-left: 56px;
-                margin-top: 4px;
-            }
-            .matrix-header,
-            .matrix-row {
-                grid-template-columns: 1fr;
-                gap: 8px;
-                padding: 18px 24px;
-            }
-            .matrix-header > div:not(:first-child) {
-                display: none;
-            }
-            .matrix-vidt,
-            .matrix-other {
-                font-size: 13px;
-                padding-left: 16px;
-                border-left: 1px solid var(--border);
-            }
-        }
-
-        @media (max-width: 600px) {
-            section {
-                padding: 72px 0;
-            }
-            .hero {
-                padding-top: 88px;
-            }
-            .hero h1 {
-                font-size: 36px;
-            }
-            .hero-subtitle {
-                font-size: 20px;
-            }
-            .hero-kpis {
-                gap: 28px;
-            }
-            .hero-kpi-number {
-                font-size: 32px;
-            }
-            .hero-cta .btn {
-                flex: 1;
-                justify-content: center;
-            }
-            .cta-section {
-                padding: 96px 0;
-            }
-            .cta-title {
-                font-size: 28px;
-            }
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Virtual Intelligent Dev Team：面向复杂软件工作的闭环协调层，用六层闭环、八个专家角色和可验证证据链完成交付。">
+  <meta name="theme-color" content="#14241f">
+  <title>Virtual Intelligent Dev Team — 复杂软件工作的闭环协调层</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/site.css?v=v6.0.10">
+  <script src="assets/site.js?v=v6.0.10" defer></script>
 </head>
 <body>
+  <a class="skip-link" href="#main-content">跳到主要内容</a>
+  <header class="site-header" data-site-header>
+    <div class="container nav-shell">
+      <a class="brand" href="index.html" aria-label="Virtual Intelligent Dev Team 首页">
+        <span class="brand-mark">VITD</span>
+        <span class="brand-copy">Virtual Intelligent Dev Team<small>Evidence-driven delivery system</small></span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-navigation" aria-label="打开导航" data-nav-toggle>
+        <span></span><span></span>
+      </button>
+      <nav class="site-nav" id="site-navigation" aria-label="主导航" data-site-nav>
+        <a href="index.html" aria-current="page">概览</a>
+        <a href="architecture.html">架构</a>
+        <a href="engineering.html">工程化</a>
+        <a href="agents.html">角色</a>
+        <a href="matrix.html">对比</a>
+        <a class="nav-github" href="https://github.com/fxbin/virtual-intelligent-dev-team">GitHub ↗</a>
+      </nav>
+    </div>
+  </header>
 
-    <!-- ============================================================
-         顶部导航：固定，半透明背景 + backdrop-blur
-         ============================================================ -->
-    <nav class="nav">
-        <div class="nav-inner">
-            <a href="#top" class="nav-brand">
-                <span class="nav-brand-dot"></span>
-                <span>VIDT</span>
-            </a>
-            <div class="nav-links">
-                <a href="architecture.html">Architecture</a>
-                <a href="engineering.html">Engineering</a>
-                <a href="agents.html">Agents</a>
-                <a href="matrix.html">Matrix</a>
-                <a href="deck.html">Deck</a>
-                <a href="https://github.com/fxbin/virtual-intelligent-dev-team" class="cta-link" target="_blank" rel="noopener">GitHub</a>
+  <main id="main-content">
+    <section class="page-hero home-hero">
+      <div class="container">
+        <div class="hero-grid">
+          <div>
+            <p class="eyebrow">v6.0.10 · Open-source agent skill</p>
+            <h1>复杂工作，不该靠一次回答<span class="accent-text">碰运气。</span></h1>
+            <p class="lede">Virtual Intelligent Dev Team 是面向复杂软件工作的闭环协调层。它把任务分流、专家协作、实现、对抗式验收、发布和反馈收进一条可恢复、可验证的交付链。</p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="#quick-start">5 分钟上手 <span aria-hidden="true">→</span></a>
+              <a class="button button-secondary" href="architecture.html">查看系统架构</a>
             </div>
+            <p class="hero-note">默认人工驱动 · 显式 /auto · 证据不足时 fail closed</p>
+          </div>
+
+          <aside class="signal-board" aria-label="一次典型交付的证据链">
+            <div class="signal-head"><span>Delivery trace</span><span class="live-dot">bounded</span></div>
+            <div class="signal-body">
+              <div class="signal-row"><span class="signal-index">01</span><span class="signal-code">ROUTE</span><span class="signal-state">锁定 Lead 与最小 workflow</span></div>
+              <div class="signal-row"><span class="signal-index">02</span><span class="signal-code">FRAME</span><span class="signal-state">声明范围、验收与停止条件</span></div>
+              <div class="signal-row"><span class="signal-index">03</span><span class="signal-code">BUILD</span><span class="signal-state">Worker 只产出，不自验</span></div>
+              <div class="signal-row"><span class="signal-index">04</span><span class="signal-code">VERIFY</span><span class="signal-state">Verifier 独立判定与修复循环</span></div>
+              <div class="signal-row"><span class="signal-index">05</span><span class="signal-code">EVIDENCE</span><span class="signal-state">以可重放证据完成交接</span></div>
+            </div>
+          </aside>
         </div>
-    </nav>
 
-    <!-- ============================================================
-         Hero：满屏高度
-         ============================================================ -->
-    <header class="hero" id="top">
-        <div class="hero-inner">
-            <!-- 版本与状态徽章 -->
-            <div class="hero-badges">
-                <span class="hero-badge">
-                    <span class="hero-badge-dot brand"></span>
-                    v6.0.8
-                </span>
-                <span class="hero-badge">
-                    <span class="hero-badge-dot success"></span>
-                    MIT License
-                </span>
-                <span class="hero-badge">
-                    <span class="hero-badge-dot warning"></span>
-                    Production Ready
-                </span>
-            </div>
-
-            <h1>Virtual Intelligent<br>Dev Team</h1>
-            <p class="hero-subtitle">面向复杂软件工作的闭环协调层</p>
-            <p class="hero-desc">
-                用六层闭环承接专家路由 · 计划 · 执行 · 迭代 · Beta · Release · Feedback，并在 Delivery closure 内嵌 Team Engine Lite，以工程约束门禁 · Worker/Verifier 对抗式验收 · 反熵治理 · 自优化循环保障交付质量。
-                适合接手"单个专家已经不够、单轮回答也不够"的复杂软件任务。
-            </p>
-
-            <!-- KPI 数字 -->
-            <div class="hero-kpis">
-                <div class="hero-kpi">
-                    <div class="hero-kpi-number">8</div>
-                    <div class="hero-kpi-label">Specialist Agents</div>
-                </div>
-                <div class="hero-kpi">
-                    <div class="hero-kpi-number">6</div>
-                    <div class="hero-kpi-label">Closure Layers</div>
-                </div>
-                <div class="hero-kpi">
-                    <div class="hero-kpi-number">4</div>
-                    <div class="hero-kpi-label">Engineering Pillars</div>
-                </div>
-                <div class="hero-kpi">
-                    <div class="hero-kpi-number">45+</div>
-                    <div class="hero-kpi-label">Automation Scripts</div>
-                </div>
-                <div class="hero-kpi">
-                    <div class="hero-kpi-number">80+</div>
-                    <div class="hero-kpi-label">Reference Docs</div>
-                </div>
-                <div class="hero-kpi">
-                    <div class="hero-kpi-number">13</div>
-                    <div class="hero-kpi-label">Language Profiles</div>
-                </div>
-            </div>
-
-            <!-- CTA 按钮 -->
-            <div class="hero-cta">
-                <a href="deck.html" class="btn btn-primary">▸ 开始演示</a>
-                <a href="https://github.com/fxbin/virtual-intelligent-dev-team" class="btn btn-secondary" target="_blank" rel="noopener">GitHub 仓库</a>
-            </div>
+        <div class="metric-strip" aria-label="系统规模">
+          <div class="metric"><strong>6</strong><span>Closure layers</span></div>
+          <div class="metric"><strong>8</strong><span>Specialist agents</span></div>
+          <div class="metric"><strong>12</strong><span>Workflow bundles</span></div>
+          <div class="metric"><strong>13</strong><span>Language profiles</span></div>
         </div>
-    </header>
-
-    <!-- ============================================================
-         痛点 Section
-         ============================================================ -->
-    <section id="pain">
-        <div class="container">
-            <div class="section-eyebrow">Why Closure Layer</div>
-            <h2 class="section-title">为什么需要闭环协调层</h2>
-            <p class="section-subtitle">
-                单点专家解决的是"换一个视角"，闭环协调层解决的是"如何把多视角收敛成可交付、可回滚、可验证的结果"。
-            </p>
-
-            <div class="pain-grid">
-                <div class="pain-card">
-                    <div class="pain-index">01</div>
-                    <h3 class="pain-title">单专家不够</h3>
-                    <p class="pain-desc">
-                        跨域任务找不到唯一负责角色，前端、后端、安全、产品、发布各有立场，但缺少一个负责"谁主、谁辅、是否需要治理"的协调层。
-                    </p>
-                </div>
-                <div class="pain-card">
-                    <div class="pain-index">02</div>
-                    <h3 class="pain-title">单轮回答不够</h3>
-                    <p class="pain-desc">
-                        复杂任务需要"计划 → 执行 → 验证 → 迭代"的闭环，而不是一次性建议。缺少基线、轮次记忆与回滚点的工作流很容易越改越乱。
-                    </p>
-                </div>
-                <div class="pain-card">
-                    <div class="pain-index">03</div>
-                    <h3 class="pain-title">路由不可见</h3>
-                    <p class="pain-desc">
-                        决策黑箱，无法审计和回滚。一旦结果不对，难以追溯是哪个路由判断、哪一轮迭代、哪一次 fallback 引入的偏差。
-                    </p>
-                </div>
-            </div>
-        </div>
+      </div>
     </section>
 
-    <!-- ============================================================
-         六层闭环 + Delivery 子图 Section
-         ============================================================ -->
-    <section id="closure">
-        <div class="container">
-            <div class="section-eyebrow">Six Closures + Delivery Subgraph</div>
-            <h2 class="section-title">六层闭环与交付子图</h2>
-            <p class="section-subtitle">
-                每一层都有触发条件、核心机制与关键产物；只在任务确实需要时激活，不做无意义流程升级。
-            </p>
-
-            <div class="closure-list">
-                <div class="closure-row">
-                    <div class="closure-num">L1</div>
-                    <div class="closure-name">Planning</div>
-                    <div class="closure-desc">大改写先规划：迁移、重构、项目级改造前置一份轻量 Planning Pack 与进度锚点。</div>
-                </div>
-                <div class="closure-row">
-                    <div class="closure-num">L2</div>
-                    <div class="closure-name">Routing</div>
-                    <div class="closure-desc">按 task shape 路由：依据风险、技术栈、Git 与流程信号选择 lead、assistant、governance 轨道。</div>
-                </div>
-                <div class="closure-row">
-                    <div class="closure-num">L3</div>
-                    <div class="closure-name">Delivery</div>
-                    <div class="closure-desc">快切片交付：窄实现与 bugfix 保留 brief、项目上下文、delivery status 与完成证据。</div>
-                </div>
-                <div class="closure-row">
-                    <div class="closure-num">L4</div>
-                    <div class="closure-name">Iteration</div>
-                    <div class="closure-desc">有界优化循环：保留 baseline、round memory、self-feedback 与 keep / retry / rollback / stop。</div>
-                </div>
-                <div class="closure-row">
-                    <div class="closure-num">L5</div>
-                    <div class="closure-name">Release</div>
-                    <div class="closure-desc">ship / hold 门禁：release gate 不只看 benchmark 绿，还要求结构化完成证据。</div>
-                </div>
-                <div class="closure-row">
-                    <div class="closure-num">L6</div>
-                    <div class="closure-name">Drill</div>
-                    <div class="closure-desc">离线演练：验证回滚、resume、release-gate bootstrap 路径是否真的跑得通。</div>
-                </div>
-                <div class="closure-row">
-                    <div class="closure-num">D1</div>
-                    <div class="closure-name">Delivery Subgraph</div>
-                    <div class="closure-desc">Team Engine Lite 内嵌于 Delivery：Verifier 支持 pass / fail / hold / spec_violation，Lead 仅在 DeliveryCycleReport 后接受。</div>
-                </div>
-            </div>
+    <section class="section section-cream" id="start-here">
+      <div class="container">
+        <div class="section-head">
+          <div><span class="section-kicker">Start here</span><h2>按你的问题进入，不必先读完整套系统。</h2></div>
+          <p>文档入口围绕真实任务组织：先运行一次，再理解架构，最后进入维护与治理细节。</p>
         </div>
+        <div class="grid-3">
+          <a class="card resource-card" href="#quick-start">
+            <span class="resource-index">01 / USE</span>
+            <div><h3>第一次调用</h3><p>从一个小切片、模糊想法或显式自动化任务开始，快速理解输出形态。</p></div>
+            <span class="resource-arrow" aria-hidden="true">↘</span>
+          </a>
+          <a class="card resource-card" href="architecture.html">
+            <span class="resource-index">02 / UNDERSTAND</span>
+            <div><h3>六层闭环</h3><p>看清 Closure、Delivery 子图、Stage Council 和三档 runtime 如何分工。</p></div>
+            <span class="resource-arrow" aria-hidden="true">↘</span>
+          </a>
+          <a class="card resource-card" href="engineering.html">
+            <span class="resource-index">03 / OPERATE</span>
+            <div><h3>工程与门禁</h3><p>理解 Harness、反熵治理、完成证据和发布门禁如何阻止“口头完成”。</p></div>
+            <span class="resource-arrow" aria-hidden="true">↘</span>
+          </a>
+        </div>
+      </div>
     </section>
 
-    <!-- ============================================================
-         8 Specialist Agents Section
-         ============================================================ -->
-    <section id="agents">
-        <div class="container">
-            <div class="section-eyebrow">8 Specialist Agents</div>
-            <h2 class="section-title">专家 Agent 速览</h2>
-            <p class="section-subtitle">
-                每次任务由一个 lead 主导，必要时附加 assistant 与 governance 轨道，避免角色堆叠与责任漂移。
-            </p>
-
-            <div class="agents-grid">
-                <div class="agent-card">
-                    <div class="agent-symbol">◇</div>
-                    <h3 class="agent-name">Java Virtuoso</h3>
-                    <p class="agent-tagline">JVM 生态深度执行</p>
-                    <div class="agent-tags">
-                        <span class="agent-tag">Spring Boot</span>
-                        <span class="agent-tag">JVM 21+</span>
-                    </div>
-                </div>
-                <div class="agent-card">
-                    <div class="agent-symbol">◇</div>
-                    <h3 class="agent-name">Sentinel Architect</h3>
-                    <p class="agent-tagline">安全与架构守护</p>
-                    <div class="agent-tags">
-                        <span class="agent-tag">Security</span>
-                        <span class="agent-tag">Governance</span>
-                    </div>
-                </div>
-                <div class="agent-card">
-                    <div class="agent-symbol">◇</div>
-                    <h3 class="agent-name">Technical Trinity</h3>
-                    <p class="agent-tagline">前端 / 后端 / 数据库三位一体</p>
-                    <div class="agent-tags">
-                        <span class="agent-tag">Full Stack</span>
-                        <span class="agent-tag">Slice</span>
-                    </div>
-                </div>
-                <div class="agent-card">
-                    <div class="agent-symbol">◇</div>
-                    <h3 class="agent-name">Code Audit Council</h3>
-                    <p class="agent-tagline">代码审计委员会</p>
-                    <div class="agent-tags">
-                        <span class="agent-tag">Audit</span>
-                        <span class="agent-tag">Review</span>
-                    </div>
-                </div>
-                <div class="agent-card">
-                    <div class="agent-symbol">◇</div>
-                    <h3 class="agent-name">Git Workflow Guardian</h3>
-                    <p class="agent-tagline">Git 流程与回滚守护</p>
-                    <div class="agent-tags">
-                        <span class="agent-tag">Git</span>
-                        <span class="agent-tag">Rollback</span>
-                    </div>
-                </div>
-                <div class="agent-card">
-                    <div class="agent-symbol">◇</div>
-                    <h3 class="agent-name">World-Class Product Architect</h3>
-                    <p class="agent-tagline">产品架构与 PRD</p>
-                    <div class="agent-tags">
-                        <span class="agent-tag">PRD</span>
-                        <span class="agent-tag">Discovery</span>
-                    </div>
-                </div>
-                <div class="agent-card">
-                    <div class="agent-symbol">◇</div>
-                    <h3 class="agent-name">Data Pipeline Guardian</h3>
-                    <p class="agent-tagline">数据管道守护</p>
-                    <div class="agent-tags">
-                        <span class="agent-tag">Kafka</span>
-                        <span class="agent-tag">Streaming</span>
-                    </div>
-                </div>
-                <div class="agent-card">
-                    <div class="agent-symbol">◇</div>
-                    <h3 class="agent-name">API Contract Sentinel</h3>
-                    <p class="agent-tagline">API 契约与兼容性</p>
-                    <div class="agent-tags">
-                        <span class="agent-tag">Contract</span>
-                        <span class="agent-tag">Compat</span>
-                    </div>
-                </div>
-            </div>
+    <section class="section" id="closures">
+      <div class="container">
+        <div class="section-head">
+          <div><span class="section-kicker">Operating model</span><h2>六层闭环，把一次回复变成持续交付。</h2></div>
+          <p>每一层都留下机器可读状态或可验证产物。Delivery closure 内嵌 Team Engine Lite，但不把简单任务强行升级成重流程。</p>
         </div>
+        <div class="closure-rail">
+          <article class="closure-item"><span class="closure-number">01</span><span class="closure-name">Intent &amp; Routing</span><p>澄清目标、风险与最小路线，选择唯一 Lead 和必要协作角色。</p><span class="closure-output">RouteDecision</span></article>
+          <article class="closure-item"><span class="closure-number">02</span><span class="closure-name">Planning</span><p>锁定范围、非目标、验收证据、回滚点和恢复锚点。</p><span class="closure-output">GoalFrame</span></article>
+          <article class="closure-item"><span class="closure-number">03</span><span class="closure-name">Delivery</span><p>Worker 产出、Verifier 独立验收，失败时进入有限修复循环。</p><span class="closure-output">CycleReport</span></article>
+          <article class="closure-item"><span class="closure-number">04</span><span class="closure-name">Beta</span><p>以分轮 cohort 和清晰判据验证真实使用风险，不用演示代替内测。</p><span class="closure-output">BetaEvidence</span></article>
+          <article class="closure-item"><span class="closure-number">05</span><span class="closure-name">Release</span><p>校验变更、测试、版本、发布边界和 completion evidence。</p><span class="closure-output">ReleaseDecision</span></article>
+          <article class="closure-item"><span class="closure-number">06</span><span class="closure-name">Feedback</span><p>把上线反馈、指标漂移和残余风险回写到下一轮，而非停在交付点。</p><span class="closure-output">NextIteration</span></article>
+        </div>
+        <p class="hero-note">深入阅读：<a class="text-link" href="architecture.html">六层架构与 Team Engine Lite →</a></p>
+      </div>
     </section>
 
-    <!-- ============================================================
-         能力矩阵 Top 6 Section
-         ============================================================ -->
-    <section id="matrix">
-        <div class="container">
-            <div class="section-eyebrow">Capability Matrix</div>
-            <h2 class="section-title">能力矩阵 Top 6</h2>
-            <p class="section-subtitle">
-                不是简单"换几个角色回答"，而是覆盖路由、验证、迭代、发布、记忆与真实 runtime 的协调层。
-            </p>
-
-            <div class="matrix-wrap">
-                <div class="matrix-header">
-                    <div>维度</div>
-                    <div>VIDT 提供</div>
-                    <div>单专家 / 普通路由器</div>
-                </div>
-                <div class="matrix-row">
-                    <div class="matrix-dim">路由可见性</div>
-                    <div class="matrix-vidt">决策日志可审计、可回滚</div>
-                    <div class="matrix-other">黑箱路由，难以追溯</div>
-                </div>
-                <div class="matrix-row">
-                    <div class="matrix-dim">闭环验证</div>
-                    <div class="matrix-vidt">Worker / Verifier 分离 + DeliveryCycleReport</div>
-                    <div class="matrix-other">单轮自评，缺少独立验证</div>
-                </div>
-                <div class="matrix-row">
-                    <div class="matrix-dim">多语言覆盖</div>
-                    <div class="matrix-vidt">13 种语言 profile + 约束注入</div>
-                    <div class="matrix-other">通用提示词，无语言约束</div>
-                </div>
-                <div class="matrix-row">
-                    <div class="matrix-dim">Release 门禁</div>
-                    <div class="matrix-vidt">ship / hold 门禁 + 完成证据</div>
-                    <div class="matrix-other">仅"建议发/不发"</div>
-                </div>
-                <div class="matrix-row">
-                    <div class="matrix-dim">迭代记忆</div>
-                    <div class="matrix-vidt">baseline + round memory + resume</div>
-                    <div class="matrix-other">无限"再来一轮"，无回滚点</div>
-                </div>
-                <div class="matrix-row">
-                    <div class="matrix-dim">真实 Subagent</div>
-                    <div class="matrix-vidt">受控计划 + spawn/wait/merge 证据</div>
-                    <div class="matrix-other">角色扮演误称多 Agent runtime</div>
-                </div>
-            </div>
+    <section class="section section-dark" id="delivery-system">
+      <div class="container">
+        <div class="section-head">
+          <div><span class="section-kicker">Delivery subgraph</span><h2>实现者与验收者，必须是两个责任方向。</h2></div>
+          <p>Team Engine Lite 使用 14 状态机和五类标准对象组织交接；Lead 只能基于 DeliveryCycleReport 接受结果。</p>
         </div>
+        <div class="system-map" role="img" aria-label="六层闭环与 Delivery 子图示意">
+          <div class="map-row">
+            <div class="map-node"><strong>Intent</strong><span>request → route</span></div>
+            <div class="map-node"><strong>Planning</strong><span>scope → evidence</span></div>
+            <div class="map-node is-active"><strong>Delivery</strong><span>bounded execution</span></div>
+            <div class="map-node"><strong>Beta</strong><span>cohort learning</span></div>
+            <div class="map-node"><strong>Release</strong><span>gate decision</span></div>
+            <div class="map-node"><strong>Feedback</strong><span>next iteration</span></div>
+          </div>
+          <div class="delivery-subgraph">
+            <div class="delivery-node">Lead<br>WorkOrder</div>
+            <div class="delivery-node">Worker<br>Output</div>
+            <div class="delivery-node">Verifier<br>Report</div>
+            <div class="delivery-node">Engine<br>Retry / Stop</div>
+            <div class="delivery-node">Human<br>Resolve</div>
+          </div>
+        </div>
+      </div>
     </section>
 
-    <!-- ============================================================
-         Quick Start Section
-         ============================================================ -->
-    <section id="quickstart">
-        <div class="container">
-            <div class="section-eyebrow">Quick Start</div>
-            <h2 class="section-title">三种调用方式</h2>
-            <p class="section-subtitle">
-                默认手动模式适合高风险任务；显式 /auto 进入两阶段自动运行；单专家路由用于领域清晰的小切片。
-            </p>
-
-            <div class="quick-grid">
-                <div class="quick-card">
-                    <div class="quick-label">Manual Mode</div>
-                    <h3 class="quick-title">手动模式</h3>
-                    <p class="quick-desc">
-                        不带 /auto，逐轮确认路由与执行路径，适合高风险任务和需要人工把关的发布决策。
-                    </p>
-                    <pre class="quick-code"><span class="code-comment"># 接管重构并给出可执行分工</span>
-<span class="code-keyword">$virtual-intelligent-dev-team</span> 帮我接管这次
-重构，并给出可执行分工。</pre>
-                </div>
-                <div class="quick-card">
-                    <div class="quick-label">/auto Mode</div>
-                    <h3 class="quick-title">/auto 自动运行</h3>
-                    <p class="quick-desc">
-                        显式 /auto 进入 setup → go 两阶段协议，先建 automation state，再执行有界迭代。
-                    </p>
-                    <pre class="quick-code"><span class="code-comment"># 项目级迁移：先建状态再执行</span>
-<span class="code-keyword">$virtual-intelligent-dev-team</span>
-<span class="code-flag">/auto setup</span> 这个项目级迁移。
-<span class="code-keyword">$virtual-intelligent-dev-team</span>
-<span class="code-flag">/auto go</span></pre>
-                </div>
-                <div class="quick-card">
-                    <div class="quick-label">Expert Routing</div>
-                    <h3 class="quick-title">单专家路由</h3>
-                    <p class="quick-desc">
-                        领域清晰的小切片直接路由到对应专家，保留 quick slice brief 与完成证据。
-                    </p>
-                    <pre class="quick-code"><span class="code-comment"># 邮箱验证小切片：路由到 Technical Trinity</span>
-<span class="code-keyword">$virtual-intelligent-dev-team</span>
-实现用户登录功能的<span class="code-string">邮箱验证</span></pre>
-                </div>
-            </div>
+    <section class="section" id="routes">
+      <div class="container">
+        <div class="section-head">
+          <div><span class="section-kicker">Smallest sufficient route</span><h2>不同任务，走不同重量的路线。</h2></div>
+          <p>系统优先选“足够完成任务的最小流程”，只有风险、规模或证据要求上升时才增加协作与门禁。</p>
         </div>
+        <div class="grid-3">
+          <article class="card"><span class="card-kicker">Quick slice</span><h3>小功能与 Bugfix</h3><p>单 Lead、小范围实现、针对性验证与简洁 evidence。不会自动召集完整团队。</p><ul><li>推荐：<code>direct-execution</code></li><li>保留 Quick Slice Brief</li><li>失败时再升级</li></ul></article>
+          <article class="card"><span class="card-kicker">Plan first</span><h3>重构、迁移与高风险变更</h3><p>先拆阶段与回滚点，再进入实现；Sentinel Architect 对边界和治理负责。</p><ul><li>推荐：<code>plan-first-build</code></li><li>显式 non-goals</li><li>阶段性恢复锚点</li></ul></article>
+          <article class="card"><span class="card-kicker">Product council</span><h3>PRD、原型与产品定义</h3><p>由 World-Class Product Architect 负责，可按需展开产品发现或原型设计专家团。</p><ul><li>推荐：<code>product-spec-deliver</code></li><li>Stage Council 仅为 overlay</li><li>验收与研发路径同源</li></ul></article>
+        </div>
+      </div>
     </section>
 
-    <!-- ============================================================
-         CTA Section
-         ============================================================ -->
-    <section class="cta-section">
-        <div class="container">
-            <h2 class="cta-title">开始你的第一个闭环任务</h2>
-            <p class="cta-subtitle">
-                从一个简单的小切片开始，让协调层接管路由、验证与回滚，把"再来一轮"变成可追溯的迭代。
-            </p>
-            <a href="https://github.com/fxbin/virtual-intelligent-dev-team" class="btn btn-primary btn-large" target="_blank" rel="noopener">★ GitHub Repository</a>
-            <div class="cta-meta">v6.0.8 · MIT License · github.com/fxbin/virtual-intelligent-dev-team</div>
+    <section class="section section-cream" id="agents-preview">
+      <div class="container">
+        <div class="section-head">
+          <div><span class="section-kicker">Specialist roster</span><h2>八个专家，不是八个人同时说话。</h2></div>
+          <p>每次任务有唯一 Lead。协作角色只在边界明确、产物可交接时进入，避免角色数量掩盖责任缺口。</p>
         </div>
+        <div class="grid-4">
+          <article class="card"><span class="card-kicker">01</span><h3>Technical Trinity</h3><p>通用研发实现与小切片交付。</p></article>
+          <article class="card"><span class="card-kicker">02</span><h3>Sentinel Architect</h3><p>架构风险、重构迁移与变更治理。</p></article>
+          <article class="card"><span class="card-kicker">03</span><h3>Product Architect</h3><p>产品定义、PRD、原型与验收协同。</p></article>
+          <article class="card"><span class="card-kicker">04—08</span><h3>Five specialists</h3><p>性能、安全、质量、交付和知识边界按需加入。</p></article>
+        </div>
+        <p class="hero-note"><a class="text-link" href="agents.html">查看完整角色图谱与 Stage Council →</a></p>
+      </div>
     </section>
 
-    <!-- ============================================================
-         Footer
-         ============================================================ -->
-    <footer>
-        <div class="footer-inner">
-            <div class="footer-copy">© fxbin · Virtual Intelligent Dev Team</div>
-            <div class="footer-links">
-                <a href="architecture.html">Architecture</a>
-                <a href="engineering.html">Engineering</a>
-                <a href="agents.html">Agents</a>
-                <a href="matrix.html">Matrix</a>
-                <a href="deck.html">Deck</a>
-                <a href="https://github.com/fxbin/virtual-intelligent-dev-team" target="_blank" rel="noopener">GitHub</a>
+    <section class="section" id="quick-start">
+      <div class="container">
+        <div class="two-column-copy">
+          <div class="sticky-copy">
+            <span class="section-kicker">Quick start</span>
+            <h2>把真实目标交给它，从最小闭环开始。</h2>
+            <p>直接调用 skill 不需要额外安装。只有运行仓库里的维护、路由、schema 或 benchmark 脚本时，才需要安装 Python 依赖。</p>
+            <a class="text-link" href="https://github.com/fxbin/virtual-intelligent-dev-team/blob/main/docs/usage-guide.md">阅读完整使用指南 ↗</a>
+          </div>
+          <div>
+            <div class="code-card">
+              <div class="code-head"><span>small-slice.txt</span><button class="copy-button" type="button" data-copy-target="quick-command">复制</button></div>
+              <pre id="quick-command"><code>/virtual-intelligent-dev-team 实现用户登录功能的邮箱验证</code></pre>
             </div>
+            <ol class="process-list">
+              <li><div><strong>说目标，不用先选 Agent</strong><p>系统会判断 Lead、风险、workflow 和是否需要意图确认。</p></div></li>
+              <li><div><strong>检查范围与验收</strong><p>复杂任务会先锁定 GoalFrame；小任务保留轻量 Quick Slice Brief。</p></div></li>
+              <li><div><strong>根据证据决定完成</strong><p>测试、产物和残余风险进入 completion evidence；“看起来可以”不是发布依据。</p></div></li>
+            </ol>
+            <div class="notice"><strong>自动化默认关闭</strong><p>只有显式输入 <code>/auto</code> 才进入 Setup → Go 协议；恢复时优先读取机器可读状态。</p></div>
+          </div>
         </div>
-    </footer>
+      </div>
+    </section>
 
-    <script>
-        // 平滑滚动到锚点（浏览器原生 scroll-behavior 的轻量补充）
-        // 处理 Nav 高度偏移，避免锚点被固定 Nav 遮挡
-        document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
-            anchor.addEventListener('click', function (e) {
-                var targetId = this.getAttribute('href');
-                if (targetId === '#' || targetId.length < 2) {
-                    return;
-                }
-                var target = document.querySelector(targetId);
-                if (!target) {
-                    return;
-                }
-                e.preventDefault();
-                var offset = 72;
-                var top = target.getBoundingClientRect().top + window.pageYOffset - offset;
-                window.scrollTo({ top: top, behavior: 'smooth' });
-            });
-        });
-    </script>
+    <section class="section section-compact">
+      <div class="container">
+        <div class="cta-panel">
+          <div><h2>先建立证据链，再扩大协作规模。</h2><p>继续了解工程门禁、反熵治理和为什么它与普通多角色提示词不同。</p></div>
+          <div class="button-row"><a class="button button-primary" href="engineering.html">查看工程化</a><a class="button button-secondary" href="matrix.html">能力对比</a></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-copy"><a class="brand" href="index.html"><span class="brand-mark">VITD</span><span>Virtual Intelligent Dev Team</span></a><p>让复杂软件工作拥有明确责任、有限循环与可重放的完成证据。</p></div>
+        <nav class="footer-links" aria-label="页脚导航"><a href="architecture.html">架构</a><a href="engineering.html">工程化</a><a href="agents.html">角色</a><a href="matrix.html">能力对比</a><a href="https://github.com/fxbin/virtual-intelligent-dev-team">GitHub</a><a href="https://github.com/fxbin/virtual-intelligent-dev-team/blob/main/LICENSE">MIT License</a></nav>
+      </div>
+      <div class="footer-bottom"><span>v6.0.10 · Static GitHub Pages</span><span>© <span data-current-year>2026</span> fxbin</span></div>
+    </div>
+  </footer>
 </body>
 </html>

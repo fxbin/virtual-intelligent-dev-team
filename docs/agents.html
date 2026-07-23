@@ -1,678 +1,94 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="author" content="fxbin">
-<title>8 Specialist Agents — Virtual Intelligent Dev Team</title>
-<style>
-  /* === 设计 Token（machine-hallucination 配色） === */
-  :root {
-    --bg: #0A0A1A;
-    --bg-card: #13102a;
-    --bg-elevated: #1a1535;
-    --bg-code: #0f0820;
-    --border: #2a1f4d;
-    --border-soft: #1f1738;
-    --text: #ffffff;
-    --text-muted: #c4b5fd;
-    --text-dim: #8b6fc0;
-    --brand: #9B4DCA;
-    --brand-soft: #c4b5fd;
-    --accent: #00CED1;
-    --secondary: #FF1493;
-    --success: #00CED1;
-    --warning: #FF1493;
-    --danger: #FF1493;
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
-    color-scheme: dark;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  html { scroll-behavior: smooth; }
-
-  body {
-    font-family: -apple-system, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    line-height: 1.5;
-  }
-
-  code, .mono {
-    font-family: "SF Mono", "JetBrains Mono", "Menlo", monospace;
-  }
-
-  /* === 顶部导航 === */
-  .nav {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    height: 60px;
-    background: rgba(10, 10, 26, 0.7);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-    z-index: 100;
-  }
-  .nav-inner {
-    max-width: 1200px;
-    height: 100%;
-    margin: 0 auto;
-    padding: 0 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-  }
-  .nav-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--text-muted);
-    font-size: 14px;
-    font-weight: 500;
-    text-decoration: none;
-    transition: color 0.15s;
-  }
-  .nav-back:hover { color: var(--text); }
-  .nav-back .arrow { color: var(--text-dim); }
-  .nav-links {
-    display: flex;
-    gap: 24px;
-    align-items: center;
-  }
-  .nav-links a {
-    color: var(--text-muted);
-    font-size: 14px;
-    text-decoration: none;
-    transition: color 0.15s;
-  }
-  .nav-links a:hover,
-  .nav-links a.active { color: var(--text); }
-
-  /* === 主体 === */
-  main {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 120px 24px 80px;
-  }
-  .page-head { margin-bottom: 64px; }
-  .page-head h1 {
-    font-size: 48px;
-    font-weight: 700;
-    color: var(--text);
-    letter-spacing: -0.02em;
-    line-height: 1.1;
-    margin-bottom: 16px;
-  }
-  .page-head .sub {
-    font-size: 20px;
-    color: var(--text-muted);
-    line-height: 1.5;
-    max-width: 760px;
-  }
-
-  section { margin-bottom: 64px; }
-  section:last-child { margin-bottom: 0; }
-
-  .lead {
-    font-size: 17px;
-    color: var(--text-muted);
-    line-height: 1.7;
-    max-width: 820px;
-    margin-bottom: 64px;
-  }
-  .lead code {
-    color: var(--brand-soft);
-    background: var(--bg-elevated);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 14px;
-  }
-
-  /* === Agent 网格 === */
-  .roster {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-  }
-  .agent-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 26px 28px;
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-  }
-  .agent-head {
-    display: flex;
-    align-items: flex-start;
-    gap: 16px;
-  }
-  .agent-icon {
-    width: 48px; height: 48px;
-    border-radius: var(--radius-md);
-    background: var(--bg-elevated);
-    border: 1px solid var(--border-soft);
-    color: var(--brand-soft);
-    font-family: "SF Mono", "JetBrains Mono", "Menlo", monospace;
-    font-size: 15px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-  .agent-title { flex: 1; min-width: 0; }
-  .agent-title h2 {
-    font-size: 19px;
-    font-weight: 700;
-    color: var(--text);
-    line-height: 1.3;
-    margin-bottom: 4px;
-  }
-  .agent-tag {
-    font-size: 13px;
-    color: var(--text-dim);
-    line-height: 1.4;
-  }
-
-  /* chips */
-  .skills {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  .chip {
-    display: inline-flex;
-    align-items: center;
-    padding: 4px 10px;
-    border-radius: var(--radius-sm);
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-muted);
-    line-height: 1.4;
-    font-family: "SF Mono", "JetBrains Mono", "Menlo", monospace;
-  }
-
-  /* 职责列表 */
-  .duties-label {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-dim);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    margin-bottom: 10px;
-  }
-  .duties {
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
-  }
-  .duty {
-    display: flex;
-    align-items: flex-start;
-    gap: 9px;
-    font-size: 13.5px;
-    color: var(--text-muted);
-    line-height: 1.55;
-  }
-  .duty .mark {
-    color: var(--brand-soft);
-    font-weight: 700;
-    flex-shrink: 0;
-    line-height: 1.55;
-  }
-
-  /* evidence 区块 */
-  .evidence {
-    margin-top: auto;
-    padding: 12px 14px;
-    border-radius: var(--radius-md);
-    background: var(--bg);
-    border: 1px solid var(--border);
-  }
-  .evidence-label {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-dim);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-  }
-  .evidence-text {
-    font-size: 12.5px;
-    color: var(--text-muted);
-    line-height: 1.55;
-  }
-
-  /* === Stage Council Overlay === */
-  .overlay-card {
-    background: var(--bg-card);
-    border: 1px dashed var(--border-soft);
-    border-radius: var(--radius-lg);
-    padding: 28px 32px;
-  }
-  .overlay-head {
-    display: flex;
-    align-items: baseline;
-    gap: 12px;
-    margin-bottom: 14px;
-    flex-wrap: wrap;
-  }
-  .overlay-tag {
-    font-family: "SF Mono", "JetBrains Mono", "Menlo", monospace;
-    font-size: 11px;
-    color: var(--accent);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-  }
-  .overlay-card h3 {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--text);
-  }
-  .overlay-card p {
-    font-size: 14px;
-    color: var(--text-muted);
-    line-height: 1.7;
-    margin-bottom: 20px;
-  }
-  .overlay-card p code {
-    color: var(--brand-soft);
-    background: var(--bg-elevated);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 13px;
-  }
-  .overlay-councils {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-  }
-  .council-item {
-    padding: 16px 18px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-  }
-  .council-item .name {
-    font-family: "SF Mono", "JetBrains Mono", "Menlo", monospace;
-    font-size: 13px;
-    color: var(--accent);
-    margin-bottom: 6px;
-  }
-  .council-item .desc {
-    font-size: 13px;
-    color: var(--text-muted);
-    line-height: 1.6;
-  }
-
-  /* === Footer === */
-  footer {
-    border-top: 1px solid var(--border);
-    padding: 32px 24px;
-    margin-top: 80px;
-  }
-  .footer-inner {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 16px;
-    font-size: 13px;
-    color: var(--text-dim);
-  }
-  .footer-links {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-  .footer-links a {
-    color: var(--text-muted);
-    text-decoration: none;
-    transition: color 0.15s;
-  }
-  .footer-links a:hover { color: var(--text); }
-
-  /* === 响应式 === */
-  @media (max-width: 768px) {
-    main { padding: 100px 16px 60px; }
-    .page-head h1 { font-size: 36px; }
-    .page-head .sub { font-size: 17px; }
-    .nav-links { gap: 14px; }
-    .nav-links a { font-size: 13px; }
-    .roster { grid-template-columns: 1fr; gap: 16px; }
-    .agent-card { padding: 20px 20px; }
-    .overlay-councils { grid-template-columns: 1fr; }
-  }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Virtual Intelligent Dev Team 的八个专家角色、路由边界、证据要求与阶段专家团。">
+  <meta name="theme-color" content="#14241f">
+  <title>专家角色图谱 — Virtual Intelligent Dev Team</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/site.css?v=v6.0.10">
+  <script src="assets/site.js?v=v6.0.10" defer></script>
 </head>
 <body>
-  <!-- 顶部导航 -->
-  <nav class="nav">
-    <div class="nav-inner">
-      <a class="nav-back" href="index.html">
-        <span class="arrow">←</span>
-        <span>Virtual Intelligent Dev Team</span>
-      </a>
-      <div class="nav-links">
-        <a href="architecture.html">Architecture</a>
-        <a href="engineering.html">Engineering</a>
-        <a href="agents.html" class="active">Agents</a>
-        <a href="matrix.html">Matrix</a>
-        <a href="deck.html">Deck</a>
-        <a href="https://github.com/fxbin/virtual-intelligent-dev-team" target="_blank" rel="noopener">GitHub</a>
+  <a class="skip-link" href="#main-content">跳到主要内容</a>
+  <header class="site-header" data-site-header>
+    <div class="container nav-shell">
+      <a class="brand" href="index.html" aria-label="Virtual Intelligent Dev Team 首页"><span class="brand-mark">VITD</span><span class="brand-copy">Virtual Intelligent Dev Team<small>Evidence-driven delivery system</small></span></a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-navigation" aria-label="打开导航" data-nav-toggle><span></span><span></span></button>
+      <nav class="site-nav" id="site-navigation" aria-label="主导航" data-site-nav><a href="index.html">概览</a><a href="architecture.html">架构</a><a href="engineering.html">工程化</a><a href="agents.html" aria-current="page">角色</a><a href="matrix.html">对比</a><a class="nav-github" href="https://github.com/fxbin/virtual-intelligent-dev-team">GitHub ↗</a></nav>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <section class="page-hero">
+      <div class="container">
+        <p class="eyebrow">Agent catalog · v6.0.10</p>
+        <h1>八个专家，<span class="accent-text">一个责任中心。</span></h1>
+        <p class="lede">系统不会让所有角色同时发言。每个任务只选择一个 Lead，协作角色必须有明确输入、输出、证据和退出条件。</p>
+        <div class="page-index" aria-label="本页目录"><a href="#routing">路由原则</a><a href="#roster">八个角色</a><a href="#councils">Stage Councils</a><a href="#examples">路由示例</a></div>
       </div>
-    </div>
-  </nav>
-
-  <main>
-    <!-- 页头 -->
-    <div class="page-head">
-      <h1>8 Specialist Agents</h1>
-      <p class="sub">按任务形状路由的专家角色</p>
-    </div>
-
-    <p class="lead">
-      八位专家 Agent 覆盖了从代码到产品、从架构到发布的完整软件交付链路，每位都拥有独立的擅长领域、核心职责与可验证的交付证据要求。所有 Agent 在 <code>references/agent-catalog.md</code>（叙述版）与 <code>references/routing-rules.json</code>（机器可读版）中双重定义。
-    </p>
-
-    <!-- 8 Agent 网格 -->
-    <section class="roster">
-      <!-- 1. Java Virtuoso -->
-      <article class="agent-card">
-        <div class="agent-head">
-          <div class="agent-icon">JV</div>
-          <div class="agent-title">
-            <h2>Java Virtuoso</h2>
-            <div class="agent-tag">JVM 生态深度专家</div>
-          </div>
-        </div>
-        <div class="skills">
-          <span class="chip">Java</span>
-          <span class="chip">Kotlin</span>
-          <span class="chip">Spring Boot 3.x</span>
-          <span class="chip">Gradle/Maven</span>
-          <span class="chip">JVM 21+</span>
-        </div>
-        <div>
-          <div class="duties-label">核心职责</div>
-          <div class="duties">
-            <div class="duty"><span class="mark">▸</span><span>JVM 性能调优与内存分析</span></div>
-            <div class="duty"><span class="mark">▸</span><span>Spring 生态架构设计</span></div>
-            <div class="duty"><span class="mark">▸</span><span>Java/Kotlin 代码审查与重构</span></div>
-            <div class="duty"><span class="mark">▸</span><span>并发与事务边界治理</span></div>
-          </div>
-        </div>
-        <div class="evidence">
-          <div class="evidence-label">Evidence Requirements</div>
-          <div class="evidence-text">JVM 测试报告 + 性能基准对比 + 依赖兼容性矩阵</div>
-        </div>
-      </article>
-
-      <!-- 2. Sentinel Architect -->
-      <article class="agent-card">
-        <div class="agent-head">
-          <div class="agent-icon">SA</div>
-          <div class="agent-title">
-            <h2>Sentinel Architect</h2>
-            <div class="agent-tag">架构风险与高危变更治理</div>
-          </div>
-        </div>
-        <div class="skills">
-          <span class="chip">架构重构</span>
-          <span class="chip">迁移</span>
-          <span class="chip">大型系统拆分</span>
-          <span class="chip">高风险变更</span>
-        </div>
-        <div>
-          <div class="duties-label">核心职责</div>
-          <div class="duties">
-            <div class="duty"><span class="mark">▸</span><span>架构风险评估与决策</span></div>
-            <div class="duty"><span class="mark">▸</span><span>迁移路径规划与回滚点设计</span></div>
-            <div class="duty"><span class="mark">▸</span><span>跨团队技术决策协调</span></div>
-            <div class="duty"><span class="mark">▸</span><span>Pre-Development Planning 主导</span></div>
-          </div>
-        </div>
-        <div class="evidence">
-          <div class="evidence-label">Evidence Requirements</div>
-          <div class="evidence-text">架构决策记录(ADR) + 风险评估矩阵 + 回滚预案</div>
-        </div>
-      </article>
-
-      <!-- 3. Technical Trinity -->
-      <article class="agent-card">
-        <div class="agent-head">
-          <div class="agent-icon">TT</div>
-          <div class="agent-title">
-            <h2>Technical Trinity</h2>
-            <div class="agent-tag">通用后端工程与小切片交付</div>
-          </div>
-        </div>
-        <div class="skills">
-          <span class="chip">Python</span>
-          <span class="chip">Go</span>
-          <span class="chip">Node.js</span>
-          <span class="chip">Rust</span>
-          <span class="chip">通用后端</span>
-        </div>
-        <div>
-          <div class="duties-label">核心职责</div>
-          <div class="duties">
-            <div class="duty"><span class="mark">▸</span><span>小切片功能实现与 bugfix</span></div>
-            <div class="duty"><span class="mark">▸</span><span>Quick Slice Brief 主导</span></div>
-            <div class="duty"><span class="mark">▸</span><span>多语言后端代码交付</span></div>
-            <div class="duty"><span class="mark">▸</span><span>目标验证与自审</span></div>
-          </div>
-        </div>
-        <div class="evidence">
-          <div class="evidence-label">Evidence Requirements</div>
-          <div class="evidence-text">Quick Slice Brief + 验证命令 + Delivery Status</div>
-        </div>
-      </article>
-
-      <!-- 4. Code Audit Council -->
-      <article class="agent-card">
-        <div class="agent-head">
-          <div class="agent-icon">CA</div>
-          <div class="agent-title">
-            <h2>Code Audit Council</h2>
-            <div class="agent-tag">安全审计与代码质量审查</div>
-          </div>
-        </div>
-        <div class="skills">
-          <span class="chip">安全审计</span>
-          <span class="chip">代码审查</span>
-          <span class="chip">合规检查</span>
-          <span class="chip">漏洞修复</span>
-        </div>
-        <div>
-          <div class="duties-label">核心职责</div>
-          <div class="duties">
-            <div class="duty"><span class="mark">▸</span><span>安全漏洞识别与修复建议</span></div>
-            <div class="duty"><span class="mark">▸</span><span>代码质量审查与重构建议</span></div>
-            <div class="duty"><span class="mark">▸</span><span>合规性检查</span></div>
-            <div class="duty"><span class="mark">▸</span><span>audit-fix-deliver 工作流主导</span></div>
-          </div>
-        </div>
-        <div class="evidence">
-          <div class="evidence-label">Evidence Requirements</div>
-          <div class="evidence-text">审计报告 + 修复证据 + 回归测试结果</div>
-        </div>
-      </article>
-
-      <!-- 5. Git Workflow Guardian -->
-      <article class="agent-card">
-        <div class="agent-head">
-          <div class="agent-icon">GW</div>
-          <div class="agent-title">
-            <h2>Git Workflow Guardian</h2>
-            <div class="agent-tag">分支策略与回滚保护</div>
-          </div>
-        </div>
-        <div class="skills">
-          <span class="chip">Git 工作流</span>
-          <span class="chip">分支策略</span>
-          <span class="chip">回滚</span>
-          <span class="chip">CI/CD 集成</span>
-        </div>
-        <div>
-          <div class="duties-label">核心职责</div>
-          <div class="duties">
-            <div class="duty"><span class="mark">▸</span><span>分支策略设计与守护</span></div>
-            <div class="duty"><span class="mark">▸</span><span>回滚与 revert 决策</span></div>
-            <div class="duty"><span class="mark">▸</span><span>提交规范治理</span></div>
-            <div class="duty"><span class="mark">▸</span><span>govern-change-safely 主导</span></div>
-          </div>
-        </div>
-        <div class="evidence">
-          <div class="evidence-label">Evidence Requirements</div>
-          <div class="evidence-text">分支策略文档 + 回滚验证 + 提交历史审计</div>
-        </div>
-      </article>
-
-      <!-- 6. World-Class Product Architect -->
-      <article class="agent-card">
-        <div class="agent-head">
-          <div class="agent-icon">PA</div>
-          <div class="agent-title">
-            <h2>World-Class Product Architect</h2>
-            <div class="agent-tag">产品定义与发现专家团 Leader</div>
-          </div>
-        </div>
-        <div class="skills">
-          <span class="chip">PRD</span>
-          <span class="chip">用户研究</span>
-          <span class="chip">竞品分析</span>
-          <span class="chip">路线图</span>
-          <span class="chip">原型设计</span>
-        </div>
-        <div>
-          <div class="duties-label">核心职责</div>
-          <div class="duties">
-            <div class="duty"><span class="mark">▸</span><span>产品战略与 PRD 定义</span></div>
-            <div class="duty"><span class="mark">▸</span><span>Stage Council 协调</span></div>
-            <div class="duty"><span class="mark">▸</span><span>用户研究与竞品分析</span></div>
-            <div class="duty"><span class="mark">▸</span><span>product-spec-deliver 主导</span></div>
-          </div>
-        </div>
-        <div class="evidence">
-          <div class="evidence-label">Evidence Requirements</div>
-          <div class="evidence-text">PRD 文档 + 用户研究报告 + 路线图 + 验收标准</div>
-        </div>
-      </article>
-
-      <!-- 7. Data Pipeline Guardian -->
-      <article class="agent-card">
-        <div class="agent-head">
-          <div class="agent-icon">DP</div>
-          <div class="agent-title">
-            <h2>Data Pipeline Guardian</h2>
-            <div class="agent-tag">实时数据管道与流处理</div>
-          </div>
-        </div>
-        <div class="skills">
-          <span class="chip">Kafka</span>
-          <span class="chip">Flink</span>
-          <span class="chip">Pulsar</span>
-          <span class="chip">实时数仓</span>
-          <span class="chip">数据治理</span>
-        </div>
-        <div>
-          <div class="duties-label">核心职责</div>
-          <div class="duties">
-            <div class="duty"><span class="mark">▸</span><span>实时数据管道设计</span></div>
-            <div class="duty"><span class="mark">▸</span><span>流处理作业优化</span></div>
-            <div class="duty"><span class="mark">▸</span><span>数据质量与一致性治理</span></div>
-            <div class="duty"><span class="mark">▸</span><span>data-pipeline-govern 主导</span></div>
-          </div>
-        </div>
-        <div class="evidence">
-          <div class="evidence-label">Evidence Requirements</div>
-          <div class="evidence-text">管道拓扑图 + 吞吐基准 + 数据质量报告</div>
-        </div>
-      </article>
-
-      <!-- 8. API Contract Sentinel -->
-      <article class="agent-card">
-        <div class="agent-head">
-          <div class="agent-icon">AC</div>
-          <div class="agent-title">
-            <h2>API Contract Sentinel</h2>
-            <div class="agent-tag">API 契约与版本兼容性</div>
-          </div>
-        </div>
-        <div class="skills">
-          <span class="chip">API 设计</span>
-          <span class="chip">契约测试</span>
-          <span class="chip">版本兼容</span>
-          <span class="chip">OpenAPI</span>
-          <span class="chip">gRPC</span>
-        </div>
-        <div>
-          <div class="duties-label">核心职责</div>
-          <div class="duties">
-            <div class="duty"><span class="mark">▸</span><span>API 契约定义与审查</span></div>
-            <div class="duty"><span class="mark">▸</span><span>版本兼容性验证</span></div>
-            <div class="duty"><span class="mark">▸</span><span>契约测试编排</span></div>
-            <div class="duty"><span class="mark">▸</span><span>api-contract-govern 主导</span></div>
-          </div>
-        </div>
-        <div class="evidence">
-          <div class="evidence-label">Evidence Requirements</div>
-          <div class="evidence-text">契约文档 + 兼容性矩阵 + 契约测试报告</div>
-        </div>
-      </article>
     </section>
 
-    <!-- Stage Council Overlay -->
-    <section>
-      <div class="overlay-card">
-        <div class="overlay-head">
-          <span class="overlay-tag">Optional Overlay</span>
-          <h3>Stage Council</h3>
-        </div>
-        <p>
-          阶段专家团是八位 Agent 之上的可选 overlay：只在阶段专家会改变产物顺序时展开，不替代顶层 lead、workflow bundle 或 Team Engine Lite 验收。在 World-Class Product Architect 下按需展开，包含 <code>product-discovery-council</code> 与 <code>prototype-design-council</code> 两个阶段。
-        </p>
-        <div class="overlay-councils">
-          <div class="council-item">
-            <div class="name">product-discovery-council</div>
-            <div class="desc">产品战略、PRD、用户研究、竞品分析、路线图定义</div>
-          </div>
-          <div class="council-item">
-            <div class="name">prototype-design-council</div>
-            <div class="desc">高保真原型、设计系统、可访问性审查、交互验证</div>
-          </div>
+    <section class="section section-cream" id="routing">
+      <div class="container">
+        <div class="section-head"><div><span class="section-kicker">Routing principles</span><h2>角色数量不代表系统能力，责任清晰才代表。</h2></div><p>路由以任务的主要风险和最终产物选择 Lead，再以边界缺口决定是否需要协作。</p></div>
+        <div class="grid-3">
+          <article class="card"><span class="card-kicker">One lead</span><h3>唯一 Lead</h3><p>负责目标、范围、WorkOrder 和最终交付决定。不会用“集体共识”掩盖无人负责。</p></article>
+          <article class="card"><span class="card-kicker">Bounded support</span><h3>按缺口协作</h3><p>协作者只处理清楚的子范围；交接对象、证据和回收点必须可见。</p></article>
+          <article class="card"><span class="card-kicker">Escalate by risk</span><h3>风险驱动升级</h3><p>只有跨领域、生产风险、重复失败或显式多 Agent 请求才增加治理重量。</p></article>
         </div>
       </div>
     </section>
+
+    <section class="section" id="roster">
+      <div class="container">
+        <div class="section-head"><div><span class="section-kicker">Specialist roster</span><h2>八个角色，各自拥有明确的“该做”与“不该做”。</h2></div><p>下面是公开摘要；运行时真源仍以 <code>references/agent-catalog.md</code> 为准。</p></div>
+        <div class="grid-2">
+          <article class="card agent-card"><span class="agent-id">AGENT / 01</span><h3>Java Virtuoso</h3><p>负责 Java 21、Spring Boot、JVM 性能、并发策略与遗留 API 迁移。</p><ul><li>适合：Java / Spring 实现与性能</li><li>不适合：纯 UI、商业战略、Git-only</li><li>证据：JVM 版本、启动参数、回归或基准</li></ul><div class="agent-meta"><span class="tag">java</span><span class="tag">spring</span><span class="tag">jvm</span></div></article>
+          <article class="card agent-card"><span class="agent-id">AGENT / 02</span><h3>Sentinel Architect (NB)</h3><p>负责高风险变更、研究优先交付、分阶段迁移与回滚治理。</p><ul><li>适合：生产关键重构、敏感迁移</li><li>不适合：低风险的一步修复</li><li>证据：风险矩阵、检查点、回滚触发条件</li></ul><div class="agent-meta"><span class="tag">high-risk</span><span class="tag">migration</span><span class="tag">governance</span></div></article>
+          <article class="card agent-card"><span class="agent-id">AGENT / 03</span><h3>Technical Trinity</h3><p>负责通用后端、系统设计、可靠性、DevSecOps-aware 实现与技术落地。</p><ul><li>适合：API、服务、Python / Go / Node / Rust</li><li>不适合：定价、融资、纯视觉重设计</li><li>证据：语言门禁、接口契约、回归结果</li></ul><div class="agent-meta"><span class="tag">backend</span><span class="tag">system-design</span><span class="tag">reliability</span></div></article>
+          <article class="card agent-card"><span class="agent-id">AGENT / 04</span><h3>Code Audit Council</h3><p>负责代码审查、安全评估、可维护性分析与按严重度排序的修复建议。</p><ul><li>适合：review、audit、vulnerability</li><li>不适合：无代码上下文的泛策略</li><li>证据：受影响范围、严重度依据、修复路径</li></ul><div class="agent-meta"><span class="tag">review</span><span class="tag">security</span><span class="tag">quality</span></div></article>
+          <article class="card agent-card"><span class="agent-id">AGENT / 05</span><h3>Git Workflow Guardian</h3><p>负责分支策略、staged Git workflow、提交推送、PR、rebase 与 worktree 安全。</p><ul><li>适合：commit、push、PR、release hygiene</li><li>不适合：纯代码实现或商业讨论</li><li>证据：分支状态、ahead-behind、CI 与 PR</li></ul><div class="agent-meta"><span class="tag">git</span><span class="tag">release</span><span class="tag">worktree</span></div></article>
+          <article class="card agent-card"><span class="agent-id">AGENT / 06</span><h3>World-Class Product Architect</h3><p>负责产品定义、用户流、验收、Beta、UI/UX、前端方向、设计系统与可访问性。</p><ul><li>适合：PRD、原型、React、dashboard</li><li>不适合：纯后端基础设施</li><li>证据：用户流、验收标准、影响范围与 a11y</li></ul><div class="agent-meta"><span class="tag">product</span><span class="tag">ui-ux</span><span class="tag">beta</span></div></article>
+          <article class="card agent-card"><span class="agent-id">AGENT / 07</span><h3>Data Pipeline Guardian</h3><p>负责 ETL/ELT、流处理、数据质量、schema 演进、血缘和数据可观测性。</p><ul><li>适合：Kafka、Spark、Airflow、dbt、CDC</li><li>不适合：无管道影响的一次性 SQL</li><li>证据：拓扑、质量规则、schema 与失败策略</li></ul><div class="agent-meta"><span class="tag">data</span><span class="tag">pipeline</span><span class="tag">schema</span></div></article>
+          <article class="card agent-card"><span class="agent-id">AGENT / 08</span><h3>API Contract Sentinel</h3><p>负责 OpenAPI / AsyncAPI、契约优先、版本治理、安全、幂等和 breaking change。</p><ul><li>适合：REST、GraphQL、gRPC、contract lock</li><li>不适合：无 API 影响的纯 UI</li><li>证据：规范、客户端影响、迁移与威胁模型</li></ul><div class="agent-meta"><span class="tag">api</span><span class="tag">contract</span><span class="tag">compatibility</span></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-dark" id="councils">
+      <div class="container">
+        <div class="section-head"><div><span class="section-kicker">Stage councils</span><h2>专家团是阶段 overlay，不是新的顶层团队。</h2></div><p>两个 Council 都由 World-Class Product Architect 负责，只在阶段内展开 specialists；任务 Lead 和总体责任链不会被替换。</p></div>
+        <div class="grid-2">
+          <article class="card"><span class="card-kicker">product-discovery-council</span><h3>产品发现专家团</h3><p>适合产品战略、PRD、用户研究、竞品、指标和路线图。</p><ul><li>requirement-analyst</li><li>user-researcher</li><li>competitive-analyst</li><li>data-analyst</li><li>roadmap-planner</li></ul></article>
+          <article class="card"><span class="card-kicker">prototype-design-council</span><h3>原型设计专家团</h3><p>适合高保真原型、设计系统、视觉质量和可访问性审查。</p><ul><li>ux-discovery</li><li>design-system-curator</li><li>prototype-builder</li><li>visual-critic</li><li>accessibility-reviewer</li></ul></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="examples">
+      <div class="container">
+        <div class="section-head"><div><span class="section-kicker">Routing examples</span><h2>从主要风险判断 Lead，而不是从关键词数角色。</h2></div><p>相同技术栈的任务，也可能因为主要产物和风险不同而走不同路线。</p></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>请求</th><th>Lead</th><th>Workflow</th><th>为什么</th></tr></thead>
+            <tbody>
+              <tr><th>实现一个 Python API 小功能</th><td>Technical Trinity</td><td><code>quick-slice-deliver</code></td><td>通用实现、低风险、边界明确</td></tr>
+              <tr><th>审查支付模块安全问题并修复</th><td>Code Audit Council</td><td><code>audit-fix-deliver</code></td><td>finding 严重度和独立复检是主线</td></tr>
+              <tr><th>定义知识管理产品 PRD 和原型</th><td>World-Class Product Architect</td><td><code>product-spec-deliver</code></td><td>产品范围、用户流和验收优先</td></tr>
+              <tr><th>迁移生产认证架构并保留回滚</th><td>Sentinel Architect</td><td><code>plan-first-build</code></td><td>生产风险、阶段检查点和回滚主导</td></tr>
+              <tr><th>设计有 breaking change 的公开 API</th><td>API Contract Sentinel</td><td><code>govern-change-safely</code></td><td>客户端影响和迁移窗口是关键风险</td></tr>
+              <tr><th>修复 Kafka 管道重复消费</th><td>Data Pipeline Guardian</td><td><code>root-cause-remediate</code></td><td>消息语义、checkpoint 与根因验证主导</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-compact"><div class="container"><div class="cta-panel"><div><h2>角色负责专业判断，系统负责闭环。</h2><p>最后对比它与普通多角色提示词、单一编码 Agent 和无限自动循环的差异。</p></div><a class="button button-primary" href="matrix.html">查看能力对比</a></div></div></section>
   </main>
 
-  <!-- 页脚 -->
-  <footer>
-    <div class="footer-inner">
-      <span>Virtual Intelligent Dev Team · v6.0.8 · MIT License</span>
-      <div class="footer-links">
-        <a href="index.html">← Back to Home</a>
-        <a href="architecture.html">Architecture</a>
-        <a href="engineering.html">Engineering</a>
-        <a href="agents.html">Agents</a>
-        <a href="matrix.html">Matrix</a>
-        <a href="deck.html">Deck</a>
-        <a href="https://github.com/fxbin/virtual-intelligent-dev-team" target="_blank" rel="noopener">GitHub</a>
-      </div>
-    </div>
-  </footer>
+  <footer class="site-footer"><div class="container"><div class="footer-grid"><div class="footer-copy"><a class="brand" href="index.html"><span class="brand-mark">VITD</span><span>Virtual Intelligent Dev Team</span></a><p>唯一 Lead、按需协作、证据驱动的专家角色图谱。</p></div><nav class="footer-links" aria-label="页脚导航"><a href="index.html">概览</a><a href="architecture.html">架构</a><a href="engineering.html">工程化</a><a href="matrix.html">能力对比</a><a href="https://github.com/fxbin/virtual-intelligent-dev-team">GitHub</a></nav></div><div class="footer-bottom"><span>Agent catalog · v6.0.10</span><span>© <span data-current-year>2026</span> fxbin</span></div></div></footer>
 </body>
 </html>

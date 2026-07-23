@@ -1,456 +1,99 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="author" content="fxbin">
-<title>Capability Matrix — Virtual Intelligent Dev Team</title>
-<style>
-  /* === 设计 Token（machine-hallucination 配色） === */
-  :root {
-    --bg: #0A0A1A;
-    --bg-card: #13102a;
-    --bg-elevated: #1a1535;
-    --bg-code: #0f0820;
-    --border: #2a1f4d;
-    --border-soft: #1f1738;
-    --text: #ffffff;
-    --text-muted: #c4b5fd;
-    --text-dim: #8b6fc0;
-    --brand: #9B4DCA;
-    --brand-soft: #c4b5fd;
-    --accent: #00CED1;
-    --secondary: #FF1493;
-    --success: #00CED1;
-    --warning: #FF1493;
-    --danger: #FF1493;
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
-    color-scheme: dark;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  html { scroll-behavior: smooth; }
-
-  body {
-    font-family: -apple-system, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    line-height: 1.5;
-  }
-
-  code, .mono {
-    font-family: "SF Mono", "JetBrains Mono", "Menlo", monospace;
-  }
-
-  /* === 顶部导航 === */
-  .nav {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    height: 60px;
-    background: rgba(10, 10, 26, 0.7);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-    z-index: 100;
-  }
-  .nav-inner {
-    max-width: 1200px;
-    height: 100%;
-    margin: 0 auto;
-    padding: 0 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-  }
-  .nav-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--text-muted);
-    font-size: 14px;
-    font-weight: 500;
-    text-decoration: none;
-    transition: color 0.15s;
-  }
-  .nav-back:hover { color: var(--text); }
-  .nav-back .arrow { color: var(--text-dim); }
-  .nav-links {
-    display: flex;
-    gap: 24px;
-    align-items: center;
-  }
-  .nav-links a {
-    color: var(--text-muted);
-    font-size: 14px;
-    text-decoration: none;
-    transition: color 0.15s;
-  }
-  .nav-links a:hover,
-  .nav-links a.active { color: var(--text); }
-
-  /* === 主体 === */
-  main {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 120px 24px 80px;
-  }
-  .page-head { margin-bottom: 64px; }
-  .page-head h1 {
-    font-size: 48px;
-    font-weight: 700;
-    color: var(--text);
-    letter-spacing: -0.02em;
-    line-height: 1.1;
-    margin-bottom: 16px;
-  }
-  .page-head .sub {
-    font-size: 20px;
-    color: var(--text-muted);
-    line-height: 1.5;
-    max-width: 760px;
-  }
-
-  section { margin-bottom: 64px; }
-  section:last-child { margin-bottom: 0; }
-
-  .lead {
-    font-size: 17px;
-    color: var(--text-muted);
-    line-height: 1.7;
-    max-width: 820px;
-    margin-bottom: 64px;
-  }
-
-  /* === 对比表格 === */
-  .matrix-wrap {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-  }
-  .matrix-scroll {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  table.matrix {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    min-width: 720px;
-  }
-  table.matrix thead th {
-    padding: 18px 22px;
-    text-align: left;
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    background: var(--bg-elevated);
-    border-bottom: 1px solid var(--border);
-    white-space: nowrap;
-  }
-  th.col-dim {
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    font-size: 12px;
-    width: 20%;
-  }
-  th.col-ours {
-    color: var(--brand-soft);
-    border-left: 1px solid var(--border);
-  }
-  th.col-theirs {
-    color: var(--text-dim);
-    border-left: 1px solid var(--border);
-  }
-  th .col-icon {
-    display: inline-block;
-    margin-right: 6px;
-    font-size: 10px;
-    vertical-align: middle;
-  }
-  th.col-ours .col-icon { color: var(--brand); }
-  th.col-theirs .col-icon { color: var(--text-dim); }
-
-  table.matrix tbody td {
-    padding: 18px 22px;
-    vertical-align: top;
-    font-size: 14px;
-    line-height: 1.6;
-    border-bottom: 1px solid var(--border);
-  }
-  table.matrix tbody tr:last-child td {
-    border-bottom: none;
-  }
-  td.cell-dim {
-    color: var(--text);
-    font-weight: 600;
-    font-size: 14px;
-    width: 20%;
-  }
-  td.cell-ours {
-    border-left: 1px solid var(--border);
-    background: rgba(155, 77, 202, 0.04);
-  }
-  td.cell-ours .marker {
-    display: inline-block;
-    color: var(--brand);
-    margin-right: 8px;
-    font-size: 10px;
-    vertical-align: middle;
-    line-height: 1;
-  }
-  td.cell-ours .text {
-    color: var(--text-muted);
-  }
-  td.cell-theirs {
-    border-left: 1px solid var(--border);
-  }
-  td.cell-theirs .marker {
-    display: inline-block;
-    color: var(--text-dim);
-    margin-right: 8px;
-    font-size: 10px;
-    vertical-align: middle;
-    line-height: 1;
-  }
-  td.cell-theirs .text {
-    color: var(--text-dim);
-  }
-
-  /* === KPI 卡片 === */
-  .kpi-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-  }
-  .kpi-card {
-    padding: 28px 26px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-  }
-  .kpi-card .num {
-    font-size: 48px;
-    font-weight: 700;
-    color: var(--text);
-    line-height: 1;
-    letter-spacing: -0.02em;
-    margin-bottom: 12px;
-  }
-  .kpi-card .label {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 6px;
-  }
-  .kpi-card .desc {
-    font-size: 13px;
-    color: var(--text-dim);
-    line-height: 1.6;
-  }
-
-  /* === Footer === */
-  footer {
-    border-top: 1px solid var(--border);
-    padding: 32px 24px;
-    margin-top: 80px;
-  }
-  .footer-inner {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 16px;
-    font-size: 13px;
-    color: var(--text-dim);
-  }
-  .footer-links {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-  .footer-links a {
-    color: var(--text-muted);
-    text-decoration: none;
-    transition: color 0.15s;
-  }
-  .footer-links a:hover { color: var(--text); }
-
-  /* === 响应式 === */
-  @media (max-width: 768px) {
-    main { padding: 100px 16px 60px; }
-    .page-head h1 { font-size: 36px; }
-    .page-head .sub { font-size: 17px; }
-    .nav-links { gap: 14px; }
-    .nav-links a { font-size: 13px; }
-    .kpi-row { grid-template-columns: 1fr; gap: 14px; }
-    .kpi-card { padding: 22px 20px; }
-    .kpi-card .num { font-size: 38px; }
-    table.matrix thead th,
-    table.matrix tbody td { padding: 14px 14px; font-size: 13px; }
-  }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Virtual Intelligent Dev Team 与普通多角色提示词、单一编码 Agent、无边界自动循环的能力矩阵。">
+  <meta name="theme-color" content="#14241f">
+  <title>能力矩阵 — Virtual Intelligent Dev Team</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/site.css?v=v6.0.10">
+  <script src="assets/site.js?v=v6.0.10" defer></script>
 </head>
 <body>
-  <!-- 顶部导航 -->
-  <nav class="nav">
-    <div class="nav-inner">
-      <a class="nav-back" href="index.html">
-        <span class="arrow">←</span>
-        <span>Virtual Intelligent Dev Team</span>
-      </a>
-      <div class="nav-links">
-        <a href="architecture.html">Architecture</a>
-        <a href="engineering.html">Engineering</a>
-        <a href="agents.html">Agents</a>
-        <a href="matrix.html" class="active">Matrix</a>
-        <a href="deck.html">Deck</a>
-        <a href="https://github.com/fxbin/virtual-intelligent-dev-team" target="_blank" rel="noopener">GitHub</a>
-      </div>
+  <a class="skip-link" href="#main-content">跳到主要内容</a>
+  <header class="site-header" data-site-header>
+    <div class="container nav-shell">
+      <a class="brand" href="index.html" aria-label="Virtual Intelligent Dev Team 首页"><span class="brand-mark">VITD</span><span class="brand-copy">Virtual Intelligent Dev Team<small>Evidence-driven delivery system</small></span></a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-navigation" aria-label="打开导航" data-nav-toggle><span></span><span></span></button>
+      <nav class="site-nav" id="site-navigation" aria-label="主导航" data-site-nav><a href="index.html">概览</a><a href="architecture.html">架构</a><a href="engineering.html">工程化</a><a href="agents.html">角色</a><a href="matrix.html" aria-current="page">对比</a><a class="nav-github" href="https://github.com/fxbin/virtual-intelligent-dev-team">GitHub ↗</a></nav>
     </div>
-  </nav>
+  </header>
 
-  <main>
-    <!-- 页头 -->
-    <div class="page-head">
-      <h1>Capability Matrix</h1>
-      <p class="sub">14 维度能力对比</p>
-    </div>
-
-    <p class="lead">
-      Virtual Intelligent Dev Team 与普通多专家提示词的根本差异，体现在路由、交付、迭代、发布、治理、验证等 14 个关键能力切片上。
-    </p>
-
-    <!-- 对比表格 -->
-    <section class="matrix-wrap">
-      <div class="matrix-scroll">
-        <table class="matrix">
-          <thead>
-            <tr>
-              <th class="col-dim">维度</th>
-              <th class="col-ours"><span class="col-icon">●</span>本项目</th>
-              <th class="col-theirs"><span class="col-icon">○</span>普通方案</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="cell-dim">任务路由</td>
-              <td class="cell-ours"><span class="marker">●</span><span class="text">选择主负责人、协同者、治理轨道</span></td>
-              <td class="cell-theirs"><span class="marker">○</span><span class="text">往往只是平铺多个角色视角</span></td>
-            </tr>
-            <tr>
-              <td class="cell-dim">日常交付</td>
-              <td class="cell-ours"><span class="marker">●</span><span class="text">小切片 brief、项目上下文、状态锚点</span></td>
-              <td class="cell-theirs"><span class="marker">○</span><span class="text">容易直接跳到实现，缺少可恢复上下文</span></td>
-            </tr>
-            <tr>
-              <td class="cell-dim">执行模式</td>
-              <td class="cell-ours"><span class="marker">●</span><span class="text">支持手动模式与显式 /auto</span></td>
-              <td class="cell-theirs"><span class="marker">○</span><span class="text">通常没有明确模式切换</span></td>
-            </tr>
-            <tr>
-              <td class="cell-dim">恢复能力</td>
-              <td class="cell-ours"><span class="marker">●</span><span class="text">状态优先恢复、resume、恢复锚点</span></td>
-              <td class="cell-theirs"><span class="marker">○</span><span class="text">容易依赖上下文记忆</span></td>
-            </tr>
-            <tr>
-              <td class="cell-dim">迭代能力</td>
-              <td class="cell-ours"><span class="marker">●</span><span class="text">有边界的多轮优化、基线、回滚决策</span></td>
-              <td class="cell-theirs"><span class="marker">○</span><span class="text">常见问题是无限"再来一轮"</span></td>
-            </tr>
-            <tr>
-              <td class="cell-dim">发布治理</td>
-              <td class="cell-ours"><span class="marker">●</span><span class="text">release gate、completion evidence、hold 后续修复入口</span></td>
-              <td class="cell-theirs"><span class="marker">○</span><span class="text">常停留在"建议发/不发"或只看 benchmark 结果</span></td>
-            </tr>
-            <tr>
-              <td class="cell-dim">上线后闭环</td>
-              <td class="cell-ours"><span class="marker">●</span><span class="text">post-release feedback loop</span></td>
-              <td class="cell-theirs"><span class="marker">○</span><span class="text">很少覆盖上线后的反馈回写</span></td>
-            </tr>
-            <tr>
-              <td class="cell-dim">产品协同</td>
-              <td class="cell-ours"><span class="marker">●</span><span class="text">支持产品、研发、技术治理联动</span></td>
-              <td class="cell-theirs"><span class="marker">○</span><span class="text">容易偏单一研发视角</span></td>
-            </tr>
-            <tr>
-              <td class="cell-dim">阶段专家团</td>
-              <td class="cell-ours"><span class="marker">●</span><span class="text">产品发现与原型设计可按需展开 council overlay</span></td>
-              <td class="cell-theirs"><span class="marker">○</span><span class="text">常见做法要么单专家过载，要么所有任务都进重流程</span></td>
-            </tr>
-            <tr>
-              <td class="cell-dim">Beta 验证</td>
-              <td class="cell-ours"><span class="marker">●</span><span class="text">分轮内测、模拟用户、cohort ramp、反馈门禁</span></td>
-              <td class="cell-theirs"><span class="marker">○</span><span class="text">通常只有静态测试计划，没有结构化分轮验证</span></td>
-            </tr>
-            <tr>
-              <td class="cell-dim">工作流质量</td>
-              <td class="cell-ours"><span class="marker">●</span><span class="text">触发健康、快路径廉价、证据新鲜度、artifact 懒创建、authority boundary</span></td>
-              <td class="cell-theirs"><span class="marker">○</span><span class="text">容易越改越重，或把方法建议误说成最终权威</span></td>
-            </tr>
-            <tr>
-              <td class="cell-dim">反熵治理</td>
-              <td class="cell-ours"><span class="marker">●</span><span class="text">delete-first / compat-exception / confirmation-first 路径选择</span></td>
-              <td class="cell-theirs"><span class="marker">○</span><span class="text">常见做法是不断加 fallback 或 guard</span></td>
-            </tr>
-            <tr>
-              <td class="cell-dim">Subagent runtime</td>
-              <td class="cell-ours"><span class="marker">●</span><span class="text">请求候选上限 + 六项原子能力证据 + smoke test 共同决定三级 runtime</span></td>
-              <td class="cell-theirs"><span class="marker">○</span><span class="text">容易把单个能力标志或角色扮演误称为真实多 Agent runtime</span></td>
-            </tr>
-            <tr>
-              <td class="cell-dim">离线验证</td>
-              <td class="cell-ours"><span class="marker">●</span><span class="text">offline loop drill 验证回滚与恢复路径</span></td>
-              <td class="cell-theirs"><span class="marker">○</span><span class="text">很少验证关键闭环路径是否真的跑通</span></td>
-            </tr>
-          </tbody>
-        </table>
+  <main id="main-content">
+    <section class="page-hero">
+      <div class="container">
+        <p class="eyebrow">Capability matrix · v6.0.10</p>
+        <h1>它解决的不是“谁来回答”，而是<span class="accent-text">如何完成。</span></h1>
+        <p class="lede">普通多角色提示词擅长提供视角，单一编码 Agent 擅长直接实现，自动循环擅长持续尝试。VITD 的重点是把这些能力放进有边界、可恢复、可验收的生命周期。</p>
+        <div class="page-index" aria-label="本页目录"><a href="#comparison">十四维对比</a><a href="#use-when">适用边界</a><a href="#tradeoffs">取舍</a></div>
       </div>
     </section>
 
-    <!-- KPI 概览 -->
-    <section class="kpi-row">
-      <div class="kpi-card">
-        <div class="num">14</div>
-        <div class="label">对比维度</div>
-        <div class="desc">覆盖路由、交付、迭代、发布、治理、验证等关键能力切片</div>
-      </div>
-      <div class="kpi-card">
-        <div class="num">6 + 1</div>
-        <div class="label">闭环 + 交付子图</div>
-        <div class="desc">规划 → 路由 → 交付 → 迭代 → 发布 → 演练；Team Engine Lite 内嵌于交付</div>
-      </div>
-      <div class="kpi-card">
-        <div class="num">8</div>
-        <div class="label">专家 Agent</div>
-        <div class="desc">按语言、架构、安全、协作、产品、数据、契约等专长分工</div>
+    <section class="section section-cream" id="comparison">
+      <div class="container">
+        <div class="section-head"><div><span class="section-kicker">14 dimensions</span><h2>对比协作协议，不比较模型智商。</h2></div><p>矩阵描述默认工作方式。任何工具都能通过额外工程补齐缺口；关键区别是这些能力是否已成为可验证的运行时契约。</p></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>维度</th><th>VITD</th><th>普通多角色提示词</th><th>单一编码 Agent</th><th>无边界自动循环</th></tr></thead>
+            <tbody>
+              <tr><th>任务分流</th><td class="cell-strong">Lead + bundle + risk</td><td class="cell-soft">按角色模板</td><td class="cell-soft">通常直接执行</td><td class="cell-soft">由循环策略决定</td></tr>
+              <tr><th>责任中心</th><td class="cell-strong">唯一 Lead</td><td class="cell-soft">多视角易并列</td><td>单 Agent 明确</td><td class="cell-soft">可能随轮次漂移</td></tr>
+              <tr><th>目标边界</th><td class="cell-strong">GoalFrame / Quick Slice</td><td class="cell-soft">依赖 prompt</td><td class="cell-soft">依赖任务说明</td><td class="cell-soft">容易由反馈改写</td></tr>
+              <tr><th>生产 / 验收分离</th><td class="cell-strong">Worker / Verifier</td><td class="cell-soft">常为同轮互评</td><td class="cell-soft">通常自验</td><td class="cell-soft">通常自我反馈</td></tr>
+              <tr><th>失败状态</th><td class="cell-strong">14 状态 + 合法转换</td><td class="cell-soft">自然语言</td><td class="cell-soft">工具状态</td><td class="cell-soft">重试 / 继续</td></tr>
+              <tr><th>最大循环</th><td class="cell-strong">有 max cycles</td><td class="cell-soft">通常无循环</td><td>可配置</td><td class="cell-soft">可能持续运行</td></tr>
+              <tr><th>人工边界</th><td class="cell-strong">Human decision plane</td><td class="cell-soft">随时提问</td><td>权限时提问</td><td class="cell-soft">往往晚触发</td></tr>
+              <tr><th>恢复能力</th><td class="cell-strong">状态优先 resume</td><td class="cell-soft">依赖对话上下文</td><td class="cell-soft">依赖 session</td><td>通常有循环状态</td></tr>
+              <tr><th>发布门禁</th><td class="cell-strong">ship / hold + evidence</td><td class="cell-soft">建议型</td><td>依赖宿主流程</td><td class="cell-soft">目标完成即停止</td></tr>
+              <tr><th>发布后反馈</th><td class="cell-strong">Feedback closure</td><td class="cell-soft">新对话处理</td><td class="cell-soft">另起任务</td><td>可持续观察</td></tr>
+              <tr><th>反熵治理</th><td class="cell-strong">删除 / 兼容 / 确认分类</td><td class="cell-soft">无内建协议</td><td class="cell-soft">依赖代码规范</td><td class="cell-soft">易增加 fallback</td></tr>
+              <tr><th>完成证据</th><td class="cell-strong">结构化 evidence</td><td class="cell-soft">总结型</td><td>命令与 diff</td><td class="cell-soft">循环 metric</td></tr>
+              <tr><th>真实多 Agent 声明</th><td class="cell-strong">三档 fail-closed</td><td class="cell-soft">常为角色模拟</td><td class="cell-soft">通常不声明</td><td>取决于宿主</td></tr>
+              <tr><th>简单任务成本</th><td>最小路线但有协议成本</td><td class="cell-strong">很低</td><td class="cell-strong">最低</td><td class="cell-soft">可能过重</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
+
+    <section class="section" id="use-when">
+      <div class="container">
+        <div class="section-head"><div><span class="section-kicker">Use boundary</span><h2>适合复杂交付，不必接管所有请求。</h2></div><p>最好的路由器也应该知道什么时候不要出现。能用一步安全完成的任务，不应被包装成大型虚拟团队。</p></div>
+        <div class="grid-2">
+          <article class="card"><span class="card-kicker">Use VITD when</span><h3>值得启用</h3><ul><li>任务跨规划、实现、验证或发布多个阶段</li><li>需要唯一 Lead 与多个专业边界协同</li><li>重复失败，需要根因迭代与明确停止条件</li><li>存在生产、数据、API 或迁移风险</li><li>完成声明必须留下结构化证据</li><li>需要 Beta、release、feedback 或 resume</li></ul></article>
+          <article class="card"><span class="card-kicker">Use a smaller tool when</span><h3>直接处理更合适</h3><ul><li>只是解释一个概念或回答单点问题</li><li>任务无需改动、交接或发布判断</li><li>一个明确命令就能安全验证并完成</li><li>只需要一次轻量 brainstorm</li><li>没有足够上下文建立可靠边界</li><li>用户明确不需要流程化产物</li></ul></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-dark" id="tradeoffs">
+      <div class="container">
+        <div class="section-head"><div><span class="section-kicker">Tradeoffs</span><h2>它用协议成本，换取交付可控性。</h2></div><p>这不是免费收益。任务越简单，结构化路由和证据门禁的相对成本越高；任务越复杂，责任和恢复能力越有价值。</p></div>
+        <div class="grid-3">
+          <article class="card"><span class="card-kicker">Cost</span><h3>更多显式产物</h3><p>复杂任务会生成约束、WorkOrder、验证报告和 completion evidence，需要维护者理解这些对象。</p></article>
+          <article class="card"><span class="card-kicker">Boundary</span><h3>不替代模型与工具</h3><p>系统协调现有编码、浏览、测试和 Agent 能力；它不会凭空创造宿主没有的 runtime。</p></article>
+          <article class="card"><span class="card-kicker">Payoff</span><h3>更少隐性状态</h3><p>范围、失败、恢复、人工介入和发布判断有固定位置，跨轮次交付不必靠记忆重建。</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="two-column-copy">
+          <div class="sticky-copy"><span class="section-kicker">Decision guide</span><h2>三问判断是否值得启用。</h2><p>如果三个问题都是否，直接使用更轻量的工具通常更好。</p></div>
+          <ol class="process-list">
+            <li><div><strong>是否存在多个责任阶段？</strong><p>例如定义、实现、独立验证、Beta、发布或上线反馈。</p></div></li>
+            <li><div><strong>失败是否需要可恢复？</strong><p>任务跨 session、可能重复失败，或需要保留回滚与人工检查点。</p></div></li>
+            <li><div><strong>完成是否必须被复核？</strong><p>需要另一个人或自动门禁根据同一份证据做出 ship / hold 判断。</p></div></li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-compact"><div class="container"><div class="cta-panel"><div><h2>需要闭环时启用，需要速度时走最小路线。</h2><p>从一次真实的小切片开始，再按风险扩展协作。</p></div><a class="button button-primary" href="index.html#quick-start">开始使用</a></div></div></section>
   </main>
 
-  <!-- 页脚 -->
-  <footer>
-    <div class="footer-inner">
-      <span>Virtual Intelligent Dev Team · v6.0.8 · MIT License</span>
-      <div class="footer-links">
-        <a href="index.html">← Back to Home</a>
-        <a href="architecture.html">Architecture</a>
-        <a href="engineering.html">Engineering</a>
-        <a href="agents.html">Agents</a>
-        <a href="matrix.html">Matrix</a>
-        <a href="deck.html">Deck</a>
-        <a href="https://github.com/fxbin/virtual-intelligent-dev-team" target="_blank" rel="noopener">GitHub</a>
-      </div>
-    </div>
-  </footer>
+  <footer class="site-footer"><div class="container"><div class="footer-grid"><div class="footer-copy"><a class="brand" href="index.html"><span class="brand-mark">VITD</span><span>Virtual Intelligent Dev Team</span></a><p>比较协议边界与交付能力，而不是比较模型智商。</p></div><nav class="footer-links" aria-label="页脚导航"><a href="index.html">概览</a><a href="architecture.html">架构</a><a href="engineering.html">工程化</a><a href="agents.html">角色</a><a href="https://github.com/fxbin/virtual-intelligent-dev-team">GitHub</a></nav></div><div class="footer-bottom"><span>Capability matrix · v6.0.10</span><span>© <span data-current-year>2026</span> fxbin</span></div></div></footer>
 </body>
 </html>

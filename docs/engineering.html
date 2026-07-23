@@ -1,704 +1,138 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="author" content="fxbin">
-<title>Engineering Pillars — Virtual Intelligent Dev Team</title>
-<style>
-  /* === 设计 Token（machine-hallucination 配色） === */
-  :root {
-    --bg: #0A0A1A;
-    --bg-card: #13102a;
-    --bg-elevated: #1a1535;
-    --bg-code: #0f0820;
-    --border: #2a1f4d;
-    --border-soft: #1f1738;
-    --text: #ffffff;
-    --text-muted: #c4b5fd;
-    --text-dim: #8b6fc0;
-    --brand: #9B4DCA;
-    --brand-soft: #c4b5fd;
-    --accent: #00CED1;
-    --secondary: #FF1493;
-    --success: #00CED1;
-    --warning: #FF1493;
-    --danger: #FF1493;
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
-    color-scheme: dark;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  html { scroll-behavior: smooth; }
-
-  body {
-    font-family: -apple-system, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    line-height: 1.5;
-  }
-
-  code, .mono {
-    font-family: "SF Mono", "JetBrains Mono", "Menlo", monospace;
-  }
-
-  /* === 顶部导航 === */
-  .nav {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    height: 60px;
-    background: rgba(10, 10, 26, 0.7);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-    z-index: 100;
-  }
-  .nav-inner {
-    max-width: 1200px;
-    height: 100%;
-    margin: 0 auto;
-    padding: 0 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-  }
-  .nav-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--text-muted);
-    font-size: 14px;
-    font-weight: 500;
-    text-decoration: none;
-    transition: color 0.15s;
-  }
-  .nav-back:hover { color: var(--text); }
-  .nav-back .arrow { color: var(--text-dim); }
-  .nav-links {
-    display: flex;
-    gap: 24px;
-    align-items: center;
-  }
-  .nav-links a {
-    color: var(--text-muted);
-    font-size: 14px;
-    text-decoration: none;
-    transition: color 0.15s;
-  }
-  .nav-links a:hover,
-  .nav-links a.active { color: var(--text); }
-
-  /* === 主体 === */
-  main {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 120px 24px 80px;
-  }
-  .page-head { margin-bottom: 64px; }
-  .page-head h1 {
-    font-size: 48px;
-    font-weight: 700;
-    color: var(--text);
-    letter-spacing: -0.02em;
-    line-height: 1.1;
-    margin-bottom: 16px;
-  }
-  .page-head .sub {
-    font-size: 20px;
-    color: var(--text-muted);
-    line-height: 1.5;
-    max-width: 760px;
-  }
-
-  section { margin-bottom: 64px; }
-  section:last-child { margin-bottom: 0; }
-
-  .lead {
-    font-size: 17px;
-    color: var(--text-muted);
-    line-height: 1.7;
-    max-width: 820px;
-    margin-bottom: 64px;
-  }
-
-  /* === 支柱卡片 === */
-  .pillars {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-  }
-  .pillar-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 28px 32px;
-  }
-  .pillar-head {
-    display: grid;
-    grid-template-columns: 56px 1fr auto;
-    gap: 20px;
-    align-items: center;
-    margin-bottom: 18px;
-  }
-  .pillar-num {
-    width: 56px; height: 56px;
-    border-radius: var(--radius-md);
-    background: var(--bg-elevated);
-    border: 1px solid var(--border-soft);
-    color: var(--accent);
-    font-family: "SF Mono", "JetBrains Mono", "Menlo", monospace;
-    font-size: 18px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .pillar-title h2 {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--text);
-    margin-bottom: 4px;
-  }
-  .pillar-name-en {
-    font-size: 13px;
-    color: var(--text-dim);
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-  .pillar-tag {
-    font-family: "SF Mono", "JetBrains Mono", "Menlo", monospace;
-    font-size: 12px;
-    color: var(--text-dim);
-    padding: 6px 12px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    white-space: nowrap;
-  }
-  .pillar-mech {
-    font-size: 15px;
-    color: var(--text-muted);
-    line-height: 1.7;
-    margin-bottom: 20px;
-  }
-  .pillar-mech code {
-    color: var(--brand-soft);
-    background: var(--bg-elevated);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 13px;
-  }
-  .pillar-detail {
-    border-top: 1px solid var(--border);
-    padding-top: 18px;
-  }
-  .detail-label {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-dim);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-  }
-  .pillar-detail ul {
-    list-style: none;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .pillar-detail li {
-    font-size: 13px;
-    color: var(--text-muted);
-    padding: 6px 12px;
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    font-family: "SF Mono", "JetBrains Mono", "Menlo", monospace;
-  }
-
-  /* === 流程图区块 === */
-  .flow-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 28px 32px;
-  }
-  .flow-card h2 {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--text);
-    margin-bottom: 8px;
-  }
-  .flow-card .name-en {
-    font-size: 13px;
-    color: var(--text-dim);
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    margin-bottom: 20px;
-  }
-  .flow-steps {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    align-items: center;
-  }
-  .flow-step {
-    padding: 10px 16px;
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    font-size: 13px;
-    color: var(--text-muted);
-    font-family: "SF Mono", "JetBrains Mono", "Menlo", monospace;
-  }
-  .flow-step.gate {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-  .flow-arrow {
-    color: var(--text-dim);
-    font-size: 16px;
-  }
-
-  /* === 六大支柱关系图 === */
-  .pillar-tree {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin-top: 8px;
-  }
-  .tree-layer {
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-  .tree-node {
-    padding: 14px 20px;
-    border-radius: var(--radius-md);
-    font-size: 14px;
-    font-weight: 600;
-    text-align: center;
-    min-width: 140px;
-    border: 1px solid var(--border);
-    background: var(--bg-elevated);
-    color: var(--text-muted);
-  }
-  .tree-node.layer-1 {
-    border-color: var(--brand);
-    color: var(--text);
-    background: var(--bg-elevated);
-  }
-  .tree-node.layer-2 {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-  .tree-node.layer-3 {
-    border-color: var(--secondary);
-    color: var(--secondary);
-  }
-  .tree-arrow {
-    text-align: center;
-    color: var(--text-dim);
-    font-size: 20px;
-    line-height: 1;
-  }
-  .tree-desc {
-    font-size: 12px;
-    color: var(--text-dim);
-    text-align: center;
-    margin-top: 4px;
-    font-family: "SF Mono", "JetBrains Mono", "Menlo", monospace;
-  }
-
-  /* === 对比表 === */
-  .compare-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 28px 32px;
-    overflow-x: auto;
-  }
-  .compare-card h2 {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--text);
-    margin-bottom: 8px;
-  }
-  .compare-card .name-en {
-    font-size: 13px;
-    color: var(--text-dim);
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    margin-bottom: 20px;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
-  }
-  th, td {
-    padding: 12px 16px;
-    text-align: left;
-    border-bottom: 1px solid var(--border);
-  }
-  th {
-    color: var(--text-dim);
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-  td:first-child {
-    color: var(--text);
-    font-weight: 600;
-  }
-  td.yes { color: var(--accent); }
-  td.no { color: var(--text-dim); }
-
-  /* === Footer === */
-  footer {
-    border-top: 1px solid var(--border);
-    padding: 32px 24px;
-    margin-top: 80px;
-  }
-  .footer-inner {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 16px;
-    font-size: 13px;
-    color: var(--text-dim);
-  }
-  .footer-links {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-  .footer-links a {
-    color: var(--text-muted);
-    text-decoration: none;
-    transition: color 0.15s;
-  }
-  .footer-links a:hover { color: var(--text); }
-
-  /* === 响应式 === */
-  @media (max-width: 768px) {
-    main { padding: 100px 16px 60px; }
-    .page-head h1 { font-size: 36px; }
-    .page-head .sub { font-size: 17px; }
-    .nav-links { gap: 14px; }
-    .nav-links a { font-size: 13px; }
-    .pillar-card { padding: 22px 20px; }
-    .pillar-head {
-      grid-template-columns: 48px 1fr;
-      gap: 14px;
-    }
-    .pillar-num { width: 48px; height: 48px; font-size: 15px; }
-    .pillar-tag {
-      grid-column: 1 / -1;
-      margin-top: 4px;
-      justify-self: start;
-    }
-    .flow-steps { flex-direction: column; align-items: stretch; }
-    .flow-arrow { display: none; }
-  }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Virtual Intelligent Dev Team 的 Harness、Team Engine Lite、反熵治理、证据门禁与验证路径。">
+  <meta name="theme-color" content="#14241f">
+  <title>工程化与证据门禁 — Virtual Intelligent Dev Team</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/site.css?v=v6.0.10">
+  <script src="assets/site.js?v=v6.0.10" defer></script>
 </head>
 <body>
-  <!-- 顶部导航 -->
-  <nav class="nav">
-    <div class="nav-inner">
-      <a class="nav-back" href="index.html">
-        <span class="arrow">←</span>
-        <span>Virtual Intelligent Dev Team</span>
-      </a>
-      <div class="nav-links">
-        <a href="architecture.html">Architecture</a>
-        <a href="engineering.html" class="active">Engineering</a>
-        <a href="agents.html">Agents</a>
-        <a href="matrix.html">Matrix</a>
-        <a href="deck.html">Deck</a>
-        <a href="https://github.com/fxbin/virtual-intelligent-dev-team" target="_blank" rel="noopener">GitHub</a>
-      </div>
+  <a class="skip-link" href="#main-content">跳到主要内容</a>
+  <header class="site-header" data-site-header>
+    <div class="container nav-shell">
+      <a class="brand" href="index.html" aria-label="Virtual Intelligent Dev Team 首页"><span class="brand-mark">VITD</span><span class="brand-copy">Virtual Intelligent Dev Team<small>Evidence-driven delivery system</small></span></a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-navigation" aria-label="打开导航" data-nav-toggle><span></span><span></span></button>
+      <nav class="site-nav" id="site-navigation" aria-label="主导航" data-site-nav><a href="index.html">概览</a><a href="architecture.html">架构</a><a href="engineering.html" aria-current="page">工程化</a><a href="agents.html">角色</a><a href="matrix.html">对比</a><a class="nav-github" href="https://github.com/fxbin/virtual-intelligent-dev-team">GitHub ↗</a></nav>
     </div>
-  </nav>
+  </header>
 
-  <main>
-    <!-- 页头 -->
-    <div class="page-head">
-      <h1>Engineering Pillars</h1>
-      <p class="sub">让 LLM 在真实软件工程里更可靠的四根工程化支柱</p>
-    </div>
-
-    <p class="lead">
-      路由、六层闭环与 Delivery 子图解决的是"谁来做、怎么收口"，但这不够。真实软件工程里 LLM 的痛点是：实现前不约束、自产自审、旧路径永不退休、永远"再来一轮"。这四根支柱就是针对这四个痛点设计的工程化门禁，也是本项目区别于"换几个角色回答"的核心差异化所在。
-    </p>
-
-    <!-- 四大工程化支柱 -->
-    <section class="pillars">
-      <!-- P1 Harness 工程约束门禁 -->
-      <article class="pillar-card">
-        <div class="pillar-head">
-          <div class="pillar-num">P1</div>
-          <div class="pillar-title">
-            <h2>Harness 工程约束门禁</h2>
-            <div class="pillar-name-en">Engineering Constraint Gate</div>
-          </div>
-          <div class="pillar-tag">6 个 code-facing bundle</div>
-        </div>
-        <p class="pillar-mech">
-          6 个 code-facing bundle（<code>plan-first-build</code> / <code>product-spec-deliver</code> / <code>audit-fix-deliver</code> / <code>govern-change-safely</code> / <code>root-cause-remediate</code> / <code>direct-execution</code>）执行前必须先创建或刷新 <code>.skill-harness/engineering-constraints.md</code>，把"实现前先约束"从建议变成硬门禁。Agent 可以先看代码，但在工程约束明确之前不能开始改生产文件。
-        </p>
-        <div class="pillar-detail">
-          <div class="detail-label">必填章节</div>
-          <ul>
-            <li>Scope</li>
-            <li>Non-Negotiable Constraints</li>
-            <li>Forbidden Changes</li>
-            <li>Verification Evidence</li>
-            <li>Rollback And Stop Conditions</li>
-          </ul>
-        </div>
-      </article>
-
-      <!-- P2 Team Engine Lite 对抗式验收 -->
-      <article class="pillar-card">
-        <div class="pillar-head">
-          <div class="pillar-num">P2</div>
-          <div class="pillar-title">
-            <h2>Team Engine Lite 对抗式验收</h2>
-            <div class="pillar-name-en">Worker / Verifier / Lead Separation</div>
-          </div>
-          <div class="pillar-tag">14 状态机 · 5 标准对象</div>
-        </div>
-        <p class="pillar-mech">
-          Worker 只产不验、Verifier 只验不产、Lead 只能基于 <code>DeliveryCycleReport</code> 接受。14 状态机显式覆盖 <code>spec_violation</code>、人工介入与恢复。3 级 runtime claim 同时受请求候选上限和原子能力链约束：<code>spawn / wait / merge</code> 或 <code>create_session / kill_session / restart_session</code> 必须完整成链，证据缺失即 fail closed 到更低层级。
-        </p>
-        <div class="pillar-detail">
-          <div class="detail-label">标准对象</div>
-          <ul>
-            <li>WorkOrder</li>
-            <li>ImplementationOutput</li>
-            <li>VerificationReport</li>
-            <li>RemediationPatch</li>
-            <li>DeliveryCycleReport</li>
-          </ul>
-        </div>
-      </article>
-
-      <!-- P3 Anti-Entropy 反熵治理 -->
-      <article class="pillar-card">
-        <div class="pillar-head">
-          <div class="pillar-num">P3</div>
-          <div class="pillar-title">
-            <h2>Anti-Entropy 反熵治理</h2>
-            <div class="pillar-name-en">Anti-Entropy Governance</div>
-          </div>
-          <div class="pillar-tag">delete-first / compat-exception / confirmation-first</div>
-        </div>
-        <p class="pillar-mech">
-          遇到 duplicate owner、fallback、adapter、guard 或兼容路径增长时，先按目标分类（<code>code-retirement</code> / <code>contract-carrying-code</code> / <code>derived-state</code> / <code>persistent-state</code>），再选路径：<code>delete-first</code>（能删就删）、<code>compat-exception</code>（保留兼容但登记例外）、<code>confirmation-first</code>（未知依赖先问人）。核心原则：未知依赖不等于活跃依赖证据。
-        </p>
-        <div class="pillar-detail">
-          <div class="detail-label">触发信号</div>
-          <ul>
-            <li>duplicate owner</li>
-            <li>fallback growth</li>
-            <li>adapter / guard 膨胀</li>
-            <li>delete vs compat 边界</li>
-            <li>source-of-truth 删除边界</li>
-          </ul>
-        </div>
-      </article>
-
-      <!-- P4 Self-Optimization 自优化循环 -->
-      <article class="pillar-card">
-        <div class="pillar-head">
-          <div class="pillar-num">P4</div>
-          <div class="pillar-title">
-            <h2>Self-Optimization 自优化循环</h2>
-            <div class="pillar-name-en">Bounded Iteration + Mutation Catalog</div>
-          </div>
-          <div class="pillar-tag">live ≤3 · offline ≤120 · same-hypothesis ≤2</div>
-        </div>
-        <p class="pillar-mech">
-          可对自身的 <code>routing-rules.json</code> / <code>regression-cases.json</code> / <code>evals.json</code> 做 JSON-aware 确定性自优化。Live 模式最多 3 轮、Offline 模式最多 120 轮、同一假设最多 2 次重试。所有 <code>rollback / keep / pivot / resume / hold→bootstrap→auto-run</code> 路径都可以通过 <code>offline loop drill</code> 离线验证，不让自优化变成"无限自转"。
-        </p>
-        <div class="pillar-detail">
-          <div class="detail-label">Mutation 操作族</div>
-          <ul>
-            <li>json_set</li>
-            <li>json_merge</li>
-            <li>json_delete</li>
-            <li>append_unique</li>
-            <li>regex_replace</li>
-          </ul>
-        </div>
-      </article>
+  <main id="main-content">
+    <section class="page-hero">
+      <div class="container">
+        <p class="eyebrow">Engineering · v6.0.10</p>
+        <h1>不是“做完了”，而是<span class="accent-text">证据足够接受。</span></h1>
+        <p class="lede">工程化层把约束、责任分离、反熵决策和验证证据变成可执行门禁。它阻止范围漂移、虚假完成、无限重试和兼容路径无边界增长。</p>
+        <div class="page-index" aria-label="本页目录"><a href="#pillars">四个支柱</a><a href="#harness">Harness</a><a href="#objects">交接对象</a><a href="#anti-entropy">反熵治理</a><a href="#evidence">验证证据</a></div>
+      </div>
     </section>
 
-    <!-- 六大支柱关系图 -->
-    <section>
-      <div class="flow-card">
-        <h2>六大支柱关系图</h2>
-        <div class="name-en">Six Pillars Hierarchy</div>
-        <p class="pillar-mech" style="margin-bottom: 28px;">
-          本项目的工程化能力由六大支柱构成，分三个层级：基础层解决"谁来做、怎么收口"，工程层解决"实现前约束、验收时对抗"，治理层解决"旧路径退休、自身可优化"。
-        </p>
-        <div class="pillar-tree">
-          <div class="tree-layer">
-            <div class="tree-node layer-1">Routing 路由<div class="tree-desc">8 lead · 13 语言 profile</div></div>
-            <div class="tree-node layer-1">6 Closures 六层闭环<div class="tree-desc">Planning → Drill</div></div>
-          </div>
-          <div class="tree-arrow">↓ 工程化门禁层 ↓</div>
-          <div class="tree-layer">
-            <div class="tree-node layer-2">P1 Harness<div class="tree-desc">实现前约束</div></div>
-            <div class="tree-node layer-2">P2 Team Engine Lite<div class="tree-desc">对抗式验收</div></div>
-          </div>
-          <div class="tree-arrow">↓ 治理与自优化层 ↓</div>
-          <div class="tree-layer">
-            <div class="tree-node layer-3">P3 Anti-Entropy<div class="tree-desc">反熵治理</div></div>
-            <div class="tree-node layer-3">P4 Self-Optimization<div class="tree-desc">自优化循环</div></div>
+    <section class="section section-cream" id="pillars">
+      <div class="container">
+        <div class="section-head"><div><span class="section-kicker">Four pillars</span><h2>四个支柱，分别回答四种失控。</h2></div><p>约束不清、自己验自己、旧路径堆积、重复失败，是复杂交付最常见的熵源。</p></div>
+        <div class="grid-4">
+          <article class="card"><span class="card-kicker">01 / Harness</span><h3>实现前锁边界</h3><p>先声明 Scope、硬约束、禁止项、验证证据和停止条件。</p></article>
+          <article class="card"><span class="card-kicker">02 / Team Engine</span><h3>生产与验收分离</h3><p>Worker 不拥有通过权；Verifier 不替 Worker 补实现。</p></article>
+          <article class="card"><span class="card-kicker">03 / Anti-Entropy</span><h3>旧路径必须分类</h3><p>删除、兼容或人工确认由所有权和数据风险决定。</p></article>
+          <article class="card"><span class="card-kicker">04 / Optimization</span><h3>迭代必须有停止条件</h3><p>每轮有假设、基线、验证、回滚和 max cycles。</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="harness">
+      <div class="container">
+        <div class="two-column-copy">
+          <div class="sticky-copy"><span class="section-kicker">Harness gate</span><h2>在实现开始前，把不可妥协项写进文件。</h2><p>六个 code-facing bundle 必须先创建 <code>.skill-harness/engineering-constraints.md</code>。这是执行门禁，不是事后说明。</p></div>
+          <div>
+            <dl class="definition-list">
+              <div><dt>Scope</dt><dd>清楚列出 in scope 与 out of scope，防止“顺手重构”扩大改动面。</dd></div>
+              <div><dt>Non-Negotiable Constraints</dt><dd>记录必须守住的版本、协议、安全、兼容性、依赖与环境边界。</dd></div>
+              <div><dt>Forbidden Changes</dt><dd>显式写出不能改什么，尤其是用户数据、无关模块和未经授权的外部状态。</dd></div>
+              <div><dt>Verification Evidence</dt><dd>在编码前就决定什么命令、测试、截图或 artifact 能证明完成。</dd></div>
+              <div><dt>Rollback And Stop Conditions</dt><dd>声明何时回滚、何时停止尝试、何时升级给人工决策。</dd></div>
+            </dl>
+            <div class="notice"><strong>轻量不等于省略</strong><p>小切片可以用短约束，但不能把关键边界只留在对话记忆里。</p></div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Harness 门禁流程图 -->
-    <section>
-      <div class="flow-card">
-        <h2>Harness 门禁流程</h2>
-        <div class="name-en">Constraint Gate Flow</div>
-        <p class="pillar-mech" style="margin-bottom: 24px;">
-          code-facing bundle 在进入实现前必须经过 Harness 门禁。Release / beta / post-release 路由在只做证据收集时可以跳过门禁，但一旦进入实现阶段就必须补上。
-        </p>
-        <div class="flow-steps">
-          <div class="flow-step">收到 code-facing 任务</div>
-          <div class="flow-arrow">→</div>
-          <div class="flow-step">路由到 bundle</div>
-          <div class="flow-arrow">→</div>
-          <div class="flow-step gate">Harness Constraint Gate</div>
-          <div class="flow-arrow">→</div>
-          <div class="flow-step">init_harness_constraints.py</div>
-          <div class="flow-arrow">→</div>
-          <div class="flow-step">engineering-constraints.md</div>
-          <div class="flow-arrow">→</div>
-          <div class="flow-step">Team Engine Lite</div>
-          <div class="flow-arrow">→</div>
-          <div class="flow-step gate">DeliveryCycleReport</div>
+    <section class="section section-dark" id="objects">
+      <div class="container">
+        <div class="section-head"><div><span class="section-kicker">File handoff</span><h2>五类标准对象，让交接可校验、可恢复。</h2></div><p>路径身份、角色方向、带时区时间戳与 schema 必须同时成立；缺一项就不能把文件交接称为有效证据。</p></div>
+        <div class="grid-3">
+          <article class="card"><span class="card-kicker">Lead → Worker</span><h3>WorkOrder</h3><p>目标、范围、输入、验收、禁止项、证据命令与截止条件。</p></article>
+          <article class="card"><span class="card-kicker">Worker → Lead</span><h3>ImplementationOutput</h3><p>实际变更、影响文件、自检结果、未覆盖范围与已知风险。</p></article>
+          <article class="card"><span class="card-kicker">Verifier → Lead</span><h3>VerificationReport</h3><p>独立检查、可重放证据、verdict、findings 和置信边界。</p></article>
+          <article class="card"><span class="card-kicker">Lead → Worker</span><h3>RemediationPatch</h3><p>失败根因、客观规范引用、最小修复方向与下一轮限制。</p></article>
+          <article class="card"><span class="card-kicker">Engine → Closure</span><h3>DeliveryCycleReport</h3><p>完整状态变化、周期计数、最终决定和 completion evidence 入口。</p></article>
+          <article class="card"><span class="card-kicker">Human boundary</span><h3>Decision record</h3><p>歧义、成本增长、权限或周期耗尽时，记录介入者、选择与理由。</p></article>
         </div>
       </div>
     </section>
 
-    <!-- 工程化能力对比 -->
-    <section>
-      <div class="compare-card">
-        <h2>工程化能力对比</h2>
-        <div class="name-en">Engineering Capability Comparison</div>
-        <table>
-          <thead>
-            <tr>
-              <th>能力</th>
-              <th>本项目</th>
-              <th>普通多专家提示词</th>
-              <th>通用 Agent 框架</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>工程约束门禁</td>
-              <td class="yes">5 必填章节 + 6 bundle 强制</td>
-              <td class="no">无</td>
-              <td class="no">无</td>
-            </tr>
-            <tr>
-              <td>对抗式验收</td>
-              <td class="yes">Worker/Verifier/Lead 分离</td>
-              <td class="no">自产自审</td>
-              <td class="no">部分（critic 角色）</td>
-            </tr>
-            <tr>
-              <td>反熵治理</td>
-              <td class="yes">3 路径 + 4 类目标</td>
-              <td class="no">不断加 fallback</td>
-              <td class="no">无</td>
-            </tr>
-            <tr>
-              <td>自优化循环</td>
-              <td class="yes">bounded iteration + drill</td>
-              <td class="no">无</td>
-              <td class="no">无</td>
-            </tr>
-            <tr>
-              <td>Runtime 诚实</td>
-              <td class="yes">候选上限 + 6 项原子能力 + smoke test</td>
-              <td class="no">角色扮演误称多 Agent</td>
-              <td class="no">部分声明 real runtime</td>
-            </tr>
-            <tr>
-              <td>完成证据</td>
-              <td class="yes">7 字段 schema</td>
-              <td class="no">"觉得好了"就完成</td>
-              <td class="no">部分（task output）</td>
-            </tr>
-          </tbody>
-        </table>
+    <section class="section" id="anti-entropy">
+      <div class="container">
+        <div class="section-head"><div><span class="section-kicker">Anti-entropy</span><h2>“未知依赖”不是保留旧代码的充分理由。</h2></div><p>先识别旧对象承载什么，再选择 delete-first、compat-exception 或 confirmation-first；所有权不清时才升级人工确认。</p></div>
+        <div class="grid-2">
+          <article class="card"><span class="card-kicker">Classify</span><h3>四类对象</h3><ul><li><strong>code-retirement：</strong>退出的代码路径</li><li><strong>contract-carrying-code：</strong>仍承载外部契约</li><li><strong>derived-state：</strong>可重建的派生资产</li><li><strong>persistent-state：</strong>用户或系统持久数据</li></ul></article>
+          <article class="card"><span class="card-kicker">Decide</span><h3>三条路径</h3><ul><li><strong>delete-first：</strong>无活跃契约与数据风险，直接退役</li><li><strong>compat-exception：</strong>有证据证明仍需兼容，明确期限与 owner</li><li><strong>confirmation-first：</strong>涉及持久数据、外部权限或不可逆边界</li></ul></article>
+        </div>
+        <ol class="process-list">
+          <li><div><strong>建立调用方证据</strong><p>搜索代码、文档、workflow、消费者与真实运行状态，不靠猜测保留旧路径。</p></div></li>
+          <li><div><strong>声明新 canonical owner</strong><p>删除旧路径前说明行为迁往何处，避免形成双真源。</p></div></li>
+          <li><div><strong>同步引用与回归覆盖</strong><p>删除、重命名或迁移必须在同一轮修复所有指针和验证门禁。</p></div></li>
+          <li><div><strong>禁止永久兼容层</strong><p>若确需兼容，必须记录期限、责任人、退出条件和持续测试成本。</p></div></li>
+        </ol>
       </div>
     </section>
 
-    <!-- 自动化脚本清单 -->
-    <section>
-      <div class="pillar-card">
-        <div class="pillar-head" style="grid-template-columns: 1fr; gap: 0;">
-          <div class="pillar-title">
-            <h2>自动化脚本支撑</h2>
-            <div class="pillar-name-en">45+ Automation Scripts</div>
+    <section class="section section-cream" id="evidence">
+      <div class="container">
+        <div class="section-head"><div><span class="section-kicker">Evidence gate</span><h2>完成证据必须能被另一个人重放。</h2></div><p>非平凡完成声明包含 action、result、covered scope、uncovered scope、residual risk、confidence grade 和 evidence refs。</p></div>
+        <div class="grid-2">
+          <div class="code-card">
+            <div class="code-head"><span>repository gates</span><button class="copy-button" type="button" data-copy-target="validation-commands">复制</button></div>
+            <pre id="validation-commands"><code>python -m pip install -r requirements.txt
+python scripts/validate_virtual_team.py
+python scripts/lint_virtual_team_contract.py
+python -m unittest discover -s tests -p 'test_*.py'
+python scripts/check_harness_health.py --skill-dir .</code></pre>
+          </div>
+          <div>
+            <h3>证据的最低标准</h3>
+            <ul class="check-list">
+              <li>命令与目标文件、模块或行为直接相关</li>
+              <li>结果含退出码、状态或可检查 artifact</li>
+              <li>明确哪些范围未测、为何未测</li>
+              <li>残余风险与置信等级不被“全绿”隐藏</li>
+              <li>release gate 可读取同一份结构化 evidence</li>
+            </ul>
+            <div class="notice"><strong>Benchmark 不是完成声明</strong><p>Benchmark 证明某类行为基线，不自动证明当前实现、Git 状态、部署边界或用户路径已经完成。</p></div>
           </div>
         </div>
-        <p class="pillar-mech">
-          四根支柱不是停留在文档上的概念，而是由 45+ 个 Python 脚本支撑的可执行机制。这些脚本覆盖初始化、校验、迭代、演练、发布、恢复全链路，确保工程化门禁可以被机器执行和验证。
-        </p>
-        <div class="pillar-detail">
-          <div class="detail-label">核心脚本</div>
-          <ul>
-            <li>init_harness_constraints.py</li>
-            <li>check_harness_health.py</li>
-            <li>run_release_gate.py</li>
-            <li>run_iteration_loop.py</li>
-            <li>run_offline_loop_drill.py</li>
-            <li>run_team_engine_drill.py</li>
-            <li>verify_action.py</li>
-            <li>verify_completion_evidence.py</li>
-            <li>route_request.py</li>
-            <li>validate_virtual_team.py</li>
-          </ul>
+      </div>
+    </section>
+
+    <section class="section" id="maintenance">
+      <div class="container">
+        <div class="section-head"><div><span class="section-kicker">Maintenance loop</span><h2>从改动到发布，门禁按风险逐层增加。</h2></div><p>文档、路由、schema、脚本和 eval 共享一条验证路线，避免某个表面更新与运行时真源脱节。</p></div>
+        <div class="closure-rail">
+          <article class="closure-item"><span class="closure-number">01</span><span class="closure-name">Contract</span><p>确认 SKILL、reference、schema 与目标行为的真源位置。</p><span class="closure-output">scope locked</span></article>
+          <article class="closure-item"><span class="closure-number">02</span><span class="closure-name">Implementation</span><p>同步修改行为、路由、资产和对应回归，不留双实现。</p><span class="closure-output">diff ready</span></article>
+          <article class="closure-item"><span class="closure-number">03</span><span class="closure-name">Focused gates</span><p>运行相关测试、schema、lint 与 quick validate，先得到高信号结果。</p><span class="closure-output">evidence</span></article>
+          <article class="closure-item"><span class="closure-number">04</span><span class="closure-name">Benchmark</span><p>行为或路由变化运行盲测、负向、混淆矩阵与稳定性检查。</p><span class="closure-output">baseline</span></article>
+          <article class="closure-item"><span class="closure-number">05</span><span class="closure-name">Release gate</span><p>核对版本、文档、Git 状态、发布边界、回滚与完成证据。</p><span class="closure-output">ship / hold</span></article>
         </div>
       </div>
     </section>
+
+    <section class="section section-compact"><div class="container"><div class="cta-panel"><div><h2>门禁决定可信度，角色决定责任归属。</h2><p>查看八个专家的触发边界、禁止项和证据偏好。</p></div><a class="button button-primary" href="agents.html">查看角色图谱</a></div></div></section>
   </main>
 
-  <footer>
-    <div class="footer-inner">
-      <span>Virtual Intelligent Dev Team · v6.0.8</span>
-      <div class="footer-links">
-        <a href="index.html">Home</a>
-        <a href="architecture.html">Architecture</a>
-        <a href="engineering.html">Engineering</a>
-        <a href="agents.html">Agents</a>
-        <a href="matrix.html">Matrix</a>
-        <a href="https://github.com/fxbin/virtual-intelligent-dev-team" target="_blank" rel="noopener">GitHub</a>
-      </div>
-    </div>
-  </footer>
+  <footer class="site-footer"><div class="container"><div class="footer-grid"><div class="footer-copy"><a class="brand" href="index.html"><span class="brand-mark">VITD</span><span>Virtual Intelligent Dev Team</span></a><p>Harness、对抗式验收、反熵治理与可重放完成证据。</p></div><nav class="footer-links" aria-label="页脚导航"><a href="index.html">概览</a><a href="architecture.html">架构</a><a href="agents.html">角色</a><a href="matrix.html">能力对比</a><a href="https://github.com/fxbin/virtual-intelligent-dev-team">GitHub</a></nav></div><div class="footer-bottom"><span>Engineering · v6.0.10</span><span>© <span data-current-year>2026</span> fxbin</span></div></div></footer>
 </body>
 </html>

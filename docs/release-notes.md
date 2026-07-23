@@ -3,6 +3,24 @@
 本文件维护 `virtual-intelligent-dev-team` 的版本历史、字段迁移指南和未实现的计划项。
 `SKILL.md` 只保留最新一版的 changelog 链接,完整记录在此。
 
+## v6.0.10 (2026-07-23)
+
+- Pages workflow 升级到 `actions/upload-pages-artifact@v4`，继续直接上传 `./docs`
+  静态目录并交给 `deploy-pages@v4` 部署。
+- 删除不会进入 artifact、且当前 custom Actions 流程不需要的 `.nojekyll`；发布门禁、
+  文档说明和回归测试同步收紧到真实部署边界。
+- `docs/assets/site.css` 与 `docs/assets/site.js` 继续作为五个公开页面唯一的共享运行资源。
+
+## v6.0.9 (2026-07-23)
+
+- 公开文档站整体重写为统一的技术编辑风格，五个正式页面共享静态 CSS / JS、
+  响应式导航、键盘焦点、reduced-motion 与无 CDN 运行边界。
+- 退役 `deck.html` 及其专用样式和交互脚本；原有架构、状态机、workflow 与角色
+  信息已归并进概览、架构、工程化、角色和能力矩阵页面，不保留旧入口兼容层。
+- 在 skill 内新增 GitHub Pages workflow；subtree 发布到独立仓库后可直接上传
+  `./docs` 并通过 GitHub Actions 部署，发布脚本同步校验静态站资源和退役资产。
+- 文档索引、本地预览说明、公开入口、版本同步脚本与回归测试对齐新的站点边界。
+
 ## v6.0.8 (2026-07-22)
 
 - 治理事件只读写 `.skill-metrics/decision-log.jsonl`，删除旧日志迁移脚本、容忍分支、
