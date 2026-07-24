@@ -3272,6 +3272,53 @@
         "hook_directives.spec_sections contains routing-rules.json#frontend-profile",
         "hook_directives.spec_files contains references/execution-quality-guardrails.md"
       ]
+    },
+    {
+      "id": 229,
+      "runner": "route",
+      "categories": [
+        "review",
+        "audit-fix-deliver",
+        "change-localization"
+      ],
+      "prompt": "Audit these review findings, pinpoint the exact change site and call chain for each one, then fix them in batched order.",
+      "expected_output": "Audit-to-fix should route to Code Audit Council with the audit-fix-deliver bundle and activate change-localization to converge on exact files and call chains before patching.",
+      "files": [
+        "scripts/route_request.py",
+        "references/change-localization-protocol.md"
+      ],
+      "expectations": [
+        "lead_agent is Code Audit Council",
+        "workflow_bundle is audit-fix-deliver",
+        "micro_practice_names contains change-localization",
+        "response_pack_json micro_practices.names contains change-localization",
+        "response_pack_json micro_practices.reference contains references/change-localization-protocol.md"
+      ]
+    },
+    {
+      "id": 230,
+      "runner": "route",
+      "categories": [
+        "planning",
+        "system-map",
+        "project-knowledge-pyramid"
+      ],
+      "prompt": "We are onboarding to this large unfamiliar codebase. Plan the migration first: build a project knowledge map, then plan before coding.",
+      "expected_output": "Onboarding to a large unfamiliar repo should route to Technical Trinity with plan-first-build and activate the project knowledge pyramid alongside system-map.",
+      "files": [
+        "scripts/route_request.py",
+        "references/project-knowledge-pyramid-protocol.md",
+        "references/system-map-protocol.md"
+      ],
+      "expectations": [
+        "lead_agent is Technical Trinity",
+        "needs_pre_development_planning is true",
+        "workflow_bundle is plan-first-build",
+        "micro_practice_names contains system-map",
+        "micro_practice_names contains project-knowledge-pyramid",
+        "response_pack_json micro_practices.names contains project-knowledge-pyramid",
+        "response_pack_json micro_practices.reference contains references/project-knowledge-pyramid-protocol.md"
+      ]
     }
   ]
 }

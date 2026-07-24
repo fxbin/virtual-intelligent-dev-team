@@ -41,6 +41,8 @@ FEEDBACK_LOOP_FIRST_REFERENCE = "references/feedback-loop-first-protocol.md"
 VERTICAL_SLICE_REFERENCE = "references/vertical-slice-delivery-protocol.md"
 SYSTEM_MAP_REFERENCE = "references/system-map-protocol.md"
 ARCHITECTURE_DEEPENING_REFERENCE = "references/architecture-deepening-protocol.md"
+CHANGE_LOCALIZATION_REFERENCE = "references/change-localization-protocol.md"
+PROJECT_KNOWLEDGE_PYRAMID_REFERENCE = "references/project-knowledge-pyramid-protocol.md"
 STAGE_COUNCIL_REFERENCE = "references/stage-council-protocol.md"
 STAGE_COUNCIL_TEMPLATE = "assets/stage-council-plan-template.json"
 HARNESS_CONSTRAINT_ARTIFACT = ".skill-harness/engineering-constraints.md"
@@ -2727,6 +2729,38 @@ def build_micro_practices(
         "适配器",
         "可测试",
     ]
+    change_localization_keywords = [
+        "audit",
+        "pinpoint",
+        "locate the change",
+        "where to change",
+        "exact files",
+        "call chain",
+        "call-chain",
+        "code site",
+        "change site",
+        "审计",
+        "定位",
+        "改动点",
+        "改动位置",
+        "调用链",
+    ]
+    project_knowledge_keywords = [
+        "onboarding",
+        "onboard",
+        "unfamiliar codebase",
+        "unfamiliar repo",
+        "large codebase",
+        "project map",
+        "knowledge base",
+        "code knowledge",
+        "project knowledge",
+        "上手",
+        "陌生",
+        "大型项目",
+        "代码知识库",
+        "项目知识",
+    ]
 
     if bundle_name == "product-spec-deliver" or text_has_any_keyword(lowered, shared_language_keywords):
         add(
@@ -2807,6 +2841,38 @@ def build_micro_practices(
                 "baseline failure signal",
                 "candidate verification command",
                 "keep/retry/rollback/stop evidence",
+            ],
+        )
+
+    if bundle_name in {"audit-fix-deliver", "root-cause-remediate"} or text_has_any_keyword(
+        lowered, change_localization_keywords
+    ):
+        add(
+            "change-localization",
+            CHANGE_LOCALIZATION_REFERENCE,
+            "Pinpoint exact change sites and call chains before editing code, with a bounded token budget per step.",
+            [
+                "finalized files and line ranges",
+                "call chain evidence",
+                "step that produced each site",
+            ],
+        )
+
+    if (
+        bundle_name == "plan-first-build"
+        and (
+            needs_pre_development_planning
+            or text_has_any_keyword(lowered, project_knowledge_keywords)
+        )
+    ) or text_has_any_keyword(lowered, project_knowledge_keywords):
+        add(
+            "project-knowledge-pyramid",
+            PROJECT_KNOWLEDGE_PYRAMID_REFERENCE,
+            "A large or unfamiliar target project needs a tiered, drift-checked knowledge map before planning.",
+            [
+                "L1 overview, L2 module-level, L3 semantic bridge",
+                "SHA drift baseline",
+                "stale entries and resolution",
             ],
         )
 

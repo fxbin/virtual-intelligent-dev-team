@@ -8,7 +8,7 @@ Use workflow bundles when routing should return more than a lead agent. A bundle
 - **Use when**: rewrite, migration, architecture overhaul, or "plan first" requests
 - **Sequence**:
   1. Lock scope, target, and constraints
-  2. Create compact system map when target area is unfamiliar
+  2. Create compact system map when target area is unfamiliar; for a large or unfamiliar target, build or refresh the tiered map via `references/project-knowledge-pyramid-protocol.md` and draw the system map from its L1/L2 tiers
   3. Create planning pack
   4. Split execution into vertical slices with AFK/HITL classifications
   5. Create progress anchor and durable `.skill-context/project-context.md`
@@ -36,7 +36,8 @@ Use workflow bundles when routing should return more than a lead agent. A bundle
   1. Findings first
   2. Separate blockers from follow-up improvements
   3. If P0/P1/P2 batch fixes requested: freeze findings, build batch order, fix one batch, verify, commit
-  4. Resume anchor: last verified batch
+  4. For each finding whose code site is unclear, converge to exact files and call chains via `references/change-localization-protocol.md` before fixing
+  5. Resume anchor: last verified batch
 
 <a id="govern-change-safely"></a>
 ## 4. `govern-change-safely`
@@ -64,8 +65,9 @@ Use workflow bundles when routing should return more than a lead agent. A bundle
 - **Use when**: bounded iteration, optimization loops, benchmark comparison, repeated retries, or evidence-backed root-cause remediation
 - **Sequence**:
   1. Lock objective: target outcome, baseline, metric, constraints, max rounds
-  2. Each round: define candidate → state hypothesis → validate → record evidence → decide (`keep`/`retry`/`rollback`/`stop`)
-  3. Closure: finalize ledger, write reflection, preserve patterns
+  2. Before the first candidate, if the failing behavior's code site is unclear, converge to exact files and call chains via `references/change-localization-protocol.md`; classify any gate failure by the error-tiered retry budget in `references/iteration-protocol.md`
+  3. Each round: define candidate → state hypothesis → validate → record evidence → decide (`keep`/`retry`/`rollback`/`stop`)
+  4. Closure: finalize ledger, write reflection, preserve patterns
 - **Caps**: live requests ≤3 rounds, offline ≤120 rounds, same hypothesis ≤2 retries
 
 <a id="beta-feedback-ramp"></a>
