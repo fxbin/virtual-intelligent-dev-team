@@ -74,6 +74,54 @@ If the same `hypothesis_key` already consumed its retry budget through `retry` o
 If the loop keeps producing consecutive `retry` / `rollback` decisions without a new `keep`, an optional `max_consecutive_non_keep_rounds` budget may stop the loop before it burns more offline rounds.
 If autonomous generation is active and `auto_pivot_on_stagnation` is enabled, the controller may block the exhausted `hypothesis_key`, pivot to the next actionable focus, and continue instead of halting immediately.
 
+## Error-Tiered Retry Budget
+
+The Default Caps above are a generic ceiling. When a verification gate produces
+a structured failure, apply the tiered budget below first — it narrows the
+generic caps per error class and per stage. It does not replace the caps; it
+constrains how a given failure type is allowed to retry.
+
+### Error tiers
+
+Classify the gate failure before retrying:
+
+- `self-recoverable` — a localized, mechanical defect the same author can fix
+  on its own (missing import, syntax slip, an unset variable, a missed null
+  check). The fix stays inside the change under test.
+- `intervention-required` — a defect whose fix crosses an ownership or contract
+  boundary and a single agent cannot resolve it safely (linker / build-graph
+  errors, schema or API contract mismatches, missing dependency, spec
+  contradiction). Stop and surface the boundary; do not patch around it
+- `transient` — the code under test is plausibly correct and the failure is
+  environmental or ordered (script race, timing-sensitive assertion, flaky
+  harness state). A clean retry of the same candidate may pass
+
+When in doubt, classify up (toward `intervention-required`), not down. The cost
+of one unnecessary stop is lower than the cost of silently looping on a
+boundary issue.
+
+### Stage-bound budgets
+
+| Verification gate | `self-recoverable` | `intervention-required` | `transient` |
+|---|---|---|---|
+| Build / compile gate | retry up to `3` rounds in the gate, then stop | stop immediately, surface the boundary | retry up to `2` rounds, then stop |
+| Runtime / simulator gate | do not retry in-gate — return to the implementation step with the recorded defect | stop immediately, surface the boundary | retry up to `2` rounds in-gate, then stop |
+| Test / benchmark gate | return to implementation; cap governed by the same-hypothesis budget | stop immediately | retry up to `2` rounds, then stop |
+
+A retry in the runtime gate that fails the same way twice is not `transient` —
+reclassify as `self-recoverable` (return to implementation) or
+`intervention-required` (stop), based on whether the defect is localized.
+
+### Interaction with the Default Caps
+
+- `self-recoverable` retries at a gate count against the same-hypothesis
+  `≤ 2 attempts` budget; exhausting it forces a `stop` or `pivot`
+- `transient` retries do not consume the same-hypothesis budget, but the
+  per-stage `≤ 2` cap still holds
+- `intervention-required` never retries in-gate — it is a stop-and-surface,
+  not a retry
+- when the tiered budget and a generic cap disagree, the stricter one wins
+
 ## Evidence Requirements
 
 Prefer these checks in order:

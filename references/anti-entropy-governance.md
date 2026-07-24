@@ -89,3 +89,33 @@ When this overlay was active, completion output must include:
 - evidence for owner correctness
 - remaining entropy or retirement follow-up
 
+## Data Channel Constraint
+
+Keep judgment in the LLM and data acquisition in scripts. The two must not be
+mixed in the same step.
+
+External data sources — issue trackers, doc platforms, design specs, API
+contracts, dashboards — must be reached through dedicated script channels, not
+through a generic fetch primitive driven by the LLM. The LLM only reads the
+file the script landed on disk.
+
+Activate this constraint when any of these appear:
+
+- a step needs content from a tool that offers a structured or scripted surface
+- the same data may be re-read across rounds or sessions
+- the evidence for a decision must be replayable or auditable
+
+Rules:
+
+- one source, one channel: each external data source has a named script that
+  fetches, normalizes, and writes a local file; the LLM consumes that file
+- no inline generic fetch: the LLM must not fetch arbitrary URLs to gather task
+  inputs; route the fetch through the channel and read the result
+- land before deciding: the success signal of a long-running command is a file
+  that exists on disk, not stdout; assert presence and then reason over the file
+- cite the file, not the fetch: when evidence is referenced, point at the landed
+  artifact path so the same input can be re-read on resume
+
+This keeps inputs deterministic and replayable. A resumed session reads the
+same landed files instead of re-asking the LLM to re-derive what it fetched.
+
