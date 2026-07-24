@@ -26,27 +26,27 @@ def init_beta_validation(root: Path, overwrite: bool = False) -> dict[str, objec
     specs = [
         (
             SKILL_DIR / "assets" / "beta-program-overview-template.md",
-            root / ".skill-beta" / "program-overview.md",
+            root / ".vidt/beta" / "program-overview.md",
             "program-overview",
         ),
         (
             SKILL_DIR / "assets" / "beta-cohort-matrix-template.md",
-            root / ".skill-beta" / "cohort-matrix.md",
+            root / ".vidt/beta" / "cohort-matrix.md",
             "cohort-matrix",
         ),
         (
             SKILL_DIR / "assets" / "beta-cohort-plan-template.json",
-            root / ".skill-beta" / "cohort-plan.json",
+            root / ".vidt/beta" / "cohort-plan.json",
             "cohort-plan",
         ),
         (
             SKILL_DIR / "assets" / "beta-feedback-ledger-template.md",
-            root / ".skill-beta" / "feedback-ledger.md",
+            root / ".vidt/beta" / "feedback-ledger.md",
             "feedback-ledger",
         ),
         (
             SKILL_DIR / "assets" / "beta-ramp-plan-template.json",
-            root / ".skill-beta" / "ramp-plan.json",
+            root / ".vidt/beta" / "ramp-plan.json",
             "ramp-plan",
         ),
     ]
@@ -64,7 +64,7 @@ def init_beta_validation(root: Path, overwrite: bool = False) -> dict[str, objec
         "root": str(root),
         "overwrite": overwrite,
         "actions": actions,
-        "resume_anchor": ".skill-beta/program-overview.md",
+        "resume_anchor": ".vidt/beta/program-overview.md",
     }
 
 

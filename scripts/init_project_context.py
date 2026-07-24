@@ -23,7 +23,7 @@ def copy_template(source: Path, target: Path, overwrite: bool) -> str:
 
 
 def init_project_context(root: Path, overwrite: bool = False) -> dict[str, object]:
-    target = root / ".skill-context" / "project-context.md"
+    target = root / ".vidt/context" / "project-context.md"
     status = copy_template(
         SKILL_DIR / "assets" / "project-context-template.md",
         target,
@@ -40,7 +40,7 @@ def init_project_context(root: Path, overwrite: bool = False) -> dict[str, objec
                 "status": status,
             }
         ],
-        "resume_anchor": ".skill-context/project-context.md",
+        "resume_anchor": ".vidt/context/project-context.md",
     }
 
 

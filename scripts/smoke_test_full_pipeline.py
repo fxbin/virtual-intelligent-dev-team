@@ -76,7 +76,7 @@ def test_init_quick_slice(work_dir: Path) -> dict:
         work_dir
     )
     passed = result.returncode == 0
-    anchor_exists = (work_dir / '.skill-delivery' / 'current-slice.md').exists()
+    anchor_exists = (work_dir / '.vidt/delivery' / 'current-slice.md').exists()
     return {
         "phase": "init_quick_slice",
         "passed": passed and anchor_exists,
@@ -107,7 +107,7 @@ def test_init_micro_practices(work_dir: Path) -> dict:
         work_dir
     )
     passed = result.returncode == 0
-    ledger_exists = (work_dir / '.skill-practices' / 'micro-practice-ledger.json').exists()
+    ledger_exists = (work_dir / '.vidt/practices' / 'micro-practice-ledger.json').exists()
     return {
         "phase": "init_micro_practices",
         "passed": passed and ledger_exists,

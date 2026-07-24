@@ -26,12 +26,12 @@ def init_quick_slice(root: Path, overwrite: bool = False) -> dict[str, object]:
     specs = [
         (
             SKILL_DIR / "assets" / "quick-slice-brief-template.md",
-            root / ".skill-delivery" / "current-slice.md",
+            root / ".vidt/delivery" / "current-slice.md",
             "quick-slice-brief",
         ),
         (
             SKILL_DIR / "assets" / "delivery-status-template.yaml",
-            root / ".skill-delivery" / "status.yaml",
+            root / ".vidt/delivery" / "status.yaml",
             "delivery-status",
         ),
     ]
@@ -49,7 +49,7 @@ def init_quick_slice(root: Path, overwrite: bool = False) -> dict[str, object]:
         "root": str(root),
         "overwrite": overwrite,
         "actions": actions,
-        "resume_anchor": ".skill-delivery/current-slice.md",
+        "resume_anchor": ".vidt/delivery/current-slice.md",
     }
 
 

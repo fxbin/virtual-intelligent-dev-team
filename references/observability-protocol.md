@@ -39,13 +39,13 @@
 
 ### 2.2 Logs
 
-日志即 **decision-log**（`.skill-metrics/decision-log.jsonl`），由 `route_request.py` / `verify_action.py` / `run_release_gate.py` 写入。本协议**不新增**日志源。
+日志即 **decision-log**（`.vidt/metrics/decision-log.jsonl`），由 `route_request.py` / `verify_action.py` / `run_release_gate.py` 写入。本协议**不新增**日志源。
 
 inspect_decision_log.py 的扩展仅**读取**已有 decision-log + breaker 状态文件 + telemetry jsonl，产出 health 报告，**不新增**写入。
 
 ### 2.3 Traces
 
-层间 trace 由 `emit_telemetry.py` 写入 `.skill-metrics/telemetry.jsonl`，每条记录一个 `step_id` 的完整层间流转：
+层间 trace 由 `emit_telemetry.py` 写入 `.vidt/metrics/telemetry.jsonl`，每条记录一个 `step_id` 的完整层间流转：
 
 ```json
 {
@@ -147,7 +147,7 @@ drift_score = (keyword_miss_rate + tool_boundary_breach_rate + unrequested_abstr
 
 ## 五、Emit Contract（emit_telemetry.py 输出 schema）
 
-`emit_telemetry.py` 是**唯一**的 telemetry 写入者。输出到 `.skill-metrics/telemetry.jsonl`，每行一条 JSON。
+`emit_telemetry.py` 是**唯一**的 telemetry 写入者。输出到 `.vidt/metrics/telemetry.jsonl`，每行一条 JSON。
 
 ### 5.1 必填字段（13 项）
 

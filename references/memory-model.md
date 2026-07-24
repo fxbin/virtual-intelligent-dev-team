@@ -94,8 +94,8 @@ Use a minimal persistent anchor when the loop or planning work must survive a pa
 Preferred anchors:
 
 - `docs/progress/MASTER.md`
-- `.skill-iterations/current-round-memory.md`
-- `.skill-iterations/distilled-patterns.md`
+- `.vidt/iterations/current-round-memory.md`
+- `.vidt/iterations/distilled-patterns.md`
 
 This tier should point to the latest stable resume surface, not duplicate every
 per-round file.

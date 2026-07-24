@@ -262,7 +262,7 @@ def write_completion_evidence_fixture(
     residual_risk: list[str] | None = None,
     evidence_refs: list[str] | None = None,
 ) -> Path:
-    evidence_dir = root / ".skill-evidence"
+    evidence_dir = root / ".vidt/evidence"
     evidence_dir.mkdir(parents=True, exist_ok=True)
     payload = {
         "schema_version": "completion-evidence/v1",
@@ -297,7 +297,7 @@ def write_beta_manifest(
     objective: str,
     sessions: list[dict[str, str]],
 ) -> Path:
-    output_dir = root / ".skill-beta" / "fixture-previews" / round_id
+    output_dir = root / ".vidt/beta" / "fixture-previews" / round_id
     output_dir.mkdir(parents=True, exist_ok=True)
     payload = {
         "schema_version": "beta-simulation-manifest/v1",
@@ -306,7 +306,7 @@ def write_beta_manifest(
         "round_id": round_id,
         "phase": phase,
         "objective": objective,
-        "config_path": str(root / ".skill-beta" / "simulation-configs" / f"{round_id}.json"),
+        "config_path": str(root / ".vidt/beta" / "simulation-configs" / f"{round_id}.json"),
         "cohort_fixture_source": "references/simulation-cohort-fixtures.json",
         "trace_catalog_source": "references/simulation-trace-catalog.json",
         "sessions": sessions,
@@ -321,7 +321,7 @@ def write_beta_manifest(
 
 
 def write_beta_cohort_plan(root: Path, *, rounds: list[dict[str, object]]) -> Path:
-    plan_path = root / ".skill-beta" / "cohort-plan.json"
+    plan_path = root / ".vidt/beta" / "cohort-plan.json"
     plan_path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "schema_version": "beta-cohort-plan/v1",
@@ -334,7 +334,7 @@ def write_beta_cohort_plan(root: Path, *, rounds: list[dict[str, object]]) -> Pa
 
 
 def write_beta_ramp_plan(root: Path, *, rounds: list[dict[str, object]]) -> Path:
-    plan_path = root / ".skill-beta" / "ramp-plan.json"
+    plan_path = root / ".vidt/beta" / "ramp-plan.json"
     plan_path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "schema_version": "beta-ramp-plan/v1",
@@ -360,7 +360,7 @@ def write_beta_fixture_diff(
     previous_trace_count: int,
     current_trace_count: int,
 ) -> Path:
-    diff_dir = root / ".skill-beta" / "fixture-diffs" / f"{previous_round_id}-to-{current_round_id}"
+    diff_dir = root / ".vidt/beta" / "fixture-diffs" / f"{previous_round_id}-to-{current_round_id}"
     diff_dir.mkdir(parents=True, exist_ok=True)
     payload = {
         "schema_version": "beta-simulation-diff/v1",
@@ -368,8 +368,8 @@ def write_beta_fixture_diff(
         "skill_name": "virtual-intelligent-dev-team",
         "previous_round_id": previous_round_id,
         "current_round_id": current_round_id,
-        "previous_manifest_path": str(root / ".skill-beta" / "fixture-previews" / previous_round_id / "beta-simulation-manifest.json"),
-        "current_manifest_path": str(root / ".skill-beta" / "fixture-previews" / current_round_id / "beta-simulation-manifest.json"),
+        "previous_manifest_path": str(root / ".vidt/beta" / "fixture-previews" / previous_round_id / "beta-simulation-manifest.json"),
+        "current_manifest_path": str(root / ".vidt/beta" / "fixture-previews" / current_round_id / "beta-simulation-manifest.json"),
         "previous_session_count": previous_session_count,
         "current_session_count": current_session_count,
         "session_count_delta": current_session_count - previous_session_count,
@@ -415,7 +415,7 @@ class RoutingTests(unittest.TestCase):
         self.assertIn("Java Virtuoso", result["assistant_agents"])
         self.assertEqual("audit-fix-deliver", result["workflow_bundle"])
         self.assertGreaterEqual(result["bundle_confidence"], 0.8)
-        self.assertIn(".skill-iterations/current-round-memory.md", result["resume_artifacts"])
+        self.assertIn(".vidt/iterations/current-round-memory.md", result["resume_artifacts"])
         self.assertEqual(
             "Code Audit Council",
             (result["reason"]["priority_routing"] or {}).get("agent"),
@@ -508,7 +508,7 @@ class RoutingTests(unittest.TestCase):
         gate = result["harness_constraint_gate"]
         self.assertTrue(gate["required"])
         self.assertEqual("references/harness-engineering-constraint-protocol.md", gate["reference"])
-        self.assertEqual(".skill-harness/engineering-constraints.md", gate["artifact"])
+        self.assertEqual(".vidt/harness/engineering-constraints.md", gate["artifact"])
         self.assertIn("init_harness_constraints.py", gate["command"])
         self.assertIn("constraints-before-code", gate["principles"])
         self.assertEqual(
@@ -525,8 +525,8 @@ class RoutingTests(unittest.TestCase):
             "python scripts/init_quick_slice.py --root . --pretty",
             result["workflow_bundle_bootstrap"]["commands"],
         )
-        self.assertIn(".skill-delivery/current-slice.md", result["resume_artifacts"])
-        self.assertIn(".skill-context/project-context.md", result["resume_artifacts"])
+        self.assertIn(".vidt/delivery/current-slice.md", result["resume_artifacts"])
+        self.assertIn(".vidt/context/project-context.md", result["resume_artifacts"])
 
     def test_chinese_quick_fix_run_regression_stays_quick_slice(self) -> None:
         result = route_request.route_request(
@@ -714,9 +714,9 @@ class RoutingTests(unittest.TestCase):
             result = quick_slice_init.init_quick_slice(root)
 
             self.assertTrue(result["ok"])
-            self.assertEqual(".skill-delivery/current-slice.md", result["resume_anchor"])
-            self.assertTrue((root / ".skill-delivery" / "current-slice.md").exists())
-            self.assertTrue((root / ".skill-delivery" / "status.yaml").exists())
+            self.assertEqual(".vidt/delivery/current-slice.md", result["resume_anchor"])
+            self.assertTrue((root / ".vidt/delivery" / "current-slice.md").exists())
+            self.assertTrue((root / ".vidt/delivery" / "status.yaml").exists())
 
     def test_project_context_initializer_creates_context_anchor(self) -> None:
         with make_tempdir() as tmp:
@@ -724,8 +724,8 @@ class RoutingTests(unittest.TestCase):
             result = project_context_init.init_project_context(root)
 
             self.assertTrue(result["ok"])
-            self.assertEqual(".skill-context/project-context.md", result["resume_anchor"])
-            self.assertTrue((root / ".skill-context" / "project-context.md").exists())
+            self.assertEqual(".vidt/context/project-context.md", result["resume_anchor"])
+            self.assertTrue((root / ".vidt/context" / "project-context.md").exists())
 
     def test_micro_practice_initializer_creates_schema_valid_ledger(self) -> None:
         with make_tempdir() as tmp:
@@ -736,9 +736,9 @@ class RoutingTests(unittest.TestCase):
             )
 
             self.assertTrue(result["ok"])
-            self.assertEqual(".skill-practices/micro-practice-ledger.json", result["resume_anchor"])
-            ledger_path = root / ".skill-practices" / "micro-practice-ledger.json"
-            markdown_path = root / ".skill-practices" / "micro-practice-ledger.md"
+            self.assertEqual(".vidt/practices/micro-practice-ledger.json", result["resume_anchor"])
+            ledger_path = root / ".vidt/practices" / "micro-practice-ledger.json"
+            markdown_path = root / ".vidt/practices" / "micro-practice-ledger.md"
             self.assertTrue(ledger_path.exists())
             self.assertTrue(markdown_path.exists())
             ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
@@ -758,7 +758,7 @@ class RoutingTests(unittest.TestCase):
                 root=root,
                 text="Turn this signup revamp into AFK/HITL vertical slices with acceptance criteria and backend contract questions.",
             )
-            ledger_path = root / ".skill-practices" / "micro-practice-ledger.json"
+            ledger_path = root / ".vidt/practices" / "micro-practice-ledger.json"
 
             result = micro_practices_updater.update_micro_practice(
                 ledger_path=ledger_path,
@@ -775,7 +775,7 @@ class RoutingTests(unittest.TestCase):
             response_contract.validate_micro_practice_ledger(ledger)
             practice = next(item for item in ledger["active_practices"] if item["name"] == "vertical-slice-delivery")
             self.assertEqual("satisfied", practice["status"])
-            markdown = (root / ".skill-practices" / "micro-practice-ledger.md").read_text(encoding="utf-8")
+            markdown = (root / ".vidt/practices" / "micro-practice-ledger.md").read_text(encoding="utf-8")
             self.assertIn("Evidence captured:", markdown)
             self.assertIn("Implemented signup slice with acceptance checks", markdown)
 
@@ -789,7 +789,7 @@ class RoutingTests(unittest.TestCase):
 
             with self.assertRaisesRegex(ValueError, "satisfied micro-practice"):
                 micro_practices_updater.update_micro_practice(
-                    ledger_path=root / ".skill-practices" / "micro-practice-ledger.json",
+                    ledger_path=root / ".vidt/practices" / "micro-practice-ledger.json",
                     name="feedback-loop-first",
                     status="satisfied",
                     evidence=[],
@@ -803,7 +803,7 @@ class RoutingTests(unittest.TestCase):
                 root=root,
                 text="Fix the checkout API regression by first reproducing it with a failing test.",
             )
-            ledger_path = root / ".skill-practices" / "micro-practice-ledger.json"
+            ledger_path = root / ".vidt/practices" / "micro-practice-ledger.json"
 
             update_result = micro_practices_updater.update_micro_practice(
                 ledger_path=ledger_path,
@@ -829,7 +829,7 @@ class RoutingTests(unittest.TestCase):
             )
 
             result = micro_practices_evaluator.evaluate_micro_practices(
-                root / ".skill-practices" / "micro-practice-ledger.json",
+                root / ".vidt/practices" / "micro-practice-ledger.json",
             )
 
             self.assertFalse(result["ok"])
@@ -837,7 +837,7 @@ class RoutingTests(unittest.TestCase):
             self.assertEqual(2, result["status_counts"]["active"])
             self.assertFalse(result["follow_up"]["completion_allowed"])
             self.assertIn(
-                ".skill-practices/micro-practice-evaluation.json",
+                ".vidt/practices/micro-practice-evaluation.json",
                 result["follow_up"]["resume_artifacts"],
             )
             self.assertTrue(
@@ -846,8 +846,8 @@ class RoutingTests(unittest.TestCase):
             self.assertTrue(
                 any("vertical-slice-delivery" in command for command in result["follow_up"]["recommended_commands"])
             )
-            self.assertTrue((root / ".skill-practices" / "micro-practice-evaluation.json").exists())
-            self.assertTrue((root / ".skill-practices" / "micro-practice-evaluation.md").exists())
+            self.assertTrue((root / ".vidt/practices" / "micro-practice-evaluation.json").exists())
+            self.assertTrue((root / ".vidt/practices" / "micro-practice-evaluation.md").exists())
             response_contract.validate_micro_practice_evaluation(result)
 
     def test_micro_practice_evaluator_completes_when_all_practices_are_satisfied(self) -> None:
@@ -857,7 +857,7 @@ class RoutingTests(unittest.TestCase):
                 root=root,
                 text="Turn this signup revamp into AFK/HITL vertical slices with acceptance criteria and backend contract questions.",
             )
-            ledger_path = root / ".skill-practices" / "micro-practice-ledger.json"
+            ledger_path = root / ".vidt/practices" / "micro-practice-ledger.json"
             ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
             for item in ledger["active_practices"]:
                 item["status"] = "satisfied"
@@ -883,7 +883,7 @@ class RoutingTests(unittest.TestCase):
                 root=root,
                 text="Fix the checkout API regression by first reproducing it with a failing test.",
             )
-            ledger_path = root / ".skill-practices" / "micro-practice-ledger.json"
+            ledger_path = root / ".vidt/practices" / "micro-practice-ledger.json"
 
             result = micro_practices_evaluator.evaluate_micro_practices(
                 ledger_path,
@@ -892,8 +892,8 @@ class RoutingTests(unittest.TestCase):
 
             self.assertFalse(result["ok"])
             self.assertEqual("continue", result["decision"])
-            self.assertFalse((root / ".skill-practices" / "micro-practice-evaluation.json").exists())
-            self.assertFalse((root / ".skill-practices" / "micro-practice-evaluation.md").exists())
+            self.assertFalse((root / ".vidt/practices" / "micro-practice-evaluation.json").exists())
+            self.assertFalse((root / ".vidt/practices" / "micro-practice-evaluation.md").exists())
             response_contract.validate_micro_practice_evaluation(result)
 
     def test_micro_practice_evaluator_blocks_when_any_practice_is_blocked(self) -> None:
@@ -903,7 +903,7 @@ class RoutingTests(unittest.TestCase):
                 root=root,
                 text="Fix the checkout API regression by first reproducing it with a failing test.",
             )
-            ledger_path = root / ".skill-practices" / "micro-practice-ledger.json"
+            ledger_path = root / ".vidt/practices" / "micro-practice-ledger.json"
             ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
             ledger["active_practices"][0]["status"] = "blocked"
             ledger["active_practices"][0]["next_check"] = "Failing reproduction cannot be created yet."
@@ -931,7 +931,7 @@ class RoutingTests(unittest.TestCase):
     def test_completion_evidence_template_does_not_allow_completion(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
-            evidence_dir = root / ".skill-evidence"
+            evidence_dir = root / ".vidt/evidence"
             evidence_dir.mkdir(parents=True, exist_ok=True)
             evidence_path = evidence_dir / "completion-evidence.json"
             shutil.copyfile(SKILL_DIR / "assets" / "completion-evidence-template.json", evidence_path)
@@ -1020,7 +1020,7 @@ class RoutingTests(unittest.TestCase):
         with make_tempdir() as tmp:
             root = Path(tmp)
             evidence_path = write_completion_evidence_fixture(root)
-            nested_dir = root / ".skill-evidence" / "release"
+            nested_dir = root / ".vidt/evidence" / "release"
             nested_dir.mkdir(parents=True, exist_ok=True)
             nested_path = nested_dir / "completion-evidence.json"
             shutil.move(str(evidence_path), nested_path)
@@ -1028,7 +1028,7 @@ class RoutingTests(unittest.TestCase):
             result = completion_evidence_verifier.evaluate_completion_evidence(nested_path)
 
             self.assertTrue(result["ok"])
-            self.assertEqual(".skill-evidence/release/completion-evidence.json", result["evidence_path"])
+            self.assertEqual(".vidt/evidence/release/completion-evidence.json", result["evidence_path"])
 
     def test_completion_evidence_verifier_rejects_placeholders_even_if_status_passed(self) -> None:
         with make_tempdir() as tmp:
@@ -1136,7 +1136,7 @@ class RoutingTests(unittest.TestCase):
         self.assertGreaterEqual(result["iteration_profile"]["round_cap_offline"], 120)
         self.assertEqual("root-cause-remediate", result["workflow_bundle"])
         self.assertEqual(
-            ".skill-iterations/current-round-memory.md",
+            ".vidt/iterations/current-round-memory.md",
             result["progress_anchor_recommended"],
         )
 
@@ -1328,47 +1328,47 @@ class RoutingTests(unittest.TestCase):
             commands,
         )
         self.assertIn(
-            "mkdir -p .skill-iterations",
+            "mkdir -p .vidt/iterations",
             commands,
         )
         self.assertIn(
-            "cp assets/iteration-plan-template.json .skill-iterations/iteration-plan.json",
+            "cp assets/iteration-plan-template.json .vidt/iterations/iteration-plan.json",
             commands,
         )
         self.assertIn(
-            "python scripts/register_benchmark_baseline.py --workspace .skill-iterations --label stable --report <baseline-report> --pretty",
+            "python scripts/register_benchmark_baseline.py --workspace .vidt/iterations --label stable --report <baseline-report> --pretty",
             commands,
         )
         self.assertIn(
-            "python scripts/run_iteration_cycle.py --workspace .skill-iterations --round-id round-01 --objective \"<goal>\" --baseline-label stable --owner \"<lead-owner>\" --candidate \"<candidate-change>\" --candidate-worktree ../wt-round-01 --candidate-output-dir .tmp-iteration-round-01 --pretty",
+            "python scripts/run_iteration_cycle.py --workspace .vidt/iterations --round-id round-01 --objective \"<goal>\" --baseline-label stable --owner \"<lead-owner>\" --candidate \"<candidate-change>\" --candidate-worktree ../wt-round-01 --candidate-output-dir .tmp-iteration-round-01 --pretty",
             commands,
         )
         self.assertIn(
-            "python scripts/compare_benchmark_results.py --baseline .skill-iterations/baselines/stable/benchmark-results.json --candidate .tmp-iteration-round-01/benchmark-results.json --pretty",
+            "python scripts/compare_benchmark_results.py --baseline .vidt/iterations/baselines/stable/benchmark-results.json --candidate .tmp-iteration-round-01/benchmark-results.json --pretty",
             commands,
         )
         self.assertIn(
-            "python scripts/promote_iteration_baseline.py --workspace .skill-iterations --round-id round-01 --label accepted-round-01 --pretty",
+            "python scripts/promote_iteration_baseline.py --workspace .vidt/iterations --round-id round-01 --label accepted-round-01 --pretty",
             commands,
         )
         self.assertIn(
-            "python scripts/sync_distilled_patterns.py --workspace .skill-iterations --pretty",
+            "python scripts/sync_distilled_patterns.py --workspace .vidt/iterations --pretty",
             commands,
         )
         self.assertIn(
-            "python scripts/materialize_candidate_patch.py --brief .skill-iterations/candidate-briefs/round-01.json --candidate-root ../wt-round-01 --patch-output .skill-iterations/patches/round-01.patch --pretty",
+            "python scripts/materialize_candidate_patch.py --brief .vidt/iterations/candidate-briefs/round-01.json --candidate-root ../wt-round-01 --patch-output .vidt/iterations/patches/round-01.patch --pretty",
             commands,
         )
         self.assertIn(
-            "python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.json --pretty",
+            "python scripts/run_iteration_loop.py --workspace .vidt/iterations --plan .vidt/iterations/iteration-plan.json --pretty",
             commands,
         )
         self.assertIn(
-            "python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.json --resume --pretty",
+            "python scripts/run_iteration_loop.py --workspace .vidt/iterations --plan .vidt/iterations/iteration-plan.json --resume --pretty",
             commands,
         )
-        self.assertEqual(".skill-iterations/current-round-memory.md", plan[0]["resume_anchor"])
-        self.assertIn(".skill-iterations/distilled-patterns.md", plan[0]["resume_artifacts"])
+        self.assertEqual(".vidt/iterations/current-round-memory.md", plan[0]["resume_anchor"])
+        self.assertIn(".vidt/iterations/distilled-patterns.md", plan[0]["resume_artifacts"])
 
     def test_release_gate_plan_includes_formal_ship_hold_gate(self) -> None:
         plan = route_request.build_process_plan(
@@ -1381,7 +1381,7 @@ class RoutingTests(unittest.TestCase):
         commands = plan[0]["commands"]
 
         self.assertIn(
-            "python scripts/verify_completion_evidence.py --evidence .skill-evidence/completion-evidence.json --pretty",
+            "python scripts/verify_completion_evidence.py --evidence .vidt/evidence/completion-evidence.json --pretty",
             commands,
         )
         self.assertIn(
@@ -1389,7 +1389,7 @@ class RoutingTests(unittest.TestCase):
             commands,
         )
         self.assertIn(
-            "python scripts/run_release_gate.py --output-dir evals/release-gate --completion-evidence .skill-evidence/completion-evidence.json --pretty",
+            "python scripts/run_release_gate.py --output-dir evals/release-gate --completion-evidence .vidt/evidence/completion-evidence.json --pretty",
             commands,
         )
         self.assertIn(
@@ -1397,16 +1397,16 @@ class RoutingTests(unittest.TestCase):
             commands,
         )
         self.assertIn(
-            "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --release-label release-ready --pretty",
+            "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .vidt/iterations --release-label release-ready --pretty",
             commands,
         )
         self.assertIn(
-            "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --auto-run-next-iteration-on-hold --hold-loop-max-rounds 3 --pretty",
+            "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .vidt/iterations --auto-run-next-iteration-on-hold --hold-loop-max-rounds 3 --pretty",
             commands,
         )
         self.assertEqual("evals/release-gate/release-gate-report.md", plan[0]["resume_anchor"])
         self.assertIn("evals/release-gate/next-iteration-brief.json", plan[0]["resume_artifacts"])
-        self.assertIn(".skill-evidence/completion-evidence.json", plan[0]["artifacts"])
+        self.assertIn(".vidt/evidence/completion-evidence.json", plan[0]["artifacts"])
 
     def test_pre_development_plan_initializes_project_memory_anchor(self) -> None:
         plan = route_request.build_process_plan(
@@ -1467,11 +1467,11 @@ class RoutingTests(unittest.TestCase):
             result["workflow_bundle_bootstrap"]["micro_practice_ledger"]["evaluation_schema"],
         )
         self.assertIn(
-            ".skill-practices/micro-practice-ledger.json",
+            ".vidt/practices/micro-practice-ledger.json",
             result["workflow_bundle_bootstrap"]["artifacts"],
         )
         self.assertIn(
-            ".skill-practices/micro-practice-ledger.json",
+            ".vidt/practices/micro-practice-ledger.json",
             result["resume_artifacts"],
         )
         self.assertEqual(
@@ -1538,38 +1538,38 @@ class RoutingTests(unittest.TestCase):
             result["workflow_bundle_bootstrap"]["commands"],
         )
         self.assertIn(
-            ".skill-beta/simulation-configs/round-0.json",
+            ".vidt/beta/simulation-configs/round-0.json",
             result["workflow_bundle_bootstrap"]["artifacts"],
         )
         beta_plan = result["beta_validation_plan"]
         self.assertTrue(beta_plan["enabled"])
         self.assertTrue(beta_plan["simulation_allowed"])
-        self.assertEqual(".skill-beta/feedback-ledger.md", beta_plan["feedback_anchor"])
+        self.assertEqual(".vidt/beta/feedback-ledger.md", beta_plan["feedback_anchor"])
         self.assertEqual("assets/beta-cohort-plan-template.json", beta_plan["cohort_plan_template"])
         self.assertEqual("references/beta-cohort-plan.schema.json", beta_plan["cohort_plan_schema"])
-        self.assertEqual(".skill-beta/cohort-plan.json", beta_plan["cohort_plan_path"])
+        self.assertEqual(".vidt/beta/cohort-plan.json", beta_plan["cohort_plan_path"])
         self.assertEqual("assets/beta-ramp-plan-template.json", beta_plan["ramp_plan_template"])
         self.assertEqual("references/beta-ramp-plan.schema.json", beta_plan["ramp_plan_schema"])
-        self.assertEqual(".skill-beta/ramp-plan.json", beta_plan["ramp_plan_path"])
+        self.assertEqual(".vidt/beta/ramp-plan.json", beta_plan["ramp_plan_path"])
         self.assertEqual("assets/simulated-user-profile-template.json", beta_plan["simulation_profile_template"])
-        self.assertEqual(".skill-beta/personas", beta_plan["simulation_profile_dir"])
+        self.assertEqual(".vidt/beta/personas", beta_plan["simulation_profile_dir"])
         self.assertEqual("references/simulation-persona-library.json", beta_plan["simulation_persona_library"])
         self.assertEqual("references/simulation-cohort-fixtures.json", beta_plan["simulation_cohort_fixtures"])
         self.assertEqual("assets/beta-simulation-config-template.json", beta_plan["simulation_config_template"])
-        self.assertEqual(".skill-beta/simulation-configs", beta_plan["simulation_config_dir"])
+        self.assertEqual(".vidt/beta/simulation-configs", beta_plan["simulation_config_dir"])
         self.assertEqual("references/simulation-scenario-packs.json", beta_plan["simulation_scenario_packs"])
         self.assertEqual("references/simulation-trace-catalog.json", beta_plan["simulation_trace_catalog"])
-        self.assertEqual(".skill-beta/fixture-previews", beta_plan["simulation_preview_dir"])
-        self.assertEqual(".skill-beta/fixture-diffs", beta_plan["simulation_diff_dir"])
-        self.assertEqual(".skill-beta/simulation-runs", beta_plan["simulation_run_dir"])
+        self.assertEqual(".vidt/beta/fixture-previews", beta_plan["simulation_preview_dir"])
+        self.assertEqual(".vidt/beta/fixture-diffs", beta_plan["simulation_diff_dir"])
+        self.assertEqual(".vidt/beta/simulation-runs", beta_plan["simulation_run_dir"])
         self.assertIn("python scripts/init_beta_simulation.py", beta_plan["simulation_init_command_template"])
         self.assertIn("python scripts/preview_beta_simulation_fixture.py", beta_plan["simulation_preview_command_template"])
         self.assertIn("python scripts/compare_beta_simulation_manifests.py", beta_plan["simulation_diff_command_template"])
         self.assertIn("python scripts/run_beta_simulation.py", beta_plan["simulation_run_command_template"])
         self.assertIn("python scripts/summarize_beta_simulation.py", beta_plan["simulation_summary_command_template"])
         self.assertEqual("assets/beta-round-report-template.json", beta_plan["report_template"])
-        self.assertEqual(".skill-beta/reports", beta_plan["report_dir"])
-        self.assertEqual(".skill-beta/round-decisions", beta_plan["decision_dir"])
+        self.assertEqual(".vidt/beta/reports", beta_plan["report_dir"])
+        self.assertEqual(".vidt/beta/round-decisions", beta_plan["decision_dir"])
         self.assertIn("python scripts/evaluate_beta_round.py", beta_plan["gate_command_template"])
         self.assertEqual(3, len(beta_plan["rounds"]))
 
@@ -1696,7 +1696,7 @@ class RoutingTests(unittest.TestCase):
             post_release_entry["reference"],
         )
         self.assertIn(
-            "python scripts/evaluate_post_release_feedback.py --report .skill-post-release/current-signals.json --pretty",
+            "python scripts/evaluate_post_release_feedback.py --report .vidt/post-release/current-signals.json --pretty",
             post_release_entry["commands"],
         )
 
@@ -2156,7 +2156,7 @@ class IterationHelperTests(unittest.TestCase):
         with make_tempdir() as tmp:
             result = harness_constraints_init.init_constraints(
                 Path(tmp),
-                output=".skill-harness/engineering-constraints.md",
+                output=".vidt/harness/engineering-constraints.md",
                 summary="checkout API fix",
             )
 
@@ -2215,7 +2215,7 @@ class IterationHelperTests(unittest.TestCase):
     def test_init_pre_development_plan_does_not_overwrite_existing_project_context_without_force(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp) / "planning-root"
-            project_context_path = root / ".skill-context" / "project-context.md"
+            project_context_path = root / ".vidt/context" / "project-context.md"
             project_context_path.parent.mkdir(parents=True, exist_ok=True)
             original_context = "\n".join(
                 [
@@ -5193,7 +5193,7 @@ class ValidatorScriptTests(unittest.TestCase):
     def test_verify_action_file_handoff_enforces_exact_contract_path_and_timestamp(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
-            handoff_dir = root / ".skill-handoff"
+            handoff_dir = root / ".vidt/handoff"
             handoff_dir.mkdir(parents=True)
             artifact = handoff_dir / "work-order.json"
             artifact.write_text(
@@ -5203,7 +5203,7 @@ class ValidatorScriptTests(unittest.TestCase):
                             "from_role": "Worker",
                             "to_role": "Verifier",
                             "artifact_type": "WorkOrder",
-                            "artifact_path": ".skill-handoff/another-file.json",
+                            "artifact_path": ".vidt/handoff/another-file.json",
                             "timestamp": "2026-07-18T12:00:00",
                         }
                     }
@@ -5227,7 +5227,7 @@ class ValidatorScriptTests(unittest.TestCase):
     def test_verify_action_file_handoff_filter_requires_matching_artifact(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
-            handoff_dir = root / ".skill-handoff"
+            handoff_dir = root / ".vidt/handoff"
             handoff_dir.mkdir(parents=True)
             artifact = handoff_dir / "implementation.json"
             artifact.write_text(
@@ -5237,7 +5237,7 @@ class ValidatorScriptTests(unittest.TestCase):
                             "from_role": "Worker",
                             "to_role": "Verifier",
                             "artifact_type": "ImplementationOutput",
-                            "artifact_path": ".skill-handoff/implementation.json",
+                            "artifact_path": ".vidt/handoff/implementation.json",
                             "timestamp": "2026-07-18T12:00:00Z",
                         }
                     }
@@ -5313,7 +5313,7 @@ class ValidatorScriptTests(unittest.TestCase):
     def test_verify_action_iteration_rejects_deleted_registered_baseline(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
-            workspace = root / ".skill-iterations"
+            workspace = root / ".vidt/iterations"
             registry = workspace / "baselines" / "registry.json"
             registry.parent.mkdir(parents=True)
             missing_report = workspace / "baselines" / "stable" / "benchmark-results.json"
@@ -5346,7 +5346,7 @@ class ValidatorScriptTests(unittest.TestCase):
     def test_verify_action_iteration_accepts_existing_registered_baseline(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
-            workspace = root / ".skill-iterations"
+            workspace = root / ".vidt/iterations"
             report = workspace / "baselines" / "stable" / "benchmark-results.json"
             report.parent.mkdir(parents=True)
             report.write_text(json.dumps({"summary": {"passed": 1, "total": 1}}), encoding="utf-8")
@@ -5450,7 +5450,7 @@ class ValidatorScriptTests(unittest.TestCase):
         self.assertEqual("safe", result["details"]["safety_level"])
         self.assertTrue(result["details"]["resume_requested"])
         self.assertTrue(result["details"]["detached_ready"])
-        self.assertEqual(".skill-auto/state", result["details"]["state_dir"])
+        self.assertEqual(".vidt/auto/state", result["details"]["state_dir"])
         self.assertEqual(
             "references/automation-state.schema.json",
             result["details"]["automation_state_schema"],
@@ -5509,7 +5509,7 @@ class ValidatorScriptTests(unittest.TestCase):
             self.assertFalse(result["allowed"])
             self.assertEqual("continue", result["details"]["decision"])
             self.assertEqual(1, result["details"]["status_counts"]["active"])
-            self.assertFalse((root / ".skill-practices" / "micro-practice-evaluation.json").exists())
+            self.assertFalse((root / ".vidt/practices" / "micro-practice-evaluation.json").exists())
             self.assertTrue(
                 any("update_micro_practices.py" in command for command in result["details"]["recommended_commands"])
             )
@@ -5523,7 +5523,7 @@ class ValidatorScriptTests(unittest.TestCase):
                 text="Fix the checkout API regression by first reproducing it with a failing test.",
             )
             micro_practices_updater.update_micro_practice(
-                ledger_path=root / ".skill-practices" / "micro-practice-ledger.json",
+                ledger_path=root / ".vidt/practices" / "micro-practice-ledger.json",
                 name="feedback-loop-first",
                 status="satisfied",
                 evidence=["Failing regression test was added before the patch and now passes."],
@@ -5553,7 +5553,7 @@ class ValidatorScriptTests(unittest.TestCase):
                 text="Fix the checkout API regression by first reproducing it with a failing test.",
             )
             micro_practices_updater.update_micro_practice(
-                ledger_path=root / ".skill-practices" / "micro-practice-ledger.json",
+                ledger_path=root / ".vidt/practices" / "micro-practice-ledger.json",
                 name="feedback-loop-first",
                 status="blocked",
                 evidence=["Cannot reproduce because the checkout fixture is unavailable."],
@@ -5580,7 +5580,7 @@ class ValidatorScriptTests(unittest.TestCase):
                 text="Fix the checkout API regression by first reproducing it with a failing test.",
             )
             micro_practices_updater.update_micro_practice(
-                ledger_path=root / ".skill-practices" / "micro-practice-ledger.json",
+                ledger_path=root / ".vidt/practices" / "micro-practice-ledger.json",
                 name="feedback-loop-first",
                 status="satisfied",
                 evidence=["Regression loop evidence captured."],
@@ -5643,7 +5643,7 @@ class ValidatorScriptTests(unittest.TestCase):
         with make_tempdir() as tmp:
             root = Path(tmp)
             evidence_path = write_completion_evidence_fixture(root)
-            custom_dir = root / ".skill-evidence" / "release"
+            custom_dir = root / ".vidt/evidence" / "release"
             custom_dir.mkdir(parents=True, exist_ok=True)
             custom_path = custom_dir / "completion-evidence.json"
             shutil.move(str(evidence_path), custom_path)
@@ -5653,13 +5653,13 @@ class ValidatorScriptTests(unittest.TestCase):
                 config=load_config(),
                 repo_path=root,
                 check="completion-evidence",
-                completion_evidence=Path(".skill-evidence/release/completion-evidence.json"),
+                completion_evidence=Path(".vidt/evidence/release/completion-evidence.json"),
             )
 
             self.assertTrue(result["allowed"])
-            self.assertEqual(".skill-evidence/release/completion-evidence.json", result["details"]["evidence_path"])
+            self.assertEqual(".vidt/evidence/release/completion-evidence.json", result["details"]["evidence_path"])
             self.assertIn(
-                ".skill-evidence/release/completion-evidence.json",
+                ".vidt/evidence/release/completion-evidence.json",
                 result["details"]["verify_command"],
             )
             response_contract.validate_verify_action_result(result)
@@ -6013,7 +6013,7 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
 
         assert_field_expectation(
             self,
-            "progress_anchor_recommended is .skill-governance/change-plan.md",
+            "progress_anchor_recommended is .vidt/governance/change-plan.md",
             result["router_snapshot"],
             label="router_snapshot",
         )
@@ -6291,7 +6291,7 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
     def test_release_gate_holds_when_beta_gate_is_not_advanced(self) -> None:
         with make_tempdir() as tmp:
             output_dir = Path(tmp) / "release-gate-output"
-            beta_root = Path(tmp) / ".skill-beta"
+            beta_root = Path(tmp) / ".vidt/beta"
             beta_gate_result = write_beta_gate_fixture(
                 beta_root,
                 round_id="round-02",
@@ -6367,7 +6367,7 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
             root = Path(tmp)
             output_dir = root / "release-gate-output"
             beta_gate_result = write_beta_gate_fixture(
-                root / ".skill-beta",
+                root / ".vidt/beta",
                 round_id="round-02",
                 decision="hold",
                 reason="Auto-discovered beta evidence is still on hold.",
@@ -6419,7 +6419,7 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
         with make_tempdir() as tmp:
             root = Path(tmp)
             output_dir = root / "release-gate-output"
-            (root / ".skill-beta").mkdir(parents=True, exist_ok=True)
+            (root / ".vidt/beta").mkdir(parents=True, exist_ok=True)
             write_completion_evidence_fixture(root)
 
             benchmark_payload = {
@@ -6485,7 +6485,7 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
                 exit_criteria="Advance only when blocker count is zero.",
             )
 
-            report_path = root / ".skill-beta" / "reports" / "round-02.json"
+            report_path = root / ".vidt/beta" / "reports" / "round-02.json"
             report_payload = baseline_registry.load_json(report_path)
             report_payload["completed_sessions"] = 16
             report_payload["task_success_count"] = 12
@@ -6528,7 +6528,7 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
             ):
                 result = release_gate.run_release_gate(
                     output_dir=output_dir,
-                    beta_report_dir=root / ".skill-beta" / "reports",
+                    beta_report_dir=root / ".vidt/beta" / "reports",
                 )
 
             response_contract.validate_release_gate_result(result)
@@ -6582,7 +6582,7 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
     def test_release_gate_hold_absorbs_beta_remediation_brief(self) -> None:
         with make_tempdir() as tmp:
             output_dir = Path(tmp) / "release-gate-output"
-            beta_root = Path(tmp) / ".skill-beta"
+            beta_root = Path(tmp) / ".vidt/beta"
             round_id = "round-02"
             beta_decision_dir = beta_root / "round-decisions" / round_id
             beta_decision_dir.mkdir(parents=True, exist_ok=True)
@@ -6608,7 +6608,7 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
                         "id": "cohort-plan-mismatch",
                         "label": "cohort plan does not match the resolved fixture",
                         "objective_hint": "update the cohort plan so planned sessions and persona counts align",
-                        "evidence_required": "python scripts/evaluate_beta_round.py --report .skill-beta/reports/round-02.json --pretty"
+                        "evidence_required": "python scripts/evaluate_beta_round.py --report .vidt/beta/reports/round-02.json --pretty"
                     }
                 ],
                 "gate_context": {
@@ -6653,11 +6653,11 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
                     "fixture_diff_json": str(beta_root / "fixture-diffs" / f"round-01-to-{round_id}" / "beta-simulation-diff.json")
                 },
                 "recommended_commands": [
-                    "python scripts/preview_beta_simulation_fixture.py --config .skill-beta/simulation-configs/round-02.json --pretty",
-                    "python scripts/evaluate_beta_round.py --report .skill-beta/reports/round-02.json --pretty"
+                    "python scripts/preview_beta_simulation_fixture.py --config .vidt/beta/simulation-configs/round-02.json --pretty",
+                    "python scripts/evaluate_beta_round.py --report .vidt/beta/reports/round-02.json --pretty"
                 ],
                 "required_evidence": [
-                    "python scripts/evaluate_beta_round.py --report .skill-beta/reports/round-02.json --pretty"
+                    "python scripts/evaluate_beta_round.py --report .vidt/beta/reports/round-02.json --pretty"
                 ],
                 "resume_artifacts": [
                     str(product_writeback),
@@ -7071,7 +7071,7 @@ class BenchmarkAndReleaseGateTests(unittest.TestCase):
             post_release_bootstrap = result["follow_up"]["post_release_bootstrap"]
             self.assertTrue(Path(post_release_bootstrap["resume_anchor"]).exists())
             self.assertTrue(Path(post_release_bootstrap["signal_report"]).exists())
-            self.assertTrue(any(item.endswith(".skill-post-release/triage-summary.md") for item in result["explanation_card"]["resume_artifacts"]))
+            self.assertTrue(any(item.endswith(".vidt/post-release/triage-summary.md") for item in result["explanation_card"]["resume_artifacts"]))
 
 
 class ProjectMemoryInitTests(unittest.TestCase):
@@ -7083,13 +7083,13 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertTrue(result["ok"])
             self.assertEqual("all", result["mode"])
             self.assertTrue((root / "docs" / "progress" / "MASTER.md").exists())
-            self.assertTrue((root / ".skill-iterations" / "current-round-memory.md").exists())
-            self.assertTrue((root / ".skill-iterations" / "distilled-patterns.md").exists())
+            self.assertTrue((root / ".vidt/iterations" / "current-round-memory.md").exists())
+            self.assertTrue((root / ".vidt/iterations" / "distilled-patterns.md").exists())
 
     def test_init_project_memory_respects_no_overwrite(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
-            target = root / ".skill-iterations" / "current-round-memory.md"
+            target = root / ".vidt/iterations" / "current-round-memory.md"
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text("custom\n", encoding="utf-8")
 
@@ -7097,7 +7097,7 @@ class ProjectMemoryInitTests(unittest.TestCase):
 
             self.assertEqual("custom\n", target.read_text(encoding="utf-8"))
             statuses = {item["target"]: item["status"] for item in result["actions"]}
-            self.assertEqual("skipped", statuses[".skill-iterations/current-round-memory.md"])
+            self.assertEqual("skipped", statuses[".vidt/iterations/current-round-memory.md"])
 
     def test_init_product_delivery_creates_expected_anchors(self) -> None:
         with make_tempdir() as tmp:
@@ -7105,10 +7105,10 @@ class ProjectMemoryInitTests(unittest.TestCase):
             result = product_delivery_init.init_product_delivery(root=root, overwrite=False)
 
             self.assertTrue(result["ok"])
-            self.assertTrue((root / ".skill-product" / "current-slice.md").exists())
-            self.assertTrue((root / ".skill-product" / "acceptance-criteria.md").exists())
-            self.assertTrue((root / ".skill-product" / "contract-questions.md").exists())
-            self.assertEqual(".skill-product/current-slice.md", result["resume_anchor"])
+            self.assertTrue((root / ".vidt/product" / "current-slice.md").exists())
+            self.assertTrue((root / ".vidt/product" / "acceptance-criteria.md").exists())
+            self.assertTrue((root / ".vidt/product" / "contract-questions.md").exists())
+            self.assertEqual(".vidt/product/current-slice.md", result["resume_anchor"])
 
     def test_init_beta_validation_creates_expected_anchors(self) -> None:
         with make_tempdir() as tmp:
@@ -7116,16 +7116,16 @@ class ProjectMemoryInitTests(unittest.TestCase):
             result = beta_validation_init.init_beta_validation(root=root, overwrite=False)
 
             self.assertTrue(result["ok"])
-            self.assertTrue((root / ".skill-beta" / "program-overview.md").exists())
-            self.assertTrue((root / ".skill-beta" / "cohort-matrix.md").exists())
-            self.assertTrue((root / ".skill-beta" / "feedback-ledger.md").exists())
-            self.assertTrue((root / ".skill-beta" / "cohort-plan.json").exists())
-            self.assertTrue((root / ".skill-beta" / "ramp-plan.json").exists())
-            cohort_plan = json.loads((root / ".skill-beta" / "cohort-plan.json").read_text(encoding="utf-8"))
+            self.assertTrue((root / ".vidt/beta" / "program-overview.md").exists())
+            self.assertTrue((root / ".vidt/beta" / "cohort-matrix.md").exists())
+            self.assertTrue((root / ".vidt/beta" / "feedback-ledger.md").exists())
+            self.assertTrue((root / ".vidt/beta" / "cohort-plan.json").exists())
+            self.assertTrue((root / ".vidt/beta" / "ramp-plan.json").exists())
+            cohort_plan = json.loads((root / ".vidt/beta" / "cohort-plan.json").read_text(encoding="utf-8"))
             response_contract.validate_beta_cohort_plan(cohort_plan)
-            ramp_plan = json.loads((root / ".skill-beta" / "ramp-plan.json").read_text(encoding="utf-8"))
+            ramp_plan = json.loads((root / ".vidt/beta" / "ramp-plan.json").read_text(encoding="utf-8"))
             response_contract.validate_beta_ramp_plan(ramp_plan)
-            self.assertEqual(".skill-beta/program-overview.md", result["resume_anchor"])
+            self.assertEqual(".vidt/beta/program-overview.md", result["resume_anchor"])
 
     def test_init_beta_round_report_creates_machine_readable_report(self) -> None:
         with make_tempdir() as tmp:
@@ -7141,9 +7141,9 @@ class ProjectMemoryInitTests(unittest.TestCase):
                 overwrite=False,
             )
 
-            target = root / ".skill-beta" / "reports" / "round-1.json"
+            target = root / ".vidt/beta" / "reports" / "round-1.json"
             self.assertTrue(result["ok"])
-            self.assertEqual(".skill-beta/reports/round-1.json", result["report_path"])
+            self.assertEqual(".vidt/beta/reports/round-1.json", result["report_path"])
             self.assertTrue(target.exists())
             payload = json.loads(target.read_text(encoding="utf-8"))
             response_contract.validate_beta_round_report(payload)
@@ -7160,14 +7160,14 @@ class ProjectMemoryInitTests(unittest.TestCase):
                 overwrite=False,
             )
 
-            config_path = root / ".skill-beta" / "simulation-configs" / "round-0.json"
+            config_path = root / ".vidt/beta" / "simulation-configs" / "round-0.json"
             self.assertTrue(result["ok"])
-            self.assertEqual(".skill-beta/simulation-configs/round-0.json", result["config_path"])
+            self.assertEqual(".vidt/beta/simulation-configs/round-0.json", result["config_path"])
             self.assertTrue(config_path.exists())
             config_payload = json.loads(config_path.read_text(encoding="utf-8"))
             response_contract.validate_beta_simulation_config(config_payload)
-            self.assertEqual(".skill-beta/feedback-ledger.md", config_payload["feedback_ledger_out"])
-            self.assertIn("--feedback-ledger-out .skill-beta/feedback-ledger.md", config_payload["summary_command_template"])
+            self.assertEqual(".vidt/beta/feedback-ledger.md", config_payload["feedback_ledger_out"])
+            self.assertIn("--feedback-ledger-out .vidt/beta/feedback-ledger.md", config_payload["summary_command_template"])
             self.assertEqual("references/simulation-cohort-fixtures.json", config_payload["cohort_fixture_source"])
             self.assertEqual("references/simulation-trace-catalog.json", config_payload["trace_catalog_source"])
             self.assertEqual("round-0-default", result["cohort_fixture_id"])
@@ -7175,7 +7175,7 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertTrue((root / result["fixture_manifest_markdown"]).exists())
             self.assertIsNone(result["fixture_diff_json"])
             self.assertIsNone(result["fixture_diff_markdown"])
-            self.assertTrue((root / ".skill-beta" / "personas" / "first-time-novice.json").exists())
+            self.assertTrue((root / ".vidt/beta" / "personas" / "first-time-novice.json").exists())
             self.assertTrue((REPO_ROOT / "virtual-intelligent-dev-team" / "references" / "simulation-persona-library.json").exists())
             self.assertTrue((REPO_ROOT / "virtual-intelligent-dev-team" / "references" / "simulation-cohort-fixtures.json").exists())
             self.assertTrue((REPO_ROOT / "virtual-intelligent-dev-team" / "references" / "simulation-scenario-packs.json").exists())
@@ -7286,7 +7286,7 @@ class ProjectMemoryInitTests(unittest.TestCase):
             )
 
             self.assertEqual(
-                ".skill-beta/fixture-previews/round-0/beta-simulation-manifest.json",
+                ".vidt/beta/fixture-previews/round-0/beta-simulation-manifest.json",
                 result["previous_fixture_manifest_json"],
             )
             self.assertIsNotNone(result["fixture_diff_json"])
@@ -7345,8 +7345,8 @@ class ProjectMemoryInitTests(unittest.TestCase):
 
             summary_result = beta_simulation_summary.summarize_beta_simulation(
                 run_path=Path(run_result["json_report"]),
-                feedback_ledger_out=root / ".skill-beta" / "feedback-ledger.md",
-                round_report_out=root / ".skill-beta" / "reports" / "round-1.json",
+                feedback_ledger_out=root / ".vidt/beta" / "feedback-ledger.md",
+                round_report_out=root / ".vidt/beta" / "reports" / "round-1.json",
             )
 
             self.assertTrue(summary_result["ok"])
@@ -7370,7 +7370,7 @@ class ProjectMemoryInitTests(unittest.TestCase):
     def test_evaluate_beta_round_emits_advance_decision(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
-            report = root / ".skill-beta" / "reports" / "round-1.json"
+            report = root / ".vidt/beta" / "reports" / "round-1.json"
             report.parent.mkdir(parents=True, exist_ok=True)
             manifest_path = write_beta_manifest(
                 root,
@@ -7505,10 +7505,10 @@ class ProjectMemoryInitTests(unittest.TestCase):
                     "max_critical_issue_count": 0,
                 },
                 "evidence_artifacts": {
-                    "simulation_run_json": str(root / ".skill-beta" / "simulation-runs" / "round-1" / "beta-simulation-run.json"),
-                    "simulation_run_markdown": str(root / ".skill-beta" / "simulation-runs" / "round-1" / "beta-simulation-run.md"),
-                    "simulation_summary_json": str(root / ".skill-beta" / "simulation-runs" / "round-1" / "beta-simulation-summary.json"),
-                    "feedback_ledger_markdown": str(root / ".skill-beta" / "feedback-ledger.md"),
+                    "simulation_run_json": str(root / ".vidt/beta" / "simulation-runs" / "round-1" / "beta-simulation-run.json"),
+                    "simulation_run_markdown": str(root / ".vidt/beta" / "simulation-runs" / "round-1" / "beta-simulation-run.md"),
+                    "simulation_summary_json": str(root / ".vidt/beta" / "simulation-runs" / "round-1" / "beta-simulation-summary.json"),
+                    "feedback_ledger_markdown": str(root / ".vidt/beta" / "feedback-ledger.md"),
                     "fixture_manifest_json": str(manifest_path),
                     "fixture_manifest_markdown": str(manifest_path.with_suffix(".md")),
                     "fixture_diff_json": str(diff_path),
@@ -7536,7 +7536,7 @@ class ProjectMemoryInitTests(unittest.TestCase):
     def test_evaluate_beta_round_holds_when_report_counts_drift_from_fixture(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
-            report = root / ".skill-beta" / "reports" / "round-0.json"
+            report = root / ".vidt/beta" / "reports" / "round-0.json"
             report.parent.mkdir(parents=True, exist_ok=True)
             manifest_path = write_beta_manifest(
                 root,
@@ -7641,7 +7641,7 @@ class ProjectMemoryInitTests(unittest.TestCase):
         with make_tempdir() as tmp:
             root = Path(tmp)
             technical_governance_init.init_technical_governance(root=root, overwrite=False)
-            report = root / ".skill-beta" / "reports" / "round-2.json"
+            report = root / ".vidt/beta" / "reports" / "round-2.json"
             report.parent.mkdir(parents=True, exist_ok=True)
             payload = {
                 "schema_version": "beta-round-report/v1",
@@ -7681,14 +7681,14 @@ class ProjectMemoryInitTests(unittest.TestCase):
             response_contract.validate_beta_remediation_brief(brief)
             self.assertEqual("escalate", brief["decision"])
             self.assertEqual("Sentinel Architect (NB)", brief["owner"])
-            change_plan = (root / ".skill-governance" / "change-plan.md").read_text(encoding="utf-8")
+            change_plan = (root / ".vidt/governance" / "change-plan.md").read_text(encoding="utf-8")
             self.assertIn("## Beta Gate Escalation Writeback", change_plan)
             response_contract.validate_beta_round_gate_result(result)
 
     def test_evaluate_beta_round_holds_when_ramp_plan_is_missing(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
-            report = root / ".skill-beta" / "reports" / "round-1.json"
+            report = root / ".vidt/beta" / "reports" / "round-1.json"
             report.parent.mkdir(parents=True, exist_ok=True)
             payload = {
                 "schema_version": "beta-round-report/v1",
@@ -7725,7 +7725,7 @@ class ProjectMemoryInitTests(unittest.TestCase):
     def test_evaluate_beta_round_holds_when_cohort_plan_is_missing(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
-            report = root / ".skill-beta" / "reports" / "round-1.json"
+            report = root / ".vidt/beta" / "reports" / "round-1.json"
             report.parent.mkdir(parents=True, exist_ok=True)
             manifest_path = write_beta_manifest(
                 root,
@@ -7797,7 +7797,7 @@ class ProjectMemoryInitTests(unittest.TestCase):
     def test_evaluate_beta_round_holds_when_cohort_plan_mismatches_manifest(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
-            report = root / ".skill-beta" / "reports" / "round-1.json"
+            report = root / ".vidt/beta" / "reports" / "round-1.json"
             report.parent.mkdir(parents=True, exist_ok=True)
             manifest_path = write_beta_manifest(
                 root,
@@ -7893,9 +7893,9 @@ class ProjectMemoryInitTests(unittest.TestCase):
     def test_evaluate_beta_round_holds_when_ramp_plan_mismatches_round_report(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
-            report = root / ".skill-beta" / "reports" / "round-1.json"
+            report = root / ".vidt/beta" / "reports" / "round-1.json"
             report.parent.mkdir(parents=True, exist_ok=True)
-            ramp_plan_path = root / ".skill-beta" / "ramp-plan.json"
+            ramp_plan_path = root / ".vidt/beta" / "ramp-plan.json"
             ramp_plan_path.parent.mkdir(parents=True, exist_ok=True)
             ramp_plan_payload = {
                 "schema_version": "beta-ramp-plan/v1",
@@ -7959,9 +7959,9 @@ class ProjectMemoryInitTests(unittest.TestCase):
     def test_evaluate_beta_round_holds_when_fixture_diff_is_missing(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
-            report = root / ".skill-beta" / "reports" / "round-1.json"
+            report = root / ".vidt/beta" / "reports" / "round-1.json"
             report.parent.mkdir(parents=True, exist_ok=True)
-            ramp_plan_path = root / ".skill-beta" / "ramp-plan.json"
+            ramp_plan_path = root / ".vidt/beta" / "ramp-plan.json"
             ramp_plan_path.parent.mkdir(parents=True, exist_ok=True)
             ramp_plan_payload = {
                 "schema_version": "beta-ramp-plan/v1",
@@ -8026,7 +8026,7 @@ class ProjectMemoryInitTests(unittest.TestCase):
         with make_tempdir() as tmp:
             root = Path(tmp)
             product_delivery_init.init_product_delivery(root=root, overwrite=False)
-            report = root / ".skill-beta" / "reports" / "round-1.json"
+            report = root / ".vidt/beta" / "reports" / "round-1.json"
             report.parent.mkdir(parents=True, exist_ok=True)
             manifest_path = write_beta_manifest(
                 root,
@@ -8160,12 +8160,12 @@ class ProjectMemoryInitTests(unittest.TestCase):
                     "max_blocker_issue_count": 0,
                     "max_critical_issue_count": 0,
                 },
-                "source_simulation_run": ".skill-beta/simulation-runs/round-1/beta-simulation-run.json",
+                "source_simulation_run": ".vidt/beta/simulation-runs/round-1/beta-simulation-run.json",
                 "evidence_artifacts": {
-                    "simulation_run_json": str(root / ".skill-beta" / "simulation-runs" / "round-1" / "beta-simulation-run.json"),
-                    "simulation_run_markdown": str(root / ".skill-beta" / "simulation-runs" / "round-1" / "beta-simulation-run.md"),
-                    "simulation_summary_json": str(root / ".skill-beta" / "simulation-runs" / "round-1" / "beta-simulation-summary.json"),
-                    "feedback_ledger_markdown": str(root / ".skill-beta" / "feedback-ledger.md"),
+                    "simulation_run_json": str(root / ".vidt/beta" / "simulation-runs" / "round-1" / "beta-simulation-run.json"),
+                    "simulation_run_markdown": str(root / ".vidt/beta" / "simulation-runs" / "round-1" / "beta-simulation-run.md"),
+                    "simulation_summary_json": str(root / ".vidt/beta" / "simulation-runs" / "round-1" / "beta-simulation-summary.json"),
+                    "feedback_ledger_markdown": str(root / ".vidt/beta" / "feedback-ledger.md"),
                     "fixture_manifest_json": str(manifest_path),
                     "fixture_manifest_markdown": str(manifest_path.with_suffix(".md")),
                     "fixture_diff_json": str(diff_path),
@@ -8214,9 +8214,9 @@ class ProjectMemoryInitTests(unittest.TestCase):
             response_contract.validate_beta_remediation_brief(brief)
             self.assertIn("blocker_breakdown", brief)
             self.assertEqual("Edge-Case Breaker", brief["blocker_breakdown"]["by_persona"][0]["label"])
-            current_slice = (root / ".skill-product" / "current-slice.md").read_text(encoding="utf-8")
-            acceptance = (root / ".skill-product" / "acceptance-criteria.md").read_text(encoding="utf-8")
-            contract_questions = (root / ".skill-product" / "contract-questions.md").read_text(encoding="utf-8")
+            current_slice = (root / ".vidt/product" / "current-slice.md").read_text(encoding="utf-8")
+            acceptance = (root / ".vidt/product" / "acceptance-criteria.md").read_text(encoding="utf-8")
+            contract_questions = (root / ".vidt/product" / "contract-questions.md").read_text(encoding="utf-8")
             self.assertIn("## Beta Gate Writeback", current_slice)
             self.assertIn("## Beta Gate Writeback", acceptance)
             self.assertIn("## Beta Gate Writeback", contract_questions)
@@ -8239,9 +8239,9 @@ class ProjectMemoryInitTests(unittest.TestCase):
             )
 
             self.assertTrue(result["ok"])
-            self.assertTrue((root / ".skill-governance" / "change-plan.md").exists())
-            self.assertTrue((root / ".skill-governance" / "release-checklist.md").exists())
-            self.assertEqual(".skill-governance/change-plan.md", result["resume_anchor"])
+            self.assertTrue((root / ".vidt/governance" / "change-plan.md").exists())
+            self.assertTrue((root / ".vidt/governance" / "release-checklist.md").exists())
+            self.assertEqual(".vidt/governance/change-plan.md", result["resume_anchor"])
 
     def test_init_post_release_feedback_creates_expected_anchors(self) -> None:
         with make_tempdir() as tmp:
@@ -8249,18 +8249,18 @@ class ProjectMemoryInitTests(unittest.TestCase):
             result = post_release_feedback_init.init_post_release_feedback(root=root, overwrite=False)
 
             self.assertTrue(result["ok"])
-            self.assertTrue((root / ".skill-post-release" / "rollout-summary.md").exists())
-            self.assertTrue((root / ".skill-post-release" / "feedback-ledger.md").exists())
-            self.assertTrue((root / ".skill-post-release" / "current-signals.json").exists())
-            self.assertTrue((root / ".skill-post-release" / "triage-summary.md").exists())
-            self.assertTrue(result["resume_anchor"].endswith(".skill-post-release/triage-summary.md"))
+            self.assertTrue((root / ".vidt/post-release" / "rollout-summary.md").exists())
+            self.assertTrue((root / ".vidt/post-release" / "feedback-ledger.md").exists())
+            self.assertTrue((root / ".vidt/post-release" / "current-signals.json").exists())
+            self.assertTrue((root / ".vidt/post-release" / "triage-summary.md").exists())
+            self.assertTrue(result["resume_anchor"].endswith(".vidt/post-release/triage-summary.md"))
 
     def test_evaluate_post_release_feedback_iterates_and_writes_back_product_assets(self) -> None:
         with make_tempdir() as tmp:
             root = Path(tmp)
             product_delivery_init.init_product_delivery(root=root, overwrite=False)
             post_release_feedback_init.init_post_release_feedback(root=root, overwrite=False)
-            report = root / ".skill-post-release" / "current-signals.json"
+            report = root / ".vidt/post-release" / "current-signals.json"
             payload = {
                 "schema_version": "post-release-feedback-report/v1",
                 "generated_at": "2026-04-08T12:00:00Z",
@@ -8289,12 +8289,12 @@ class ProjectMemoryInitTests(unittest.TestCase):
                         "summary": "Users hesitate after account creation.",
                         "recommended_action": "tighten first-task guidance",
                         "evidence_artifacts": [
-                            ".skill-post-release/feedback-ledger.md"
+                            ".vidt/post-release/feedback-ledger.md"
                         ]
                     }
                 ],
                 "report_context": {
-                    "feedback_ledger_markdown": ".skill-post-release/feedback-ledger.md",
+                    "feedback_ledger_markdown": ".vidt/post-release/feedback-ledger.md",
                     "release_closure_json": "evals/release-gate/release-closure.json",
                     "release_gate_json": "evals/release-gate/release-gate-results.json"
                 }
@@ -8310,9 +8310,9 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertTrue(Path(result["automation_state"]["state_paths"]["primary"]).exists())
             self.assertEqual("post-release-feedback-result", result["automation_state"]["state_kind"])
             self.assertTrue(Path(result["follow_up"]["brief_json"]).exists())
-            current_slice = (root / ".skill-product" / "current-slice.md").read_text(encoding="utf-8")
+            current_slice = (root / ".vidt/product" / "current-slice.md").read_text(encoding="utf-8")
             self.assertIn("## Post-Release Feedback Writeback", current_slice)
-            triage = (root / ".skill-post-release" / "triage-summary.md").read_text(encoding="utf-8")
+            triage = (root / ".vidt/post-release" / "triage-summary.md").read_text(encoding="utf-8")
             self.assertIn("Current decision: `iterate`", triage)
 
     def test_evaluate_post_release_feedback_escalates_stale_monitor_windows(self) -> None:
@@ -8320,7 +8320,7 @@ class ProjectMemoryInitTests(unittest.TestCase):
             root = Path(tmp)
             technical_governance_init.init_technical_governance(root=root, overwrite=False)
             post_release_feedback_init.init_post_release_feedback(root=root, overwrite=False)
-            report = root / ".skill-post-release" / "current-signals.json"
+            report = root / ".vidt/post-release" / "current-signals.json"
             payload = {
                 "schema_version": "post-release-feedback-report/v1",
                 "generated_at": "2026-04-08T12:00:00Z",
@@ -8349,12 +8349,12 @@ class ProjectMemoryInitTests(unittest.TestCase):
                         "summary": "The same medium-severity feedback remains open after repeated observation windows.",
                         "recommended_action": "assign a close-or-accept decision",
                         "evidence_artifacts": [
-                            ".skill-post-release/current-signals.json"
+                            ".vidt/post-release/current-signals.json"
                         ]
                     }
                 ],
                 "report_context": {
-                    "feedback_ledger_markdown": ".skill-post-release/feedback-ledger.md",
+                    "feedback_ledger_markdown": ".vidt/post-release/feedback-ledger.md",
                     "release_closure_json": "evals/release-gate/release-closure.json",
                     "release_gate_json": "evals/release-gate/release-gate-results.json",
                     "monitor_window_count": 3,
@@ -8377,7 +8377,7 @@ class ProjectMemoryInitTests(unittest.TestCase):
                     for item in result["follow_up"]["blockers"]
                 )
             )
-            change_plan = (root / ".skill-governance" / "change-plan.md").read_text(encoding="utf-8")
+            change_plan = (root / ".vidt/governance" / "change-plan.md").read_text(encoding="utf-8")
             self.assertIn("## Post-Release Feedback Escalation", change_plan)
 
     def test_evaluate_post_release_feedback_escalates_and_writes_back_governance_assets(self) -> None:
@@ -8385,7 +8385,7 @@ class ProjectMemoryInitTests(unittest.TestCase):
             root = Path(tmp)
             technical_governance_init.init_technical_governance(root=root, overwrite=False)
             post_release_feedback_init.init_post_release_feedback(root=root, overwrite=False)
-            report = root / ".skill-post-release" / "current-signals.json"
+            report = root / ".vidt/post-release" / "current-signals.json"
             payload = {
                 "schema_version": "post-release-feedback-report/v1",
                 "generated_at": "2026-04-08T12:00:00Z",
@@ -8414,15 +8414,15 @@ class ProjectMemoryInitTests(unittest.TestCase):
                         "summary": "Payment completion drops after the latest release.",
                         "recommended_action": "contain rollout and investigate release path",
                         "evidence_artifacts": [
-                            ".skill-post-release/current-signals.json"
+                            ".vidt/post-release/current-signals.json"
                         ]
                     }
                 ],
                 "report_context": {
-                    "feedback_ledger_markdown": ".skill-post-release/feedback-ledger.md",
+                    "feedback_ledger_markdown": ".vidt/post-release/feedback-ledger.md",
                     "release_closure_json": "evals/release-gate/release-closure.json",
                     "release_gate_json": "evals/release-gate/release-gate-results.json",
-                    "telemetry_snapshot_json": ".skill-post-release/telemetry.json"
+                    "telemetry_snapshot_json": ".vidt/post-release/telemetry.json"
                 }
             }
             report.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -8433,7 +8433,7 @@ class ProjectMemoryInitTests(unittest.TestCase):
             self.assertFalse(result["ok"])
             self.assertEqual("escalate", result["decision"])
             self.assertEqual("technical-governance", result["follow_up"]["next_action"])
-            change_plan = (root / ".skill-governance" / "change-plan.md").read_text(encoding="utf-8")
+            change_plan = (root / ".vidt/governance" / "change-plan.md").read_text(encoding="utf-8")
             self.assertIn("## Post-Release Feedback Escalation", change_plan)
 
 
@@ -8450,8 +8450,8 @@ class AutoWorkflowTests(unittest.TestCase):
             self.assertTrue(result["ok"])
             self.assertEqual("setup", result["requested_phase"])
             self.assertEqual("root-cause-remediate", result["workflow_bundle"])
-            plan_json = root / ".skill-auto" / "auto-run-plan.json"
-            plan_markdown = root / ".skill-auto" / "auto-run-plan.md"
+            plan_json = root / ".vidt/auto" / "auto-run-plan.json"
+            plan_markdown = root / ".vidt/auto" / "auto-run-plan.md"
             self.assertTrue(plan_json.exists())
             self.assertTrue(plan_markdown.exists())
             self.assertTrue((root / result["automation_state"]["state_paths"]["primary"]).exists())
@@ -8497,18 +8497,18 @@ class AutoWorkflowTests(unittest.TestCase):
                 return_value={
                     "status": "completed",
                     "halt_reason": "halted on decision: keep",
-                    "summary": str(root / ".skill-iterations" / "loops" / "iteration-plan.auto-summary.json"),
+                    "summary": str(root / ".vidt/iterations" / "loops" / "iteration-plan.auto-summary.json"),
                     "rounds_run": [],
                 },
             ) as run_loop_mock:
-                result = auto_workflow.run_go(root / ".skill-auto" / "auto-run-plan.json", root)
+                result = auto_workflow.run_go(root / ".vidt/auto" / "auto-run-plan.json", root)
 
             self.assertTrue(result["ok"])
             self.assertEqual("root-cause-remediate", result["workflow_bundle"])
             self.assertEqual("halted on decision: keep", result["decision"])
-            self.assertTrue((root / ".skill-iterations" / "iteration-plan.auto.json").exists())
+            self.assertTrue((root / ".vidt/iterations" / "iteration-plan.auto.json").exists())
             run_loop_mock.assert_called_once()
-            self.assertTrue((root / ".skill-auto" / "last-run.json").exists())
+            self.assertTrue((root / ".vidt/auto" / "last-run.json").exists())
             self.assertTrue((root / result["automation_state"]["state_paths"]["primary"]).exists())
 
     def test_auto_workflow_go_resume_reuses_iteration_state(self) -> None:
@@ -8519,19 +8519,19 @@ class AutoWorkflowTests(unittest.TestCase):
                 repo_root=root,
                 config=load_config(),
             )
-            (root / ".skill-iterations").mkdir(parents=True, exist_ok=True)
-            (root / ".skill-iterations" / "iteration-plan.auto.json").write_text("{}", encoding="utf-8")
+            (root / ".vidt/iterations").mkdir(parents=True, exist_ok=True)
+            (root / ".vidt/iterations" / "iteration-plan.auto.json").write_text("{}", encoding="utf-8")
             with mock.patch.object(
                 auto_workflow.iteration_loop,
                 "run_loop",
                 return_value={
                     "status": "completed",
                     "halt_reason": "halted on decision: keep",
-                    "summary": str(root / ".skill-iterations" / "loops" / "iteration-plan.auto-summary.json"),
+                    "summary": str(root / ".vidt/iterations" / "loops" / "iteration-plan.auto-summary.json"),
                     "rounds_run": [],
                 },
             ) as run_loop_mock:
-                auto_workflow.run_go(root / ".skill-auto" / "auto-run-plan.json", root)
+                auto_workflow.run_go(root / ".vidt/auto" / "auto-run-plan.json", root)
 
             self.assertTrue(run_loop_mock.call_args.kwargs["resume"])
 
@@ -8543,12 +8543,12 @@ class AutoWorkflowTests(unittest.TestCase):
                 repo_root=root,
                 config=load_config(),
             )
-            plan_path = root / ".skill-auto" / "auto-run-plan.json"
+            plan_path = root / ".vidt/auto" / "auto-run-plan.json"
             plan["resume_context"]["state_resume_available"] = True
             plan["resume_context"]["state_resume_state_path"] = "evals/release-gate/automation-state.json"
             plan["resume_context"]["state_resume_decision_id"] = "release-hold-reopen-iteration"
             plan["resume_context"]["state_resume_command"] = (
-                "python scripts/init_iteration_round.py --workspace .skill-iterations --round-id round-01 "
+                "python scripts/init_iteration_round.py --workspace .vidt/iterations --round-id round-01 "
                 '--objective "resume hold brief" --baseline stable --pretty'
             )
             plan_path.write_text(json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -8560,8 +8560,8 @@ class AutoWorkflowTests(unittest.TestCase):
                 "recommended_command": plan["resume_context"]["state_resume_command"],
                 "command_allowed": True,
                 "resume_execution_ledger": {
-                    "json": ".skill-auto/resume-executions/resume-exec-test.json",
-                    "markdown": ".skill-auto/resume-executions/resume-exec-test.md",
+                    "json": ".vidt/auto/resume-executions/resume-exec-test.json",
+                    "markdown": ".vidt/auto/resume-executions/resume-exec-test.md",
                 },
                 "decision_card": {
                     "decision_id": "release-hold-reopen-iteration",
@@ -8569,7 +8569,7 @@ class AutoWorkflowTests(unittest.TestCase):
                     "decision_reason": "state-first remediation should reopen bounded iteration",
                     "resume_strategy": "playbook-follow-through",
                     "recommended_command": plan["resume_context"]["state_resume_command"],
-                    "resume_anchor": ".skill-iterations/current-round-memory.md",
+                    "resume_anchor": ".vidt/iterations/current-round-memory.md",
                     "playbooks": [
                         "references/release-gate-playbook.md",
                         "references/iteration-protocol.md"
@@ -8589,7 +8589,7 @@ class AutoWorkflowTests(unittest.TestCase):
                         "python",
                         "scripts/init_iteration_round.py",
                         "--workspace",
-                        ".skill-iterations",
+                        ".vidt/iterations",
                         "--round-id",
                         "round-01",
                         "--objective",
@@ -8618,7 +8618,7 @@ class AutoWorkflowTests(unittest.TestCase):
             self.assertTrue(result["state_first_resume_used"])
             self.assertEqual("release-hold-reopen-iteration", result["decision"])
             self.assertIn(
-                ".skill-auto/resume-executions/resume-exec-test.md",
+                ".vidt/auto/resume-executions/resume-exec-test.md",
                 result["resume_artifacts"],
             )
             resume_mock.assert_called_once()
@@ -8656,7 +8656,7 @@ class AutoWorkflowTests(unittest.TestCase):
                     },
                 },
             ) as release_gate_mock:
-                result = auto_workflow.run_go(root / ".skill-auto" / "auto-run-plan.json", root)
+                result = auto_workflow.run_go(root / ".vidt/auto" / "auto-run-plan.json", root)
 
             self.assertFalse(result["ok"])
             self.assertEqual("ship-hold-remediate", result["workflow_bundle"])
@@ -8664,7 +8664,7 @@ class AutoWorkflowTests(unittest.TestCase):
             release_gate_mock.assert_called_once()
             self.assertFalse(release_gate_mock.call_args.kwargs["auto_run_next_iteration_on_hold"])
             self.assertEqual(
-                root / ".skill-evidence" / "completion-evidence.json",
+                root / ".vidt/evidence" / "completion-evidence.json",
                 release_gate_mock.call_args.kwargs["completion_evidence"],
             )
 
@@ -8687,22 +8687,22 @@ class AutoWorkflowTests(unittest.TestCase):
                         "state_kind": "post-release-feedback-result",
                         "decision": "monitor",
                         "state_paths": {
-                            "primary": str(root / ".skill-post-release" / "decisions" / "automation-state.json"),
+                            "primary": str(root / ".vidt/post-release" / "decisions" / "automation-state.json"),
                             "related": [],
                         },
                     },
                     "follow_up": {
-                        "resume_artifacts": [str(root / ".skill-post-release" / "triage-summary.md")],
+                        "resume_artifacts": [str(root / ".vidt/post-release" / "triage-summary.md")],
                         "next_action": "continue-monitoring",
                     },
                 },
             ) as post_release_mock:
-                result = auto_workflow.run_go(root / ".skill-auto" / "auto-run-plan.json", root)
+                result = auto_workflow.run_go(root / ".vidt/auto" / "auto-run-plan.json", root)
 
             self.assertTrue(result["ok"])
             self.assertEqual("post-release-close-loop", result["workflow_bundle"])
             self.assertEqual("monitor", result["decision"])
-            self.assertTrue((root / ".skill-post-release" / "current-signals.json").exists())
+            self.assertTrue((root / ".vidt/post-release" / "current-signals.json").exists())
             post_release_mock.assert_called_once()
 
 
@@ -8769,7 +8769,7 @@ class AutomationStateInspectorTests(unittest.TestCase):
             self.assertEqual("workflow", result["selection_mode"])
             self.assertEqual("release-gate-result", result["selected_state"]["state_kind"])
             self.assertIn("run_release_gate.py", result["recommended_resume_command"])
-            self.assertIn("--completion-evidence .skill-evidence/completion-evidence.json", result["recommended_resume_command"])
+            self.assertIn("--completion-evidence .vidt/evidence/completion-evidence.json", result["recommended_resume_command"])
             self.assertEqual(
                 "release-ship-continue-post-release",
                 result["decision_card"]["decision_id"],
@@ -8788,7 +8788,7 @@ class AutomationStateInspectorTests(unittest.TestCase):
             root = Path(tmp)
             technical_governance_init.init_technical_governance(root=root, overwrite=False)
             post_release_feedback_init.init_post_release_feedback(root=root, overwrite=False)
-            report = root / ".skill-post-release" / "current-signals.json"
+            report = root / ".vidt/post-release" / "current-signals.json"
             payload = {
                 "schema_version": "post-release-feedback-report/v1",
                 "generated_at": "2026-04-08T12:00:00Z",
@@ -8817,12 +8817,12 @@ class AutomationStateInspectorTests(unittest.TestCase):
                         "summary": "Payment completion drops after the latest release.",
                         "recommended_action": "contain rollout and investigate release path",
                         "evidence_artifacts": [
-                            ".skill-post-release/current-signals.json"
+                            ".vidt/post-release/current-signals.json"
                         ],
                     }
                 ],
                 "report_context": {
-                    "feedback_ledger_markdown": ".skill-post-release/feedback-ledger.md",
+                    "feedback_ledger_markdown": ".vidt/post-release/feedback-ledger.md",
                     "release_closure_json": "evals/release-gate/release-closure.json",
                     "release_gate_json": "evals/release-gate/release-gate-results.json",
                 },
@@ -8905,14 +8905,14 @@ class AutomationStateResumeTests(unittest.TestCase):
             inspection_payload = {
                 "ok": True,
                 "selection_mode": "workflow",
-                "selected_state_path": ".skill-post-release/decisions/current-signals/automation-state.json",
+                "selected_state_path": ".vidt/post-release/decisions/current-signals/automation-state.json",
                 "decision_card": {
                     "decision_id": "post-release-escalate-governance",
                     "decision_label": "Escalate shipped feedback into governance",
                     "decision_reason": "state-first governance escalation is required",
                     "resume_strategy": "handoff",
                     "recommended_command": "python scripts/init_technical_governance.py --root . --pretty",
-                    "resume_anchor": ".skill-governance/change-plan.md",
+                    "resume_anchor": ".vidt/governance/change-plan.md",
                     "playbooks": [
                         "references/post-release-feedback-playbook.md",
                         "references/technical-governance-playbook.md",
@@ -8922,9 +8922,9 @@ class AutomationStateResumeTests(unittest.TestCase):
                     ],
                     "handoff_target": "technical-governance",
                     "follow_up_artifacts": [
-                        ".skill-post-release/triage-summary.md"
+                        ".vidt/post-release/triage-summary.md"
                     ],
-                    "companion_payload_path": ".skill-post-release/decisions/post-release-feedback-result.json",
+                    "companion_payload_path": ".vidt/post-release/decisions/post-release-feedback-result.json",
                 },
                 "recommended_resume_command": "python scripts/init_technical_governance.py --root . --pretty",
             }
@@ -8963,7 +8963,7 @@ class AutomationStateResumeTests(unittest.TestCase):
             inspection_payload = {
                 "ok": True,
                 "selection_mode": "workflow",
-                "selected_state_path": ".skill-auto/state/fake.json",
+                "selected_state_path": ".vidt/auto/state/fake.json",
                 "decision_card": {
                     "decision_id": "manual-review",
                     "recommended_command": "python scripts/git_workflow_guardrail.py",
@@ -9105,7 +9105,7 @@ class ResponsePackTests(unittest.TestCase):
 
         self.assertIn("bundle_bootstrap", payload)
         self.assertEqual(
-            ".skill-product/current-slice.md",
+            ".vidt/product/current-slice.md",
             payload["bundle_bootstrap"]["resume_anchor"],
         )
         self.assertIn(
@@ -9117,7 +9117,7 @@ class ResponsePackTests(unittest.TestCase):
             payload["bundle_bootstrap"]["commands"],
         )
         self.assertIn(
-            ".skill-practices/micro-practice-ledger.json",
+            ".vidt/practices/micro-practice-ledger.json",
             payload["bundle_bootstrap"]["artifacts"],
         )
 
@@ -9149,7 +9149,7 @@ class ResponsePackTests(unittest.TestCase):
         )
         self.assertTrue(payload["micro_practices"]["ledger"]["required"])
         self.assertEqual(
-            ".skill-practices/micro-practice-ledger.json",
+            ".vidt/practices/micro-practice-ledger.json",
             payload["micro_practices"]["ledger"]["resume_anchor"],
         )
         self.assertIn(
@@ -9181,7 +9181,7 @@ class ResponsePackTests(unittest.TestCase):
 
         self.assertTrue(payload["engineering_constraints"]["required"])
         self.assertEqual(
-            ".skill-harness/engineering-constraints.md",
+            ".vidt/harness/engineering-constraints.md",
             payload["engineering_constraints"]["artifact"],
         )
         self.assertIn(
@@ -9201,32 +9201,32 @@ class ResponsePackTests(unittest.TestCase):
 
         self.assertEqual("beta", payload["template"])
         self.assertIn("beta_program", payload)
-        self.assertEqual(".skill-beta/feedback-ledger.md", payload["beta_program"]["feedback_anchor"])
+        self.assertEqual(".vidt/beta/feedback-ledger.md", payload["beta_program"]["feedback_anchor"])
         self.assertEqual("assets/beta-cohort-plan-template.json", payload["beta_program"]["cohort_plan_template"])
         self.assertEqual("references/beta-cohort-plan.schema.json", payload["beta_program"]["cohort_plan_schema"])
-        self.assertEqual(".skill-beta/cohort-plan.json", payload["beta_program"]["cohort_plan_path"])
+        self.assertEqual(".vidt/beta/cohort-plan.json", payload["beta_program"]["cohort_plan_path"])
         self.assertEqual("assets/beta-ramp-plan-template.json", payload["beta_program"]["ramp_plan_template"])
         self.assertEqual("references/beta-ramp-plan.schema.json", payload["beta_program"]["ramp_plan_schema"])
-        self.assertEqual(".skill-beta/ramp-plan.json", payload["beta_program"]["ramp_plan_path"])
+        self.assertEqual(".vidt/beta/ramp-plan.json", payload["beta_program"]["ramp_plan_path"])
         self.assertEqual("assets/simulated-user-profile-template.json", payload["beta_program"]["simulation_profile_template"])
-        self.assertEqual(".skill-beta/personas", payload["beta_program"]["simulation_profile_dir"])
+        self.assertEqual(".vidt/beta/personas", payload["beta_program"]["simulation_profile_dir"])
         self.assertEqual("references/simulation-persona-library.json", payload["beta_program"]["simulation_persona_library"])
         self.assertEqual("references/simulation-cohort-fixtures.json", payload["beta_program"]["simulation_cohort_fixtures"])
         self.assertEqual("assets/beta-simulation-config-template.json", payload["beta_program"]["simulation_config_template"])
-        self.assertEqual(".skill-beta/simulation-configs", payload["beta_program"]["simulation_config_dir"])
+        self.assertEqual(".vidt/beta/simulation-configs", payload["beta_program"]["simulation_config_dir"])
         self.assertEqual("references/simulation-scenario-packs.json", payload["beta_program"]["simulation_scenario_packs"])
         self.assertEqual("references/simulation-trace-catalog.json", payload["beta_program"]["simulation_trace_catalog"])
-        self.assertEqual(".skill-beta/fixture-previews", payload["beta_program"]["simulation_preview_dir"])
-        self.assertEqual(".skill-beta/fixture-diffs", payload["beta_program"]["simulation_diff_dir"])
-        self.assertEqual(".skill-beta/simulation-runs", payload["beta_program"]["simulation_run_dir"])
+        self.assertEqual(".vidt/beta/fixture-previews", payload["beta_program"]["simulation_preview_dir"])
+        self.assertEqual(".vidt/beta/fixture-diffs", payload["beta_program"]["simulation_diff_dir"])
+        self.assertEqual(".vidt/beta/simulation-runs", payload["beta_program"]["simulation_run_dir"])
         self.assertIn("python scripts/init_beta_simulation.py", payload["beta_program"]["simulation_init_command_template"])
         self.assertIn("python scripts/preview_beta_simulation_fixture.py", payload["beta_program"]["simulation_preview_command_template"])
         self.assertIn("python scripts/compare_beta_simulation_manifests.py", payload["beta_program"]["simulation_diff_command_template"])
         self.assertIn("python scripts/run_beta_simulation.py", payload["beta_program"]["simulation_run_command_template"])
         self.assertIn("python scripts/summarize_beta_simulation.py", payload["beta_program"]["simulation_summary_command_template"])
         self.assertEqual("assets/beta-round-report-template.json", payload["beta_program"]["report_template"])
-        self.assertEqual(".skill-beta/reports", payload["beta_program"]["report_dir"])
-        self.assertEqual(".skill-beta/round-decisions", payload["beta_program"]["decision_dir"])
+        self.assertEqual(".vidt/beta/reports", payload["beta_program"]["report_dir"])
+        self.assertEqual(".vidt/beta/round-decisions", payload["beta_program"]["decision_dir"])
         self.assertIn("python scripts/evaluate_beta_round.py", payload["beta_program"]["gate_command_template"])
         self.assertEqual(3, len(payload["beta_program"]["rounds"]))
 
@@ -9249,7 +9249,7 @@ class ResponsePackTests(unittest.TestCase):
         self.assertTrue(payload["auto_run"]["detached_ready"])
         self.assertTrue(payload["auto_run"]["workflow_supported"])
         self.assertIn("root-cause-remediate", payload["auto_run"]["eligible_workflows"])
-        self.assertEqual(".skill-auto/state", payload["auto_run"]["state_dir"])
+        self.assertEqual(".vidt/auto/state", payload["auto_run"]["state_dir"])
         self.assertEqual("references/automation-state.schema.json", payload["auto_run"]["automation_state_schema"])
         self.assertIn("python scripts/run_auto_workflow.py", payload["auto_run"]["setup_command"])
 
@@ -9340,7 +9340,7 @@ class ResponsePackTests(unittest.TestCase):
 
         self.assertIn("## Bundle Bootstrap", markdown)
         self.assertIn("python scripts/init_product_delivery.py --root . --pretty", markdown)
-        self.assertIn(".skill-product/current-slice.md", markdown)
+        self.assertIn(".vidt/product/current-slice.md", markdown)
 
     def test_generate_response_pack_renders_micro_practices(self) -> None:
         result = route_request.route_request(
@@ -9355,7 +9355,7 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("shared-language-and-decision-capture", markdown)
         self.assertIn("vertical-slice-delivery", markdown)
         self.assertIn("references/vertical-slice-delivery-protocol.md", markdown)
-        self.assertIn("Ledger: .skill-practices/micro-practice-ledger.json", markdown)
+        self.assertIn("Ledger: .vidt/practices/micro-practice-ledger.json", markdown)
         self.assertIn("Init command: python scripts/init_micro_practices.py", markdown)
         self.assertIn("Update command: python scripts/update_micro_practices.py", markdown)
         self.assertIn("Evaluation command: python scripts/evaluate_micro_practices.py", markdown)
@@ -9371,31 +9371,31 @@ class ResponsePackTests(unittest.TestCase):
 
         self.assertIn("## 内测计划", markdown)
         self.assertIn("round-0 | pre-build concept smoke | 样本 5", markdown)
-        self.assertIn(".skill-beta/cohort-matrix.md", markdown)
-        self.assertIn(".skill-beta/feedback-ledger.md", markdown)
+        self.assertIn(".vidt/beta/cohort-matrix.md", markdown)
+        self.assertIn(".vidt/beta/feedback-ledger.md", markdown)
         self.assertIn("assets/beta-cohort-plan-template.json", markdown)
         self.assertIn("references/beta-cohort-plan.schema.json", markdown)
-        self.assertIn(".skill-beta/cohort-plan.json", markdown)
+        self.assertIn(".vidt/beta/cohort-plan.json", markdown)
         self.assertIn("assets/beta-ramp-plan-template.json", markdown)
         self.assertIn("references/beta-ramp-plan.schema.json", markdown)
-        self.assertIn(".skill-beta/ramp-plan.json", markdown)
+        self.assertIn(".vidt/beta/ramp-plan.json", markdown)
         self.assertIn("assets/simulated-user-profile-template.json", markdown)
-        self.assertIn(".skill-beta/personas", markdown)
+        self.assertIn(".vidt/beta/personas", markdown)
         self.assertIn("references/simulation-persona-library.json", markdown)
         self.assertIn("references/simulation-cohort-fixtures.json", markdown)
         self.assertIn("assets/beta-simulation-config-template.json", markdown)
-        self.assertIn(".skill-beta/simulation-configs", markdown)
+        self.assertIn(".vidt/beta/simulation-configs", markdown)
         self.assertIn("references/simulation-scenario-packs.json", markdown)
         self.assertIn("references/simulation-trace-catalog.json", markdown)
-        self.assertIn(".skill-beta/fixture-previews", markdown)
-        self.assertIn(".skill-beta/fixture-diffs", markdown)
+        self.assertIn(".vidt/beta/fixture-previews", markdown)
+        self.assertIn(".vidt/beta/fixture-diffs", markdown)
         self.assertIn("python scripts/init_beta_simulation.py", markdown)
         self.assertIn("python scripts/preview_beta_simulation_fixture.py", markdown)
         self.assertIn("python scripts/compare_beta_simulation_manifests.py", markdown)
         self.assertIn("python scripts/run_beta_simulation.py", markdown)
         self.assertIn("python scripts/summarize_beta_simulation.py", markdown)
         self.assertIn("assets/beta-round-report-template.json", markdown)
-        self.assertIn("python scripts/evaluate_beta_round.py --report .skill-beta/reports/<round-id>.json --pretty", markdown)
+        self.assertIn("python scripts/evaluate_beta_round.py --report .vidt/beta/reports/<round-id>.json --pretty", markdown)
 
     def test_generate_response_pack_renders_automation_resume_section(self) -> None:
         with make_tempdir() as tmp:
@@ -9526,7 +9526,7 @@ class ResponsePackTests(unittest.TestCase):
         self.assertIn("Run style: background / safety level: standard", markdown)
         self.assertIn("Eligible workflows:", markdown)
         self.assertIn("State schema: references/automation-state.schema.json", markdown)
-        self.assertIn("python scripts/run_auto_workflow.py --mode go --plan .skill-auto/auto-run-plan.json --pretty", markdown)
+        self.assertIn("python scripts/run_auto_workflow.py --mode go --plan .vidt/auto/auto-run-plan.json --pretty", markdown)
 
     def test_generate_response_pack_auto_uses_chinese_release_scaffold(self) -> None:
         result = route_request.route_request(
@@ -9593,7 +9593,7 @@ class ResponsePackTests(unittest.TestCase):
             result["explanation_card"]["bundle_bootstrap_commands"],
         )
         self.assertEqual(
-            ".skill-product/current-slice.md",
+            ".vidt/product/current-slice.md",
             result["router_snapshot"]["workflow_bundle_bootstrap"]["resume_anchor"],
         )
 
@@ -9615,12 +9615,12 @@ class ResponsePackTests(unittest.TestCase):
         self.assertFalse(result["details"]["workspace_ready"])
         self.assertTrue(result["details"]["bootstrap_command_required_now"])
         self.assertIn(
-            ".skill-product/current-slice.md",
+            ".vidt/product/current-slice.md",
             result["details"]["missing_artifacts_on_disk"],
         )
         self.assertFalse(result["details"]["resume_anchor_exists"])
         self.assertEqual(
-            ".skill-product/current-slice.md",
+            ".vidt/product/current-slice.md",
             result["details"]["bootstrap"]["resume_anchor"],
         )
 

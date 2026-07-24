@@ -204,22 +204,22 @@ def build_go_markdown(summary: dict[str, object]) -> str:
 def workflow_setup_actions(bundle: str) -> list[str]:
     if bundle == "root-cause-remediate":
         return [
-            "initialize .skill-iterations anchors if missing",
-            "materialize .skill-iterations/iteration-plan.auto.json from the template",
-            "persist .skill-auto/auto-run-plan.json before go",
+            "initialize .vidt/iterations anchors if missing",
+            "materialize .vidt/iterations/iteration-plan.auto.json from the template",
+            "persist .vidt/auto/auto-run-plan.json before go",
         ]
     if bundle == "ship-hold-remediate":
         return [
             "persist the explicit auto-run plan",
-            "prepare .skill-evidence/completion-evidence.json before go",
+            "prepare .vidt/evidence/completion-evidence.json before go",
             "prepare evals/release-gate as the release workspace",
             "keep hold remediation bounded via --auto-run-next-iteration-on-hold",
         ]
     if bundle == "post-release-close-loop":
         return [
             "persist the explicit auto-run plan",
-            "initialize .skill-post-release/ if the workspace is missing",
-            "evaluate .skill-post-release/current-signals.json during go",
+            "initialize .vidt/post-release/ if the workspace is missing",
+            "evaluate .vidt/post-release/current-signals.json during go",
         ]
     return []
 
@@ -227,16 +227,16 @@ def workflow_setup_actions(bundle: str) -> list[str]:
 def workflow_go_actions(bundle: str) -> list[str]:
     if bundle == "root-cause-remediate":
         return [
-            "python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.auto.json --pretty",
+            "python scripts/run_iteration_loop.py --workspace .vidt/iterations --plan .vidt/iterations/iteration-plan.auto.json --pretty",
         ]
     if bundle == "ship-hold-remediate":
         return [
-            "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --completion-evidence .skill-evidence/completion-evidence.json --auto-run-next-iteration-on-hold --hold-loop-max-rounds 3 --pretty",
+            "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .vidt/iterations --completion-evidence .vidt/evidence/completion-evidence.json --auto-run-next-iteration-on-hold --hold-loop-max-rounds 3 --pretty",
         ]
     if bundle == "post-release-close-loop":
         return [
             "python scripts/init_post_release_feedback.py --root . --pretty",
-            "python scripts/evaluate_post_release_feedback.py --report .skill-post-release/current-signals.json --pretty",
+            "python scripts/evaluate_post_release_feedback.py --report .vidt/post-release/current-signals.json --pretty",
         ]
     return []
 
@@ -334,7 +334,7 @@ def run_state_first_resume(repo_root: Path, plan: dict[str, object]) -> dict[str
 
 def create_root_cause_iteration_plan(repo_root: Path, plan: dict[str, object]) -> Path:
     project_memory_init.init_project_memory(root=repo_root, mode="iteration", overwrite=False)
-    iteration_plan_path = repo_root / ".skill-iterations" / "iteration-plan.auto.json"
+    iteration_plan_path = repo_root / ".vidt/iterations" / "iteration-plan.auto.json"
     if bool(plan.get("resume_requested")) and iteration_plan_path.exists():
         return iteration_plan_path
     iteration_plan = load_json(ITERATION_PLAN_TEMPLATE_PATH)
@@ -375,11 +375,11 @@ def build_setup_plan(
             f"workflow `{route_result.get('workflow_bundle')}` is not supported by /auto yet"
         )
 
-    state_root = repo_root / str(auto_profile.get("state_root", ".skill-auto"))
+    state_root = repo_root / str(auto_profile.get("state_root", ".vidt/auto"))
     state_root.mkdir(parents=True, exist_ok=True)
-    plan_json_path = repo_root / str(auto_profile.get("plan_json", ".skill-auto/auto-run-plan.json"))
-    plan_markdown_path = repo_root / str(auto_profile.get("plan_markdown", ".skill-auto/auto-run-plan.md"))
-    state_dir = repo_root / str(auto_profile.get("state_dir", ".skill-auto/state"))
+    plan_json_path = repo_root / str(auto_profile.get("plan_json", ".vidt/auto/auto-run-plan.json"))
+    plan_markdown_path = repo_root / str(auto_profile.get("plan_markdown", ".vidt/auto/auto-run-plan.md"))
+    state_dir = repo_root / str(auto_profile.get("state_dir", ".vidt/auto/state"))
     existing_plan = latest_existing_plan(plan_json_path) if bool(auto_profile.get("resume_requested")) else None
     run_id = automation_state.generate_run_id("auto-setup")
     parent_run_id = (
@@ -530,7 +530,7 @@ def build_setup_plan(
 
 def run_root_cause_go(repo_root: Path, plan: dict[str, object]) -> dict[str, object]:
     iteration_plan_path = create_root_cause_iteration_plan(repo_root, plan)
-    workspace = repo_root / ".skill-iterations"
+    workspace = repo_root / ".vidt/iterations"
     resume_requested = bool(plan.get("resume_requested"))
     result = iteration_loop.run_loop(
         workspace=workspace,
@@ -565,14 +565,14 @@ def run_root_cause_go(repo_root: Path, plan: dict[str, object]) -> dict[str, obj
 
 def run_release_go(repo_root: Path, plan: dict[str, object]) -> dict[str, object]:
     output_dir = repo_root / "evals" / "release-gate"
-    iteration_workspace = repo_root / ".skill-iterations"
+    iteration_workspace = repo_root / ".vidt/iterations"
     safe_mode = str(plan.get("safety_level", "standard")) == "safe"
     resume_requested = bool(plan.get("resume_requested"))
     existing_result = output_dir / "release-gate-results.json"
     result = release_gate.run_release_gate(
         output_dir=output_dir,
         iteration_workspace=iteration_workspace,
-        completion_evidence=repo_root / ".skill-evidence" / "completion-evidence.json",
+        completion_evidence=repo_root / ".vidt/evidence" / "completion-evidence.json",
         auto_run_next_iteration_on_hold=not safe_mode,
         hold_loop_max_rounds=max(int(plan.get("stop_caps", {}).get("release_hold_loop_max_rounds", 3)), 1),
     )
@@ -615,7 +615,7 @@ def run_release_go(repo_root: Path, plan: dict[str, object]) -> dict[str, object
 
 def run_post_release_go(repo_root: Path, plan: dict[str, object]) -> dict[str, object]:
     init_result = post_release_init.init_post_release_feedback(root=repo_root, overwrite=False)
-    report_path = repo_root / ".skill-post-release" / "current-signals.json"
+    report_path = repo_root / ".vidt/post-release" / "current-signals.json"
     result = post_release_feedback.evaluate_post_release_feedback(report_path=report_path)
     follow_up = result.get("follow_up", {})
     if not isinstance(follow_up, dict):
@@ -632,7 +632,7 @@ def run_post_release_go(repo_root: Path, plan: dict[str, object]) -> dict[str, o
         "ok": bool(result.get("ok")),
         "status": "completed",
         "decision": str(result.get("decision", "monitor")),
-        "resume_anchor": str(repo_root / ".skill-post-release" / "triage-summary.md"),
+        "resume_anchor": str(repo_root / ".vidt/post-release" / "triage-summary.md"),
         "resume_artifacts": artifacts,
         "recommended_next_step": str(
             follow_up.get(
@@ -661,12 +661,12 @@ def run_go(plan_path: Path, repo_root: Path) -> dict[str, object]:
         else:
             raise RuntimeError(f"unsupported auto workflow bundle: {workflow_bundle}")
 
-    state_root = repo_root / str(plan.get("state_root", ".skill-auto"))
+    state_root = repo_root / str(plan.get("state_root", ".vidt/auto"))
     last_run_json = state_root / "last-run.json"
     last_run_markdown = state_root / "last-run.md"
     run_id = automation_state.generate_run_id("auto-go")
     automation_state_path = relative_path(
-        repo_root / str(plan.get("state_dir", ".skill-auto/state")) / f"{run_id}.json",
+        repo_root / str(plan.get("state_dir", ".vidt/auto/state")) / f"{run_id}.json",
         repo_root,
     )
     nested_result = execution.get("result", {})
@@ -789,7 +789,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--mode", choices=["setup", "go"], required=True, help="Auto workflow phase to run.")
     parser.add_argument(
         "--plan",
-        default=".skill-auto/auto-run-plan.json",
+        default=".vidt/auto/auto-run-plan.json",
         help="Path to the saved auto plan for --mode go.",
     )
     parser.add_argument(

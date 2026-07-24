@@ -97,7 +97,7 @@ def sync_patterns(workspace: Path) -> dict[str, object]:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Rebuild distilled patterns from kept rounds.")
-    parser.add_argument("--workspace", default=".skill-iterations", help="Iteration workspace")
+    parser.add_argument("--workspace", default=".vidt/iterations", help="Iteration workspace")
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON output")
     return parser.parse_args()
 

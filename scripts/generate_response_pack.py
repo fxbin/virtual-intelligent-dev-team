@@ -145,7 +145,7 @@ def normalize_micro_practices(result: dict[str, object], language: str) -> dict[
             "update_command": format_missing(raw_ledger.get("update_command", ""), language),
             "evaluation_command": format_missing(raw_ledger.get("evaluation_command", ""), language),
             "resume_anchor": format_missing(
-                raw_ledger.get("resume_anchor", ".skill-practices/micro-practice-ledger.json" if names else ""),
+                raw_ledger.get("resume_anchor", ".vidt/practices/micro-practice-ledger.json" if names else ""),
                 language,
             ),
             "schema": format_missing(
@@ -796,7 +796,7 @@ def build_response_pack_payload(
     elif out_of_scope:
         next_action_text = str(scope_boundary.get("next_step", next_action_text))
     elif bool(harness_constraints.get("required")):
-        artifact = harness_constraints.get("artifact", ".skill-harness/engineering-constraints.md")
+        artifact = harness_constraints.get("artifact", ".vidt/harness/engineering-constraints.md")
         next_action_text = (
             f"{next_action_text}；先创建或刷新 Harness 工程约束：{artifact}"
             if selected_language == "zh"
@@ -830,10 +830,10 @@ def build_response_pack_payload(
             "required": True,
             "template": "assets/completion-evidence-template.json",
             "schema": "references/completion-evidence.schema.json",
-            "default_path": ".skill-evidence/completion-evidence.json",
+            "default_path": ".vidt/evidence/completion-evidence.json",
             "verify_command": (
                 "python scripts/verify_completion_evidence.py "
-                "--evidence .skill-evidence/completion-evidence.json --pretty"
+                "--evidence .vidt/evidence/completion-evidence.json --pretty"
             ),
             "required_fields": [
                 "evidence_action",
@@ -984,18 +984,18 @@ def build_response_pack_payload(
     if bool(beta_validation_plan.get("enabled")):
         payload["beta_program"] = {
             "simulation_allowed": bool(beta_validation_plan.get("simulation_allowed")),
-            "feedback_anchor": str(beta_validation_plan.get("feedback_anchor", ".skill-beta/feedback-ledger.md")),
-            "cohort_artifact": str(beta_validation_plan.get("cohort_artifact", ".skill-beta/cohort-matrix.md")),
+            "feedback_anchor": str(beta_validation_plan.get("feedback_anchor", ".vidt/beta/feedback-ledger.md")),
+            "cohort_artifact": str(beta_validation_plan.get("cohort_artifact", ".vidt/beta/cohort-matrix.md")),
             "cohort_plan_template": str(beta_validation_plan.get("cohort_plan_template", "assets/beta-cohort-plan-template.json")),
             "cohort_plan_schema": str(beta_validation_plan.get("cohort_plan_schema", "references/beta-cohort-plan.schema.json")),
-            "cohort_plan_path": str(beta_validation_plan.get("cohort_plan_path", ".skill-beta/cohort-plan.json")),
+            "cohort_plan_path": str(beta_validation_plan.get("cohort_plan_path", ".vidt/beta/cohort-plan.json")),
             "ramp_plan_template": str(beta_validation_plan.get("ramp_plan_template", "assets/beta-ramp-plan-template.json")),
             "ramp_plan_schema": str(beta_validation_plan.get("ramp_plan_schema", "references/beta-ramp-plan.schema.json")),
-            "ramp_plan_path": str(beta_validation_plan.get("ramp_plan_path", ".skill-beta/ramp-plan.json")),
+            "ramp_plan_path": str(beta_validation_plan.get("ramp_plan_path", ".vidt/beta/ramp-plan.json")),
             "simulation_profile_template": str(
                 beta_validation_plan.get("simulation_profile_template", "assets/simulated-user-profile-template.json")
             ),
-            "simulation_profile_dir": str(beta_validation_plan.get("simulation_profile_dir", ".skill-beta/personas")),
+            "simulation_profile_dir": str(beta_validation_plan.get("simulation_profile_dir", ".vidt/beta/personas")),
             "simulation_persona_library": str(
                 beta_validation_plan.get("simulation_persona_library", "references/simulation-persona-library.json")
             ),
@@ -1006,7 +1006,7 @@ def build_response_pack_payload(
                 beta_validation_plan.get("simulation_config_template", "assets/beta-simulation-config-template.json")
             ),
             "simulation_config_dir": str(
-                beta_validation_plan.get("simulation_config_dir", ".skill-beta/simulation-configs")
+                beta_validation_plan.get("simulation_config_dir", ".vidt/beta/simulation-configs")
             ),
             "simulation_scenario_packs": str(
                 beta_validation_plan.get("simulation_scenario_packs", "references/simulation-scenario-packs.json")
@@ -1015,10 +1015,10 @@ def build_response_pack_payload(
                 beta_validation_plan.get("simulation_trace_catalog", "references/simulation-trace-catalog.json")
             ),
             "simulation_preview_dir": str(
-                beta_validation_plan.get("simulation_preview_dir", ".skill-beta/fixture-previews")
+                beta_validation_plan.get("simulation_preview_dir", ".vidt/beta/fixture-previews")
             ),
-            "simulation_diff_dir": str(beta_validation_plan.get("simulation_diff_dir", ".skill-beta/fixture-diffs")),
-            "simulation_run_dir": str(beta_validation_plan.get("simulation_run_dir", ".skill-beta/simulation-runs")),
+            "simulation_diff_dir": str(beta_validation_plan.get("simulation_diff_dir", ".vidt/beta/fixture-diffs")),
+            "simulation_run_dir": str(beta_validation_plan.get("simulation_run_dir", ".vidt/beta/simulation-runs")),
             "simulation_init_command_template": str(
                 beta_validation_plan.get(
                     "simulation_init_command_template",
@@ -1028,34 +1028,34 @@ def build_response_pack_payload(
             "simulation_run_command_template": str(
                 beta_validation_plan.get(
                     "simulation_run_command_template",
-                    "python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/<round-id>.json --pretty",
+                    "python scripts/run_beta_simulation.py --config .vidt/beta/simulation-configs/<round-id>.json --pretty",
                 )
             ),
             "simulation_preview_command_template": str(
                 beta_validation_plan.get(
                     "simulation_preview_command_template",
-                    "python scripts/preview_beta_simulation_fixture.py --config .skill-beta/simulation-configs/<round-id>.json --pretty",
+                    "python scripts/preview_beta_simulation_fixture.py --config .vidt/beta/simulation-configs/<round-id>.json --pretty",
                 )
             ),
             "simulation_diff_command_template": str(
                 beta_validation_plan.get(
                     "simulation_diff_command_template",
-                    "python scripts/compare_beta_simulation_manifests.py --previous .skill-beta/fixture-previews/<previous-round-id>/beta-simulation-manifest.json --current .skill-beta/fixture-previews/<round-id>/beta-simulation-manifest.json --pretty",
+                    "python scripts/compare_beta_simulation_manifests.py --previous .vidt/beta/fixture-previews/<previous-round-id>/beta-simulation-manifest.json --current .vidt/beta/fixture-previews/<round-id>/beta-simulation-manifest.json --pretty",
                 )
             ),
             "simulation_summary_command_template": str(
                 beta_validation_plan.get(
                     "simulation_summary_command_template",
-                    "python scripts/summarize_beta_simulation.py --run .skill-beta/simulation-runs/<round-id>/beta-simulation-run.json --feedback-ledger-out .skill-beta/feedback-ledger.md --round-report-out .skill-beta/reports/<round-id>.json --pretty",
+                    "python scripts/summarize_beta_simulation.py --run .vidt/beta/simulation-runs/<round-id>/beta-simulation-run.json --feedback-ledger-out .vidt/beta/feedback-ledger.md --round-report-out .vidt/beta/reports/<round-id>.json --pretty",
                 )
             ),
             "report_template": str(beta_validation_plan.get("report_template", "assets/beta-round-report-template.json")),
-            "report_dir": str(beta_validation_plan.get("report_dir", ".skill-beta/reports")),
-            "decision_dir": str(beta_validation_plan.get("decision_dir", ".skill-beta/round-decisions")),
+            "report_dir": str(beta_validation_plan.get("report_dir", ".vidt/beta/reports")),
+            "decision_dir": str(beta_validation_plan.get("decision_dir", ".vidt/beta/round-decisions")),
             "gate_command_template": str(
                 beta_validation_plan.get(
                     "gate_command_template",
-                    "python scripts/evaluate_beta_round.py --report .skill-beta/reports/<round-id>.json --pretty",
+                    "python scripts/evaluate_beta_round.py --report .vidt/beta/reports/<round-id>.json --pretty",
                 )
             ),
             "rounds": [
@@ -1082,7 +1082,7 @@ def build_response_pack_payload(
             "round_cap_online": iteration_profile.get("round_cap_online", 0),
             "round_cap_offline": iteration_profile.get("round_cap_offline", 0),
             "allowed_decisions": iteration_profile.get("allowed_decisions", []),
-            "resume_anchor": progress_anchor or ".skill-iterations/current-round-memory.md",
+            "resume_anchor": progress_anchor or ".vidt/iterations/current-round-memory.md",
         }
     if bool(auto_run_profile.get("enabled")):
         payload["auto_run"] = {
@@ -1713,53 +1713,53 @@ def build_response_pack(
         )
         default_simulation_preview_command = (
             "python scripts/preview_beta_simulation_fixture.py "
-            "--config .skill-beta/simulation-configs/<round-id>.json --pretty"
+            "--config .vidt/beta/simulation-configs/<round-id>.json --pretty"
         )
         default_simulation_diff_command = (
             "python scripts/compare_beta_simulation_manifests.py "
-            "--previous .skill-beta/fixture-previews/<previous-round-id>/beta-simulation-manifest.json "
-            "--current .skill-beta/fixture-previews/<round-id>/beta-simulation-manifest.json --pretty"
+            "--previous .vidt/beta/fixture-previews/<previous-round-id>/beta-simulation-manifest.json "
+            "--current .vidt/beta/fixture-previews/<round-id>/beta-simulation-manifest.json --pretty"
         )
         default_simulation_run_command = (
-            "python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/<round-id>.json --pretty"
+            "python scripts/run_beta_simulation.py --config .vidt/beta/simulation-configs/<round-id>.json --pretty"
         )
         default_simulation_summary_command = (
-            "python scripts/summarize_beta_simulation.py --run .skill-beta/simulation-runs/<round-id>/beta-simulation-run.json "
-            "--feedback-ledger-out .skill-beta/feedback-ledger.md --round-report-out .skill-beta/reports/<round-id>.json --pretty"
+            "python scripts/summarize_beta_simulation.py --run .vidt/beta/simulation-runs/<round-id>/beta-simulation-run.json "
+            "--feedback-ledger-out .vidt/beta/feedback-ledger.md --round-report-out .vidt/beta/reports/<round-id>.json --pretty"
         )
         if selected_language == "zh":
             lines.extend(
                 [
                     "## 内测计划",
                     f"- 是否允许模拟用户：{format_bool(beta_program.get('simulation_allowed'), selected_language)}",
-                    f"- cohort 矩阵：{beta_program.get('cohort_artifact', '.skill-beta/cohort-matrix.md')}",
-                    f"- 反馈台账：{beta_program.get('feedback_anchor', '.skill-beta/feedback-ledger.md')}",
+                    f"- cohort 矩阵：{beta_program.get('cohort_artifact', '.vidt/beta/cohort-matrix.md')}",
+                    f"- 反馈台账：{beta_program.get('feedback_anchor', '.vidt/beta/feedback-ledger.md')}",
                     f"- cohort plan 模板：{beta_program.get('cohort_plan_template', 'assets/beta-cohort-plan-template.json')}",
                     f"- cohort plan schema：{beta_program.get('cohort_plan_schema', 'references/beta-cohort-plan.schema.json')}",
-                    f"- cohort plan 路径：{beta_program.get('cohort_plan_path', '.skill-beta/cohort-plan.json')}",
+                    f"- cohort plan 路径：{beta_program.get('cohort_plan_path', '.vidt/beta/cohort-plan.json')}",
                     f"- ramp plan 模板：{beta_program.get('ramp_plan_template', 'assets/beta-ramp-plan-template.json')}",
                     f"- ramp plan schema：{beta_program.get('ramp_plan_schema', 'references/beta-ramp-plan.schema.json')}",
-                    f"- ramp plan 路径：{beta_program.get('ramp_plan_path', '.skill-beta/ramp-plan.json')}",
+                    f"- ramp plan 路径：{beta_program.get('ramp_plan_path', '.vidt/beta/ramp-plan.json')}",
                     f"- 模拟画像模板：{beta_program.get('simulation_profile_template', 'assets/simulated-user-profile-template.json')}",
-                    f"- 模拟画像目录：{beta_program.get('simulation_profile_dir', '.skill-beta/personas')}",
+                    f"- 模拟画像目录：{beta_program.get('simulation_profile_dir', '.vidt/beta/personas')}",
                     f"- 模拟画像库：{beta_program.get('simulation_persona_library', 'references/simulation-persona-library.json')}",
                     f"- cohort fixture 库：{beta_program.get('simulation_cohort_fixtures', 'references/simulation-cohort-fixtures.json')}",
                     f"- 模拟配置模板：{beta_program.get('simulation_config_template', 'assets/beta-simulation-config-template.json')}",
-                    f"- 模拟配置目录：{beta_program.get('simulation_config_dir', '.skill-beta/simulation-configs')}",
+                    f"- 模拟配置目录：{beta_program.get('simulation_config_dir', '.vidt/beta/simulation-configs')}",
                     f"- 模拟场景包：{beta_program.get('simulation_scenario_packs', 'references/simulation-scenario-packs.json')}",
                     f"- 模拟轨迹库：{beta_program.get('simulation_trace_catalog', 'references/simulation-trace-catalog.json')}",
-                    f"- fixture 预览目录：{beta_program.get('simulation_preview_dir', '.skill-beta/fixture-previews')}",
-                    f"- fixture diff 目录：{beta_program.get('simulation_diff_dir', '.skill-beta/fixture-diffs')}",
-                    f"- 模拟运行目录：{beta_program.get('simulation_run_dir', '.skill-beta/simulation-runs')}",
+                    f"- fixture 预览目录：{beta_program.get('simulation_preview_dir', '.vidt/beta/fixture-previews')}",
+                    f"- fixture diff 目录：{beta_program.get('simulation_diff_dir', '.vidt/beta/fixture-diffs')}",
+                    f"- 模拟运行目录：{beta_program.get('simulation_run_dir', '.vidt/beta/simulation-runs')}",
                     f"- 模拟起盘命令：{beta_program.get('simulation_init_command_template', default_simulation_init_command)}",
                     f"- fixture 预览命令：{beta_program.get('simulation_preview_command_template', default_simulation_preview_command)}",
                     f"- fixture diff 命令：{beta_program.get('simulation_diff_command_template', default_simulation_diff_command)}",
                     f"- 模拟执行命令：{beta_program.get('simulation_run_command_template', default_simulation_run_command)}",
                     f"- 模拟汇总命令：{beta_program.get('simulation_summary_command_template', default_simulation_summary_command)}",
                     f"- 轮次报告模板：{beta_program.get('report_template', 'assets/beta-round-report-template.json')}",
-                    f"- 轮次报告目录：{beta_program.get('report_dir', '.skill-beta/reports')}",
-                    f"- Gate 决策目录：{beta_program.get('decision_dir', '.skill-beta/round-decisions')}",
-                    f"- Gate 命令：{beta_program.get('gate_command_template', 'python scripts/evaluate_beta_round.py --report .skill-beta/reports/<round-id>.json --pretty')}",
+                    f"- 轮次报告目录：{beta_program.get('report_dir', '.vidt/beta/reports')}",
+                    f"- Gate 决策目录：{beta_program.get('decision_dir', '.vidt/beta/round-decisions')}",
+                    f"- Gate 命令：{beta_program.get('gate_command_template', 'python scripts/evaluate_beta_round.py --report .vidt/beta/reports/<round-id>.json --pretty')}",
                     "- 分轮方案：",
                     _bullet_list(
                         [
@@ -1777,34 +1777,34 @@ def build_response_pack(
                 [
                     "## Beta Program",
                     f"- Simulation allowed: {format_bool(beta_program.get('simulation_allowed'), selected_language)}",
-                    f"- Cohort artifact: {beta_program.get('cohort_artifact', '.skill-beta/cohort-matrix.md')}",
-                    f"- Feedback anchor: {beta_program.get('feedback_anchor', '.skill-beta/feedback-ledger.md')}",
+                    f"- Cohort artifact: {beta_program.get('cohort_artifact', '.vidt/beta/cohort-matrix.md')}",
+                    f"- Feedback anchor: {beta_program.get('feedback_anchor', '.vidt/beta/feedback-ledger.md')}",
                     f"- Cohort plan template: {beta_program.get('cohort_plan_template', 'assets/beta-cohort-plan-template.json')}",
                     f"- Cohort plan schema: {beta_program.get('cohort_plan_schema', 'references/beta-cohort-plan.schema.json')}",
-                    f"- Cohort plan path: {beta_program.get('cohort_plan_path', '.skill-beta/cohort-plan.json')}",
+                    f"- Cohort plan path: {beta_program.get('cohort_plan_path', '.vidt/beta/cohort-plan.json')}",
                     f"- Ramp plan template: {beta_program.get('ramp_plan_template', 'assets/beta-ramp-plan-template.json')}",
                     f"- Ramp plan schema: {beta_program.get('ramp_plan_schema', 'references/beta-ramp-plan.schema.json')}",
-                    f"- Ramp plan path: {beta_program.get('ramp_plan_path', '.skill-beta/ramp-plan.json')}",
+                    f"- Ramp plan path: {beta_program.get('ramp_plan_path', '.vidt/beta/ramp-plan.json')}",
                     f"- Simulation profile template: {beta_program.get('simulation_profile_template', 'assets/simulated-user-profile-template.json')}",
-                    f"- Simulation profile dir: {beta_program.get('simulation_profile_dir', '.skill-beta/personas')}",
+                    f"- Simulation profile dir: {beta_program.get('simulation_profile_dir', '.vidt/beta/personas')}",
                     f"- Simulation persona library: {beta_program.get('simulation_persona_library', 'references/simulation-persona-library.json')}",
                     f"- Cohort fixture library: {beta_program.get('simulation_cohort_fixtures', 'references/simulation-cohort-fixtures.json')}",
                     f"- Simulation config template: {beta_program.get('simulation_config_template', 'assets/beta-simulation-config-template.json')}",
-                    f"- Simulation config dir: {beta_program.get('simulation_config_dir', '.skill-beta/simulation-configs')}",
+                    f"- Simulation config dir: {beta_program.get('simulation_config_dir', '.vidt/beta/simulation-configs')}",
                     f"- Simulation scenario packs: {beta_program.get('simulation_scenario_packs', 'references/simulation-scenario-packs.json')}",
                     f"- Simulation trace catalog: {beta_program.get('simulation_trace_catalog', 'references/simulation-trace-catalog.json')}",
-                    f"- Simulation preview dir: {beta_program.get('simulation_preview_dir', '.skill-beta/fixture-previews')}",
-                    f"- Simulation diff dir: {beta_program.get('simulation_diff_dir', '.skill-beta/fixture-diffs')}",
-                    f"- Simulation run dir: {beta_program.get('simulation_run_dir', '.skill-beta/simulation-runs')}",
+                    f"- Simulation preview dir: {beta_program.get('simulation_preview_dir', '.vidt/beta/fixture-previews')}",
+                    f"- Simulation diff dir: {beta_program.get('simulation_diff_dir', '.vidt/beta/fixture-diffs')}",
+                    f"- Simulation run dir: {beta_program.get('simulation_run_dir', '.vidt/beta/simulation-runs')}",
                     f"- Simulation init command: {beta_program.get('simulation_init_command_template', default_simulation_init_command)}",
                     f"- Simulation preview command: {beta_program.get('simulation_preview_command_template', default_simulation_preview_command)}",
                     f"- Simulation diff command: {beta_program.get('simulation_diff_command_template', default_simulation_diff_command)}",
                     f"- Simulation run command: {beta_program.get('simulation_run_command_template', default_simulation_run_command)}",
                     f"- Simulation summary command: {beta_program.get('simulation_summary_command_template', default_simulation_summary_command)}",
                     f"- Round report template: {beta_program.get('report_template', 'assets/beta-round-report-template.json')}",
-                    f"- Round report dir: {beta_program.get('report_dir', '.skill-beta/reports')}",
-                    f"- Gate decision dir: {beta_program.get('decision_dir', '.skill-beta/round-decisions')}",
-                    f"- Gate command: {beta_program.get('gate_command_template', 'python scripts/evaluate_beta_round.py --report .skill-beta/reports/<round-id>.json --pretty')}",
+                    f"- Round report dir: {beta_program.get('report_dir', '.vidt/beta/reports')}",
+                    f"- Gate decision dir: {beta_program.get('decision_dir', '.vidt/beta/round-decisions')}",
+                    f"- Gate command: {beta_program.get('gate_command_template', 'python scripts/evaluate_beta_round.py --report .vidt/beta/reports/<round-id>.json --pretty')}",
                     "- Rounds:",
                     _bullet_list(
                         [
@@ -1825,7 +1825,7 @@ def build_response_pack(
                     "## 优化闭环",
                     f"- 当前模式：bounded iteration，在线上限 {optimization_loop.get('round_cap_online', 0)} 轮，离线上限 {optimization_loop.get('round_cap_offline', 0)} 轮。",
                     f"- 允许决策：{', '.join(optimization_loop.get('allowed_decisions', [])) if isinstance(optimization_loop.get('allowed_decisions'), list) else ''}",
-                    f"- 当前恢复锚点：{optimization_loop.get('resume_anchor', '.skill-iterations/current-round-memory.md')}",
+                    f"- 当前恢复锚点：{optimization_loop.get('resume_anchor', '.vidt/iterations/current-round-memory.md')}",
                     "",
                 ]
             )
@@ -1835,7 +1835,7 @@ def build_response_pack(
                     "## Optimization Loop",
                     f"- Objective mode: bounded iteration with online cap {optimization_loop.get('round_cap_online', 0)} and offline cap {optimization_loop.get('round_cap_offline', 0)}.",
                     f"- Allowed decisions: {', '.join(optimization_loop.get('allowed_decisions', [])) if isinstance(optimization_loop.get('allowed_decisions'), list) else ''}",
-                    f"- Current resume anchor: {optimization_loop.get('resume_anchor', '.skill-iterations/current-round-memory.md')}",
+                    f"- Current resume anchor: {optimization_loop.get('resume_anchor', '.vidt/iterations/current-round-memory.md')}",
                     "",
                 ]
             )
@@ -1853,9 +1853,9 @@ def build_response_pack(
                     f"- 是否在自动白名单内：{format_bool(auto_run.get('workflow_supported'), selected_language)}",
                     f"- 是否要求显式 go：{format_bool(auto_run.get('requires_explicit_go'), selected_language)}",
                     f"- 资格说明：{auto_run.get('eligibility_reason', '无')}",
-                    f"- 状态目录：{auto_run.get('state_root', '.skill-auto')}",
-                    f"- 状态快照目录：{auto_run.get('state_dir', '.skill-auto/state')}",
-                    f"- setup 计划：{auto_run.get('plan_markdown', '.skill-auto/auto-run-plan.md')}",
+                    f"- 状态目录：{auto_run.get('state_root', '.vidt/auto')}",
+                    f"- 状态快照目录：{auto_run.get('state_dir', '.vidt/auto/state')}",
+                    f"- setup 计划：{auto_run.get('plan_markdown', '.vidt/auto/auto-run-plan.md')}",
                     f"- 恢复锚点：{auto_run.get('resume_anchor', '无')}",
                     f"- 状态 schema：{auto_run.get('automation_state_schema', 'references/automation-state.schema.json')}",
                     "- 允许自动化的 workflow：",
@@ -1893,9 +1893,9 @@ def build_response_pack(
                     f"- Workflow is auto-eligible: {format_bool(auto_run.get('workflow_supported'), selected_language)}",
                     f"- Explicit go required: {format_bool(auto_run.get('requires_explicit_go'), selected_language)}",
                     f"- Eligibility reason: {auto_run.get('eligibility_reason', 'n/a')}",
-                    f"- State root: {auto_run.get('state_root', '.skill-auto')}",
-                    f"- State snapshots: {auto_run.get('state_dir', '.skill-auto/state')}",
-                    f"- Setup plan: {auto_run.get('plan_markdown', '.skill-auto/auto-run-plan.md')}",
+                    f"- State root: {auto_run.get('state_root', '.vidt/auto')}",
+                    f"- State snapshots: {auto_run.get('state_dir', '.vidt/auto/state')}",
+                    f"- Setup plan: {auto_run.get('plan_markdown', '.vidt/auto/auto-run-plan.md')}",
                     f"- Resume anchor: {auto_run.get('resume_anchor', 'n/a')}",
                     f"- State schema: {auto_run.get('automation_state_schema', 'references/automation-state.schema.json')}",
                     "- Eligible workflows:",

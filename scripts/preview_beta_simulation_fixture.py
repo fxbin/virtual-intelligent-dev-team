@@ -41,8 +41,9 @@ def now_iso() -> str:
 
 
 def repo_root_from_config(config_path: Path) -> Path:
-    if config_path.parent.name == "simulation-configs" and config_path.parent.parent.name == ".skill-beta":
-        return config_path.parent.parent.parent
+    for parent in config_path.parents:
+        if parent.name == ".vidt":
+            return parent.parent
     return config_path.parent
 
 
@@ -134,7 +135,7 @@ def preview_beta_simulation_fixture(
     resolved_output_dir = (
         output_dir.resolve()
         if output_dir is not None
-        else repo_root / ".skill-beta" / "fixture-previews" / str(config["round_id"])
+        else repo_root / ".vidt/beta" / "fixture-previews" / str(config["round_id"])
     )
     resolved_output_dir.mkdir(parents=True, exist_ok=True)
     json_report = resolved_output_dir / "beta-simulation-manifest.json"

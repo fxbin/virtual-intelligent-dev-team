@@ -8,7 +8,7 @@ until the current engineering constraints are explicit.
 
 ## Required Artifact
 
-- `.skill-harness/engineering-constraints.md`
+- `.vidt/harness/engineering-constraints.md`
 
 Initialize it with:
 
@@ -36,7 +36,7 @@ For code-facing bundles, expose a machine-readable `harness_constraint_gate` wit
 
 - `required: true`
 - `reference: references/harness-engineering-constraint-protocol.md`
-- `artifact: .skill-harness/engineering-constraints.md`
+- `artifact: .vidt/harness/engineering-constraints.md`
 - `command: python scripts/init_harness_constraints.py --root . --summary "<task summary>" --pretty`
 - `verification_check`
 

@@ -511,7 +511,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                             "round_cap_offline": 120,
                             "allowed_decisions": ["keep", "retry", "rollback", "stop"],
                         },
-                        "progress_anchor_recommended": ".skill-iterations/current-round-memory.md",
+                        "progress_anchor_recommended": ".vidt/iterations/current-round-memory.md",
                     }
                 ),
                 "beta": build_payload(
@@ -522,34 +522,34 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                         "beta_validation_plan": {
                             "enabled": True,
                             "simulation_allowed": True,
-                            "feedback_anchor": ".skill-beta/feedback-ledger.md",
-                            "cohort_artifact": ".skill-beta/cohort-matrix.md",
+                            "feedback_anchor": ".vidt/beta/feedback-ledger.md",
+                            "cohort_artifact": ".vidt/beta/cohort-matrix.md",
                             "cohort_plan_template": "assets/beta-cohort-plan-template.json",
                             "cohort_plan_schema": "references/beta-cohort-plan.schema.json",
-                            "cohort_plan_path": ".skill-beta/cohort-plan.json",
+                            "cohort_plan_path": ".vidt/beta/cohort-plan.json",
                             "ramp_plan_template": "assets/beta-ramp-plan-template.json",
                             "ramp_plan_schema": "references/beta-ramp-plan.schema.json",
-                            "ramp_plan_path": ".skill-beta/ramp-plan.json",
+                            "ramp_plan_path": ".vidt/beta/ramp-plan.json",
                             "simulation_profile_template": "assets/simulated-user-profile-template.json",
-                            "simulation_profile_dir": ".skill-beta/personas",
+                            "simulation_profile_dir": ".vidt/beta/personas",
                             "simulation_persona_library": "references/simulation-persona-library.json",
                             "simulation_cohort_fixtures": "references/simulation-cohort-fixtures.json",
                             "simulation_config_template": "assets/beta-simulation-config-template.json",
-                            "simulation_config_dir": ".skill-beta/simulation-configs",
+                            "simulation_config_dir": ".vidt/beta/simulation-configs",
                             "simulation_scenario_packs": "references/simulation-scenario-packs.json",
                             "simulation_trace_catalog": "references/simulation-trace-catalog.json",
-                            "simulation_preview_dir": ".skill-beta/fixture-previews",
-                            "simulation_diff_dir": ".skill-beta/fixture-diffs",
-                            "simulation_run_dir": ".skill-beta/simulation-runs",
+                            "simulation_preview_dir": ".vidt/beta/fixture-previews",
+                            "simulation_diff_dir": ".vidt/beta/fixture-diffs",
+                            "simulation_run_dir": ".vidt/beta/simulation-runs",
                             "simulation_init_command_template": "python scripts/init_beta_simulation.py --root . --round-id <round-id> --phase \"<phase>\" --objective \"<objective>\" --pretty",
-                            "simulation_preview_command_template": "python scripts/preview_beta_simulation_fixture.py --config .skill-beta/simulation-configs/<round-id>.json --pretty",
-                            "simulation_diff_command_template": "python scripts/compare_beta_simulation_manifests.py --previous .skill-beta/fixture-previews/<previous-round-id>/beta-simulation-manifest.json --current .skill-beta/fixture-previews/<round-id>/beta-simulation-manifest.json --pretty",
-                            "simulation_run_command_template": "python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/<round-id>.json --pretty",
-                            "simulation_summary_command_template": "python scripts/summarize_beta_simulation.py --run .skill-beta/simulation-runs/<round-id>/beta-simulation-run.json --feedback-ledger-out .skill-beta/feedback-ledger.md --round-report-out .skill-beta/reports/<round-id>.json --pretty",
+                            "simulation_preview_command_template": "python scripts/preview_beta_simulation_fixture.py --config .vidt/beta/simulation-configs/<round-id>.json --pretty",
+                            "simulation_diff_command_template": "python scripts/compare_beta_simulation_manifests.py --previous .vidt/beta/fixture-previews/<previous-round-id>/beta-simulation-manifest.json --current .vidt/beta/fixture-previews/<round-id>/beta-simulation-manifest.json --pretty",
+                            "simulation_run_command_template": "python scripts/run_beta_simulation.py --config .vidt/beta/simulation-configs/<round-id>.json --pretty",
+                            "simulation_summary_command_template": "python scripts/summarize_beta_simulation.py --run .vidt/beta/simulation-runs/<round-id>/beta-simulation-run.json --feedback-ledger-out .vidt/beta/feedback-ledger.md --round-report-out .vidt/beta/reports/<round-id>.json --pretty",
                             "report_template": "assets/beta-round-report-template.json",
-                            "report_dir": ".skill-beta/reports",
-                            "decision_dir": ".skill-beta/round-decisions",
-                            "gate_command_template": "python scripts/evaluate_beta_round.py --report .skill-beta/reports/<round-id>.json --pretty",
+                            "report_dir": ".vidt/beta/reports",
+                            "decision_dir": ".vidt/beta/round-decisions",
+                            "gate_command_template": "python scripts/evaluate_beta_round.py --report .vidt/beta/reports/<round-id>.json --pretty",
                             "rounds": [
                                 {
                                     "round_id": "round-0",
@@ -811,7 +811,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 with tempfile.TemporaryDirectory() as tmp:
                     output_dir = Path(tmp) / sample_name
                     if sample_name == "ship":
-                        evidence_dir = Path(tmp) / ".skill-evidence"
+                        evidence_dir = Path(tmp) / ".vidt/evidence"
                         evidence_dir.mkdir(parents=True, exist_ok=True)
                         evidence_payload = {
                             "schema_version": "completion-evidence/v1",
@@ -899,7 +899,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 }
             ],
             "report_context": {
-                "feedback_ledger_markdown": ".skill-post-release/feedback-ledger.md",
+                "feedback_ledger_markdown": ".vidt/post-release/feedback-ledger.md",
             },
         }
         local_response_contract.validate_post_release_feedback_report(sample_post_release_report)
@@ -921,16 +921,16 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 "by_source": [],
                 "by_area": [],
             },
-            "report_path": ".skill-post-release/current-signals.json",
+            "report_path": ".vidt/post-release/current-signals.json",
             "report_context": sample_post_release_report["report_context"],
             "follow_up": {
                 "loop_state": "watching",
                 "next_action": "continue-monitoring",
                 "resume_artifacts": [
-                    ".skill-post-release/triage-summary.md",
+                    ".vidt/post-release/triage-summary.md",
                 ],
                 "recommended_commands": [
-                    "python scripts/evaluate_post_release_feedback.py --report .skill-post-release/current-signals.json --pretty",
+                    "python scripts/evaluate_post_release_feedback.py --report .vidt/post-release/current-signals.json --pretty",
                 ],
             },
             "automation_state": {
@@ -938,7 +938,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 "state_kind": "post-release-feedback-result",
                 "decision": "monitor",
                 "state_paths": {
-                    "primary": ".skill-post-release/decisions/automation-state.json",
+                    "primary": ".vidt/post-release/decisions/automation-state.json",
                     "related": [
                         "evals/post-release/post-release-feedback-result.json",
                     ],
@@ -990,7 +990,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             "decision": "complete",
             "reason": "all micro-practices are satisfied",
             "workflow_bundle": "product-spec-deliver",
-            "ledger_path": ".skill-practices/micro-practice-ledger.json",
+            "ledger_path": ".vidt/practices/micro-practice-ledger.json",
             "source_request": "Turn this signup revamp into vertical slices.",
             "status_counts": {
                 "total": 1,
@@ -1010,18 +1010,18 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             "follow_up": {
                 "completion_allowed": True,
                 "next_action": "use the ledger evaluation as completion evidence",
-                "resume_anchor": ".skill-practices/micro-practice-ledger.json",
+                "resume_anchor": ".vidt/practices/micro-practice-ledger.json",
                 "resume_artifacts": [
-                    ".skill-practices/micro-practice-ledger.json",
-                    ".skill-practices/micro-practice-evaluation.json",
-                    ".skill-practices/micro-practice-evaluation.md",
+                    ".vidt/practices/micro-practice-ledger.json",
+                    ".vidt/practices/micro-practice-evaluation.json",
+                    ".vidt/practices/micro-practice-evaluation.md",
                 ],
                 "recommended_commands": [
-                    "python scripts/evaluate_micro_practices.py --ledger .skill-practices/micro-practice-ledger.json --pretty",
+                    "python scripts/evaluate_micro_practices.py --ledger .vidt/practices/micro-practice-ledger.json --pretty",
                 ],
             },
-            "json_report": ".skill-practices/micro-practice-evaluation.json",
-            "markdown_report": ".skill-practices/micro-practice-evaluation.md",
+            "json_report": ".vidt/practices/micro-practice-evaluation.json",
+            "markdown_report": ".vidt/practices/micro-practice-evaluation.md",
         }
         sample_continue_evaluation = {
             **sample_evaluation,
@@ -1046,15 +1046,15 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             "follow_up": {
                 "completion_allowed": False,
                 "next_action": "capture evidence and update active practices to satisfied or blocked",
-                "resume_anchor": ".skill-practices/micro-practice-ledger.json",
+                "resume_anchor": ".vidt/practices/micro-practice-ledger.json",
                 "resume_artifacts": [
-                    ".skill-practices/micro-practice-ledger.json",
-                    ".skill-practices/micro-practice-evaluation.json",
-                    ".skill-practices/micro-practice-evaluation.md",
+                    ".vidt/practices/micro-practice-ledger.json",
+                    ".vidt/practices/micro-practice-evaluation.json",
+                    ".vidt/practices/micro-practice-evaluation.md",
                 ],
                 "recommended_commands": [
-                    "python scripts/update_micro_practices.py --ledger .skill-practices/micro-practice-ledger.json --name \"vertical-slice-delivery\" --status satisfied --evidence \"<evidence>\" --pretty",
-                    "python scripts/evaluate_micro_practices.py --ledger .skill-practices/micro-practice-ledger.json --pretty",
+                    "python scripts/update_micro_practices.py --ledger .vidt/practices/micro-practice-ledger.json --name \"vertical-slice-delivery\" --status satisfied --evidence \"<evidence>\" --pretty",
+                    "python scripts/evaluate_micro_practices.py --ledger .vidt/practices/micro-practice-ledger.json --pretty",
                 ],
             },
         }
@@ -1150,16 +1150,16 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 "max_critical_issue_count": 0,
             },
             "evidence_artifacts": {
-                "simulation_run_json": ".skill-beta/simulation-runs/round-1/beta-simulation-run.json",
-                "simulation_run_markdown": ".skill-beta/simulation-runs/round-1/beta-simulation-run.md",
-                "simulation_summary_json": ".skill-beta/simulation-runs/round-1/beta-simulation-summary.json",
-                "feedback_ledger_markdown": ".skill-beta/feedback-ledger.md",
-                "fixture_manifest_json": ".skill-beta/fixture-previews/round-1/beta-simulation-manifest.json",
-                "fixture_manifest_markdown": ".skill-beta/fixture-previews/round-1/beta-simulation-manifest.md",
-                "fixture_diff_json": ".skill-beta/fixture-diffs/round-0-to-round-1/beta-simulation-diff.json",
-                "fixture_diff_markdown": ".skill-beta/fixture-diffs/round-0-to-round-1/beta-simulation-diff.md",
-                "cohort_plan_json": ".skill-beta/cohort-plan.json",
-                "ramp_plan_json": ".skill-beta/ramp-plan.json",
+                "simulation_run_json": ".vidt/beta/simulation-runs/round-1/beta-simulation-run.json",
+                "simulation_run_markdown": ".vidt/beta/simulation-runs/round-1/beta-simulation-run.md",
+                "simulation_summary_json": ".vidt/beta/simulation-runs/round-1/beta-simulation-summary.json",
+                "feedback_ledger_markdown": ".vidt/beta/feedback-ledger.md",
+                "fixture_manifest_json": ".vidt/beta/fixture-previews/round-1/beta-simulation-manifest.json",
+                "fixture_manifest_markdown": ".vidt/beta/fixture-previews/round-1/beta-simulation-manifest.md",
+                "fixture_diff_json": ".vidt/beta/fixture-diffs/round-0-to-round-1/beta-simulation-diff.json",
+                "fixture_diff_markdown": ".vidt/beta/fixture-diffs/round-0-to-round-1/beta-simulation-diff.md",
+                "cohort_plan_json": ".vidt/beta/cohort-plan.json",
+                "ramp_plan_json": ".vidt/beta/ramp-plan.json",
             },
             "notes": "",
         }
@@ -1170,7 +1170,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             "decision": "advance",
             "reason": "sample report clears thresholds",
             "round_id": "round-1",
-            "report_path": ".skill-beta/reports/round-1.json",
+            "report_path": ".vidt/beta/reports/round-1.json",
             "observed": {
                 "planned_sample_size": 12,
                 "completed_sessions": 10,
@@ -1196,7 +1196,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 "status": "passed",
                 "required_for_round": True,
                 "reason": "Cohort plan matches the resolved fixture manifest.",
-                "cohort_plan_json": ".skill-beta/cohort-plan.json",
+                "cohort_plan_json": ".vidt/beta/cohort-plan.json",
                 "expected_fixture_id": "round-1-default",
                 "expected_planned_sessions": 4,
                 "observed_fixture_sessions": 4,
@@ -1231,7 +1231,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 "status": "passed",
                 "required_for_round": True,
                 "reason": "Ramp plan matches the current round report.",
-                "ramp_plan_json": ".skill-beta/ramp-plan.json",
+                "ramp_plan_json": ".vidt/beta/ramp-plan.json",
                 "expected_sample_size": 12,
                 "observed_planned_sample_size": 12,
                 "expected_participant_mode": "seed users",
@@ -1247,8 +1247,8 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 "review_required": False,
                 "expansion_ok": True,
                 "reason": "Fixture diff cleared expansion review.",
-                "fixture_diff_json": ".skill-beta/fixture-diffs/round-0-to-round-1/beta-simulation-diff.json",
-                "fixture_diff_markdown": ".skill-beta/fixture-diffs/round-0-to-round-1/beta-simulation-diff.md",
+                "fixture_diff_json": ".vidt/beta/fixture-diffs/round-0-to-round-1/beta-simulation-diff.json",
+                "fixture_diff_markdown": ".vidt/beta/fixture-diffs/round-0-to-round-1/beta-simulation-diff.md",
                 "coverage_shift_summary": {
                     "previous_persona_count": 1,
                     "current_persona_count": 2,
@@ -1261,8 +1261,8 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 },
                 "risk_notes": ["Coverage expanded while preserving the previous baseline."],
             },
-            "json_report": ".skill-beta/round-decisions/round-1/beta-round-gate-result.json",
-            "markdown_report": ".skill-beta/round-decisions/round-1/beta-round-gate-report.md",
+            "json_report": ".vidt/beta/round-decisions/round-1/beta-round-gate-result.json",
+            "markdown_report": ".vidt/beta/round-decisions/round-1/beta-round-gate-report.md",
         }
         try:
             local_response_contract.validate_beta_round_report(sample_report)
@@ -1303,11 +1303,11 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             "round_id": "round-0",
             "phase": "pre-build concept smoke",
             "objective": "validate the promise",
-            "persona_dir": ".skill-beta/personas",
-            "run_output_dir": ".skill-beta/simulation-runs/round-0",
-            "feedback_ledger_out": ".skill-beta/feedback-ledger.md",
-            "round_report_out": ".skill-beta/reports/round-0.json",
-            "summary_command_template": "python scripts/summarize_beta_simulation.py --run .skill-beta/simulation-runs/<round-id>/beta-simulation-run.json --feedback-ledger-out .skill-beta/feedback-ledger.md --round-report-out .skill-beta/reports/<round-id>.json --pretty",
+            "persona_dir": ".vidt/beta/personas",
+            "run_output_dir": ".vidt/beta/simulation-runs/round-0",
+            "feedback_ledger_out": ".vidt/beta/feedback-ledger.md",
+            "round_report_out": ".vidt/beta/reports/round-0.json",
+            "summary_command_template": "python scripts/summarize_beta_simulation.py --run .vidt/beta/simulation-runs/<round-id>/beta-simulation-run.json --feedback-ledger-out .vidt/beta/feedback-ledger.md --round-report-out .vidt/beta/reports/<round-id>.json --pretty",
             "cohort_fixture_source": "references/simulation-cohort-fixtures.json",
             "trace_catalog_source": "references/simulation-trace-catalog.json",
             "scenarios": [
@@ -1335,7 +1335,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             "round_id": "round-0",
             "phase": "pre-build concept smoke",
             "objective": "validate the promise",
-            "config_path": ".skill-beta/simulation-configs/round-0.json",
+            "config_path": ".vidt/beta/simulation-configs/round-0.json",
             "cohort_fixture_source": "references/simulation-cohort-fixtures.json",
             "trace_catalog_source": "references/simulation-trace-catalog.json",
             "personas": [
@@ -1374,8 +1374,8 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 "high_severity_issue_count": 0,
                 "top_feedback_themes": ["onboarding clarity"],
             },
-            "json_report": ".skill-beta/simulation-runs/round-0/beta-simulation-run.json",
-            "markdown_report": ".skill-beta/simulation-runs/round-0/beta-simulation-run.md",
+            "json_report": ".vidt/beta/simulation-runs/round-0/beta-simulation-run.json",
+            "markdown_report": ".vidt/beta/simulation-runs/round-0/beta-simulation-run.md",
         }
         sample_simulation_manifest = {
             "schema_version": "beta-simulation-manifest/v1",
@@ -1384,7 +1384,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             "round_id": "round-0",
             "phase": "pre-build concept smoke",
             "objective": "validate the promise",
-            "config_path": ".skill-beta/simulation-configs/round-0.json",
+            "config_path": ".vidt/beta/simulation-configs/round-0.json",
             "cohort_fixture_source": "references/simulation-cohort-fixtures.json",
             "trace_catalog_source": "references/simulation-trace-catalog.json",
             "sessions": [
@@ -1398,8 +1398,8 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                     "trace_label": "Novice CTA hesitation",
                 }
             ],
-            "json_report": ".skill-beta/fixture-previews/round-0/beta-simulation-manifest.json",
-            "markdown_report": ".skill-beta/fixture-previews/round-0/beta-simulation-manifest.md",
+            "json_report": ".vidt/beta/fixture-previews/round-0/beta-simulation-manifest.json",
+            "markdown_report": ".vidt/beta/fixture-previews/round-0/beta-simulation-manifest.md",
         }
         sample_simulation_diff = {
             "schema_version": "beta-simulation-diff/v1",
@@ -1407,8 +1407,8 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             "skill_name": "virtual-intelligent-dev-team",
             "previous_round_id": "round-0",
             "current_round_id": "round-1",
-            "previous_manifest_path": ".skill-beta/fixture-previews/round-0/beta-simulation-manifest.json",
-            "current_manifest_path": ".skill-beta/fixture-previews/round-1/beta-simulation-manifest.json",
+            "previous_manifest_path": ".vidt/beta/fixture-previews/round-0/beta-simulation-manifest.json",
+            "current_manifest_path": ".vidt/beta/fixture-previews/round-1/beta-simulation-manifest.json",
             "previous_session_count": 1,
             "current_session_count": 2,
             "session_count_delta": 1,
@@ -1452,8 +1452,8 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
             ],
             "expansion_ok": True,
             "review_required": False,
-            "json_report": ".skill-beta/fixture-diffs/round-0-to-round-1/beta-simulation-diff.json",
-            "markdown_report": ".skill-beta/fixture-diffs/round-0-to-round-1/beta-simulation-diff.md",
+            "json_report": ".vidt/beta/fixture-diffs/round-0-to-round-1/beta-simulation-diff.json",
+            "markdown_report": ".vidt/beta/fixture-diffs/round-0-to-round-1/beta-simulation-diff.md",
         }
         sample_ramp_plan = {
             "schema_version": "beta-ramp-plan/v1",
@@ -1529,7 +1529,7 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                     "id": "cohort-plan-mismatch",
                     "label": "cohort plan does not match the resolved fixture",
                     "objective_hint": "update the cohort plan so planned sessions, persona counts, and coverage align with the resolved fixture",
-                    "evidence_required": "python scripts/evaluate_beta_round.py --report .skill-beta/reports/round-1.json --pretty"
+                    "evidence_required": "python scripts/evaluate_beta_round.py --report .vidt/beta/reports/round-1.json --pretty"
                 }
             ],
             "gate_context": {
@@ -1565,25 +1565,25 @@ def lint_contract(skill_dir: Path | None = None) -> dict[str, object]:
                 ]
             },
             "report_context": {
-                "report_path": ".skill-beta/reports/round-1.json",
-                "source_simulation_run": ".skill-beta/simulation-runs/round-1/beta-simulation-run.json",
-                "feedback_ledger_markdown": ".skill-beta/feedback-ledger.md",
-                "fixture_manifest_json": ".skill-beta/fixture-previews/round-1/beta-simulation-manifest.json",
-                "cohort_plan_json": ".skill-beta/cohort-plan.json",
-                "ramp_plan_json": ".skill-beta/ramp-plan.json",
-                "fixture_diff_json": ".skill-beta/fixture-diffs/round-0-to-round-1/beta-simulation-diff.json"
+                "report_path": ".vidt/beta/reports/round-1.json",
+                "source_simulation_run": ".vidt/beta/simulation-runs/round-1/beta-simulation-run.json",
+                "feedback_ledger_markdown": ".vidt/beta/feedback-ledger.md",
+                "fixture_manifest_json": ".vidt/beta/fixture-previews/round-1/beta-simulation-manifest.json",
+                "cohort_plan_json": ".vidt/beta/cohort-plan.json",
+                "ramp_plan_json": ".vidt/beta/ramp-plan.json",
+                "fixture_diff_json": ".vidt/beta/fixture-diffs/round-0-to-round-1/beta-simulation-diff.json"
             },
             "recommended_commands": [
-                "python scripts/preview_beta_simulation_fixture.py --config .skill-beta/simulation-configs/round-1.json --pretty",
-                "python scripts/evaluate_beta_round.py --report .skill-beta/reports/round-1.json --pretty"
+                "python scripts/preview_beta_simulation_fixture.py --config .vidt/beta/simulation-configs/round-1.json --pretty",
+                "python scripts/evaluate_beta_round.py --report .vidt/beta/reports/round-1.json --pretty"
             ],
             "required_evidence": [
-                "python scripts/evaluate_beta_round.py --report .skill-beta/reports/round-1.json --pretty"
+                "python scripts/evaluate_beta_round.py --report .vidt/beta/reports/round-1.json --pretty"
             ],
             "resume_artifacts": [
-                ".skill-beta/reports/round-1.json",
-                ".skill-beta/cohort-plan.json",
-                ".skill-beta/ramp-plan.json"
+                ".vidt/beta/reports/round-1.json",
+                ".vidt/beta/cohort-plan.json",
+                ".vidt/beta/ramp-plan.json"
             ]
         }
         try:

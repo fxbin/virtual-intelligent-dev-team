@@ -14,7 +14,7 @@
 - 决策：`resume-explicit-go`
 - 含义：setup 已经完成，下一步进入显式 `go`
 - 默认命令：
-  - `python scripts/run_auto_workflow.py --mode go --plan .skill-auto/auto-run-plan.json --pretty`
+  - `python scripts/run_auto_workflow.py --mode go --plan .vidt/auto/auto-run-plan.json --pretty`
 - 主要 playbook：
   - `references/auto-run-playbook.md`
   - 如果是根因链路，再加 `references/root-cause-escalation-playbook.md`

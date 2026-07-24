@@ -270,11 +270,11 @@ def init_beta_simulation(
         scenarios=scenarios,
     )
 
-    persona_dir = root / ".skill-beta" / "personas"
-    config_dir = root / ".skill-beta" / "simulation-configs"
+    persona_dir = root / ".vidt/beta" / "personas"
+    config_dir = root / ".vidt/beta" / "simulation-configs"
     config_path = config_dir / f"{round_id}.json"
-    run_output_dir = root / ".skill-beta" / "simulation-runs" / round_id
-    round_report_out = root / ".skill-beta" / "reports" / f"{round_id}.json"
+    run_output_dir = root / ".vidt/beta" / "simulation-runs" / round_id
+    round_report_out = root / ".vidt/beta" / "reports" / f"{round_id}.json"
 
     created_profiles: list[str] = []
     for payload in personas:
@@ -294,13 +294,13 @@ def init_beta_simulation(
             "objective": objective,
             "persona_dir": str(persona_dir.relative_to(root)),
             "run_output_dir": str(run_output_dir.relative_to(root)),
-            "feedback_ledger_out": ".skill-beta/feedback-ledger.md",
+            "feedback_ledger_out": ".vidt/beta/feedback-ledger.md",
             "round_report_out": str(round_report_out.relative_to(root)),
             "summary_command_template": (
                 "python scripts/summarize_beta_simulation.py "
-                f"--run .skill-beta/simulation-runs/{round_id}/beta-simulation-run.json "
-                "--feedback-ledger-out .skill-beta/feedback-ledger.md "
-                f"--round-report-out .skill-beta/reports/{round_id}.json --pretty"
+                f"--run .vidt/beta/simulation-runs/{round_id}/beta-simulation-run.json "
+                "--feedback-ledger-out .vidt/beta/feedback-ledger.md "
+                f"--round-report-out .vidt/beta/reports/{round_id}.json --pretty"
             ),
             "cohort_fixture_source": "references/simulation-cohort-fixtures.json",
             "trace_catalog_source": "references/simulation-trace-catalog.json",
@@ -324,7 +324,7 @@ def init_beta_simulation(
     fixture_diff_review_required: bool | None = None
     if previous_round_id is not None:
         previous_manifest_path = (
-            root / ".skill-beta" / "fixture-previews" / previous_round_id / "beta-simulation-manifest.json"
+            root / ".vidt/beta" / "fixture-previews" / previous_round_id / "beta-simulation-manifest.json"
         )
         if previous_manifest_path.exists():
             previous_manifest_relpath = str(previous_manifest_path.relative_to(root))
@@ -343,7 +343,7 @@ def init_beta_simulation(
         "config_path": str(config_path.relative_to(root)),
         "persona_dir": str(persona_dir.relative_to(root)),
         "run_output_dir": str(run_output_dir.relative_to(root)),
-        "feedback_ledger_out": ".skill-beta/feedback-ledger.md",
+        "feedback_ledger_out": ".vidt/beta/feedback-ledger.md",
         "round_report_out": str(round_report_out.relative_to(root)),
         "cohort_fixture_source": "references/simulation-cohort-fixtures.json",
         "trace_catalog_source": "references/simulation-trace-catalog.json",

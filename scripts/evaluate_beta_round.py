@@ -108,8 +108,9 @@ def compact_string_list(values: object) -> list[str]:
 
 
 def repo_root_from_report(report_path: Path) -> Path:
-    if report_path.parent.name == "reports" and report_path.parent.parent.name == ".skill-beta":
-        return report_path.parent.parent.parent
+    for parent in report_path.parents:
+        if parent.name == ".vidt":
+            return parent.parent
     return report_path.parent
 
 
@@ -201,9 +202,9 @@ def sync_workspace_writebacks(
     resume_artifacts.append(str(product_writeback))
 
     product_targets = [
-        repo_root / ".skill-product" / "current-slice.md",
-        repo_root / ".skill-product" / "acceptance-criteria.md",
-        repo_root / ".skill-product" / "contract-questions.md",
+        repo_root / ".vidt/product" / "current-slice.md",
+        repo_root / ".vidt/product" / "acceptance-criteria.md",
+        repo_root / ".vidt/product" / "contract-questions.md",
     ]
     for target in product_targets:
         if not target.exists():
@@ -229,8 +230,8 @@ def sync_workspace_writebacks(
 
     if release_governance_recommended:
         governance_targets = [
-            repo_root / ".skill-governance" / "change-plan.md",
-            repo_root / ".skill-governance" / "release-checklist.md",
+            repo_root / ".vidt/governance" / "change-plan.md",
+            repo_root / ".vidt/governance" / "release-checklist.md",
         ]
         for target in governance_targets:
             if not target.exists():
@@ -278,8 +279,8 @@ def build_beta_gate_blockers(
     report_gate: dict[str, object],
 ) -> list[dict[str, str]]:
     blockers: list[dict[str, str]] = []
-    gate_command = f"python scripts/evaluate_beta_round.py --report .skill-beta/reports/{round_id}.json --pretty"
-    simulation_command = f"python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/{round_id}.json --pretty"
+    gate_command = f"python scripts/evaluate_beta_round.py --report .vidt/beta/reports/{round_id}.json --pretty"
+    simulation_command = f"python scripts/run_beta_simulation.py --config .vidt/beta/simulation-configs/{round_id}.json --pretty"
 
     if decision == "escalate":
         blockers.append(
@@ -409,22 +410,22 @@ def build_recommended_commands(
     if decision == "escalate" and not governance_workspace_exists:
         commands.append("python scripts/init_technical_governance.py --root . --pretty")
     commands.append(
-        f"python scripts/preview_beta_simulation_fixture.py --config .skill-beta/simulation-configs/{round_id}.json --pretty"
+        f"python scripts/preview_beta_simulation_fixture.py --config .vidt/beta/simulation-configs/{round_id}.json --pretty"
     )
     if previous_round_id is not None:
         commands.append(
             "python scripts/compare_beta_simulation_manifests.py "
-            f"--previous .skill-beta/fixture-previews/{previous_round_id}/beta-simulation-manifest.json "
-            f"--current .skill-beta/fixture-previews/{round_id}/beta-simulation-manifest.json --pretty"
+            f"--previous .vidt/beta/fixture-previews/{previous_round_id}/beta-simulation-manifest.json "
+            f"--current .vidt/beta/fixture-previews/{round_id}/beta-simulation-manifest.json --pretty"
         )
     commands.extend(
         [
-            f"python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/{round_id}.json --pretty",
+            f"python scripts/run_beta_simulation.py --config .vidt/beta/simulation-configs/{round_id}.json --pretty",
             "python scripts/summarize_beta_simulation.py "
-            f"--run .skill-beta/simulation-runs/{round_id}/beta-simulation-run.json "
-            "--feedback-ledger-out .skill-beta/feedback-ledger.md "
-            f"--round-report-out .skill-beta/reports/{round_id}.json --pretty",
-            f"python scripts/evaluate_beta_round.py --report .skill-beta/reports/{round_id}.json --pretty",
+            f"--run .vidt/beta/simulation-runs/{round_id}/beta-simulation-run.json "
+            "--feedback-ledger-out .vidt/beta/feedback-ledger.md "
+            f"--round-report-out .vidt/beta/reports/{round_id}.json --pretty",
+            f"python scripts/evaluate_beta_round.py --report .vidt/beta/reports/{round_id}.json --pretty",
         ]
     )
     return commands
@@ -455,8 +456,8 @@ def build_beta_remediation_brief(
         if decision == "escalate"
         else "repair the beta round blockers for"
     )
-    product_workspace_exists = (repo_root / ".skill-product").exists()
-    governance_workspace_exists = (repo_root / ".skill-governance").exists()
+    product_workspace_exists = (repo_root / ".vidt/product").exists()
+    governance_workspace_exists = (repo_root / ".vidt/governance").exists()
     brief = {
         "schema_version": "beta-remediation-brief/v1",
         "generated_at": now_iso(),

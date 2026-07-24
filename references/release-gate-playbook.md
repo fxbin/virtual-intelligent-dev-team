@@ -10,38 +10,38 @@ python scripts/run_release_gate.py --output-dir evals/release-gate --pretty
 
 Default behavior:
 
-- if `.skill-beta/round-decisions/` exists, the gate automatically enforces the latest `beta-round-gate-result.json`
-- if no beta gate result exists but `.skill-beta/reports/` exists, the gate evaluates the latest valid beta round report
-- if `.skill-beta/` exists but no gate result or valid report can be found, release is `hold` until beta evidence is produced
+- if `.vidt/beta/round-decisions/` exists, the gate automatically enforces the latest `beta-round-gate-result.json`
+- if no beta gate result exists but `.vidt/beta/reports/` exists, the gate evaluates the latest valid beta round report
+- if `.vidt/beta/` exists but no gate result or valid report can be found, release is `hold` until beta evidence is produced
 
 如果完成证据不在默认路径：
 
 ```bash
-python scripts/run_release_gate.py --output-dir evals/release-gate --completion-evidence .skill-evidence/release/completion-evidence.json --pretty
+python scripts/run_release_gate.py --output-dir evals/release-gate --completion-evidence .vidt/evidence/release/completion-evidence.json --pretty
 ```
 
 当发布判断必须显式指定 beta round gate 目录时：
 
 ```bash
-python scripts/run_release_gate.py --output-dir evals/release-gate --beta-decision-dir .skill-beta/round-decisions --pretty
+python scripts/run_release_gate.py --output-dir evals/release-gate --beta-decision-dir .vidt/beta/round-decisions --pretty
 ```
 
 如果目前只有 beta round report，且要显式指定 report 目录：
 
 ```bash
-python scripts/run_release_gate.py --output-dir evals/release-gate --beta-report-dir .skill-beta/reports --pretty
+python scripts/run_release_gate.py --output-dir evals/release-gate --beta-report-dir .vidt/beta/reports --pretty
 ```
 
 When you want the release gate to close the loop into the iteration workspace automatically:
 
 ```bash
-python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --release-label release-ready --pretty
+python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .vidt/iterations --release-label release-ready --pretty
 ```
 
 When you want `hold` to bootstrap and immediately execute the next bounded iteration loop:
 
 ```bash
-python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --auto-run-next-iteration-on-hold --hold-loop-max-rounds 3 --pretty
+python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .vidt/iterations --auto-run-next-iteration-on-hold --hold-loop-max-rounds 3 --pretty
 ```
 
 ## What The Gate Requires
@@ -50,7 +50,7 @@ python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-w
 - semantic regression validation passes
 - eval prompt suite passes
 - real offline loop drill passes
-- if staged beta validation is in scope or `.skill-beta/` exists, the latest beta round gate must be `advance`
+- if staged beta validation is in scope or `.vidt/beta/` exists, the latest beta round gate must be `advance`
 - structured completion evidence exists, passes `references/completion-evidence.schema.json`, has result `passed`, confidence `A | B`, leaves no uncovered scope or residual risk, and includes `evidence_refs` with at least one verifiable command or existing local artifact path
 
 ## Why This Is Separate From Benchmark
@@ -87,10 +87,10 @@ The release gate is stricter:
 
 - `ship`
   - all benchmark checks and offline drill checks passed
-  - if beta evidence is enabled or `.skill-beta/` exists, the latest beta round gate is `advance`
+  - if beta evidence is enabled or `.vidt/beta/` exists, the latest beta round gate is `advance`
   - completion evidence is complete and supports the release claim, including verifiable `evidence_refs`
   - if an iteration workspace is provided, the gate can archive a reusable release-ready baseline and sync distilled patterns
-  - the gate should also bootstrap `.skill-post-release/` so telemetry and real-user feedback can reopen the next loop without inventing a new structure later
+  - the gate should also bootstrap `.vidt/post-release/` so telemetry and real-user feedback can reopen the next loop without inventing a new structure later
 - `hold`
   - any gate failed
   - beta `hold`, `escalate`, or missing beta gate evidence is a first-class release blocker, even when benchmark evidence is green

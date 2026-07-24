@@ -56,7 +56,7 @@ def init_beta_round_report(
     payload["exit_criteria"] = exit_criteria
     response_contract.validate_beta_round_report(payload)
 
-    target = root / ".skill-beta" / "reports" / f"{round_id}.json"
+    target = root / ".vidt/beta" / "reports" / f"{round_id}.json"
     target.parent.mkdir(parents=True, exist_ok=True)
     if target.exists() and not overwrite:
         status = "skipped"

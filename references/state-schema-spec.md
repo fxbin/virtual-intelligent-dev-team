@@ -136,7 +136,7 @@ ReleaseEvidenceBacked(release_state, delivery_state):
 
 ## 四、State 持久化
 
-state 持久化到 `.skill-harness/layer-state.json`:
+state 持久化到 `.vidt/harness/layer-state.json`:
 
 ```json
 {

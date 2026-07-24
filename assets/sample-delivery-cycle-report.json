@@ -7,8 +7,8 @@
     "worker_role": "implementation-worker",
     "verifier_role": "delivery-verifier",
     "input_artifacts": [
-      ".skill-delivery/current-slice.md",
-      ".skill-context/project-context.md"
+      ".vidt/delivery/current-slice.md",
+      ".vidt/context/project-context.md"
     ],
     "output_artifacts": [
       "src/checkout/api.ts",
@@ -51,7 +51,7 @@
       "verifier_can_silently_rewrite_artifact": false,
       "lead_accept_requires_cycle_report": true
     },
-    "resume_anchor": ".skill-delivery/status.yaml"
+    "resume_anchor": ".vidt/delivery/status.yaml"
   },
   "cycles": [
     {
@@ -144,7 +144,7 @@
     "evidence_refs": [
       "npm test -- checkout-api"
     ],
-    "resume_anchor": ".skill-delivery/status.yaml",
+    "resume_anchor": ".vidt/delivery/status.yaml",
     "backend_orchestration_verdict": "simulated",
     "human_escalation": null,
     "next_state": "accepted",

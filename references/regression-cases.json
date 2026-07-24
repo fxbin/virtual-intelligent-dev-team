@@ -11,7 +11,7 @@
         "needs_git_workflow": false,
         "workflow_bundle": "audit-fix-deliver",
         "resume_artifacts_contains": [
-          ".skill-iterations/current-round-memory.md"
+          ".vidt/iterations/current-round-memory.md"
         ],
         "priority_agent": "Code Audit Council"
       }
@@ -71,7 +71,7 @@
           "python scripts/init_product_delivery.py --root . --pretty"
         ],
         "bundle_bootstrap_artifacts_contains": [
-          ".skill-product/current-slice.md"
+          ".vidt/product/current-slice.md"
         ],
         "priority_agent": null
       }
@@ -113,7 +113,7 @@
           "python scripts/init_technical_governance.py --root . --pretty"
         ],
         "bundle_bootstrap_artifacts_contains": [
-          ".skill-governance/change-plan.md"
+          ".vidt/governance/change-plan.md"
         ],
         "priority_agent": null
       }
@@ -128,7 +128,7 @@
           "python scripts/init_beta_validation.py --root . --pretty"
         ],
         "bundle_bootstrap_artifacts_contains": [
-          ".skill-beta/program-overview.md"
+          ".vidt/beta/program-overview.md"
         ],
         "priority_agent": null
       }
@@ -143,10 +143,10 @@
           "python scripts/init_post_release_feedback.py --root . --pretty"
         ],
         "bundle_bootstrap_artifacts_contains": [
-          ".skill-post-release/triage-summary.md"
+          ".vidt/post-release/triage-summary.md"
         ],
         "resume_artifacts_contains": [
-          ".skill-post-release/current-signals.json"
+          ".vidt/post-release/current-signals.json"
         ],
         "priority_agent": null
       }
@@ -160,7 +160,7 @@
         "auto_mode_enabled": true,
         "execution_mode": "auto-setup",
         "resume_artifacts_contains": [
-          ".skill-iterations/current-round-memory.md"
+          ".vidt/iterations/current-round-memory.md"
         ],
         "priority_agent": null
       }
@@ -174,7 +174,7 @@
         "auto_mode_enabled": true,
         "execution_mode": "auto-setup",
         "resume_artifacts_contains": [
-          ".skill-iterations/current-round-memory.md"
+          ".vidt/iterations/current-round-memory.md"
         ],
         "priority_agent": null
       }
@@ -201,13 +201,13 @@
           "python scripts/init_quick_slice.py --root . --pretty"
         ],
         "bundle_bootstrap_artifacts_contains": [
-          ".skill-context/project-context.md",
-          ".skill-delivery/current-slice.md",
-          ".skill-delivery/status.yaml"
+          ".vidt/context/project-context.md",
+          ".vidt/delivery/current-slice.md",
+          ".vidt/delivery/status.yaml"
         ],
         "resume_artifacts_contains": [
-          ".skill-delivery/current-slice.md",
-          ".skill-context/project-context.md"
+          ".vidt/delivery/current-slice.md",
+          ".vidt/context/project-context.md"
         ],
         "priority_agent": null
       }
@@ -792,13 +792,13 @@
         "needs_git_workflow": false,
         "workflow_bundle": "root-cause-remediate",
         "resume_artifacts_contains": [
-          ".skill-practices/micro-practice-ledger.json"
+          ".vidt/practices/micro-practice-ledger.json"
         ],
         "bundle_bootstrap_commands_contains": [
           "python scripts/init_micro_practices.py --root . --text \"<user request>\" --pretty"
         ],
         "bundle_bootstrap_artifacts_contains": [
-          ".skill-practices/micro-practice-ledger.json"
+          ".vidt/practices/micro-practice-ledger.json"
         ],
         "priority_agent": null
       }
@@ -813,13 +813,13 @@
         ],
         "workflow_bundle": "product-spec-deliver",
         "resume_artifacts_contains": [
-          ".skill-practices/micro-practice-ledger.json"
+          ".vidt/practices/micro-practice-ledger.json"
         ],
         "bundle_bootstrap_commands_contains": [
           "python scripts/init_micro_practices.py --root . --text \"<user request>\" --pretty"
         ],
         "bundle_bootstrap_artifacts_contains": [
-          ".skill-practices/micro-practice-ledger.json"
+          ".vidt/practices/micro-practice-ledger.json"
         ],
         "priority_agent": null
       }
@@ -837,13 +837,13 @@
         "progress_anchor_recommended": "docs/progress/MASTER.md",
         "resume_artifacts_contains": [
           "docs/progress/MASTER.md",
-          ".skill-practices/micro-practice-ledger.json"
+          ".vidt/practices/micro-practice-ledger.json"
         ],
         "bundle_bootstrap_commands_contains": [
           "python scripts/init_micro_practices.py --root . --text \"<user request>\" --pretty"
         ],
         "bundle_bootstrap_artifacts_contains": [
-          ".skill-practices/micro-practice-ledger.json"
+          ".vidt/practices/micro-practice-ledger.json"
         ],
         "priority_agent": null
       }
@@ -927,14 +927,14 @@
       "expect": {
         "commands_contains": [
           "python scripts/init_project_memory.py --root . --mode iteration --pretty",
-          "mkdir -p .skill-iterations",
-          "cp assets/iteration-plan-template.json .skill-iterations/iteration-plan.json",
-          "python scripts/register_benchmark_baseline.py --workspace .skill-iterations --label stable --report <baseline-report> --pretty",
-          "python scripts/run_iteration_cycle.py --workspace .skill-iterations --round-id round-01 --objective \"<goal>\" --baseline-label stable --owner \"<lead-owner>\" --candidate \"<candidate-change>\" --candidate-worktree ../wt-round-01 --candidate-output-dir .tmp-iteration-round-01 --pretty",
-          "python scripts/compare_benchmark_results.py --baseline .skill-iterations/baselines/stable/benchmark-results.json --candidate .tmp-iteration-round-01/benchmark-results.json --pretty",
-          "python scripts/promote_iteration_baseline.py --workspace .skill-iterations --round-id round-01 --label accepted-round-01 --pretty",
-          "python scripts/sync_distilled_patterns.py --workspace .skill-iterations --pretty",
-          "python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.json --pretty"
+          "mkdir -p .vidt/iterations",
+          "cp assets/iteration-plan-template.json .vidt/iterations/iteration-plan.json",
+          "python scripts/register_benchmark_baseline.py --workspace .vidt/iterations --label stable --report <baseline-report> --pretty",
+          "python scripts/run_iteration_cycle.py --workspace .vidt/iterations --round-id round-01 --objective \"<goal>\" --baseline-label stable --owner \"<lead-owner>\" --candidate \"<candidate-change>\" --candidate-worktree ../wt-round-01 --candidate-output-dir .tmp-iteration-round-01 --pretty",
+          "python scripts/compare_benchmark_results.py --baseline .vidt/iterations/baselines/stable/benchmark-results.json --candidate .tmp-iteration-round-01/benchmark-results.json --pretty",
+          "python scripts/promote_iteration_baseline.py --workspace .vidt/iterations --round-id round-01 --label accepted-round-01 --pretty",
+          "python scripts/sync_distilled_patterns.py --workspace .vidt/iterations --pretty",
+          "python scripts/run_iteration_loop.py --workspace .vidt/iterations --plan .vidt/iterations/iteration-plan.json --pretty"
         ]
       }
     },
@@ -952,8 +952,8 @@
         "commands_contains": [
           "python scripts/run_release_gate.py --output-dir evals/release-gate --pretty",
           "python scripts/run_release_gate.py --output-dir evals/release-gate --previous-output evals/benchmark-results/benchmark-results.json --pretty",
-          "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --release-label release-ready --pretty",
-          "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --auto-run-next-iteration-on-hold --hold-loop-max-rounds 3 --pretty"
+          "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .vidt/iterations --release-label release-ready --pretty",
+          "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .vidt/iterations --auto-run-next-iteration-on-hold --hold-loop-max-rounds 3 --pretty"
         ]
       }
     },
@@ -1045,7 +1045,7 @@
       "path": "references/runtime-operation-contract.md",
       "expect": {
         "contains": [
-          "--check completion-evidence --completion-evidence .skill-evidence/completion-evidence.json --pretty"
+          "--check completion-evidence --completion-evidence .vidt/evidence/completion-evidence.json --pretty"
         ]
       }
     },
@@ -1156,7 +1156,7 @@
         "detail_equals": {
           "workflow_bundle": "product-spec-deliver",
           "bootstrap_required": true,
-          "progress_anchor_recommended": ".skill-product/current-slice.md",
+          "progress_anchor_recommended": ".vidt/product/current-slice.md",
           "progress_anchor_matches_resume_anchor": true,
           "resume_anchor_in_artifacts": true,
           "resume_anchor_in_resume_artifacts": true,

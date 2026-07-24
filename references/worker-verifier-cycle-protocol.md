@@ -19,7 +19,7 @@ When the Verifier returns `fail`, the cycle must also preserve:
 
 ### File Handoff 硬约束
 
-上述 5 种交接物必须按 `file-handoff-protocol.md` 落文件到 `.skill-handoff/` 目录,禁止 prompt 粘贴交接。
+上述 5 种交接物必须按 `file-handoff-protocol.md` 落文件到 `.vidt/handoff/` 目录,禁止 prompt 粘贴交接。
 
 每个交接文件必须在顶层包含 `handoff` 元数据(`from_role` / `to_role` / `artifact_type` / `artifact_path` / `timestamp`)。
 

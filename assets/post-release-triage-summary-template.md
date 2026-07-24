@@ -2,7 +2,7 @@
 
 - Current decision: `monitor`
 - Current owner: `World-Class Product Architect`
-- Resume anchor: `.skill-post-release/current-signals.json`
+- Resume anchor: `.vidt/post-release/current-signals.json`
 
 ## Current Signals
 
@@ -11,4 +11,4 @@
 ## Next Action
 
 - Refresh the machine-readable signal report.
-- Run `python scripts/evaluate_post_release_feedback.py --report .skill-post-release/current-signals.json --pretty`.
+- Run `python scripts/evaluate_post_release_feedback.py --report .vidt/post-release/current-signals.json --pretty`.

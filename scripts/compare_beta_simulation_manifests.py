@@ -47,11 +47,9 @@ def now_iso() -> str:
 
 
 def repo_root_from_manifest(manifest_path: Path) -> Path:
-    if (
-        manifest_path.parent.parent.name == "fixture-previews"
-        and manifest_path.parent.parent.parent.name == ".skill-beta"
-    ):
-        return manifest_path.parent.parent.parent.parent
+    for parent in manifest_path.parents:
+        if parent.name == ".vidt":
+            return parent.parent
     return manifest_path.parent
 
 
@@ -254,7 +252,7 @@ def compare_beta_simulation_manifests(
         output_dir.resolve()
         if output_dir is not None
         else repo_root
-        / ".skill-beta"
+        / ".vidt/beta"
         / "fixture-diffs"
         / f"{previous.get('round_id', 'previous')}-to-{current.get('round_id', 'current')}"
     )

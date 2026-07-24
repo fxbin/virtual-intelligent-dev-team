@@ -24,7 +24,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 DEFAULT_LEDGER_PATH = SKILL_DIR / "assets" / "debt-ledger-template.json"
-DEFAULT_EVIDENCE_PATH = Path(".skill-handoff") / "completion-evidence.json"
+DEFAULT_EVIDENCE_PATH = Path(".vidt/handoff") / "completion-evidence.json"
 
 SHORTCUT_MARKER = "known-shortcut"
 

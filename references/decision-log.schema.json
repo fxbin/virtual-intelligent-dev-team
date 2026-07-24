@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:skill-hub:virtual-intelligent-dev-team:decision-log.schema",
   "title": "Virtual Intelligent Dev Team Decision Log Entry",
-  "description": "Canonical append-only governance decision log. One JSON object per line, written to .skill-metrics/decision-log.jsonl.",
+  "description": "Canonical append-only governance decision log. One JSON object per line, written to .vidt/metrics/decision-log.jsonl.",
   "type": "object",
   "required": [
     "decision",

@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 
 
-DEFAULT_OUTPUT = ".skill-harness/engineering-constraints.md"
+DEFAULT_OUTPUT = ".vidt/harness/engineering-constraints.md"
 
 
 def build_constraints_markdown(summary: str, *, artifact_path: str = DEFAULT_OUTPUT) -> str:
@@ -69,7 +69,7 @@ def init_constraints(root: Path, *, output: str, summary: str) -> dict[str, obje
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Initialize Harness engineering constraints.")
-    parser.add_argument("--root", default=".", help="Project root where .skill-harness should be created.")
+    parser.add_argument("--root", default=".", help="Project root where .vidt/harness should be created.")
     parser.add_argument("--output", default=DEFAULT_OUTPUT, help="Constraint file path relative to root.")
     parser.add_argument("--summary", default="<task summary>", help="Short task summary for the constraint file.")
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON output.")

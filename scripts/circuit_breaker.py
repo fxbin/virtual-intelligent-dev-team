@@ -20,7 +20,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 DEFAULT_CONFIG_PATH = SKILL_DIR / "references" / "circuit-breaker-config.json"
-DEFAULT_STATE_DIR = Path(".skill-harness")
+DEFAULT_STATE_DIR = Path(".vidt/harness")
 DEFAULT_STATE_FILE = DEFAULT_STATE_DIR / "breaker-state.json"
 DEFAULT_ESCALATION_SINK = DEFAULT_STATE_DIR / "escalation-queue.jsonl"
 

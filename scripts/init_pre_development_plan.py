@@ -331,7 +331,7 @@ def write_project_context_summary(
     phase_paths: list[str],
     force: bool,
 ) -> tuple[Path, str]:
-    project_context_path = root / ".skill-context" / "project-context.md"
+    project_context_path = root / ".vidt/context" / "project-context.md"
     if project_context_path.exists() and not force:
         return project_context_path, "skipped"
     section = prepare_project_context_section(
@@ -390,7 +390,7 @@ def initialize_pre_development_plan(
     task_breakdown_path = plan_dir / "task-breakdown.md"
     master_path = progress_dir / "MASTER.md"
     phase_path = progress_dir / f"phase-1-{phase_slug}.md"
-    project_context_path = root / ".skill-context" / "project-context.md"
+    project_context_path = root / ".vidt/context" / "project-context.md"
 
     created: list[str] = []
     refreshed: list[str] = []

@@ -61,10 +61,9 @@ def positive_int(value: object, *, default: int) -> int:
 
 
 def repo_root_from_report(report_path: Path) -> Path:
-    if report_path.parent.name == ".skill-post-release":
-        return report_path.parent.parent
-    if report_path.parent.parent.name == ".skill-post-release":
-        return report_path.parent.parent.parent
+    for parent in report_path.parents:
+        if parent.name == ".vidt":
+            return parent.parent
     return report_path.parent
 
 
@@ -241,9 +240,9 @@ def sync_workspace_writebacks(
     resume_artifacts.append(str(product_writeback))
 
     product_targets = [
-        repo_root / ".skill-product" / "current-slice.md",
-        repo_root / ".skill-product" / "acceptance-criteria.md",
-        repo_root / ".skill-product" / "contract-questions.md",
+        repo_root / ".vidt/product" / "current-slice.md",
+        repo_root / ".vidt/product" / "acceptance-criteria.md",
+        repo_root / ".vidt/product" / "contract-questions.md",
     ]
     for target in product_targets:
         if not target.exists():
@@ -269,8 +268,8 @@ def sync_workspace_writebacks(
 
     if decision == "escalate":
         governance_targets = [
-            repo_root / ".skill-governance" / "change-plan.md",
-            repo_root / ".skill-governance" / "release-checklist.md",
+            repo_root / ".vidt/governance" / "change-plan.md",
+            repo_root / ".vidt/governance" / "release-checklist.md",
         ]
         for target in governance_targets:
             if not target.exists():
@@ -287,13 +286,13 @@ def sync_workspace_writebacks(
 
 
 def build_recommended_commands(report_path: Path, decision: str, repo_root: Path) -> list[str]:
-    repo_report = ".skill-post-release/current-signals.json"
+    repo_report = ".vidt/post-release/current-signals.json"
     if repo_root not in report_path.parents:
         repo_report = str(report_path)
     commands = [f"python scripts/evaluate_post_release_feedback.py --report {repo_report} --pretty"]
-    if not (repo_root / ".skill-product").exists():
+    if not (repo_root / ".vidt/product").exists():
         commands.append("python scripts/init_product_delivery.py --root . --pretty")
-    if decision == "escalate" and not (repo_root / ".skill-governance").exists():
+    if decision == "escalate" and not (repo_root / ".vidt/governance").exists():
         commands.append("python scripts/init_technical_governance.py --root . --pretty")
     if decision in {"iterate", "escalate"}:
         commands.append("python scripts/run_release_gate.py --output-dir evals/release-gate --pretty")
@@ -381,9 +380,9 @@ def evaluate_post_release_feedback(report_path: Path) -> dict[str, object]:
         "loop_state": loop_state,
         "next_action": next_action,
         "resume_artifacts": [
-            str(repo_root / ".skill-post-release" / "triage-summary.md"),
+            str(repo_root / ".vidt/post-release" / "triage-summary.md"),
             str(resolved_report),
-            str(repo_root / ".skill-post-release" / "feedback-ledger.md"),
+            str(repo_root / ".vidt/post-release" / "feedback-ledger.md"),
         ],
         "recommended_commands": recommended_commands,
     }
@@ -403,7 +402,7 @@ def evaluate_post_release_feedback(report_path: Path) -> dict[str, object]:
             "report_context": report_context,
             "required_evidence": [
                 str(resolved_report),
-                str(repo_root / ".skill-post-release" / "feedback-ledger.md"),
+                str(repo_root / ".vidt/post-release" / "feedback-ledger.md"),
                 "updated release candidate evidence before the next ship decision",
             ],
             "recommended_commands": recommended_commands,
@@ -487,7 +486,7 @@ def evaluate_post_release_feedback(report_path: Path) -> dict[str, object]:
         status="completed",
         decision=decision,
         execution_mode="post-release-feedback",
-        resume_anchor=str(repo_root / ".skill-post-release" / "triage-summary.md"),
+        resume_anchor=str(repo_root / ".vidt/post-release" / "triage-summary.md"),
         resume_artifacts=[str(item) for item in follow_up.get("resume_artifacts", []) if str(item).strip()],
         recommended_next_step=str(follow_up.get("next_action", next_action)),
         handoff_target=str(follow_up.get("next_action", next_action)),
@@ -571,7 +570,7 @@ def evaluate_post_release_feedback(report_path: Path) -> dict[str, object]:
     markdown_lines.extend([f"- `{item}`" for item in recommended_commands])
     markdown_path.write_text("\n".join(markdown_lines) + "\n", encoding="utf-8")
 
-    triage_summary = repo_root / ".skill-post-release" / "triage-summary.md"
+    triage_summary = repo_root / ".vidt/post-release" / "triage-summary.md"
     triage_summary.parent.mkdir(parents=True, exist_ok=True)
     triage_summary.write_text(
         "\n".join(

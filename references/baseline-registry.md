@@ -8,9 +8,9 @@ The baseline registry records local benchmark reports that can be reused across 
 
 ## Storage
 
-- default workspace: `.skill-iterations/`
-- registry file: `.skill-iterations/baselines/registry.json`
-- stored baseline report: `.skill-iterations/baselines/<label>/benchmark-results.json`
+- default workspace: `.vidt/iterations/`
+- registry file: `.vidt/iterations/baselines/registry.json`
+- stored baseline report: `.vidt/iterations/baselines/<label>/benchmark-results.json`
 
 These are local process artifacts and should not be committed by default.
 
@@ -49,6 +49,6 @@ Recommended flow:
 
 - malformed registry JSON fails closed
 - a registry entry whose stored report was deleted or moved fails closed
-- callers may pass `--iteration-workspace`; otherwise verification uses `<repo>/.skill-iterations`
+- callers may pass `--iteration-workspace`; otherwise verification uses `<repo>/.vidt/iterations`
 
 Do not infer that a label is usable merely because it still exists in `registry.json`.

@@ -3,7 +3,7 @@
 
 The repository-level blind audit executes commands in a subprocess. This adapter keeps
 stateful checks isolated by reusing `run_benchmarks.prepare_verify_action_fixture`
-instead of reading whatever `.skill-*` artifacts happen to exist in the caller's
+instead of reading whatever `.vidt/` artifacts happen to exist in the caller's
 workspace.
 """
 

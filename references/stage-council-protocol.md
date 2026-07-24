@@ -68,9 +68,9 @@ Quality gates:
 
 Default output artifacts:
 
-- `.skill-product/current-slice.md`
-- `.skill-product/acceptance-criteria.md`
-- `.skill-product/stage-council-plan.json`
+- `.vidt/product/current-slice.md`
+- `.vidt/product/acceptance-criteria.md`
+- `.vidt/product/stage-council-plan.json`
 
 ### `prototype-design-council`
 
@@ -108,8 +108,8 @@ Quality gates:
 
 Default output artifacts:
 
-- `.skill-product/prototype-design-brief.md`
-- `.skill-product/stage-council-plan.json`
+- `.vidt/product/prototype-design-brief.md`
+- `.vidt/product/stage-council-plan.json`
 
 ## Operating Rules
 
@@ -128,7 +128,7 @@ When a persistent plan is useful, write it from
 `assets/stage-council-plan-template.json` to:
 
 ```bash
-.skill-product/stage-council-plan.json
+.vidt/product/stage-council-plan.json
 ```
 
 Minimum fields:

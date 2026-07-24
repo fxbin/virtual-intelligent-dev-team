@@ -67,7 +67,7 @@ Question:
 Evidence:
 
 - required bundle artifacts exist when needed
-- `.skill-harness/engineering-constraints.md` exists before code-facing edits
+- `.vidt/harness/engineering-constraints.md` exists before code-facing edits
 - Team Engine Lite evidence exists when active
 - completion evidence slots are present before final claims
 

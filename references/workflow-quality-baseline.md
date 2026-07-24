@@ -76,13 +76,13 @@ Durable artifacts are for continuity, not decoration.
 Create or refresh workspaces only when the selected bundle requires a persisted
 resume trail, such as:
 
-- `.skill-delivery/`
-- `.skill-product/`
-- `.skill-beta/`
-- `.skill-governance/`
-- `.skill-iterations/`
-- `.skill-post-release/`
-- `.skill-harness/`
+- `.vidt/delivery/`
+- `.vidt/product/`
+- `.vidt/beta/`
+- `.vidt/governance/`
+- `.vidt/iterations/`
+- `.vidt/post-release/`
+- `.vidt/harness/`
 
 Do not create a durable workspace for simple Q&A, tiny edits, or route-only
 answers.

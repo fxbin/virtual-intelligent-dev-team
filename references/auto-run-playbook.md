@@ -11,7 +11,7 @@
   - 只生成自动执行计划，不直接开跑
 - `/auto go`
   - 进入 `go` 阶段
-  - 只在已存在 `.skill-auto/auto-run-plan.json` 时允许继续
+  - 只在已存在 `.vidt/auto/auto-run-plan.json` 时允许继续
 - `/auto safe`
   - 保持两阶段协议
   - 把 stop cap 收紧到单次安全闭环
@@ -39,9 +39,9 @@
 目标：
 
 - 识别 workflow
-- 生成 `.skill-auto/auto-run-plan.json`
-- 生成 `.skill-auto/auto-run-plan.md`
-- 生成 `.skill-auto/state/*.json`
+- 生成 `.vidt/auto/auto-run-plan.json`
+- 生成 `.vidt/auto/auto-run-plan.md`
+- 生成 `.vidt/auto/state/*.json`
 - 明确 stop cap、resume anchor、go command、安全护栏
 - 明确 `run_style / safety_level / resume_requested`
 
@@ -59,7 +59,7 @@
 
 ### `root-cause-remediate`
 
-- 初始化 `.skill-iterations/`
+- 初始化 `.vidt/iterations/`
 - 生成 `iteration-plan.auto.json`
 - 开启：
   - `autonomous_candidate_generation`
@@ -72,13 +72,13 @@
 - 调用：
   - `scripts/run_release_gate.py`
 - 默认带：
-  - `--completion-evidence .skill-evidence/completion-evidence.json`
+  - `--completion-evidence .vidt/evidence/completion-evidence.json`
   - `--auto-run-next-iteration-on-hold`
-- go 前应补全 `.skill-evidence/completion-evidence.json`；否则 release gate 会按 `hold` 处理，而不是把 benchmark 全绿误判成 `ship`
+- go 前应补全 `.vidt/evidence/completion-evidence.json`；否则 release gate 会按 `hold` 处理，而不是把 benchmark 全绿误判成 `ship`
 
 ### `post-release-close-loop`
 
-- 初始化 `.skill-post-release/`
+- 初始化 `.vidt/post-release/`
 - 调用：
   - `scripts/evaluate_post_release_feedback.py`
 
@@ -101,14 +101,14 @@ python scripts/run_auto_workflow.py --text "<original-request-without-/auto>" --
 ```
 
 ```bash
-python scripts/run_auto_workflow.py --mode go --plan .skill-auto/auto-run-plan.json --pretty
+python scripts/run_auto_workflow.py --mode go --plan .vidt/auto/auto-run-plan.json --pretty
 ```
 
 产物补充：
 
-- `.skill-auto/state/*.json`
+- `.vidt/auto/state/*.json`
 - `evals/release-gate/automation-state.json`
-- `.skill-post-release/decisions/automation-state.json`
+- `.vidt/post-release/decisions/automation-state.json`
 
 恢复检查：
 
@@ -132,5 +132,5 @@ python scripts/resume_from_automation_state.py --repo . --execute --pretty
 - 默认仍然先 dry-run
 - 只有显式 `--execute` 才会执行恢复命令
 - 执行前会检查推荐命令是否命中受控 allowlist
-- 执行结果会写入 `.skill-auto/resume-executions/`
+- 执行结果会写入 `.vidt/auto/resume-executions/`
 - 这个入口不会绕过 `/auto` 的 `setup -> go` 两阶段

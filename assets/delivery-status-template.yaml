@@ -7,8 +7,8 @@ current_slice:
   state: ready
   updated_at: ""
 context:
-  project_context: .skill-context/project-context.md
-  quick_slice_brief: .skill-delivery/current-slice.md
+  project_context: .vidt/context/project-context.md
+  quick_slice_brief: .vidt/delivery/current-slice.md
 verification:
   required_commands: []
   last_result: unknown

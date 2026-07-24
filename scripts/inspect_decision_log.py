@@ -30,14 +30,14 @@ from pathlib import Path
 from typing import Any
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
-DEFAULT_LOG_PATH = ".skill-metrics/decision-log.jsonl"
+DEFAULT_LOG_PATH = ".vidt/metrics/decision-log.jsonl"
 
 REPORT_SCHEMA_VERSION = "decision-log-report/v1"
 HEALTH_REPORT_SCHEMA_VERSION = "layer-health-report/v1"
 
-DEFAULT_TELEMETRY_PATH = ".skill-metrics/telemetry.jsonl"
-DEFAULT_BREAKER_STATE_PATH = ".skill-harness/breaker-state.json"
-DEFAULT_ESCALATION_PATH = ".skill-harness/escalation-queue.jsonl"
+DEFAULT_TELEMETRY_PATH = ".vidt/metrics/telemetry.jsonl"
+DEFAULT_BREAKER_STATE_PATH = ".vidt/harness/breaker-state.json"
+DEFAULT_ESCALATION_PATH = ".vidt/harness/escalation-queue.jsonl"
 
 HEALTH_WINDOW_ID = "30d"
 P99_WINDOW_SIZE = 20
@@ -1605,7 +1605,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument(
         "--log-file",
         default=DEFAULT_LOG_PATH,
-        help="Path to the decision log (relative to --repo). Default: .skill-metrics/decision-log.jsonl",
+        help="Path to the decision log (relative to --repo). Default: .vidt/metrics/decision-log.jsonl",
     )
     parser.add_argument(
         "--markdown-output",

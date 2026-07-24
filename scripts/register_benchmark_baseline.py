@@ -127,7 +127,7 @@ def register_baseline(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Register a local benchmark baseline.")
-    parser.add_argument("--workspace", default=".skill-iterations", help="Iteration workspace")
+    parser.add_argument("--workspace", default=".vidt/iterations", help="Iteration workspace")
     parser.add_argument("--label", required=True, help="Baseline label")
     parser.add_argument("--report", required=True, help="Path to benchmark-results.json")
     parser.add_argument("--notes", default="", help="Optional notes")

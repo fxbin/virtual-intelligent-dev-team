@@ -34,7 +34,7 @@ Keep just enough durable context to:
 ## 2. Iteration Snapshot
 
 - File:
-  - `.skill-iterations/current-round-memory.md`
+  - `.vidt/iterations/current-round-memory.md`
 - Use when:
   - bounded iteration or evidence-backed remediation is active
 - Stores:
@@ -46,7 +46,7 @@ Keep just enough durable context to:
 ## 3. Accepted Pattern Anchor
 
 - File:
-  - `.skill-iterations/distilled-patterns.md`
+  - `.vidt/iterations/distilled-patterns.md`
 - Use when:
   - a reusable pattern survived evidence
 - Stores:
@@ -57,7 +57,7 @@ Keep just enough durable context to:
 ## 4. Project Context Anchor
 
 - File:
-  - `.skill-context/project-context.md`
+  - `.vidt/context/project-context.md`
 - Use when:
   - durable project rules, commands, stack assumptions, or forbidden changes should carry across slices
   - a quick delivery slice needs project-specific constraints before implementation
@@ -101,15 +101,15 @@ cp assets/pre-development-progress-master-template.md docs/progress/MASTER.md
 - Iteration snapshot:
 
 ```bash
-mkdir -p .skill-iterations
-cp assets/round-memory-template.md .skill-iterations/current-round-memory.md
+mkdir -p .vidt/iterations
+cp assets/round-memory-template.md .vidt/iterations/current-round-memory.md
 ```
 
 - Accepted pattern anchor:
 
 ```bash
-mkdir -p .skill-iterations
-cp assets/distilled-patterns-template.md .skill-iterations/distilled-patterns.md
+mkdir -p .vidt/iterations
+cp assets/distilled-patterns-template.md .vidt/iterations/distilled-patterns.md
 ```
 
 ## What Not To Do

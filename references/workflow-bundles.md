@@ -11,7 +11,7 @@ Use workflow bundles when routing should return more than a lead agent. A bundle
   2. Create compact system map when target area is unfamiliar; for a large or unfamiliar target, build or refresh the tiered map via `references/project-knowledge-pyramid-protocol.md` and draw the system map from its L1/L2 tiers
   3. Create planning pack
   4. Split execution into vertical slices with AFK/HITL classifications
-  5. Create progress anchor and durable `.skill-context/project-context.md`
+  5. Create progress anchor and durable `.vidt/context/project-context.md`
   6. Hand back to normal implementation routing
 - **Resume anchor**: `docs/progress/MASTER.md`
 
@@ -26,7 +26,7 @@ Use workflow bundles when routing should return more than a lead agent. A bundle
   4. Write user flow and acceptance criteria
   5. Split build work into vertical slices when feature spans layers
   6. Surface frontend/backend contract questions before implementation
-- **Resume anchors**: `.skill-product/current-slice.md`, `.skill-product/acceptance-criteria.md`
+- **Resume anchors**: `.vidt/product/current-slice.md`, `.vidt/product/acceptance-criteria.md`
 
 <a id="audit-fix-deliver"></a>
 ## 3. `audit-fix-deliver`
@@ -85,14 +85,14 @@ Use workflow bundles when routing should return more than a lead agent. A bundle
 
 - **Use when**: narrow implementation, bug fix, or small refactor
 - **Sequence**: lock scope and acceptance criteria → establish feedback loop → implement the smallest coherent slice → preserve targeted verification
-- **Resume anchor**: `.skill-delivery/current-slice.md`
+- **Resume anchor**: `.vidt/delivery/current-slice.md`
 
 <a id="post-release-close-loop"></a>
 ## 9. `post-release-close-loop`
 
 - **Use when**: telemetry, support signals, or real-user feedback arrive after release
 - **Sequence**: collect signals → triage severity and affected area → decide monitor/iterate/escalate → write back to product or governance anchors
-- **Resume anchor**: `.skill-post-release/triage-summary.md`
+- **Resume anchor**: `.vidt/post-release/triage-summary.md`
 
 <a id="capture-project-knowledge"></a>
 ## 10. `capture-project-knowledge`

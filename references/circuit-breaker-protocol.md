@@ -4,9 +4,9 @@
 
 ## 四要素
 
-1. **ExternalCounter** — 脚本侧计数器,记录连续失败次数,状态持久化到 `.skill-harness/breaker-state.json`
+1. **ExternalCounter** — 脚本侧计数器,记录连续失败次数,状态持久化到 `.vidt/harness/breaker-state.json`
 2. **HardGate** — 达到阈值后 hard exit(退出码 1),LLM 无法绕过
-3. **EscalationSink** — breaker open 时写入 `.skill-harness/escalation-queue.jsonl`
+3. **EscalationSink** — breaker open 时写入 `.vidt/harness/escalation-queue.jsonl`
 4. **HalfOpenProbe** — cooldown 后允许一个试探请求,成功才恢复 closed
 
 ## 状态机
@@ -60,7 +60,7 @@ breaker 状态转移必须可 assert:
 - 计数器变化:`consecutive_failures` 递增
 - breaker flag 翻转:`state` 从 `closed` 到 `open`
 - metric 写入:escalation 队列文件有新条目
-- 状态文件:`.skill-harness/breaker-state.json` 可读取
+- 状态文件:`.vidt/harness/breaker-state.json` 可读取
 
 ## 与 verify_action.py 的集成
 

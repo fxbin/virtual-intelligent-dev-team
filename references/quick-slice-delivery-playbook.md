@@ -40,6 +40,6 @@ Use this playbook when a request is a small implementation, bug fix, or narrow f
 
 ## Resume Anchors
 
-- `.skill-delivery/current-slice.md`
-- `.skill-delivery/status.yaml`
-- `.skill-context/project-context.md`
+- `.vidt/delivery/current-slice.md`
+- `.vidt/delivery/status.yaml`
+- `.vidt/context/project-context.md`

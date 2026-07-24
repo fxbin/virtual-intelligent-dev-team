@@ -23,5 +23,5 @@
 
 ## Next Checkpoint
 
-- Refresh `.skill-post-release/current-signals.json`
-- Run `python scripts/evaluate_post_release_feedback.py --report .skill-post-release/current-signals.json --pretty`
+- Refresh `.vidt/post-release/current-signals.json`
+- Run `python scripts/evaluate_post_release_feedback.py --report .vidt/post-release/current-signals.json --pretty`

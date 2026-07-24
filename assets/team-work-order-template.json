@@ -47,6 +47,6 @@
       "verifier_can_silently_rewrite_artifact": false,
       "lead_accept_requires_cycle_report": true
     },
-    "resume_anchor": ".skill-delivery/status.yaml"
+    "resume_anchor": ".vidt/delivery/status.yaml"
   }
 }

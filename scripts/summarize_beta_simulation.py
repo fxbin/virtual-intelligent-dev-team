@@ -60,8 +60,9 @@ def infer_previous_round_id(round_id: str) -> str | None:
 
 
 def repo_root_from_run(run_path: Path) -> Path:
-    if run_path.parent.parent.name == "simulation-runs" and run_path.parent.parent.parent.name == ".skill-beta":
-        return run_path.parent.parent.parent.parent
+    for parent in run_path.parents:
+        if parent.name == ".vidt":
+            return parent.parent
     return run_path.parent
 
 
@@ -281,15 +282,15 @@ def summarize_beta_simulation(
     if round_report_out is not None:
         repo_root = repo_root_from_run(run_path.resolve())
         round_id = str(run_payload["round_id"])
-        manifest_json = repo_root / ".skill-beta" / "fixture-previews" / round_id / "beta-simulation-manifest.json"
-        manifest_markdown = repo_root / ".skill-beta" / "fixture-previews" / round_id / "beta-simulation-manifest.md"
-        cohort_plan_json = repo_root / ".skill-beta" / "cohort-plan.json"
-        ramp_plan_json = repo_root / ".skill-beta" / "ramp-plan.json"
+        manifest_json = repo_root / ".vidt/beta" / "fixture-previews" / round_id / "beta-simulation-manifest.json"
+        manifest_markdown = repo_root / ".vidt/beta" / "fixture-previews" / round_id / "beta-simulation-manifest.md"
+        cohort_plan_json = repo_root / ".vidt/beta" / "cohort-plan.json"
+        ramp_plan_json = repo_root / ".vidt/beta" / "ramp-plan.json"
         previous_round_id = infer_previous_round_id(round_id)
         fixture_diff_json = None
         fixture_diff_markdown = None
         if previous_round_id is not None:
-            diff_dir = repo_root / ".skill-beta" / "fixture-diffs" / f"{previous_round_id}-to-{round_id}"
+            diff_dir = repo_root / ".vidt/beta" / "fixture-diffs" / f"{previous_round_id}-to-{round_id}"
             diff_json_candidate = diff_dir / "beta-simulation-diff.json"
             diff_markdown_candidate = diff_dir / "beta-simulation-diff.md"
             if diff_json_candidate.exists():

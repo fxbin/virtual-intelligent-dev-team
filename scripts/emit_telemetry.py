@@ -2,7 +2,7 @@
 """emit_telemetry.py — 层间 telemetry 写入器 + intent drift 探针。
 
 契约来源: references/observability-protocol.md
-唯一写入 .skill-metrics/telemetry.jsonl 的脚本。
+唯一写入 .vidt/metrics/telemetry.jsonl 的脚本。
 
 功能:
 1. 记录每层执行的 telemetry（13 必填字段 + 1 可选 known_shortcut）
@@ -39,7 +39,7 @@ from observability_config import (
     SLO_LATENCY_TARGETS,
 )
 
-DEFAULT_TELEMETRY_DIR = Path(".skill-metrics")
+DEFAULT_TELEMETRY_DIR = Path(".vidt/metrics")
 DEFAULT_TELEMETRY_FILE = DEFAULT_TELEMETRY_DIR / "telemetry.jsonl"
 ABSTRACTION_KEYWORDS_PATH = SCRIPT_DIR / "abstraction_keywords.yaml"
 

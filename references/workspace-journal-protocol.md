@@ -128,7 +128,7 @@ def replay_journal(journal_path, target_timestamp=None):
 - journal 达到一定条目数(如 1000)后触发 compaction
 - compaction 保留每个 agent 的最新状态 + 所有 `spec_ref` 条目
 - compaction 后的 journal 只包含 compaction 快照 + 后续新 entry
-- compaction 前的 journal 归档到 `.skill-harness/journal-archive/`
+- compaction 前的 journal 归档到 `.vidt/harness/journal-archive/`
 
 ---
 

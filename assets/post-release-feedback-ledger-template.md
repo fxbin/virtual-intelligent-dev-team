@@ -2,7 +2,7 @@
 
 | id | source | severity | area | summary | status | owner | evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| feedback-001 | dogfood | medium | onboarding | Example feedback item | new | World-Class Product Architect | `.skill-post-release/current-signals.json` |
+| feedback-001 | dogfood | medium | onboarding | Example feedback item | new | World-Class Product Architect | `.vidt/post-release/current-signals.json` |
 
 ## Notes
 

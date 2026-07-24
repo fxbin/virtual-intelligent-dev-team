@@ -18,7 +18,7 @@ from typing import Literal, TypedDict
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 DEFAULT_CONFIG_PATH = SCRIPT_DIR.parent / "references" / "routing-rules.json"
-DECISION_LOG_PATH = ".skill-metrics/decision-log.jsonl"
+DECISION_LOG_PATH = ".vidt/metrics/decision-log.jsonl"
 RESUME_FROM_AUTOMATION_STATE_SCRIPT = SCRIPT_DIR / "resume_from_automation_state.py"
 ASCII_WORD_CLASS = "a-z0-9"
 TRACK_REGULAR = "regular track"
@@ -45,7 +45,7 @@ CHANGE_LOCALIZATION_REFERENCE = "references/change-localization-protocol.md"
 PROJECT_KNOWLEDGE_PYRAMID_REFERENCE = "references/project-knowledge-pyramid-protocol.md"
 STAGE_COUNCIL_REFERENCE = "references/stage-council-protocol.md"
 STAGE_COUNCIL_TEMPLATE = "assets/stage-council-plan-template.json"
-HARNESS_CONSTRAINT_ARTIFACT = ".skill-harness/engineering-constraints.md"
+HARNESS_CONSTRAINT_ARTIFACT = ".vidt/harness/engineering-constraints.md"
 HARNESS_CONSTRAINT_COMMAND = "python scripts/init_harness_constraints.py --root . --summary \"<task summary>\" --pretty"
 HARNESS_CONSTRAINT_WORKFLOWS = {
     "plan-first-build",
@@ -1113,7 +1113,7 @@ def append_decision_log_entry(
     reason: str | None = None,
     evidence: str | None = None,
 ) -> None:
-    """Append one canonical entry to `.skill-metrics/decision-log.jsonl`."""
+    """Append one canonical entry to `.vidt/metrics/decision-log.jsonl`."""
     file_path = repo_path / DECISION_LOG_PATH
     file_path.parent.mkdir(parents=True, exist_ok=True)
     enriched: dict[str, object] = dict(payload)
@@ -1812,16 +1812,16 @@ def build_process_plan(
                 ],
                 "commands": [
                     "python scripts/init_project_memory.py --root . --mode iteration --pretty",
-                    "mkdir -p .skill-iterations",
-                    "cp assets/iteration-plan-template.json .skill-iterations/iteration-plan.json",
-                    "python scripts/register_benchmark_baseline.py --workspace .skill-iterations --label stable --report <baseline-report> --pretty",
-                    f"python scripts/run_iteration_cycle.py --workspace .skill-iterations --round-id round-01 --objective \"<goal>\" --baseline-label stable --owner \"{iteration_owner}\" --candidate \"<candidate-change>\" --candidate-worktree ../wt-round-01 --candidate-output-dir .tmp-iteration-round-01 --pretty",
-                    "python scripts/compare_benchmark_results.py --baseline .skill-iterations/baselines/stable/benchmark-results.json --candidate .tmp-iteration-round-01/benchmark-results.json --pretty",
-                    "python scripts/promote_iteration_baseline.py --workspace .skill-iterations --round-id round-01 --label accepted-round-01 --pretty",
-                    "python scripts/sync_distilled_patterns.py --workspace .skill-iterations --pretty",
-                    "python scripts/materialize_candidate_patch.py --brief .skill-iterations/candidate-briefs/round-01.json --candidate-root ../wt-round-01 --patch-output .skill-iterations/patches/round-01.patch --pretty",
-                    "python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.json --pretty",
-                    "python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.json --resume --pretty",
+                    "mkdir -p .vidt/iterations",
+                    "cp assets/iteration-plan-template.json .vidt/iterations/iteration-plan.json",
+                    "python scripts/register_benchmark_baseline.py --workspace .vidt/iterations --label stable --report <baseline-report> --pretty",
+                    f"python scripts/run_iteration_cycle.py --workspace .vidt/iterations --round-id round-01 --objective \"<goal>\" --baseline-label stable --owner \"{iteration_owner}\" --candidate \"<candidate-change>\" --candidate-worktree ../wt-round-01 --candidate-output-dir .tmp-iteration-round-01 --pretty",
+                    "python scripts/compare_benchmark_results.py --baseline .vidt/iterations/baselines/stable/benchmark-results.json --candidate .tmp-iteration-round-01/benchmark-results.json --pretty",
+                    "python scripts/promote_iteration_baseline.py --workspace .vidt/iterations --round-id round-01 --label accepted-round-01 --pretty",
+                    "python scripts/sync_distilled_patterns.py --workspace .vidt/iterations --pretty",
+                    "python scripts/materialize_candidate_patch.py --brief .vidt/iterations/candidate-briefs/round-01.json --candidate-root ../wt-round-01 --patch-output .vidt/iterations/patches/round-01.patch --pretty",
+                    "python scripts/run_iteration_loop.py --workspace .vidt/iterations --plan .vidt/iterations/iteration-plan.json --pretty",
+                    "python scripts/run_iteration_loop.py --workspace .vidt/iterations --plan .vidt/iterations/iteration-plan.json --resume --pretty",
                 ],
                 "round_caps": {
                     "online": int(iteration_profile.get("round_cap_online", 3)),
@@ -1847,10 +1847,10 @@ def build_process_plan(
                         ],
                     ),
                 "plan_template": "assets/iteration-plan-template.json",
-                "resume_anchor": ".skill-iterations/current-round-memory.md",
+                "resume_anchor": ".vidt/iterations/current-round-memory.md",
                 "resume_artifacts": [
-                    ".skill-iterations/current-round-memory.md",
-                    ".skill-iterations/distilled-patterns.md",
+                    ".vidt/iterations/current-round-memory.md",
+                    ".vidt/iterations/distilled-patterns.md",
                 ],
             }
         )
@@ -1913,20 +1913,20 @@ def build_process_plan(
                 "steps": [
                     "先运行正式 release gate，而不是只看一次 benchmark 摘要",
                     "让 gate 自动汇总 tests / semantic validator / evals / offline drill，必要时并入最近一轮 beta gate",
-                    "在 ship 前确认 .skill-evidence/completion-evidence.json 已经补全且通过完成证据校验",
+                    "在 ship 前确认 .vidt/evidence/completion-evidence.json 已经补全且通过完成证据校验",
                     "读取 ship 或 hold 决策、失败原因、以及产物路径",
                     "若结论为 hold，则把阻塞项回写到 iteration ledger 或发布清单，再进入下一轮",
                 ],
                 "commands": [
-                    "mkdir -p .skill-evidence && cp assets/completion-evidence-template.json .skill-evidence/completion-evidence.json",
-                    "python scripts/verify_completion_evidence.py --evidence .skill-evidence/completion-evidence.json --pretty",
+                    "mkdir -p .vidt/evidence && cp assets/completion-evidence-template.json .vidt/evidence/completion-evidence.json",
+                    "python scripts/verify_completion_evidence.py --evidence .vidt/evidence/completion-evidence.json --pretty",
                     "python scripts/run_release_gate.py --output-dir evals/release-gate --pretty",
                     "python scripts/run_release_gate.py --output-dir evals/release-gate --previous-output evals/benchmark-results/benchmark-results.json --pretty",
-                    "python scripts/run_release_gate.py --output-dir evals/release-gate --beta-decision-dir .skill-beta/round-decisions --pretty",
-                    "python scripts/run_release_gate.py --output-dir evals/release-gate --beta-report-dir .skill-beta/reports --pretty",
-                    "python scripts/run_release_gate.py --output-dir evals/release-gate --completion-evidence .skill-evidence/completion-evidence.json --pretty",
-                    "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --release-label release-ready --pretty",
-                    "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .skill-iterations --auto-run-next-iteration-on-hold --hold-loop-max-rounds 3 --pretty",
+                    "python scripts/run_release_gate.py --output-dir evals/release-gate --beta-decision-dir .vidt/beta/round-decisions --pretty",
+                    "python scripts/run_release_gate.py --output-dir evals/release-gate --beta-report-dir .vidt/beta/reports --pretty",
+                    "python scripts/run_release_gate.py --output-dir evals/release-gate --completion-evidence .vidt/evidence/completion-evidence.json --pretty",
+                    "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .vidt/iterations --release-label release-ready --pretty",
+                    "python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-workspace .vidt/iterations --auto-run-next-iteration-on-hold --hold-loop-max-rounds 3 --pretty",
                 ],
                 "decisions": ["ship", "hold"],
                 "artifacts": [
@@ -1934,8 +1934,8 @@ def build_process_plan(
                     "evals/release-gate/release-gate-report.md",
                     "evals/release-gate/next-iteration-brief.json",
                     "evals/release-gate/release-closure.json",
-                    ".skill-iterations/iteration-plan.release-gate.json",
-                    ".skill-evidence/completion-evidence.json",
+                    ".vidt/iterations/iteration-plan.release-gate.json",
+                    ".vidt/evidence/completion-evidence.json",
                     "evals/release-gate/benchmark-results.json",
                     "evals/release-gate/benchmark-report.md",
                 ],
@@ -1998,18 +1998,18 @@ def build_process_plan(
                 ],
                 "commands": [
                     "python scripts/init_post_release_feedback.py --root . --pretty",
-                    "python scripts/evaluate_post_release_feedback.py --report .skill-post-release/current-signals.json --pretty",
+                    "python scripts/evaluate_post_release_feedback.py --report .vidt/post-release/current-signals.json --pretty",
                 ],
                 "artifacts": [
-                    ".skill-post-release/rollout-summary.md",
-                    ".skill-post-release/feedback-ledger.md",
-                    ".skill-post-release/current-signals.json",
-                    ".skill-post-release/triage-summary.md",
+                    ".vidt/post-release/rollout-summary.md",
+                    ".vidt/post-release/feedback-ledger.md",
+                    ".vidt/post-release/current-signals.json",
+                    ".vidt/post-release/triage-summary.md",
                 ],
-                "resume_anchor": ".skill-post-release/triage-summary.md",
+                "resume_anchor": ".vidt/post-release/triage-summary.md",
                 "resume_artifacts": [
-                    ".skill-post-release/triage-summary.md",
-                    ".skill-post-release/current-signals.json",
+                    ".vidt/post-release/triage-summary.md",
+                    ".vidt/post-release/current-signals.json",
                 ],
             }
         )
@@ -2536,11 +2536,11 @@ def build_stage_council_plan(
                     "roadmap_sequence_gate",
                 ],
                 "output_artifacts": [
-                    ".skill-product/current-slice.md",
-                    ".skill-product/acceptance-criteria.md",
-                    ".skill-product/stage-council-plan.json",
+                    ".vidt/product/current-slice.md",
+                    ".vidt/product/acceptance-criteria.md",
+                    ".vidt/product/stage-council-plan.json",
                 ],
-                "resume_anchor": ".skill-product/current-slice.md",
+                "resume_anchor": ".vidt/product/current-slice.md",
             }
         )
 
@@ -2589,10 +2589,10 @@ def build_stage_council_plan(
                     "accessibility_gate",
                 ],
                 "output_artifacts": [
-                    ".skill-product/prototype-design-brief.md",
-                    ".skill-product/stage-council-plan.json",
+                    ".vidt/product/prototype-design-brief.md",
+                    ".vidt/product/stage-council-plan.json",
                 ],
-                "resume_anchor": ".skill-product/prototype-design-brief.md",
+                "resume_anchor": ".vidt/product/prototype-design-brief.md",
             }
         )
 
@@ -3053,10 +3053,10 @@ def build_workflow_bundle(
                 "rank fixes by user-visible impact, implementation risk, and rollback cost",
                 "turn the selected path into narrow implementation slices only after the diagnosis is coherent",
             ]
-            progress_anchor = ".skill-performance/frontend-performance-plan.md"
+            progress_anchor = ".vidt/performance/frontend-performance-plan.md"
             resume_artifacts = [
-                ".skill-performance/frontend-performance-plan.md",
-                ".skill-performance/performance-hypotheses.md",
+                ".vidt/performance/frontend-performance-plan.md",
+                ".vidt/performance/performance-hypotheses.md",
             ]
         elif kind == "system":
             reason = (
@@ -3083,10 +3083,10 @@ def build_workflow_bundle(
                 "identify reversible slices and irreversible decisions",
                 "define the first executable planning artifact and evidence needed to proceed",
             ]
-            progress_anchor = ".skill-architecture/system-refactor-plan.md"
+            progress_anchor = ".vidt/architecture/system-refactor-plan.md"
             resume_artifacts = [
-                ".skill-architecture/system-refactor-plan.md",
-                ".skill-architecture/refactor-decisions.md",
+                ".vidt/architecture/system-refactor-plan.md",
+                ".vidt/architecture/refactor-decisions.md",
             ]
         else:
             reason = "The request is a multi-domain architecture split or decomposition (e.g. microservices, monolith-to-services, cross-domain refactor), so multiple specialists (architecture, data/persistence, delivery/DevOps) should collaborate up front rather than a single expert defaulting to direct execution."
@@ -3110,10 +3110,10 @@ def build_workflow_bundle(
                 "capture cross-cutting decisions and risks that no single specialist owns alone",
                 "split execution into vertical slices that respect the agreed boundaries",
             ]
-            progress_anchor = ".skill-architecture/split-decisions.md"
+            progress_anchor = ".vidt/architecture/split-decisions.md"
             resume_artifacts = [
-                ".skill-architecture/split-decisions.md",
-                ".skill-architecture/data-ownership.md",
+                ".vidt/architecture/split-decisions.md",
+                ".vidt/architecture/data-ownership.md",
             ]
 
         return {
@@ -3211,11 +3211,11 @@ def build_workflow_bundle(
                 "evaluate whether to monitor, iterate, or escalate",
                 "write feedback back into product or governance anchors before reopening remediation",
             ],
-            "progress_anchor_recommended": ".skill-post-release/triage-summary.md",
+            "progress_anchor_recommended": ".vidt/post-release/triage-summary.md",
             "resume_artifacts": [
-                ".skill-post-release/rollout-summary.md",
-                ".skill-post-release/current-signals.json",
-                ".skill-post-release/triage-summary.md",
+                ".vidt/post-release/rollout-summary.md",
+                ".vidt/post-release/current-signals.json",
+                ".vidt/post-release/triage-summary.md",
             ],
         }
 
@@ -3236,10 +3236,10 @@ def build_workflow_bundle(
                 "test one remediation hypothesis at a time",
                 "keep, retry, rollback, or stop based on evidence",
             ],
-            "progress_anchor_recommended": ".skill-iterations/current-round-memory.md",
+            "progress_anchor_recommended": ".vidt/iterations/current-round-memory.md",
             "resume_artifacts": [
-                ".skill-iterations/current-round-memory.md",
-                ".skill-iterations/distilled-patterns.md",
+                ".vidt/iterations/current-round-memory.md",
+                ".vidt/iterations/distilled-patterns.md",
             ],
         }
 
@@ -3279,10 +3279,10 @@ def build_workflow_bundle(
                 "verified independently, and committed separately."
             ),
             "steps": steps,
-            "progress_anchor_recommended": ".skill-iterations/current-round-memory.md",
+            "progress_anchor_recommended": ".vidt/iterations/current-round-memory.md",
             "resume_artifacts": [
-                ".skill-iterations/current-round-memory.md",
-                ".skill-iterations/distilled-patterns.md",
+                ".vidt/iterations/current-round-memory.md",
+                ".vidt/iterations/distilled-patterns.md",
             ],
         }
 
@@ -3298,11 +3298,11 @@ def build_workflow_bundle(
                 "expand to larger internal-beta cohorts only when the previous round clears its gate",
                 "log feedback, severity, and ship-or-hold decisions round by round",
             ],
-            "progress_anchor_recommended": ".skill-beta/program-overview.md",
+            "progress_anchor_recommended": ".vidt/beta/program-overview.md",
             "resume_artifacts": [
-                ".skill-beta/program-overview.md",
-                ".skill-beta/cohort-matrix.md",
-                ".skill-beta/feedback-ledger.md",
+                ".vidt/beta/program-overview.md",
+                ".vidt/beta/cohort-matrix.md",
+                ".vidt/beta/feedback-ledger.md",
             ],
         }
 
@@ -3344,11 +3344,11 @@ def build_workflow_bundle(
                 "split multi-layer work into AFK/HITL vertical slices when needed",
                 "surface frontend/backend contract questions before coding",
             ],
-            "progress_anchor_recommended": ".skill-product/current-slice.md",
+            "progress_anchor_recommended": ".vidt/product/current-slice.md",
             "resume_artifacts": [
-                ".skill-product/current-slice.md",
-                ".skill-product/acceptance-criteria.md",
-                ".skill-product/contract-questions.md",
+                ".vidt/product/current-slice.md",
+                ".vidt/product/acceptance-criteria.md",
+                ".vidt/product/contract-questions.md",
             ],
         }
 
@@ -3368,10 +3368,10 @@ def build_workflow_bundle(
                 "state verification evidence and rollback conditions",
                 "enter git or release actions only after the guardrails are explicit",
             ],
-            "progress_anchor_recommended": ".skill-governance/change-plan.md",
+            "progress_anchor_recommended": ".vidt/governance/change-plan.md",
             "resume_artifacts": [
-                ".skill-governance/change-plan.md",
-                ".skill-governance/release-checklist.md",
+                ".vidt/governance/change-plan.md",
+                ".vidt/governance/release-checklist.md",
             ],
         }
 
@@ -3388,11 +3388,11 @@ def build_workflow_bundle(
                 "create or refresh durable project context when needed",
                 "implement the smallest coherent change and self-review it",
             ],
-            "progress_anchor_recommended": ".skill-delivery/current-slice.md",
+            "progress_anchor_recommended": ".vidt/delivery/current-slice.md",
             "resume_artifacts": [
-                ".skill-delivery/current-slice.md",
-                ".skill-delivery/status.yaml",
-                ".skill-context/project-context.md",
+                ".vidt/delivery/current-slice.md",
+                ".vidt/delivery/status.yaml",
+                ".vidt/context/project-context.md",
             ],
         }
 
@@ -3426,11 +3426,11 @@ def build_workflow_bundle_bootstrap(
         if not isinstance(artifacts, list):
             artifacts = []
         practice_command = 'python scripts/init_micro_practices.py --root . --text "<user request>" --pretty'
-        update_command = "python scripts/update_micro_practices.py --ledger .skill-practices/micro-practice-ledger.json --name <practice-name> --status satisfied --evidence \"<evidence>\" --pretty"
-        evaluation_command = "python scripts/evaluate_micro_practices.py --ledger .skill-practices/micro-practice-ledger.json --pretty"
+        update_command = "python scripts/update_micro_practices.py --ledger .vidt/practices/micro-practice-ledger.json --name <practice-name> --status satisfied --evidence \"<evidence>\" --pretty"
+        evaluation_command = "python scripts/evaluate_micro_practices.py --ledger .vidt/practices/micro-practice-ledger.json --pretty"
         practice_artifacts = [
-            ".skill-practices/micro-practice-ledger.json",
-            ".skill-practices/micro-practice-ledger.md",
+            ".vidt/practices/micro-practice-ledger.json",
+            ".vidt/practices/micro-practice-ledger.md",
         ]
         block["commands"] = [*commands, practice_command]
         block["artifacts"] = [*artifacts, *practice_artifacts]
@@ -3440,7 +3440,7 @@ def build_workflow_bundle_bootstrap(
             "command": practice_command,
             "update_command": update_command,
             "evaluation_command": evaluation_command,
-            "resume_anchor": ".skill-practices/micro-practice-ledger.json",
+            "resume_anchor": ".vidt/practices/micro-practice-ledger.json",
             "schema": "references/micro-practice-ledger.schema.json",
             "evaluation_schema": "references/micro-practice-evaluation.schema.json",
         }
@@ -3455,13 +3455,13 @@ def build_workflow_bundle_bootstrap(
                 "python scripts/init_beta_simulation.py --root . --round-id round-0 --phase \"pre-build concept smoke\" --objective \"<objective>\" --pretty",
             ],
             "artifacts": [
-                ".skill-beta/program-overview.md",
-                ".skill-beta/cohort-matrix.md",
-                ".skill-beta/feedback-ledger.md",
-                ".skill-beta/personas",
-                ".skill-beta/simulation-configs/round-0.json",
+                ".vidt/beta/program-overview.md",
+                ".vidt/beta/cohort-matrix.md",
+                ".vidt/beta/feedback-ledger.md",
+                ".vidt/beta/personas",
+                ".vidt/beta/simulation-configs/round-0.json",
             ],
-            "resume_anchor": ".skill-beta/program-overview.md",
+            "resume_anchor": ".vidt/beta/program-overview.md",
         })
     if bundle_name == "product-spec-deliver":
         return with_micro_practices({
@@ -3471,11 +3471,11 @@ def build_workflow_bundle_bootstrap(
                 "python scripts/init_product_delivery.py --root . --pretty",
             ],
             "artifacts": [
-                ".skill-product/current-slice.md",
-                ".skill-product/acceptance-criteria.md",
-                ".skill-product/contract-questions.md",
+                ".vidt/product/current-slice.md",
+                ".vidt/product/acceptance-criteria.md",
+                ".vidt/product/contract-questions.md",
             ],
-            "resume_anchor": ".skill-product/current-slice.md",
+            "resume_anchor": ".vidt/product/current-slice.md",
         })
     if bundle_name == "quick-slice-deliver":
         return with_micro_practices({
@@ -3486,11 +3486,11 @@ def build_workflow_bundle_bootstrap(
                 "python scripts/init_quick_slice.py --root . --pretty",
             ],
             "artifacts": [
-                ".skill-context/project-context.md",
-                ".skill-delivery/current-slice.md",
-                ".skill-delivery/status.yaml",
+                ".vidt/context/project-context.md",
+                ".vidt/delivery/current-slice.md",
+                ".vidt/delivery/status.yaml",
             ],
-            "resume_anchor": ".skill-delivery/current-slice.md",
+            "resume_anchor": ".vidt/delivery/current-slice.md",
         })
     if bundle_name == "govern-change-safely":
         return with_micro_practices({
@@ -3500,10 +3500,10 @@ def build_workflow_bundle_bootstrap(
                 "python scripts/init_technical_governance.py --root . --pretty",
             ],
             "artifacts": [
-                ".skill-governance/change-plan.md",
-                ".skill-governance/release-checklist.md",
+                ".vidt/governance/change-plan.md",
+                ".vidt/governance/release-checklist.md",
             ],
-            "resume_anchor": ".skill-governance/change-plan.md",
+            "resume_anchor": ".vidt/governance/change-plan.md",
         })
     if bundle_name == "post-release-close-loop":
         return with_micro_practices({
@@ -3513,12 +3513,12 @@ def build_workflow_bundle_bootstrap(
                 "python scripts/init_post_release_feedback.py --root . --pretty",
             ],
             "artifacts": [
-                ".skill-post-release/rollout-summary.md",
-                ".skill-post-release/feedback-ledger.md",
-                ".skill-post-release/current-signals.json",
-                ".skill-post-release/triage-summary.md",
+                ".vidt/post-release/rollout-summary.md",
+                ".vidt/post-release/feedback-ledger.md",
+                ".vidt/post-release/current-signals.json",
+                ".vidt/post-release/triage-summary.md",
             ],
-            "resume_anchor": ".skill-post-release/triage-summary.md",
+            "resume_anchor": ".vidt/post-release/triage-summary.md",
         })
     if bundle_name == "capture-project-knowledge":
         return with_micro_practices({
@@ -4312,49 +4312,49 @@ def build_beta_validation_plan(text: str, workflow_bundle_name: str) -> dict[str
     return {
         "enabled": True,
         "simulation_allowed": True,
-        "feedback_anchor": ".skill-beta/feedback-ledger.md",
-        "cohort_artifact": ".skill-beta/cohort-matrix.md",
+        "feedback_anchor": ".vidt/beta/feedback-ledger.md",
+        "cohort_artifact": ".vidt/beta/cohort-matrix.md",
         "cohort_plan_template": "assets/beta-cohort-plan-template.json",
         "cohort_plan_schema": "references/beta-cohort-plan.schema.json",
-        "cohort_plan_path": ".skill-beta/cohort-plan.json",
+        "cohort_plan_path": ".vidt/beta/cohort-plan.json",
         "ramp_plan_template": "assets/beta-ramp-plan-template.json",
         "ramp_plan_schema": "references/beta-ramp-plan.schema.json",
-        "ramp_plan_path": ".skill-beta/ramp-plan.json",
+        "ramp_plan_path": ".vidt/beta/ramp-plan.json",
         "simulation_profile_template": "assets/simulated-user-profile-template.json",
-        "simulation_profile_dir": ".skill-beta/personas",
+        "simulation_profile_dir": ".vidt/beta/personas",
         "simulation_persona_library": "references/simulation-persona-library.json",
         "simulation_cohort_fixtures": "references/simulation-cohort-fixtures.json",
         "simulation_config_template": "assets/beta-simulation-config-template.json",
-        "simulation_config_dir": ".skill-beta/simulation-configs",
+        "simulation_config_dir": ".vidt/beta/simulation-configs",
         "simulation_scenario_packs": "references/simulation-scenario-packs.json",
         "simulation_trace_catalog": "references/simulation-trace-catalog.json",
-        "simulation_preview_dir": ".skill-beta/fixture-previews",
-        "simulation_diff_dir": ".skill-beta/fixture-diffs",
-        "simulation_run_dir": ".skill-beta/simulation-runs",
+        "simulation_preview_dir": ".vidt/beta/fixture-previews",
+        "simulation_diff_dir": ".vidt/beta/fixture-diffs",
+        "simulation_run_dir": ".vidt/beta/simulation-runs",
         "simulation_init_command_template": (
             "python scripts/init_beta_simulation.py --root . --round-id <round-id> "
             "--phase \"<phase>\" --objective \"<objective>\" --pretty"
         ),
         "simulation_preview_command_template": (
             "python scripts/preview_beta_simulation_fixture.py "
-            "--config .skill-beta/simulation-configs/<round-id>.json --pretty"
+            "--config .vidt/beta/simulation-configs/<round-id>.json --pretty"
         ),
         "simulation_diff_command_template": (
             "python scripts/compare_beta_simulation_manifests.py "
-            "--previous .skill-beta/fixture-previews/<previous-round-id>/beta-simulation-manifest.json "
-            "--current .skill-beta/fixture-previews/<round-id>/beta-simulation-manifest.json --pretty"
+            "--previous .vidt/beta/fixture-previews/<previous-round-id>/beta-simulation-manifest.json "
+            "--current .vidt/beta/fixture-previews/<round-id>/beta-simulation-manifest.json --pretty"
         ),
         "simulation_run_command_template": (
-            "python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/<round-id>.json --pretty"
+            "python scripts/run_beta_simulation.py --config .vidt/beta/simulation-configs/<round-id>.json --pretty"
         ),
         "simulation_summary_command_template": (
-            "python scripts/summarize_beta_simulation.py --run .skill-beta/simulation-runs/<round-id>/beta-simulation-run.json "
-            "--feedback-ledger-out .skill-beta/feedback-ledger.md --round-report-out .skill-beta/reports/<round-id>.json --pretty"
+            "python scripts/summarize_beta_simulation.py --run .vidt/beta/simulation-runs/<round-id>/beta-simulation-run.json "
+            "--feedback-ledger-out .vidt/beta/feedback-ledger.md --round-report-out .vidt/beta/reports/<round-id>.json --pretty"
         ),
         "report_template": "assets/beta-round-report-template.json",
-        "report_dir": ".skill-beta/reports",
-        "decision_dir": ".skill-beta/round-decisions",
-        "gate_command_template": "python scripts/evaluate_beta_round.py --report .skill-beta/reports/<round-id>.json --pretty",
+        "report_dir": ".vidt/beta/reports",
+        "decision_dir": ".vidt/beta/round-decisions",
+        "gate_command_template": "python scripts/evaluate_beta_round.py --report .vidt/beta/reports/<round-id>.json --pretty",
         "rounds": rounds,
     }
 
@@ -4392,9 +4392,9 @@ def build_auto_run_profile(
         )
         go_command = (
             "python scripts/run_auto_workflow.py --mode go "
-            "--plan .skill-auto/auto-run-plan.json --pretty"
+            "--plan .vidt/auto/auto-run-plan.json --pretty"
         )
-        recommended_resume_anchor = ".skill-auto/auto-run-plan.md"
+        recommended_resume_anchor = ".vidt/auto/auto-run-plan.md"
         eligibility_reason = (
             "This workflow supports explicit auto setup/go orchestration with bounded safety guards."
         )
@@ -4514,10 +4514,10 @@ def build_auto_run_profile(
         "text_without_trigger": normalized_text,
         "requires_explicit_go": enabled and workflow_supported,
         "eligibility_reason": eligibility_reason,
-        "state_root": ".skill-auto",
-        "state_dir": ".skill-auto/state",
-        "plan_json": ".skill-auto/auto-run-plan.json",
-        "plan_markdown": ".skill-auto/auto-run-plan.md",
+        "state_root": ".vidt/auto",
+        "state_dir": ".vidt/auto/state",
+        "plan_json": ".vidt/auto/auto-run-plan.json",
+        "plan_markdown": ".vidt/auto/auto-run-plan.md",
         "resume_anchor": recommended_resume_anchor,
         "automation_state_schema": "references/automation-state.schema.json",
         "setup_command": setup_command,
@@ -4894,7 +4894,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
     ]
     for item in workflow_bundle_bootstrap.get("artifacts", []):
         artifact = str(item).strip()
-        if artifact and artifact.startswith(".skill-practices/") and artifact not in resume_artifacts:
+        if artifact and artifact.startswith(".vidt/practices/") and artifact not in resume_artifacts:
             resume_artifacts.append(artifact)
     quality_gate = build_quality_gate(
         lead_agent=lead_agent,

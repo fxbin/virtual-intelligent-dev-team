@@ -84,7 +84,7 @@ def now_iso() -> str:
 
 
 def build_ledger_paths(repo_root: Path, resume_execution_id: str) -> tuple[Path, Path]:
-    ledger_dir = repo_root / ".skill-auto" / "resume-executions"
+    ledger_dir = repo_root / ".vidt/auto" / "resume-executions"
     return (
         ledger_dir / f"{resume_execution_id}.json",
         ledger_dir / f"{resume_execution_id}.md",

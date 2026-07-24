@@ -26,7 +26,7 @@
         "assistant_agents contains Java Virtuoso",
         "priority_routing agent is Code Audit Council",
         "workflow_bundle is audit-fix-deliver",
-        "resume_artifacts contains .skill-iterations/current-round-memory.md"
+        "resume_artifacts contains .vidt/iterations/current-round-memory.md"
       ],
       "categories": [
         "backend-stack",
@@ -905,14 +905,14 @@
         "needs_iteration is true",
         "process_skills contains bounded-iteration",
         "iteration_profile.enabled is true",
-        "process_plan first commands contain mkdir -p .skill-iterations",
-        "process_plan first commands contain cp assets/iteration-plan-template.json .skill-iterations/iteration-plan.json",
-        "process_plan first commands contain python scripts/register_benchmark_baseline.py --workspace .skill-iterations --label stable --report <baseline-report> --pretty",
-        "process_plan first commands contain python scripts/run_iteration_cycle.py --workspace .skill-iterations --round-id round-01 --objective \"<goal>\" --baseline-label stable --owner \"Technical Trinity\" --candidate \"<candidate-change>\" --candidate-worktree ../wt-round-01 --candidate-output-dir .tmp-iteration-round-01 --pretty",
-        "process_plan first commands contain python scripts/compare_benchmark_results.py --baseline .skill-iterations/baselines/stable/benchmark-results.json --candidate .tmp-iteration-round-01/benchmark-results.json --pretty",
-        "process_plan first commands contain python scripts/promote_iteration_baseline.py --workspace .skill-iterations --round-id round-01 --label accepted-round-01 --pretty",
-        "process_plan first commands contain python scripts/sync_distilled_patterns.py --workspace .skill-iterations --pretty",
-        "process_plan first commands contain python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.json --pretty"
+        "process_plan first commands contain mkdir -p .vidt/iterations",
+        "process_plan first commands contain cp assets/iteration-plan-template.json .vidt/iterations/iteration-plan.json",
+        "process_plan first commands contain python scripts/register_benchmark_baseline.py --workspace .vidt/iterations --label stable --report <baseline-report> --pretty",
+        "process_plan first commands contain python scripts/run_iteration_cycle.py --workspace .vidt/iterations --round-id round-01 --objective \"<goal>\" --baseline-label stable --owner \"Technical Trinity\" --candidate \"<candidate-change>\" --candidate-worktree ../wt-round-01 --candidate-output-dir .tmp-iteration-round-01 --pretty",
+        "process_plan first commands contain python scripts/compare_benchmark_results.py --baseline .vidt/iterations/baselines/stable/benchmark-results.json --candidate .tmp-iteration-round-01/benchmark-results.json --pretty",
+        "process_plan first commands contain python scripts/promote_iteration_baseline.py --workspace .vidt/iterations --round-id round-01 --label accepted-round-01 --pretty",
+        "process_plan first commands contain python scripts/sync_distilled_patterns.py --workspace .vidt/iterations --pretty",
+        "process_plan first commands contain python scripts/run_iteration_loop.py --workspace .vidt/iterations --plan .vidt/iterations/iteration-plan.json --pretty"
       ]
     },
     {
@@ -931,7 +931,7 @@
         "needs_release_gate is true",
         "needs_git_workflow is false",
         "process_skills contains release-gate",
-        "process_plan first commands contain python scripts/verify_completion_evidence.py --evidence .skill-evidence/completion-evidence.json --pretty",
+        "process_plan first commands contain python scripts/verify_completion_evidence.py --evidence .vidt/evidence/completion-evidence.json --pretty",
         "process_plan first commands contain python scripts/run_release_gate.py --output-dir evals/release-gate --pretty"
       ]
     },
@@ -953,7 +953,7 @@
         "needs_release_gate is true",
         "needs_git_workflow is false",
         "process_skills contains release-gate",
-        "process_plan first commands contain python scripts/verify_completion_evidence.py --evidence .skill-evidence/completion-evidence.json --pretty",
+        "process_plan first commands contain python scripts/verify_completion_evidence.py --evidence .vidt/evidence/completion-evidence.json --pretty",
         "process_plan first commands contain python scripts/run_release_gate.py --output-dir evals/release-gate --pretty"
       ]
     },
@@ -1009,8 +1009,8 @@
         "lead_agent is Technical Trinity",
         "needs_iteration is true",
         "workflow_bundle is root-cause-remediate",
-        "progress_anchor_recommended is .skill-iterations/current-round-memory.md",
-        "resume_artifacts contains .skill-iterations/distilled-patterns.md",
+        "progress_anchor_recommended is .vidt/iterations/current-round-memory.md",
+        "resume_artifacts contains .vidt/iterations/distilled-patterns.md",
         "process_plan first commands contain python scripts/init_project_memory.py --root . --mode iteration --pretty",
         "response_pack_json optimization_loop exists"
       ]
@@ -1069,7 +1069,7 @@
         "assistant_delta_contract.strict_mode is true",
         "assistant_delta_contract.required_fields contains claim",
         "assistant_delta_contract.required_fields contains evidence",
-        "response_pack_json bundle_bootstrap.resume_anchor is .skill-product/current-slice.md"
+        "response_pack_json bundle_bootstrap.resume_anchor is .vidt/product/current-slice.md"
       ]
     },
     {
@@ -1106,7 +1106,7 @@
         "allowed is true",
         "verify_action_json details.needs_git_workflow is true",
         "verify_action_json details.commands length is 12",
-        "verify_action_json router_snapshot.progress_anchor_recommended is .skill-governance/change-plan.md",
+        "verify_action_json router_snapshot.progress_anchor_recommended is .vidt/governance/change-plan.md",
         "verify_action_json explanation_card.workflow_bundle_source is lead-default"
       ]
     },
@@ -1128,7 +1128,7 @@
         "verify_action_json details.progress_anchor_matches_resume_anchor is true",
         "verify_action_json details.workspace_state is missing",
         "verify_action_json details.bootstrap_command_required_now is true",
-        "verify_action_json details.bootstrap.resume_anchor is .skill-product/current-slice.md",
+        "verify_action_json details.bootstrap.resume_anchor is .vidt/product/current-slice.md",
         "verify_action_json details.bootstrap.commands contains python scripts/init_product_delivery.py --root . --pretty"
       ]
     },
@@ -1152,12 +1152,12 @@
         "response_pack_json beta_program.simulation_allowed is true",
         "response_pack_json beta_program.simulation_profile_template is assets/simulated-user-profile-template.json",
         "response_pack_json beta_program.simulation_config_template is assets/beta-simulation-config-template.json",
-        "response_pack_json beta_program.simulation_run_dir is .skill-beta/simulation-runs",
+        "response_pack_json beta_program.simulation_run_dir is .vidt/beta/simulation-runs",
         "response_pack_json beta_program.simulation_init_command_template contains python scripts/init_beta_simulation.py",
         "response_pack_json beta_program.simulation_run_command_template contains python scripts/run_beta_simulation.py",
         "response_pack_json beta_program.simulation_summary_command_template contains python scripts/summarize_beta_simulation.py",
         "response_pack_json beta_program.rounds length is 3",
-        "response_pack_json beta_program.feedback_anchor is .skill-beta/feedback-ledger.md",
+        "response_pack_json beta_program.feedback_anchor is .vidt/beta/feedback-ledger.md",
         "response_pack_json beta_program.report_template is assets/beta-round-report-template.json",
         "response_pack_json beta_program.gate_command_template contains python scripts/evaluate_beta_round.py"
       ]
@@ -1235,10 +1235,10 @@
       "expectations": [
         "lead_agent is World-Class Product Architect",
         "workflow_bundle is post-release-close-loop",
-        "progress_anchor_recommended is .skill-post-release/triage-summary.md",
+        "progress_anchor_recommended is .vidt/post-release/triage-summary.md",
         "workflow_bundle_bootstrap.required is true",
         "workflow_bundle_bootstrap.commands contains python scripts/init_post_release_feedback.py --root . --pretty",
-        "response_pack_json resume.progress_anchor is .skill-post-release/triage-summary.md"
+        "response_pack_json resume.progress_anchor is .vidt/post-release/triage-summary.md"
       ]
     },
     {
@@ -1280,8 +1280,8 @@
         "decision is ship",
         "release_gate_json ok is true",
         "release_gate_json completion_evidence.completion_allowed is true",
-        "release_gate_json follow_up.post_release_bootstrap.resume_anchor contains .skill-post-release/triage-summary.md",
-        "release_gate_json follow_up.post_release_bootstrap.signal_report contains .skill-post-release/current-signals.json"
+        "release_gate_json follow_up.post_release_bootstrap.resume_anchor contains .vidt/post-release/triage-summary.md",
+        "release_gate_json follow_up.post_release_bootstrap.signal_report contains .vidt/post-release/current-signals.json"
       ]
     },
     {
@@ -1401,7 +1401,7 @@
         "response_pack_json auto_run.run_style is background",
         "response_pack_json auto_run.safety_level is safe",
         "response_pack_json auto_run.detached_ready is true",
-        "response_pack_json auto_run.state_dir is .skill-auto/state",
+        "response_pack_json auto_run.state_dir is .vidt/auto/state",
         "response_pack_json auto_run.automation_state_schema is references/automation-state.schema.json"
       ]
     },
@@ -1422,7 +1422,7 @@
         "verify_action_json details.safety_level is safe",
         "verify_action_json details.resume_requested is true",
         "verify_action_json details.detached_ready is true",
-        "verify_action_json details.state_dir is .skill-auto/state"
+        "verify_action_json details.state_dir is .vidt/auto/state"
       ]
     },
     {
@@ -1459,14 +1459,14 @@
         "workflow_bundle_bootstrap.required is true",
         "workflow_bundle_bootstrap.commands contains python scripts/init_project_context.py --root . --pretty",
         "workflow_bundle_bootstrap.commands contains python scripts/init_quick_slice.py --root . --pretty",
-        "workflow_bundle_bootstrap.artifacts contains .skill-delivery/current-slice.md",
-        "resume_artifacts contains .skill-context/project-context.md",
+        "workflow_bundle_bootstrap.artifacts contains .vidt/delivery/current-slice.md",
+        "resume_artifacts contains .vidt/context/project-context.md",
         "harness_constraint_gate.required is true",
         "harness_constraint_gate.reference is references/harness-engineering-constraint-protocol.md",
-        "harness_constraint_gate.artifact is .skill-harness/engineering-constraints.md",
+        "harness_constraint_gate.artifact is .vidt/harness/engineering-constraints.md",
         "harness_constraint_gate.command contains init_harness_constraints.py",
         "harness_constraint_gate.principles contains constraints-before-code",
-        "response_pack_json engineering_constraints.artifact is .skill-harness/engineering-constraints.md",
+        "response_pack_json engineering_constraints.artifact is .vidt/harness/engineering-constraints.md",
         "response_pack_json next_action.smallest_executable_action contains Harness engineering constraints first"
       ]
     },
@@ -1617,7 +1617,7 @@
         "workflow_bundle is root-cause-remediate",
         "micro_practice_names contains feedback-loop-first",
         "response_pack_json micro_practices.names contains feedback-loop-first",
-        "response_pack_json micro_practices.ledger.resume_anchor is .skill-practices/micro-practice-ledger.json",
+        "response_pack_json micro_practices.ledger.resume_anchor is .vidt/practices/micro-practice-ledger.json",
         "response_pack_json micro_practices.ledger.update_command contains update_micro_practices.py",
         "response_pack_json micro_practices.ledger.evaluation_command contains evaluate_micro_practices.py",
         "response_pack_json micro_practices.ledger.evaluation_schema is references/micro-practice-evaluation.schema.json",
@@ -1650,14 +1650,14 @@
         "micro_practice_names contains vertical-slice-delivery",
         "response_pack_json micro_practices.names contains shared-language-and-decision-capture",
         "response_pack_json micro_practices.names contains vertical-slice-delivery",
-        "response_pack_json micro_practices.ledger.resume_anchor is .skill-practices/micro-practice-ledger.json",
+        "response_pack_json micro_practices.ledger.resume_anchor is .vidt/practices/micro-practice-ledger.json",
         "response_pack_json micro_practices.ledger.update_command contains update_micro_practices.py",
         "response_pack_json micro_practices.ledger.evaluation_command contains evaluate_micro_practices.py",
         "response_pack_json micro_practices.ledger.evaluation_schema is references/micro-practice-evaluation.schema.json",
         "workflow_bundle_bootstrap.commands contains python scripts/init_micro_practices.py --root . --text \"<user request>\" --pretty",
         "workflow_bundle_bootstrap.micro_practice_ledger.update_command contains update_micro_practices.py",
         "workflow_bundle_bootstrap.micro_practice_ledger.evaluation_command contains evaluate_micro_practices.py",
-        "resume_artifacts contains .skill-practices/micro-practice-ledger.json",
+        "resume_artifacts contains .vidt/practices/micro-practice-ledger.json",
         "response_pack contains ## Engineering Micro-Practices",
         "response_pack contains Update command: python scripts/update_micro_practices.py",
         "response_pack contains Evaluation command: python scripts/evaluate_micro_practices.py",
@@ -1688,13 +1688,13 @@
         "micro_practice_names contains vertical-slice-delivery",
         "response_pack_json micro_practices.names contains system-map",
         "response_pack_json micro_practices.names contains architecture-deepening",
-        "response_pack_json micro_practices.ledger.resume_anchor is .skill-practices/micro-practice-ledger.json",
+        "response_pack_json micro_practices.ledger.resume_anchor is .vidt/practices/micro-practice-ledger.json",
         "response_pack_json micro_practices.ledger.update_command contains update_micro_practices.py",
         "response_pack_json micro_practices.ledger.evaluation_command contains evaluate_micro_practices.py",
         "response_pack_json micro_practices.ledger.evaluation_schema is references/micro-practice-evaluation.schema.json",
         "workflow_bundle_bootstrap.micro_practice_ledger.update_command contains update_micro_practices.py",
         "workflow_bundle_bootstrap.micro_practice_ledger.evaluation_command contains evaluate_micro_practices.py",
-        "resume_artifacts contains .skill-practices/micro-practice-ledger.json",
+        "resume_artifacts contains .vidt/practices/micro-practice-ledger.json",
         "response_pack contains ## Engineering Micro-Practices",
         "response_pack contains Update command: python scripts/update_micro_practices.py",
         "response_pack contains Evaluation command: python scripts/evaluate_micro_practices.py",
@@ -2341,7 +2341,7 @@
         "workflow_bundle is quick-slice-deliver",
         "harness_constraint_gate.required is true",
         "team_engine_gate.required is true",
-        "progress_anchor_recommended is .skill-delivery/current-slice.md"
+        "progress_anchor_recommended is .vidt/delivery/current-slice.md"
       ],
       "categories": [
         "backend-stack",
@@ -2505,7 +2505,7 @@
         "contract-output"
       ],
       "prompt": "Worker has finished the implementation without a handoff directory; verify before delivery.",
-      "expected_output": "file-handoff check should reject when .skill-handoff directory does not exist.",
+      "expected_output": "file-handoff check should reject when .vidt/handoff directory does not exist.",
       "files": [],
       "expectations": [
         "allowed is false",

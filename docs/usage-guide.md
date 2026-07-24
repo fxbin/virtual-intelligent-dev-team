@@ -156,15 +156,15 @@ release gate 不会只看 benchmark 是否全绿。正式 `ship` 还要求结构
 最小命令：
 
 ```bash
-mkdir -p .skill-evidence && cp assets/completion-evidence-template.json .skill-evidence/completion-evidence.json
-python scripts/verify_completion_evidence.py --evidence .skill-evidence/completion-evidence.json --pretty
-python scripts/run_release_gate.py --output-dir evals/release-gate --completion-evidence .skill-evidence/completion-evidence.json --pretty
+mkdir -p .vidt/evidence && cp assets/completion-evidence-template.json .vidt/evidence/completion-evidence.json
+python scripts/verify_completion_evidence.py --evidence .vidt/evidence/completion-evidence.json --pretty
+python scripts/run_release_gate.py --output-dir evals/release-gate --completion-evidence .vidt/evidence/completion-evidence.json --pretty
 ```
 
 动作前预检：
 
 ```bash
-python scripts/verify_action.py --text "<user request>" --check completion-evidence --completion-evidence .skill-evidence/completion-evidence.json --pretty
+python scripts/verify_action.py --text "<user request>" --check completion-evidence --completion-evidence .vidt/evidence/completion-evidence.json --pretty
 ```
 
 ### 5. Team Engine Lite 交付验收
@@ -187,7 +187,7 @@ python scripts/verify_action.py --text "<user request>" --check completion-evide
 - `spawn / wait / merge` 全部有证据并通过 smoke test，才允许使用 `real_subagent_runtime`
 - `create_session / kill_session / restart_session` 全部有证据并通过 smoke test，才允许使用 `single_backend_multi_session`
 - 任一能力缺失都 fail closed 到更低 tier，最终保底为带 `known-shortcut:` 的 `soft_orchestration_only`
-- Lead→Worker、Worker→Verifier、Verifier→Lead 交接必须落到 `.skill-handoff/` 文件；角色方向、路径身份、带时区时间戳与 schema 都必须通过校验
+- Lead→Worker、Worker→Verifier、Verifier→Lead 交接必须落到 `.vidt/handoff/` 文件；角色方向、路径身份、带时区时间戳与 schema 都必须通过校验
 
 离线检查：
 
@@ -236,12 +236,12 @@ flowchart TD
 
 如果任务跨多轮或跨多天，建议保留：
 
-- `.skill-context/project-context.md`
-- `.skill-delivery/current-slice.md`
-- `.skill-delivery/status.yaml`
-- `.skill-evidence/completion-evidence.json`
+- `.vidt/context/project-context.md`
+- `.vidt/delivery/current-slice.md`
+- `.vidt/delivery/status.yaml`
+- `.vidt/evidence/completion-evidence.json`
 - Response Pack Markdown 与同名 JSON sidecar
-- `.skill-handoff/` 下的五类 Team Engine 交接文件
+- `.vidt/handoff/` 下的五类 Team Engine 交接文件
 - `docs/progress/MASTER.md`
 - Team Engine Lite 的 WorkOrder / DeliveryCycleReport / backend orchestration plan
 - beta / release / feedback 相关输出

@@ -1,6 +1,6 @@
 # Virtual Intelligent Dev Team
 
-[![Version](https://img.shields.io/badge/version-v6.0.13-8b5cf6?style=flat-square)](./VERSION)
+[![Version](https://img.shields.io/badge/version-v6.0.14-8b5cf6?style=flat-square)](./VERSION)
 [![License](https://img.shields.io/badge/license-MIT-10b981?style=flat-square)](./LICENSE)
 [![Status](https://img.shields.io/badge/status-production--ready-f59e0b?style=flat-square)]()
 [![Archetype](https://img.shields.io/badge/archetype-router-06b6d4?style=flat-square)](./SKILL.md)
@@ -210,7 +210,7 @@ python -m pip install -r requirements.txt
 - `阶段专家团`
   - 产品战略、PRD、用户研究、竞品、指标、路线图等请求可激活 `product-discovery-council`；高保真原型、设计系统、可运行 HTML 原型与可访问性审查可激活 `prototype-design-council`。两者都是 `World-Class Product Architect` 下面的 overlay，不会把简单任务升级成新顶层团队。
 - `Harness 工程约束门禁`
-  - 6 个 code-facing bundle（plan-first-build / product-spec-deliver / audit-fix-deliver / govern-change-safely / root-cause-remediate / direct-execution）执行前必须创建 `.skill-harness/engineering-constraints.md`，含 Scope / Non-Negotiable Constraints / Forbidden Changes / Verification Evidence / Rollback And Stop Conditions 五个必填章节，把"实现前先约束"变成硬门禁。
+  - 6 个 code-facing bundle（plan-first-build / product-spec-deliver / audit-fix-deliver / govern-change-safely / root-cause-remediate / direct-execution）执行前必须创建 `.vidt/harness/engineering-constraints.md`，含 Scope / Non-Negotiable Constraints / Forbidden Changes / Verification Evidence / Rollback And Stop Conditions 五个必填章节，把"实现前先约束"变成硬门禁。
 - `Team Engine Lite 对抗式验收`
   - Worker 只产不验、Verifier 只验不产、Lead 只能基于 DeliveryCycleReport 接受；14 个合法状态（含 `spec_violation / human_resolved / resumed`）+ 5 个标准对象（WorkOrder / ImplementationOutput / VerificationReport / RemediationPatch / DeliveryCycleReport）；3 级 runtime claim（real_subagent_runtime / single_backend_multi_session / soft_orchestration_only）禁止把角色扮演误称为真实多 Agent runtime。
 - `Fail-closed 证据链`
@@ -237,7 +237,7 @@ python -m pip install -r requirements.txt
 | 工作流质量 | 触发健康、快路径廉价、证据新鲜度、artifact 懒创建、authority boundary | 容易越改越重，或把方法建议误说成最终权威 |
 | Subagent runtime | 请求候选上限 + 六项原子能力证据 + smoke test 共同决定三级 runtime，缺一即降级 | 容易把单个能力标志或角色扮演误称为真实多 Agent runtime |
 | 离线验证 | offline loop drill 验证回滚与恢复路径 | 很少验证关键闭环路径是否真的跑通 |
-| 工程约束门禁 | code-facing bundle 执行前必须创建 `.skill-harness/engineering-constraints.md`，含 5 个必填章节 | 通常直接进入实现，缺少前置约束门禁 |
+| 工程约束门禁 | code-facing bundle 执行前必须创建 `.vidt/harness/engineering-constraints.md`，含 5 个必填章节 | 通常直接进入实现，缺少前置约束门禁 |
 | 对抗式验收 | Worker/Verifier/Lead 分离 + DeliveryCycleReport + 14 状态机 + `spec_violation` | 自产自审，或把角色扮演误称为真实多 Agent runtime |
 | 证据链 | 精确 file handoff + schema 校验 + Response Pack JSON sidecar + fail-closed gate | 证据靠自然语言转述，无法稳定重放或被下游消费 |
 | 反熵治理 | delete-first / compat-exception / confirmation-first 三路径决策 + 4 类目标分类 | 不断加 fallback 或 guard，旧路径永不退休 |

@@ -1,6 +1,6 @@
 # Worktree State Placement Protocol
 
-Use this protocol when a task executes inside a git worktree and any `.skill-*`
+Use this protocol when a task executes inside a git worktree and any `.vidt/`
 state directory is involved. The goal is an unambiguous tie-breaker for where
 each piece of state lives, so that worktree creation, cleanup, and parallel
 worktrees never strand or split state.
@@ -17,7 +17,7 @@ Activate when any of these appear:
 - parallel worktrees are in use (two or more tasks each in their own worktree)
 - a bounded-iteration candidate lives in its own worktree
 - multiple agents each occupy a separate worktree for one task
-- any step is about to write a `.skill-*` artifact while `cwd` is a worktree and
+- any step is about to write a `.vidt/` artifact while `cwd` is a worktree and
   not the main repository
 
 Do not activate when the task runs entirely in the main repository and no
@@ -43,22 +43,22 @@ already follows; this protocol makes it explicit and checkable.
 
 | Directory | Placement | Why |
 |---|---|---|
-| `.skill-harness` | state-root | constraints and breaker state are shared across tasks and worktrees |
-| `.skill-context` | state-root | global project context is reused across worktrees |
-| `.skill-evidence` | state-root | release evidence aggregates across worktrees before a ship decision |
-| `.skill-handoff` | state-root | role handoffs must be readable by agents in any worktree; `artifact_path` is relative to state-root |
-| `.skill-practices` | state-root | micro-practice ledger accumulates across all work |
-| `.skill-metrics` | state-root | decision log and telemetry are global |
-| `.skill-governance` | state-root | governance plans span the whole project |
-| `.skill-product` | state-root | product delivery state is shared across phases |
-| `.skill-delivery` | state-root | quick-slice status is task-level but reusable across sessions |
-| `.skill-beta` | state-root | beta programs span releases |
-| `.skill-post-release` | state-root | post-release signals are global |
-| `.skill-auto` | state-root | auto-run state and snapshots persist across runs |
-| `.skill-architecture` | state-root | architecture notes are project-wide |
-| `.skill-iterations` | state-root (workspace) | iteration workspace, round memory, and distilled patterns persist; the controller reads them from state-root |
+| `.vidt/harness` | state-root | constraints and breaker state are shared across tasks and worktrees |
+| `.vidt/context` | state-root | global project context is reused across worktrees |
+| `.vidt/evidence` | state-root | release evidence aggregates across worktrees before a ship decision |
+| `.vidt/handoff` | state-root | role handoffs must be readable by agents in any worktree; `artifact_path` is relative to state-root |
+| `.vidt/practices` | state-root | micro-practice ledger accumulates across all work |
+| `.vidt/metrics` | state-root | decision log and telemetry are global |
+| `.vidt/governance` | state-root | governance plans span the whole project |
+| `.vidt/product` | state-root | product delivery state is shared across phases |
+| `.vidt/delivery` | state-root | quick-slice status is task-level but reusable across sessions |
+| `.vidt/beta` | state-root | beta programs span releases |
+| `.vidt/post-release` | state-root | post-release signals are global |
+| `.vidt/auto` | state-root | auto-run state and snapshots persist across runs |
+| `.vidt/architecture` | state-root | architecture notes are project-wide |
+| `.vidt/iterations` | state-root (workspace) | iteration workspace, round memory, and distilled patterns persist; the controller reads them from state-root |
 | iteration candidate outputs (`.tmp-iteration-round-XX/`, `patches/*.patch`, materialize targets) | execution-root | one-shot candidate products live with the candidate worktree and are disposable |
-| `.skill-performance` | state-root | performance baselines are project-wide |
+| `.vidt/performance` | state-root | performance baselines are project-wide |
 
 If a directory is not listed, default to state-root. Only artifacts that are
 inherently one-shot and tied to a specific worktree's working tree belong in
@@ -88,11 +88,11 @@ place for shared state.
 
 ## Relationship To Other Protocols
 
-- **harness-engineering-constraint** — `.skill-harness/engineering-constraints.md`
+- **harness-engineering-constraint** — `.vidt/harness/engineering-constraints.md`
   lives in state-root. From a worktree, call `init_harness_constraints.py` with
   `--root "$STATE_ROOT"` so the constraint file is shared and survives worktree
   cleanup.
-- **file-handoff** — `.skill-handoff/` lives in state-root. Because every agent
+- **file-handoff** — `.vidt/handoff/` lives in state-root. Because every agent
   reads and writes the same state-root directory regardless of which worktree
   it runs in, cross-worktree handoffs work without changing the handoff schema;
   `artifact_path` stays relative to state-root, and the "path resolves to the
@@ -105,7 +105,7 @@ place for shared state.
 - **change-localization** — localization steps run against execution-root (the
   worktree being edited), but the L1 overview and any pyramid tiers are read
   from state-root. Do not re-derive the project map inside each worktree.
-- **iteration-protocol** — the iteration workspace (`.skill-iterations`) stays
+- **iteration-protocol** — the iteration workspace (`.vidt/iterations`) stays
   in state-root; only the candidate worktree's own outputs (patches, materialize
   targets, `.tmp-iteration-round-XX/`) live in execution-root. Benchmark the
   candidate in its worktree, as the iteration protocol already requires.

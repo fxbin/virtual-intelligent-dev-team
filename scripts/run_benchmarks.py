@@ -449,7 +449,7 @@ def prepare_verify_action_fixture(
     if fixture == "missing-handoff":
         pass
     elif fixture == "invalid-handoff-metadata":
-        handoff_dir = repo_path / ".skill-handoff"
+        handoff_dir = repo_path / ".vidt/handoff"
         handoff_dir.mkdir(parents=True, exist_ok=True)
         (handoff_dir / "invalid.json").write_text(
             json.dumps({"payload": "handoff metadata intentionally missing"}),
@@ -458,7 +458,7 @@ def prepare_verify_action_fixture(
     elif fixture == "missing-completion-evidence":
         pass
     elif fixture == "completion-same-model-review":
-        evidence_path = repo_path / ".skill-evidence" / "completion-evidence.json"
+        evidence_path = repo_path / ".vidt/evidence" / "completion-evidence.json"
         evidence_path.parent.mkdir(parents=True, exist_ok=True)
         evidence_path.write_text(
             json.dumps(
@@ -488,7 +488,7 @@ def prepare_verify_action_fixture(
         kwargs["dispatch_text"] = "This should be fine and can ship before Verifier runs."
     elif fixture in {"breaker-closed", "breaker-open"}:
         breaker_state = "closed" if fixture == "breaker-closed" else "open"
-        state_path = repo_path / ".skill-harness" / "breaker-state.json"
+        state_path = repo_path / ".vidt/harness" / "breaker-state.json"
         state_path.parent.mkdir(parents=True, exist_ok=True)
         state_path.write_text(
             json.dumps(
@@ -514,7 +514,7 @@ def prepare_verify_action_fixture(
                 "breaker_layer": "verifier",
                 "breaker_config": SKILL_DIR / "references" / "circuit-breaker-config.json",
                 "breaker_state_file": state_path,
-                "breaker_escalation_sink": repo_path / ".skill-harness" / "escalation-queue.jsonl",
+                "breaker_escalation_sink": repo_path / ".vidt/harness" / "escalation-queue.jsonl",
             }
         )
     elif fixture == "yagni-abstraction":
@@ -704,7 +704,7 @@ def evaluate_evals(config: dict[str, object]) -> dict[str, object]:
                     beta_gate_result = beta_result_path
                 completion_evidence_path = None
                 if isinstance(completion_evidence_config, dict):
-                    completion_evidence_dir = temp_root / ".skill-evidence"
+                    completion_evidence_dir = temp_root / ".vidt/evidence"
                     completion_evidence_dir.mkdir(parents=True, exist_ok=True)
                     completion_status = str(completion_evidence_config.get("status", "passed")).strip() or "passed"
                     completion_payload = {

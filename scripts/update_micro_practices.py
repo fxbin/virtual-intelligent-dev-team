@@ -12,8 +12,8 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
 INIT_MICRO_PRACTICES_SCRIPT = SCRIPT_DIR / "init_micro_practices.py"
-DEFAULT_LEDGER_PATH = Path(".skill-practices") / "micro-practice-ledger.json"
-DEFAULT_MARKDOWN_PATH = Path(".skill-practices") / "micro-practice-ledger.md"
+DEFAULT_LEDGER_PATH = Path(".vidt/practices") / "micro-practice-ledger.json"
+DEFAULT_MARKDOWN_PATH = Path(".vidt/practices") / "micro-practice-ledger.md"
 VALID_STATUSES = {"active", "satisfied", "blocked"}
 
 
@@ -40,8 +40,9 @@ def load_ledger(ledger_path: Path) -> dict[str, object]:
 
 
 def repo_root_from_ledger(ledger_path: Path) -> Path:
-    if ledger_path.parent.name == ".skill-practices":
-        return ledger_path.parent.parent
+    for parent in ledger_path.parents:
+        if parent.name == ".vidt":
+            return parent.parent
     return ledger_path.parent
 
 

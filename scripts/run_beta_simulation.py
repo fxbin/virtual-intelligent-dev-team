@@ -42,8 +42,9 @@ def now_iso() -> str:
 
 
 def repo_root_from_config(config_path: Path) -> Path:
-    if config_path.parent.name == "simulation-configs" and config_path.parent.parent.name == ".skill-beta":
-        return config_path.parent.parent.parent
+    for parent in config_path.parents:
+        if parent.name == ".vidt":
+            return parent.parent
     return config_path.parent
 
 

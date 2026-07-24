@@ -115,7 +115,7 @@ def initialize_round(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Initialize bounded-iteration round assets.")
-    parser.add_argument("--workspace", default=".skill-iterations", help="Workspace directory")
+    parser.add_argument("--workspace", default=".vidt/iterations", help="Workspace directory")
     parser.add_argument("--round-id", required=True, help="Round identifier")
     parser.add_argument("--objective", default="<goal>", help="Round objective")
     parser.add_argument("--baseline", default="<baseline>", help="Baseline label")

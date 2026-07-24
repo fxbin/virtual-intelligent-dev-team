@@ -119,7 +119,7 @@ If the task is simple and clearly single-domain, keep routing lightweight.
 10. If the request is a fuzzy idea or low-information route-changing ask, ask one intent-confirmation question before treating the provisional route as final.
 11. Apply execution-quality guardrails: surface route-changing assumptions, keep the smallest defensible bundle, limit scope surgically, and define verifiable closure.
 12. For broad, repeated-failure, release, beta, multi-agent, or drift-prone work, apply goal framing: success evidence, stop condition, and non-goals must be explicit before implementation.
-13. For code-facing routes, apply the Harness constraint gate before implementation: create or refresh `.skill-harness/engineering-constraints.md`.
+13. For code-facing routes, apply the Harness constraint gate before implementation: create or refresh `.vidt/harness/engineering-constraints.md`.
 14. For changes that add or retire guards, fallbacks, adapters, duplicate owners, compatibility paths, schema, persistence, or source-of-truth behavior, apply anti-entropy governance before choosing delete, compat, or confirmation paths.
 15. For code-facing, release-facing, Git-facing, or remediation routes, apply Team Engine Lite: Worker can produce, Verifier can return pass/fail/hold/spec_violation, and Lead can accept only after a DeliveryCycleReport.
 16. If the user explicitly asks for multi-agent / subagent / parallel agent execution, or `/auto` reaches an eligible workflow, build a controlled real subagent runtime plan with three tiers: `real_subagent_runtime` (host exposes spawn / wait / merge), `single_backend_multi_session` (host exposes create_session / kill_session / restart_session; session is the circuit-breaker unit), or `soft_orchestration_only` (no isolation; `known-shortcut:` ceiling). The host downgrades to the highest tier it can actually enforce; never upgrade beyond proven capability.
@@ -173,7 +173,7 @@ Read indexes first; do not flatten the whole skill into this file. Authoritative
 The skill exposes a governance layer alongside the routing layer:
 
 - **Decision log**: every route decision appends one JSON line to
-  `.skill-metrics/decision-log.jsonl`. Schema: `references/decision-log.schema.json`.
+  `.vidt/metrics/decision-log.jsonl`. Schema: `references/decision-log.schema.json`.
 - **Agent manifest**: each lead agent in `references/agent-catalog.md` and
   `references/routing-rules.json` declares `Constraints` (hard
   guardrails the LLM must enforce) and `Evidence Requirements` (what the
@@ -184,7 +184,7 @@ The skill exposes a governance layer alongside the routing layer:
 - **Dashboard**: `scripts/inspect_decision_log.py` summarizes the decision
   log as JSON / Markdown / self-contained HTML.
 - **Telemetry**: `scripts/emit_telemetry.py` writes per-layer execution
-  traces with intent drift probe to `.skill-metrics/telemetry.jsonl`
+  traces with intent drift probe to `.vidt/metrics/telemetry.jsonl`
   (contract: [references/observability-protocol.md](references/observability-protocol.md)).
 - **Layer health**: `scripts/inspect_decision_log.py --health-report`
   emits per-layer SLO status, failure counts, and breaker state from

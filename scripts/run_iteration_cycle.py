@@ -880,7 +880,7 @@ def run_cycle(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run one bounded-iteration cycle.")
-    parser.add_argument("--workspace", default=".skill-iterations", help="Iteration workspace")
+    parser.add_argument("--workspace", default=".vidt/iterations", help="Iteration workspace")
     parser.add_argument("--round-id", required=True, help="Round identifier")
     parser.add_argument("--objective", required=True, help="Round objective")
     parser.add_argument("--baseline-label", required=True, help="Registered baseline label")

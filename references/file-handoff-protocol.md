@@ -26,7 +26,7 @@ Worker→Verifier、Lead→Worker、Verifier→Lead 的每次交接都必须产�
     "from_role": "Worker",
     "to_role": "Verifier",
     "artifact_type": "ImplementationOutput",
-    "artifact_path": ".skill-handoff/worker-output-001.json",
+    "artifact_path": ".vidt/handoff/worker-output-001.json",
     "timestamp": "2026-07-07T12:00:00Z"
   }
 }
@@ -42,10 +42,10 @@ Worker→Verifier、Lead→Worker、Verifier→Lead 的每次交接都必须产�
 
 ## 存储路径
 
-交接文件统一存放在 `.skill-handoff/` 目录下:
+交接文件统一存放在 `.vidt/handoff/` 目录下:
 
 ```
-.skill-handoff/
+.vidt/handoff/
   work-order-<id>.json
   worker-output-<id>.json
   verification-report-<id>.json

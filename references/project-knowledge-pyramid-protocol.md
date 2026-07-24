@@ -67,7 +67,7 @@ A map that is wrong is worse than no map. Keep it fresh:
 This protocol complements, and does not replace,
 `references/harness-engineering-constraint-protocol.md`:
 
-- the harness constraint file (`.skill-harness/engineering-constraints.md`)
+- the harness constraint file (`.vidt/harness/engineering-constraints.md`)
   governs the **current change** — what is in scope, what is forbidden, what
   evidence closes this task
 - this pyramid governs the **target project** — its durable shape, across

@@ -40,7 +40,7 @@ DEFAULT_REPO = SKILL_DIR
 ROUTING_RULES_PATH = SKILL_DIR / "references" / "routing-rules.json"
 AGENT_CATALOG_PATH = SKILL_DIR / "references" / "agent-catalog.md"
 LANGUAGE_PROFILES_PATH = SKILL_DIR / "references" / "language-profiles.yaml"
-DECISION_LOG_DEFAULT = ".skill-metrics/decision-log.jsonl"
+DECISION_LOG_DEFAULT = ".vidt/metrics/decision-log.jsonl"
 
 # Canonical bundle playbook references — these are the bundle journeys backed by a
 # dedicated playbook file. The full 12-entry bundle catalog lives in workflow-bundles.md.

@@ -30,9 +30,9 @@ automation_state = load_module(
 
 
 DEFAULT_STATE_FILES = [
-    ".skill-auto/state",
+    ".vidt/auto/state",
     "evals/release-gate/automation-state.json",
-    ".skill-post-release/decisions",
+    ".vidt/post-release/decisions",
 ]
 PLAYBOOK_PATHS = {
     "auto-run": "references/auto-run-playbook.md",
@@ -67,13 +67,13 @@ def load_optional_json(path: Path) -> dict[str, object] | None:
 
 def discover_state_files(repo_root: Path) -> list[Path]:
     candidates: list[Path] = []
-    state_dir = repo_root / ".skill-auto" / "state"
+    state_dir = repo_root / ".vidt/auto" / "state"
     if state_dir.exists():
         candidates.extend(sorted(state_dir.glob("*.json")))
     release_gate_state = repo_root / "evals" / "release-gate" / "automation-state.json"
     if release_gate_state.exists():
         candidates.append(release_gate_state)
-    post_release_dir = repo_root / ".skill-post-release" / "decisions"
+    post_release_dir = repo_root / ".vidt/post-release" / "decisions"
     if post_release_dir.exists():
         candidates.extend(sorted(post_release_dir.rglob("automation-state.json")))
     deduped: list[Path] = []
@@ -136,9 +136,9 @@ def load_companion_payload(repo_root: Path, payload: dict[str, object]) -> tuple
     state_kind = str(payload.get("state_kind", "")).strip()
     fallback_files = {
         "release-gate-result": "evals/release-gate/release-gate-results.json",
-        "post-release-feedback-result": ".skill-post-release/decisions/post-release-feedback-result.json",
-        "auto-run-setup": ".skill-auto/auto-run-plan.json",
-        "auto-run-go": ".skill-auto/last-run.json",
+        "post-release-feedback-result": ".vidt/post-release/decisions/post-release-feedback-result.json",
+        "auto-run-setup": ".vidt/auto/auto-run-plan.json",
+        "auto-run-go": ".vidt/auto/last-run.json",
     }
     fallback = fallback_files.get(state_kind)
     if fallback is None:
@@ -154,24 +154,24 @@ def recommend_resume_command(payload: dict[str, object]) -> str:
     state_kind = str(payload.get("state_kind", "")).strip()
     source_workflow = str(payload.get("source_workflow", "")).strip()
     if state_kind == "auto-run-setup":
-        return "python scripts/run_auto_workflow.py --mode go --plan .skill-auto/auto-run-plan.json --pretty"
+        return "python scripts/run_auto_workflow.py --mode go --plan .vidt/auto/auto-run-plan.json --pretty"
     if state_kind == "release-gate-result":
         return (
             "python scripts/run_release_gate.py --output-dir evals/release-gate "
-            "--iteration-workspace .skill-iterations "
-            "--completion-evidence .skill-evidence/completion-evidence.json --pretty"
+            "--iteration-workspace .vidt/iterations "
+            "--completion-evidence .vidt/evidence/completion-evidence.json --pretty"
         )
     if state_kind == "post-release-feedback-result":
         return (
             "python scripts/evaluate_post_release_feedback.py "
-            "--report .skill-post-release/current-signals.json --pretty"
+            "--report .vidt/post-release/current-signals.json --pretty"
         )
     if source_workflow in {
         "root-cause-remediate",
         "ship-hold-remediate",
         "post-release-close-loop",
     }:
-        return "python scripts/run_auto_workflow.py --mode go --plan .skill-auto/auto-run-plan.json --pretty"
+        return "python scripts/run_auto_workflow.py --mode go --plan .vidt/auto/auto-run-plan.json --pretty"
     return ""
 
 

@@ -162,7 +162,7 @@ def build_fixture(eval_item: dict, prompt: str, temp_root: Path) -> tuple[Path, 
     completion_evidence_path: Path | None = None
     completion_evidence_config = eval_item.get("release_gate_completion_evidence")
     if isinstance(completion_evidence_config, dict):
-        completion_evidence_dir = temp_root / ".skill-evidence"
+        completion_evidence_dir = temp_root / ".vidt/evidence"
         completion_evidence_dir.mkdir(parents=True, exist_ok=True)
         completion_status = str(completion_evidence_config.get("status", "passed")).strip() or "passed"
         completion_payload = {

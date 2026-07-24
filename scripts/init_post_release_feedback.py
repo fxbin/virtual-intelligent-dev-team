@@ -26,22 +26,22 @@ def init_post_release_feedback(root: Path, overwrite: bool = False) -> dict[str,
     specs = [
         (
             SKILL_DIR / "assets" / "post-release-rollout-summary-template.md",
-            root / ".skill-post-release" / "rollout-summary.md",
+            root / ".vidt/post-release" / "rollout-summary.md",
             "rollout-summary",
         ),
         (
             SKILL_DIR / "assets" / "post-release-feedback-ledger-template.md",
-            root / ".skill-post-release" / "feedback-ledger.md",
+            root / ".vidt/post-release" / "feedback-ledger.md",
             "feedback-ledger",
         ),
         (
             SKILL_DIR / "assets" / "post-release-signal-report-template.json",
-            root / ".skill-post-release" / "current-signals.json",
+            root / ".vidt/post-release" / "current-signals.json",
             "signal-report",
         ),
         (
             SKILL_DIR / "assets" / "post-release-triage-summary-template.md",
-            root / ".skill-post-release" / "triage-summary.md",
+            root / ".vidt/post-release" / "triage-summary.md",
             "triage-summary",
         ),
     ]
@@ -62,8 +62,8 @@ def init_post_release_feedback(root: Path, overwrite: bool = False) -> dict[str,
         "overwrite": overwrite,
         "actions": actions,
         "artifacts": artifacts,
-        "resume_anchor": str(root / ".skill-post-release" / "triage-summary.md"),
-        "evaluation_command": "python scripts/evaluate_post_release_feedback.py --report .skill-post-release/current-signals.json --pretty",
+        "resume_anchor": str(root / ".vidt/post-release" / "triage-summary.md"),
+        "evaluation_command": "python scripts/evaluate_post_release_feedback.py --report .vidt/post-release/current-signals.json --pretty",
     }
 
 

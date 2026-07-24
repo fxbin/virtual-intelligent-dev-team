@@ -25,8 +25,8 @@ EMIT_TELEMETRY_SCRIPT = SCRIPT_DIR / "emit_telemetry.py"
 INSPECT_DECISION_LOG_SCRIPT = SCRIPT_DIR / "inspect_decision_log.py"
 DEFAULT_CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 DEFAULT_BREAKER_CONFIG_PATH = SKILL_DIR / "references" / "circuit-breaker-config.json"
-DEFAULT_BREAKER_STATE_FILE = Path(".skill-harness") / "breaker-state.json"
-DEFAULT_BREAKER_ESCALATION_SINK = Path(".skill-harness") / "escalation-queue.jsonl"
+DEFAULT_BREAKER_STATE_FILE = Path(".vidt/harness") / "breaker-state.json"
+DEFAULT_BREAKER_ESCALATION_SINK = Path(".vidt/harness") / "escalation-queue.jsonl"
 
 
 def load_module(name: str, path: Path):
@@ -250,7 +250,7 @@ def _verify_iteration(
     workspace = (
         iteration_workspace.resolve()
         if iteration_workspace is not None
-        else (repo_path / ".skill-iterations").resolve()
+        else (repo_path / ".vidt/iterations").resolve()
     )
     registry_path = workspace / "baselines" / "registry.json"
     registry_exists = registry_path.is_file()
@@ -584,7 +584,7 @@ def _verify_auto_mode(result: dict[str, object], repo_path: Path) -> dict[str, o
         next_step = "Stay in manual mode for this workflow, or reroute into root-cause, release, or post-release close-loop."
     elif enabled and explicit_go_requested and not plan_exists:
         summary = "Auto go was requested, but the saved auto-run plan does not exist yet."
-        next_step = "Run auto setup first so .skill-auto/auto-run-plan.json exists before go."
+        next_step = "Run auto setup first so .vidt/auto/auto-run-plan.json exists before go."
     else:
         summary = "Auto mode is not enabled for this request."
         next_step = "Stay in manual mode unless the user explicitly asks for /auto."
@@ -650,7 +650,7 @@ def _verify_micro_practice_ledger(result: dict[str, object], repo_path: Path) ->
     names = _micro_practice_names(result)
     ledger_contract = _micro_practice_ledger_contract(result)
     ledger_required = bool(ledger_contract.get("required")) or len(names) > 0
-    ledger_rel = str(ledger_contract.get("resume_anchor", "")).strip() or ".skill-practices/micro-practice-ledger.json"
+    ledger_rel = str(ledger_contract.get("resume_anchor", "")).strip() or ".vidt/practices/micro-practice-ledger.json"
     ledger_path = (repo_path / ledger_rel).resolve()
     ledger_exists = ledger_path.exists()
     init_command = str(ledger_contract.get("command", "")).strip() or (
@@ -768,7 +768,7 @@ def _verify_completion_evidence(
     repo_path: Path,
     completion_evidence: Path | None = None,
 ) -> dict[str, object]:
-    default_evidence_rel = ".skill-evidence/completion-evidence.json"
+    default_evidence_rel = ".vidt/evidence/completion-evidence.json"
     requested_path = completion_evidence or Path(default_evidence_rel)
     evidence_path = (
         requested_path.resolve()
@@ -891,7 +891,7 @@ def _verify_file_handoff(
     handoff_type: str | None = None,
 ) -> dict[str, object]:
     """校验角色间交接物是否落文件,禁止 prompt 粘贴"""
-    default_dir = ".skill-handoff"
+    default_dir = ".vidt/handoff"
     dir_rel = str(handoff_dir) if handoff_dir else default_dir
     dir_rel = dir_rel.rstrip("/")
     handoff_path = (repo_path / dir_rel).resolve()
@@ -1346,7 +1346,7 @@ def _verify_breaker_status(
         next_step = "Proceed with the action. Breaker is not blocking."
     else:
         summary = f"Circuit breaker for layer '{breaker_layer}' is {state}. Action blocked."
-        next_step = "Do not proceed. Escalate or wait for cooldown. See .skill-harness/escalation-queue.jsonl."
+        next_step = "Do not proceed. Escalate or wait for cooldown. See .vidt/harness/escalation-queue.jsonl."
     return {
         "allowed": allowed,
         "summary": summary,
@@ -1743,7 +1743,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--handoff-dir",
-        help="Handoff directory for check=file-handoff. Defaults to .skill-handoff.",
+        help="Handoff directory for check=file-handoff. Defaults to .vidt/handoff.",
     )
     parser.add_argument(
         "--handoff-type",
@@ -1774,7 +1774,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--iteration-workspace",
-        help="Iteration workspace for check=iteration. Defaults to <repo>/.skill-iterations.",
+        help="Iteration workspace for check=iteration. Defaults to <repo>/.vidt/iterations.",
     )
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON output.")
     return parser.parse_args()

@@ -26,17 +26,17 @@ def init_product_delivery(root: Path, overwrite: bool = False) -> dict[str, obje
     specs = [
         (
             SKILL_DIR / "assets" / "product-delivery-brief-template.md",
-            root / ".skill-product" / "current-slice.md",
+            root / ".vidt/product" / "current-slice.md",
             "product-slice",
         ),
         (
             SKILL_DIR / "assets" / "product-delivery-brief-template.md",
-            root / ".skill-product" / "acceptance-criteria.md",
+            root / ".vidt/product" / "acceptance-criteria.md",
             "acceptance-criteria",
         ),
         (
             SKILL_DIR / "assets" / "product-contract-questions-template.md",
-            root / ".skill-product" / "contract-questions.md",
+            root / ".vidt/product" / "contract-questions.md",
             "contract-questions",
         ),
     ]
@@ -54,7 +54,7 @@ def init_product_delivery(root: Path, overwrite: bool = False) -> dict[str, obje
         "root": str(root),
         "overwrite": overwrite,
         "actions": actions,
-        "resume_anchor": ".skill-product/current-slice.md",
+        "resume_anchor": ".vidt/product/current-slice.md",
     }
 
 

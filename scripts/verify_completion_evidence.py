@@ -11,7 +11,7 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
-DEFAULT_EVIDENCE_PATH = Path(".skill-evidence") / "completion-evidence.json"
+DEFAULT_EVIDENCE_PATH = Path(".vidt/evidence") / "completion-evidence.json"
 COMMAND_PREFIXES = {
     "bun",
     "cargo",
@@ -103,7 +103,7 @@ def placeholder_values(values: list[str]) -> list[str]:
 
 def infer_repo_root(evidence_path: Path) -> Path:
     for parent in evidence_path.parents:
-        if parent.name == ".skill-evidence":
+        if parent.name == ".vidt":
             return parent.parent
     return evidence_path.parent
 
@@ -169,7 +169,7 @@ def build_recommended_commands(evidence_rel: str, decision: str) -> list[str]:
     if decision != "complete":
         commands.append(
             "cp assets/completion-evidence-template.json "
-            ".skill-evidence/completion-evidence.json"
+            ".vidt/evidence/completion-evidence.json"
         )
     commands.append(
         f"python scripts/verify_completion_evidence.py --evidence {evidence_rel} --pretty"

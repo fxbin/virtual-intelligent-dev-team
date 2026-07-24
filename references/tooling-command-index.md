@@ -32,7 +32,7 @@ python scripts/validate_virtual_team.py --pretty
 python scripts/smoke_test_full_pipeline.py
 ```
 
-- `verify_action` blind audit fixture 适配器（仅供 eval gate 调用，隔离 `.skill-*` 状态）
+- `verify_action` blind audit fixture 适配器（仅供 eval gate 调用，隔离 `.vidt/` 状态）
 
 ```bash
 python scripts/build_verify_action_eval_fixture.py --text "<exact eval prompt>" --check <check-name> --evals evals/evals.json
@@ -75,7 +75,7 @@ python scripts/verify_action.py --text "<user request>" --check micro-practice-l
 ```
 
 ```bash
-python scripts/verify_action.py --text "<user request>" --check completion-evidence --completion-evidence .skill-evidence/completion-evidence.json --pretty
+python scripts/verify_action.py --text "<user request>" --check completion-evidence --completion-evidence .vidt/evidence/completion-evidence.json --pretty
 ```
 
 - `workflow-bundle` 校验现在会返回：
@@ -92,20 +92,20 @@ python scripts/verify_action.py --text "<user request>" --check completion-evide
 - `auto-mode` 校验会额外确认：
   - 当前请求是否显式使用 `/auto`
   - 当前 workflow 是否在自动白名单里
-  - 如果是 `go`，本地是否已经存在 `.skill-auto/auto-run-plan.json`
+  - 如果是 `go`，本地是否已经存在 `.vidt/auto/auto-run-plan.json`
   - `safe / background / resume` 子协议是否已经落成 machine-readable profile
 - `micro-practice-ledger` 校验会额外确认：
   - 当前路由是否真的启用了工程微实践
-  - 必要时 `.skill-practices/micro-practice-ledger.json` 是否存在
+  - 必要时 `.vidt/practices/micro-practice-ledger.json` 是否存在
   - ledger 是否覆盖当前路由要求的实践名
   - active / blocked / complete 状态是否允许进入完成、提交或交付声明
 - `completion-evidence` 校验会额外确认：
-  - `.skill-evidence/completion-evidence.json` 是否存在
+  - `.vidt/evidence/completion-evidence.json` 是否存在
   - 完成证据是否满足 action / result / covered scope / uncovered scope / residual risk / confidence grade / evidence refs
   - `evidence_refs` 至少包含一条可验证命令，或一条存在的本地 artifact 路径
   - `A | B` 且无未覆盖范围或剩余风险时才允许完成声明
 - `file-handoff` 校验会额外确认：
-  - `.skill-handoff/` 目录是否存在
+  - `.vidt/handoff/` 目录是否存在
   - 每个交接文件是否包含 `handoff` 元数据（from_role / to_role / artifact_type / artifact_path / timestamp）
   - 角色方向是否合法（Lead→Worker / Worker→Verifier / Verifier→Lead / Verifier→Worker）
   - artifact_type 是否属于允许枚举（WorkOrder / ImplementationOutput / VerificationReport / DeliveryCycleReport / RemediationPatch）
@@ -127,10 +127,10 @@ python scripts/verify_action.py --text "<user request>" --check completion-evide
   - 指定层的 circuit breaker 当前状态（closed / open / half_open）
   - breaker open 时返回 `allowed: false`，建议不要继续执行
   - breaker closed 时返回 `allowed: true`，可继续执行
-  - 状态来源是 `.skill-harness/breaker-state.json`，escalation 写入 `.skill-harness/escalation-queue.jsonl`
+  - 状态来源是 `.vidt/harness/breaker-state.json`，escalation 写入 `.vidt/harness/escalation-queue.jsonl`
 
 ```bash
-python scripts/verify_action.py --text "<user request>" --check file-handoff --handoff-dir .skill-handoff --pretty
+python scripts/verify_action.py --text "<user request>" --check file-handoff --handoff-dir .vidt/handoff --pretty
 ```
 
 ```bash
@@ -193,8 +193,8 @@ python scripts/inspect_decision_log.py --pretty
 
 ```bash
 python scripts/inspect_decision_log.py \
-  --markdown-output .skill-metrics/decision-log-report.md \
-  --html-output .skill-metrics/decision-log-report.html
+  --markdown-output .vidt/metrics/decision-log-report.md \
+  --html-output .vidt/metrics/decision-log-report.html
 ```
 
 - benchmark eval 配置契约见：
@@ -279,7 +279,7 @@ python scripts/init_harness_constraints.py --root . --summary "<task summary>" -
 
 默认产物：
 
-- `.skill-harness/engineering-constraints.md`
+- `.vidt/harness/engineering-constraints.md`
 
 协议说明：
 
@@ -318,7 +318,7 @@ python scripts/init_project_context.py --root . --pretty
 
 默认产物：
 
-- `.skill-context/project-context.md`
+- `.vidt/context/project-context.md`
 
 协议说明：
 
@@ -334,8 +334,8 @@ python scripts/init_quick_slice.py --root . --pretty
 
 默认产物：
 
-- `.skill-delivery/current-slice.md`
-- `.skill-delivery/status.yaml`
+- `.vidt/delivery/current-slice.md`
+- `.vidt/delivery/status.yaml`
 
 打法说明：
 
@@ -352,13 +352,13 @@ python scripts/init_micro_practices.py --root . --text "<user request>" --pretty
 记录单条实践状态与证据：
 
 ```bash
-python scripts/update_micro_practices.py --ledger .skill-practices/micro-practice-ledger.json --name <practice-name> --status satisfied --evidence "<evidence>" --pretty
+python scripts/update_micro_practices.py --ledger .vidt/practices/micro-practice-ledger.json --name <practice-name> --status satisfied --evidence "<evidence>" --pretty
 ```
 
 完成前评估 ledger：
 
 ```bash
-python scripts/evaluate_micro_practices.py --ledger .skill-practices/micro-practice-ledger.json --pretty
+python scripts/evaluate_micro_practices.py --ledger .vidt/practices/micro-practice-ledger.json --pretty
 ```
 
 完成、提交或交付声明前做只读门禁：
@@ -369,10 +369,10 @@ python scripts/verify_action.py --text "<user request>" --check micro-practice-l
 
 默认产物：
 
-- `.skill-practices/micro-practice-ledger.json`
-- `.skill-practices/micro-practice-ledger.md`
-- `.skill-practices/micro-practice-evaluation.json`
-- `.skill-practices/micro-practice-evaluation.md`
+- `.vidt/practices/micro-practice-ledger.json`
+- `.vidt/practices/micro-practice-ledger.md`
+- `.vidt/practices/micro-practice-evaluation.json`
+- `.vidt/practices/micro-practice-evaluation.md`
 
 契约：
 
@@ -385,19 +385,19 @@ python scripts/verify_action.py --text "<user request>" --check micro-practice-l
 完成、提交或交付声明前，先写入结构化完成证据：
 
 ```bash
-mkdir -p .skill-evidence && cp assets/completion-evidence-template.json .skill-evidence/completion-evidence.json
+mkdir -p .vidt/evidence && cp assets/completion-evidence-template.json .vidt/evidence/completion-evidence.json
 ```
 
 校验完成证据：
 
 ```bash
-python scripts/verify_completion_evidence.py --evidence .skill-evidence/completion-evidence.json --pretty
+python scripts/verify_completion_evidence.py --evidence .vidt/evidence/completion-evidence.json --pretty
 ```
 
 也可以通过动作前校验统一检查：
 
 ```bash
-python scripts/verify_action.py --text "<user request>" --check completion-evidence --completion-evidence .skill-evidence/completion-evidence.json --pretty
+python scripts/verify_action.py --text "<user request>" --check completion-evidence --completion-evidence .vidt/evidence/completion-evidence.json --pretty
 ```
 
 契约：
@@ -424,7 +424,7 @@ python scripts/init_pre_development_plan.py --root . --task-name "<task-name>" -
 
 默认会同时生成完整多阶段 planning 骨架：
 
-- `.skill-context/project-context.md`
+- `.vidt/context/project-context.md`
 - `docs/progress/MASTER.md`
 - `docs/progress/phase-1-<name>.md`
 - `docs/progress/phase-2-architecture.md`
@@ -464,10 +464,10 @@ python scripts/init_post_release_feedback.py --root . --pretty
 ```
 
 ```bash
-python scripts/evaluate_post_release_feedback.py --report .skill-post-release/current-signals.json --pretty
+python scripts/evaluate_post_release_feedback.py --report .vidt/post-release/current-signals.json --pretty
 ```
 
-- `run_release_gate.py` 在 `ship` 时会自动初始化 `.skill-post-release/`
+- `run_release_gate.py` 在 `ship` 时会自动初始化 `.vidt/post-release/`
 - `evaluate_post_release_feedback.py` 会把结果判断为：
   - `monitor`
   - `iterate`
@@ -514,7 +514,7 @@ python scripts/run_auto_workflow.py --text "<original-request-without-/auto>" --
 ```
 
 ```bash
-python scripts/run_auto_workflow.py --mode go --plan .skill-auto/auto-run-plan.json --pretty
+python scripts/run_auto_workflow.py --mode go --plan .vidt/auto/auto-run-plan.json --pretty
 ```
 
 - 默认仍是手动模式
@@ -529,12 +529,12 @@ python scripts/run_auto_workflow.py --mode go --plan .skill-auto/auto-run-plan.j
   - `background`
   - `resume`
 - `setup` 会生成：
-  - `.skill-auto/auto-run-plan.json`
-  - `.skill-auto/auto-run-plan.md`
-  - `.skill-auto/state/*.json`
+  - `.vidt/auto/auto-run-plan.json`
+  - `.vidt/auto/auto-run-plan.md`
+  - `.vidt/auto/state/*.json`
 - `go` 会写回：
-  - `.skill-auto/last-run.json`
-  - `.skill-auto/last-run.md`
+  - `.vidt/auto/last-run.json`
+  - `.vidt/auto/last-run.md`
   - 底层 release / post-release automation state
 - `inspect_automation_state.py` 会返回：
   - 当前选中的 state
@@ -546,8 +546,8 @@ python scripts/run_auto_workflow.py --mode go --plan .skill-auto/auto-run-plan.j
   - 告诉你如果显式加 `--execute` 会跑什么
 - 只有显式 `--execute` 时才会真正执行恢复命令
 - 执行后会额外沉淀：
-  - `.skill-auto/resume-executions/<resume-exec-id>.json`
-  - `.skill-auto/resume-executions/<resume-exec-id>.md`
+  - `.vidt/auto/resume-executions/<resume-exec-id>.json`
+  - `.vidt/auto/resume-executions/<resume-exec-id>.md`
 - 其中 JSON ledger 现在受正式 schema 约束：
   - `references/automation-resume-execution.schema.json`
 - 当前 allowlist 只开放：
@@ -609,19 +609,19 @@ python scripts/init_beta_simulation.py --root . --round-id round-0 --phase "pre-
 ```
 
 ```bash
-python scripts/preview_beta_simulation_fixture.py --config .skill-beta/simulation-configs/round-0.json --pretty
+python scripts/preview_beta_simulation_fixture.py --config .vidt/beta/simulation-configs/round-0.json --pretty
 ```
 
 ```bash
-python scripts/compare_beta_simulation_manifests.py --previous .skill-beta/fixture-previews/round-0/beta-simulation-manifest.json --current .skill-beta/fixture-previews/round-1/beta-simulation-manifest.json --pretty
+python scripts/compare_beta_simulation_manifests.py --previous .vidt/beta/fixture-previews/round-0/beta-simulation-manifest.json --current .vidt/beta/fixture-previews/round-1/beta-simulation-manifest.json --pretty
 ```
 
 ```bash
-python scripts/run_beta_simulation.py --config .skill-beta/simulation-configs/round-0.json --pretty
+python scripts/run_beta_simulation.py --config .vidt/beta/simulation-configs/round-0.json --pretty
 ```
 
 ```bash
-python scripts/summarize_beta_simulation.py --run .skill-beta/simulation-runs/round-0/beta-simulation-run.json --feedback-ledger-out .skill-beta/feedback-ledger.md --round-report-out .skill-beta/reports/round-0.json --pretty
+python scripts/summarize_beta_simulation.py --run .vidt/beta/simulation-runs/round-0/beta-simulation-run.json --feedback-ledger-out .vidt/beta/feedback-ledger.md --round-report-out .vidt/beta/reports/round-0.json --pretty
 ```
 
 ```bash
@@ -629,7 +629,7 @@ python scripts/init_beta_round_report.py --root . --round-id round-1 --phase "cl
 ```
 
 ```bash
-python scripts/evaluate_beta_round.py --report .skill-beta/reports/round-1.json --pretty
+python scripts/evaluate_beta_round.py --report .vidt/beta/reports/round-1.json --pretty
 ```
 
 - `evaluate_beta_round.py` 现在会消费 round report 里的 fixture diff 证据：
@@ -686,8 +686,8 @@ python scripts/init_technical_governance.py --root . --pretty
 推荐锚点：
 
 - `docs/progress/MASTER.md`
-- `.skill-iterations/current-round-memory.md`
-- `.skill-iterations/distilled-patterns.md`
+- `.vidt/iterations/current-round-memory.md`
+- `.vidt/iterations/distilled-patterns.md`
 
 常用初始化命令：
 
@@ -705,9 +705,9 @@ cp assets/pre-development-progress-master-template.md docs/progress/MASTER.md
 ```
 
 ```bash
-mkdir -p .skill-iterations
-cp assets/round-memory-template.md .skill-iterations/current-round-memory.md
-cp assets/distilled-patterns-template.md .skill-iterations/distilled-patterns.md
+mkdir -p .vidt/iterations
+cp assets/round-memory-template.md .vidt/iterations/current-round-memory.md
+cp assets/distilled-patterns-template.md .vidt/iterations/distilled-patterns.md
 ```
 
 ## 八、iteration 命令
@@ -715,31 +715,31 @@ cp assets/distilled-patterns-template.md .skill-iterations/distilled-patterns.md
 - 初始化 round
 
 ```bash
-python scripts/init_iteration_round.py --workspace .skill-iterations --round-id round-01 --objective "<goal>" --baseline "<baseline>" --pretty
+python scripts/init_iteration_round.py --workspace .vidt/iterations --round-id round-01 --objective "<goal>" --baseline "<baseline>" --pretty
 ```
 
 - 注册 baseline
 
 ```bash
-python scripts/register_benchmark_baseline.py --workspace .skill-iterations --label stable --report <baseline-report> --pretty
+python scripts/register_benchmark_baseline.py --workspace .vidt/iterations --label stable --report <baseline-report> --pretty
 ```
 
 - 单轮 cycle
 
 ```bash
-python scripts/run_iteration_cycle.py --workspace .skill-iterations --round-id round-01 --objective "<goal>" --baseline-label stable --candidate "<candidate-change>" --candidate-worktree ../wt-round-01 --candidate-output-dir .tmp-iteration-round-01 --promote-label accepted-round-01 --sync-distilled-patterns --pretty
+python scripts/run_iteration_cycle.py --workspace .vidt/iterations --round-id round-01 --objective "<goal>" --baseline-label stable --candidate "<candidate-change>" --candidate-worktree ../wt-round-01 --candidate-output-dir .tmp-iteration-round-01 --promote-label accepted-round-01 --sync-distilled-patterns --pretty
 ```
 
 - 多轮 loop
 
 ```bash
-python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.json --pretty
+python scripts/run_iteration_loop.py --workspace .vidt/iterations --plan .vidt/iterations/iteration-plan.json --pretty
 ```
 
 - resume 已中断 loop
 
 ```bash
-python scripts/run_iteration_loop.py --workspace .skill-iterations --plan .skill-iterations/iteration-plan.json --resume --pretty
+python scripts/run_iteration_loop.py --workspace .vidt/iterations --plan .vidt/iterations/iteration-plan.json --resume --pretty
 ```
 
 ## 九、release / drill / compare
@@ -756,18 +756,18 @@ python scripts/run_offline_loop_drill.py --workspace .tmp-offline-loop-drill --p
 python scripts/run_release_gate.py --output-dir evals/release-gate --pretty
 ```
 
-`release_gate` 默认会读取 `.skill-evidence/completion-evidence.json`；如果完成证据在别处：
+`release_gate` 默认会读取 `.vidt/evidence/completion-evidence.json`；如果完成证据在别处：
 
 ```bash
-python scripts/run_release_gate.py --output-dir evals/release-gate --completion-evidence .skill-evidence/release/completion-evidence.json --pretty
+python scripts/run_release_gate.py --output-dir evals/release-gate --completion-evidence .vidt/evidence/release/completion-evidence.json --pretty
 ```
 
 ```bash
-python scripts/run_release_gate.py --output-dir evals/release-gate --beta-decision-dir .skill-beta/round-decisions --pretty
+python scripts/run_release_gate.py --output-dir evals/release-gate --beta-decision-dir .vidt/beta/round-decisions --pretty
 ```
 
 ```bash
-python scripts/run_release_gate.py --output-dir evals/release-gate --beta-report-dir .skill-beta/reports --pretty
+python scripts/run_release_gate.py --output-dir evals/release-gate --beta-report-dir .vidt/beta/reports --pretty
 ```
 
 - `run_release_gate.py` 的 JSON 结果契约见：
@@ -782,8 +782,8 @@ python scripts/run_release_gate.py --output-dir evals/release-gate --beta-report
   - `next-iteration-brief.json` 会继承 beta brief 的 `recommended_commands`
   - `explanation_card.resume_artifacts` 和 release hold brief 会带上 beta brief 与 writeback artifacts，方便跨阶段恢复
 - 当 release gate 结果是 `ship`：
-  - 会自动初始化 `.skill-post-release/rollout-summary.md`
-  - 会自动初始化 `.skill-post-release/current-signals.json`
+  - 会自动初始化 `.vidt/post-release/rollout-summary.md`
+  - 会自动初始化 `.vidt/post-release/current-signals.json`
   - follow-up 里会带出 `post_release_bootstrap`
 
 - benchmark eval runner 支持：
@@ -818,19 +818,19 @@ python scripts/compare_benchmark_results.py --baseline <baseline-report> --candi
 - promote baseline
 
 ```bash
-python scripts/promote_iteration_baseline.py --workspace .skill-iterations --round-id round-01 --label accepted-round-01 --pretty
+python scripts/promote_iteration_baseline.py --workspace .vidt/iterations --round-id round-01 --label accepted-round-01 --pretty
 ```
 
 - sync distilled patterns
 
 ```bash
-python scripts/sync_distilled_patterns.py --workspace .skill-iterations --pretty
+python scripts/sync_distilled_patterns.py --workspace .vidt/iterations --pretty
 ```
 
 - materialize candidate patch
 
 ```bash
-python scripts/materialize_candidate_patch.py --brief .skill-iterations/candidate-briefs/round-01.json --candidate-root ../wt-round-01 --patch-output .skill-iterations/patches/round-01.patch --pretty
+python scripts/materialize_candidate_patch.py --brief .vidt/iterations/candidate-briefs/round-01.json --candidate-root ../wt-round-01 --patch-output .vidt/iterations/patches/round-01.patch --pretty
 ```
 
 ## 十一、使用原则
@@ -843,6 +843,6 @@ python scripts/materialize_candidate_patch.py --brief .skill-iterations/candidat
 - iteration 深循环时，先开本索引，再补对应 playbook
 - `run_release_gate.py` 优先用于 `ship / hold` 判断，不用 benchmark 结果硬代替
 - beta 已经 `hold / escalate` 时，不要手工重写一份 release remediation；优先复用 beta remediation brief 继续收口
-- 版本已经 `ship` 后，不要把真实反馈继续塞回 beta；优先走 `.skill-post-release/` 的正式回流链路
+- 版本已经 `ship` 后，不要把真实反馈继续塞回 beta；优先走 `.vidt/post-release/` 的正式回流链路
 - `run_iteration_loop.py --resume` 只对同一 plan 文件恢复
 - loop controller 逻辑改动后，优先跑 `offline drill` 再叫它稳定

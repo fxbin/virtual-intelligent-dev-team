@@ -25,8 +25,8 @@ INIT_POST_RELEASE_FEEDBACK_SCRIPT = SCRIPT_DIR / "init_post_release_feedback.py"
 SKILL_SNAPSHOT_SCRIPT = SCRIPT_DIR / "skill_snapshot.py"
 VERIFY_COMPLETION_EVIDENCE_SCRIPT = SCRIPT_DIR / "verify_completion_evidence.py"
 DEFAULT_OUTPUT_DIR = SKILL_DIR / "evals" / "release-gate"
-DEFAULT_ITERATION_WORKSPACE = SKILL_DIR / ".skill-iterations"
-DEFAULT_COMPLETION_EVIDENCE_PATH = Path(".skill-evidence") / "completion-evidence.json"
+DEFAULT_ITERATION_WORKSPACE = SKILL_DIR / ".vidt/iterations"
+DEFAULT_COMPLETION_EVIDENCE_PATH = Path(".vidt/evidence") / "completion-evidence.json"
 LABEL_SAFE_CHARS = re.compile(r"[^A-Za-z0-9._-]+")
 BETA_GATE_RESULT_FILENAME = "beta-round-gate-result.json"
 
@@ -315,7 +315,7 @@ def build_missing_beta_gate(*, beta_root: Path, reason: str) -> dict[str, object
 
 
 def resolve_auto_beta_gate(*, repo_root: Path) -> dict[str, object] | None:
-    beta_root = repo_root / ".skill-beta"
+    beta_root = repo_root / ".vidt/beta"
     if not beta_root.exists():
         return None
 
@@ -513,7 +513,7 @@ def blocker_specs(
                 "id": "beta-round-gate",
                 "label": label,
                 "objective_hint": objective_hint,
-                "evidence_required": f"python scripts/evaluate_beta_round.py --report .skill-beta/reports/{round_id}.json --pretty",
+                "evidence_required": f"python scripts/evaluate_beta_round.py --report .vidt/beta/reports/{round_id}.json --pretty",
             }
         )
         remediation_brief = beta_snapshot.get("remediation_brief")
@@ -534,7 +534,7 @@ def blocker_specs(
                             "id": f"beta-{blocker_id or 'remediation'}",
                             "label": f"beta remediation: {label}",
                             "objective_hint": objective_hint or "follow the beta remediation brief and rerun the blocked round",
-                            "evidence_required": evidence_required or f"python scripts/evaluate_beta_round.py --report .skill-beta/reports/{round_id}.json --pretty",
+                            "evidence_required": evidence_required or f"python scripts/evaluate_beta_round.py --report .vidt/beta/reports/{round_id}.json --pretty",
                         }
                     )
     if isinstance(completion_evidence, dict) and not bool(completion_evidence.get("completion_allowed")):
@@ -552,7 +552,7 @@ def blocker_specs(
             label = "completion evidence is incomplete"
             objective_hint = "关闭未覆盖范围或剩余风险，并把证据等级提升到 A/B 后再重新验收"
         evidence_required = str(completion_evidence.get("verify_command", "")).strip() or (
-            "python scripts/verify_completion_evidence.py --evidence .skill-evidence/completion-evidence.json --pretty"
+            "python scripts/verify_completion_evidence.py --evidence .vidt/evidence/completion-evidence.json --pretty"
         )
         specs.append(
             {
@@ -743,14 +743,14 @@ def blocker_profile(blocker_id: str) -> dict[str, object]:
             ],
             "preferred_mutation_ops": ["write_file", "replace_text", "json_set"],
             "acceptance_commands": [
-                "python scripts/evaluate_beta_round.py --report .skill-beta/reports/<round-id>.json --pretty",
-                "python scripts/run_release_gate.py --output-dir evals/release-gate --beta-decision-dir .skill-beta/round-decisions --pretty",
+                "python scripts/evaluate_beta_round.py --report .vidt/beta/reports/<round-id>.json --pretty",
+                "python scripts/run_release_gate.py --output-dir evals/release-gate --beta-decision-dir .vidt/beta/round-decisions --pretty",
             ],
         },
         "completion-evidence": {
             "focus": "capture structured completion evidence so release readiness cannot be claimed from benchmark status alone",
             "target_files": [
-                ".skill-evidence/completion-evidence.json",
+                ".vidt/evidence/completion-evidence.json",
                 "assets/completion-evidence-template.json",
                 "references/completion-evidence.schema.json",
                 "scripts/verify_completion_evidence.py",
@@ -758,7 +758,7 @@ def blocker_profile(blocker_id: str) -> dict[str, object]:
             ],
             "preferred_mutation_ops": ["write_file", "replace_text"],
             "acceptance_commands": [
-                "python scripts/verify_completion_evidence.py --evidence .skill-evidence/completion-evidence.json --pretty",
+                "python scripts/verify_completion_evidence.py --evidence .vidt/evidence/completion-evidence.json --pretty",
                 "python scripts/run_release_gate.py --output-dir evals/release-gate --pretty",
             ],
         },
@@ -1606,7 +1606,7 @@ def build_hold_follow_up(
     if beta_snapshot is not None:
         brief["recommended_commands"][-1] = (
             f"python scripts/run_release_gate.py --output-dir {output_dir} "
-            f"--iteration-workspace {workspace} --beta-decision-dir .skill-beta/round-decisions --pretty"
+            f"--iteration-workspace {workspace} --beta-decision-dir .vidt/beta/round-decisions --pretty"
         )
     if beta_recommended_commands:
         brief["recommended_commands"] = beta_recommended_commands + brief["recommended_commands"]
@@ -1707,8 +1707,8 @@ def infer_repo_root(*, output_dir: Path, iteration_workspace: Path | None) -> Pa
 
 def build_post_release_bootstrap(*, repo_root: Path) -> dict[str, object]:
     bootstrap = post_release_feedback_init.init_post_release_feedback(root=repo_root, overwrite=False)
-    signal_report = repo_root / ".skill-post-release" / "current-signals.json"
-    triage_summary = repo_root / ".skill-post-release" / "triage-summary.md"
+    signal_report = repo_root / ".vidt/post-release" / "current-signals.json"
+    triage_summary = repo_root / ".vidt/post-release" / "triage-summary.md"
     return {
         "root": str(repo_root),
         "resume_anchor": str(triage_summary),
@@ -1716,7 +1716,7 @@ def build_post_release_bootstrap(*, repo_root: Path) -> dict[str, object]:
         "artifacts": [str(item) for item in bootstrap.get("artifacts", []) if str(item).strip()],
         "actions": bootstrap.get("actions", []),
         "recommended_command": str(bootstrap.get("evaluation_command", "")).strip()
-        or "python scripts/evaluate_post_release_feedback.py --report .skill-post-release/current-signals.json --pretty",
+        or "python scripts/evaluate_post_release_feedback.py --report .vidt/post-release/current-signals.json --pretty",
     }
 
 
@@ -2116,7 +2116,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--completion-evidence",
-        help="Path to completion evidence JSON. Defaults to .skill-evidence/completion-evidence.json under the inferred repo root.",
+        help="Path to completion evidence JSON. Defaults to .vidt/evidence/completion-evidence.json under the inferred repo root.",
     )
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON summary to stdout")
     return parser.parse_args()

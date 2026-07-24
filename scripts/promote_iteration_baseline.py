@@ -56,7 +56,7 @@ def promote_round(workspace: Path, round_id: str, label: str, notes: str = "") -
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Promote a kept iteration round to a baseline.")
-    parser.add_argument("--workspace", default=".skill-iterations", help="Iteration workspace")
+    parser.add_argument("--workspace", default=".vidt/iterations", help="Iteration workspace")
     parser.add_argument("--round-id", required=True, help="Round identifier")
     parser.add_argument("--label", required=True, help="Baseline label to promote into")
     parser.add_argument("--notes", default="", help="Optional notes")

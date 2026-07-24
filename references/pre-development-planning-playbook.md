@@ -105,7 +105,7 @@ When this branch is active, the user-facing answer should include:
 2. what artifacts were created or refreshed
 3. what the first execution phase is
 4. what future sessions should read first
-5. whether `.skill-context/project-context.md` now carries the planning resume context
+5. whether `.vidt/context/project-context.md` now carries the planning resume context
 
 For the user-facing answer shape, use:
 

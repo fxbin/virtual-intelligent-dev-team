@@ -26,10 +26,10 @@ not change shared language.
 
 Preferred project anchor:
 
-- `.skill-context/project-context.md`
+- `.vidt/context/project-context.md`
 
 If the host project already has a dedicated glossary such as `CONTEXT.md`, use it
-as the vocabulary source and keep `.skill-context/project-context.md` focused on
+as the vocabulary source and keep `.vidt/context/project-context.md` focused on
 commands, constraints, and verification defaults.
 
 Record only stable terms:

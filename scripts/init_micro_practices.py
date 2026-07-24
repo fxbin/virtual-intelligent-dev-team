@@ -15,8 +15,8 @@ SKILL_DIR = SCRIPT_DIR.parent
 ROUTE_SCRIPT = SCRIPT_DIR / "route_request.py"
 RESPONSE_CONTRACT_SCRIPT = SCRIPT_DIR / "response_contract.py"
 DEFAULT_CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
-LEDGER_PATH = Path(".skill-practices") / "micro-practice-ledger.json"
-LEDGER_MARKDOWN_PATH = Path(".skill-practices") / "micro-practice-ledger.md"
+LEDGER_PATH = Path(".vidt/practices") / "micro-practice-ledger.json"
+LEDGER_MARKDOWN_PATH = Path(".vidt/practices") / "micro-practice-ledger.md"
 
 
 def load_module(name: str, path: Path):

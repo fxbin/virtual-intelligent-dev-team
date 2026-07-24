@@ -384,7 +384,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--metrics-file",
-        default=".skill-metrics/git_guardrail_metrics.jsonl",
+        default=".vidt/metrics/git_guardrail_metrics.jsonl",
         help="Metrics output file path",
     )
     parser.add_argument(

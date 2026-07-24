@@ -23,7 +23,7 @@
 
 ## v6.0.8 (2026-07-22)
 
-- 治理事件只读写 `.skill-metrics/decision-log.jsonl`，删除旧日志迁移脚本、容忍分支、
+- 治理事件只读写 `.vidt/metrics/decision-log.jsonl`，删除旧日志迁移脚本、容忍分支、
   可配置旧路径与对应文档入口；不会删除任何 operator 已有数据文件。
 - Frontend hook 不再声明不存在的 `language-profiles.yaml#typescript`；路由构建 hook
   前会校验 spec 文件存在性与语言 profile 可解析性，悬空引用 fail-closed。
@@ -46,7 +46,7 @@
 `workflow-bundles.md` 中 12 个稳定 bundle ID；任一真源缺失、不可读或重复都会
 fail-closed。清理已退出角色 `Frontend Virtuoso` 的 hook / contract 残留，将前端
 spec 注入归并到 `World-Class Product Architect`；修复 eval 到 SKILL.md 的失效锚点，
-通过 fixture adapter 隔离 blind audit 的 `.skill-*` 状态并保持 JSON stdout 纯净；
+通过 fixture adapter 隔离 blind audit 的 `.vidt/` 状态并保持 JSON stdout 纯净；
 补齐 reference 与 smoke-test 索引、公共 Python 依赖说明，并删除一次性
 `deletion_pass.py` 阶段工具。
 
@@ -145,7 +145,7 @@ v6.0.1 将 `run_stress_scenarios.py` 的 `status` 枚举从 5 值简化为 3 值
 
 以下能力在 v6.0.1 标注为「Memory Keeper 计划中」，尚未在当前版本实现，留作后续迭代：
 
-- **跨 session 状态持久化**：`real-subagent-runtime-protocol.md` 中 multi-session tier 的 session 状态快照与恢复目前依赖外部 agent backend，Memory Keeper 角色未来接管 `.skill-metrics/session-state.jsonl` 的写入与校验
+- **跨 session 状态持久化**：`real-subagent-runtime-protocol.md` 中 multi-session tier 的 session 状态快照与恢复目前依赖外部 agent backend，Memory Keeper 角色未来接管 `.vidt/metrics/session-state.jsonl` 的写入与校验
 - **telemetry 采样策略记忆**：当前 `emit_telemetry.py` 的 `sampling_rate` 由调用方传入，Memory Keeper 未来负责基于历史 drift 分布自动建议采样率
 - **stress scenario 历史基线**：当前 `run_stress_scenarios.py` 每次运行覆盖前次结果，Memory Keeper 未来负责维护 `evals/stress-scenarios/baselines/` 历史快照，支持回归对比
 

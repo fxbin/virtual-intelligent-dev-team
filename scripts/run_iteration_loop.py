@@ -1671,7 +1671,7 @@ def run_loop(workspace: Path, plan_path: Path, resume: bool = False) -> dict[str
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run a capped iteration loop from a plan file.")
-    parser.add_argument("--workspace", default=".skill-iterations", help="Iteration workspace")
+    parser.add_argument("--workspace", default=".vidt/iterations", help="Iteration workspace")
     parser.add_argument("--plan", required=True, help="Path to iteration plan JSON")
     parser.add_argument("--resume", action="store_true", help="Resume a persisted loop state instead of starting over")
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON output")

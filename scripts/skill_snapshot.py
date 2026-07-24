@@ -17,7 +17,7 @@ IGNORED_DIR_NAMES = {
     ".mypy_cache",
     ".ruff_cache",
     ".tmp-offline-loop-drill",
-    ".skill-iterations",
+    ".vidt",
 }
 IGNORED_FILE_SUFFIXES = {".pyc"}
 IGNORED_FILE_NAMES = {".DS_Store"}

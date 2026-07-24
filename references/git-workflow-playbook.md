@@ -79,7 +79,7 @@
 
 ## 指标追踪
 
-- 指标文件：`.skill-metrics/git_guardrail_metrics.jsonl`
+- 指标文件：`.vidt/metrics/git_guardrail_metrics.jsonl`
 - 默认记录字段：时间、阶段、是否通过、仓库策略、最高风险级别
 - 建议关注 KPI：
   - `first_push_success_rate`

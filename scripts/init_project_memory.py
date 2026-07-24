@@ -41,12 +41,12 @@ def init_project_memory(root: Path, mode: str = "all", overwrite: bool = False) 
         iteration_specs = [
             (
                 SKILL_DIR / "assets" / "round-memory-template.md",
-                root / ".skill-iterations" / "current-round-memory.md",
+                root / ".vidt/iterations" / "current-round-memory.md",
                 "iteration-anchor",
             ),
             (
                 SKILL_DIR / "assets" / "distilled-patterns-template.md",
-                root / ".skill-iterations" / "distilled-patterns.md",
+                root / ".vidt/iterations" / "distilled-patterns.md",
                 "pattern-anchor",
             ),
         ]

@@ -21,7 +21,7 @@
 
 ## 二、Contract Spec Schema
 
-`contract-spec` 是前后端共同签署的契约文件,存储在 `.skill-harness/contract-spec.json`。
+`contract-spec` 是前后端共同签署的契约文件,存储在 `.vidt/harness/contract-spec.json`。
 
 ```json
 {

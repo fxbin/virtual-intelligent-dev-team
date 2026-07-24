@@ -26,12 +26,12 @@ def init_technical_governance(root: Path, overwrite: bool = False) -> dict[str, 
     specs = [
         (
             SKILL_DIR / "assets" / "technical-governance-change-plan-template.md",
-            root / ".skill-governance" / "change-plan.md",
+            root / ".vidt/governance" / "change-plan.md",
             "change-plan",
         ),
         (
             SKILL_DIR / "assets" / "technical-governance-release-checklist-template.md",
-            root / ".skill-governance" / "release-checklist.md",
+            root / ".vidt/governance" / "release-checklist.md",
             "release-checklist",
         ),
     ]
@@ -49,7 +49,7 @@ def init_technical_governance(root: Path, overwrite: bool = False) -> dict[str, 
         "root": str(root),
         "overwrite": overwrite,
         "actions": actions,
-        "resume_anchor": ".skill-governance/change-plan.md",
+        "resume_anchor": ".vidt/governance/change-plan.md",
     }
 
 

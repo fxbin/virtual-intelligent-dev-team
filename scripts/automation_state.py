@@ -86,7 +86,7 @@ def build_automation_state(
     metadata: dict[str, object] | None = None,
 ) -> dict[str, object]:
     resolved_run_id = run_id or generate_run_id()
-    state_root = ".skill-auto/state"
+    state_root = ".vidt/auto/state"
     primary = primary_path or f"{state_root}/{state_kind}-{resolved_run_id}.json"
     payload = {
         "schema_version": SCHEMA_VERSION,
@@ -182,7 +182,7 @@ def write_automation_state(
 import hashlib
 
 JOURNAL_VERSION = "workspace-journal/v1"
-DEFAULT_JOURNAL_PATH = Path(".skill-harness") / "workspace-journal.jsonl"
+DEFAULT_JOURNAL_PATH = Path(".vidt/harness") / "workspace-journal.jsonl"
 
 
 def compute_journal_hash(entry: dict[str, object]) -> str:
@@ -211,7 +211,7 @@ def append_journal(
     """追加一条 journal entry(append-only + 因果链)
 
     参数:
-        journal_path: journal 文件路径,默认 .skill-harness/workspace-journal.jsonl
+        journal_path: journal 文件路径,默认 .vidt/harness/workspace-journal.jsonl
         agent: 执行动作的角色
         action: 动作类型
         reason: 动作理由

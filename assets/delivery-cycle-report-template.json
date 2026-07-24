@@ -21,7 +21,7 @@
     "remediation_patch": null,
     "final_artifacts": [],
     "evidence_refs": [],
-    "resume_anchor": ".skill-delivery/status.yaml",
+    "resume_anchor": ".vidt/delivery/status.yaml",
     "backend_orchestration_verdict": "simulated",
     "human_escalation": null,
     "next_state": "accepted",
