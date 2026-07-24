@@ -46,6 +46,7 @@ Quick reference for playbooks and protocols used by core scripts.
 | [system-map-protocol.md](./system-map-protocol.md) | route_request.py | System mapping |
 | [change-localization-protocol.md](./change-localization-protocol.md) | route_request.py | Token-budget convergence to exact change sites |
 | [project-knowledge-pyramid-protocol.md](./project-knowledge-pyramid-protocol.md) | route_request.py | Tiered, drift-checked target-project knowledge map |
+| [worktree-state-placement-protocol.md](./worktree-state-placement-protocol.md) | route_request.py | State-directory placement under worktree execution |
 | [architecture-deepening-protocol.md](./architecture-deepening-protocol.md) | route_request.py | Architecture deepening |
 | [stage-council-protocol.md](./stage-council-protocol.md) | route_request.py | Stage council overlay |
 | [iteration-protocol.md](./iteration-protocol.md) | route_request.py, inspect_automation_state.py | Iteration lifecycle |

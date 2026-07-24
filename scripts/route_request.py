@@ -1893,11 +1893,13 @@ def build_process_plan(
                     f"确定基线分支（当前建议为 {base_branch}）",
                     "为每个任务创建独立 worktree 与分支",
                     "在各自 worktree 内开发与提交",
+                    "状态目录留主仓根（state-root），worktree 只放代码改动与一次性执行产物；归属表与路径约定见 references/worktree-state-placement-protocol.md",
                     "任务完成后清理已合并 worktree",
                 ],
                 "commands": [
                     "git worktree list",
                     f"git worktree add ../wt-<task> -b <branch> {base_branch}",
+                    'STATE_ROOT="$(git rev-parse --git-common-dir | xargs dirname)"',
                     "git worktree remove ../wt-<task>",
                     "git worktree prune",
                 ],

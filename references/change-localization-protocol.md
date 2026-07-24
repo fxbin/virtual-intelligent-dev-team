@@ -77,6 +77,17 @@ and advance; never pad a step to its ceiling.
 5. If the change set still looks ambiguous after step 5, stop and surface the
    ambiguity rather than picking a site by plausibility.
 
+## Worktree Behavior
+
+When the task runs inside a worktree, localization steps 2 through 5 execute
+against the **execution-root** (the worktree being edited) — the directory tree,
+keyword search, call chain, and function implementation all live in that
+working tree. The L1 overview fed into step 1, however, is read from
+**state-root** (the main repository); do not re-derive the project overview
+inside each worktree. See
+`references/worktree-state-placement-protocol.md` for how to resolve state-root
+from inside a worktree.
+
 ## Completion Evidence
 
 When this protocol is active, completion must name:

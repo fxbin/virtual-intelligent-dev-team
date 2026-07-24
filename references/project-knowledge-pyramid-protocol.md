@@ -83,6 +83,16 @@ specific task. This pyramid is the persisted, drift-checked substrate that a
 system map is drawn from. When a system map is requested, prefer building it
 from the L1/L2 tiers rather than re-discovering the structure from scratch.
 
+## Worktree Behavior
+
+The pyramid and its SHA baseline live in **state-root** (the main repository),
+not in any individual worktree. Worktrees share one `.git` but have independent
+working trees; the baseline records the main repository's HEAD so drift
+detection compares against a stable reference rather than a per-worktree
+snapshot. A worktree that needs the map reads it from state-root and never
+writes its own copy. See
+`references/worktree-state-placement-protocol.md` for state-root resolution.
+
 ## Completion Evidence
 
 When this protocol is active, completion must name:

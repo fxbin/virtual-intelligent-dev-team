@@ -3319,6 +3319,30 @@
         "response_pack_json micro_practices.names contains project-knowledge-pyramid",
         "response_pack_json micro_practices.reference contains references/project-knowledge-pyramid-protocol.md"
       ]
+    },
+    {
+      "id": 231,
+      "runner": "route",
+      "categories": [
+        "git-workflow",
+        "worktree",
+        "worktree-state-placement"
+      ],
+      "prompt": "并行开发两个需求，各自用独立 worktree 隔离改动，保持状态隔离",
+      "expected_output": "Parallel work in isolated worktrees routes to Git Workflow Guardian with govern-change-safely, activates the using-git-worktrees process skill, and injects the state-root bootstrap command so state directories stay in the main repo.",
+      "files": [
+        "scripts/route_request.py",
+        "references/using-git-worktrees-playbook.md",
+        "references/worktree-state-placement-protocol.md"
+      ],
+      "expectations": [
+        "lead_agent is Git Workflow Guardian",
+        "needs_worktree is true",
+        "workflow_bundle is govern-change-safely",
+        "process_skills contains using-git-worktrees",
+        "process_plan first commands contain STATE_ROOT",
+        "process_plan first commands contain git rev-parse --git-common-dir"
+      ]
     }
   ]
 }
