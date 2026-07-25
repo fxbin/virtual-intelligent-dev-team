@@ -1,7 +1,7 @@
 {
   "meta": {
     "author": "fxbin",
-    "version": "v6.0.16",
+    "version": "v6.0.17",
     "updated": "2026-07-22"
   },
   "thresholds": {
@@ -2270,14 +2270,6 @@
         "score": 1
       },
       {
-        "keyword": "两个任务",
-        "score": 1
-      },
-      {
-        "keyword": "边开发边",
-        "score": 1
-      },
-      {
         "keyword": "互不干扰",
         "score": 1
       },
@@ -2287,14 +2279,6 @@
       },
       {
         "keyword": "不影响主线",
-        "score": 1
-      },
-      {
-        "keyword": "独立分支",
-        "score": 1
-      },
-      {
-        "keyword": "分开改",
         "score": 1
       }
     ],
