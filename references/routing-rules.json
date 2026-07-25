@@ -1,7 +1,7 @@
 {
   "meta": {
     "author": "fxbin",
-    "version": "v6.0.14",
+    "version": "v6.0.15",
     "updated": "2026-07-22"
   },
   "thresholds": {
@@ -2263,6 +2263,38 @@
       },
       {
         "keyword": "hotfix 并行",
+        "score": 1
+      },
+      {
+        "keyword": "同时推进",
+        "score": 1
+      },
+      {
+        "keyword": "两个任务",
+        "score": 1
+      },
+      {
+        "keyword": "边开发边",
+        "score": 1
+      },
+      {
+        "keyword": "互不干扰",
+        "score": 1
+      },
+      {
+        "keyword": "交替推进",
+        "score": 1
+      },
+      {
+        "keyword": "不影响主线",
+        "score": 1
+      },
+      {
+        "keyword": "独立分支",
+        "score": 1
+      },
+      {
+        "keyword": "分开改",
         "score": 1
       }
     ],
