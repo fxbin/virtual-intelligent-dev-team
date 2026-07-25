@@ -2846,7 +2846,7 @@ def build_micro_practices(
             ],
         )
 
-    if bundle_name in {"audit-fix-deliver", "root-cause-remediate"} or text_has_any_keyword(
+    if bundle_name == "audit-fix-deliver" or text_has_any_keyword(
         lowered, change_localization_keywords
     ):
         add(
@@ -2860,13 +2860,10 @@ def build_micro_practices(
             ],
         )
 
-    if (
-        bundle_name == "plan-first-build"
-        and (
-            needs_pre_development_planning
-            or text_has_any_keyword(lowered, project_knowledge_keywords)
-        )
-    ) or text_has_any_keyword(lowered, project_knowledge_keywords):
+    if bundle_name == "plan-first-build" and (
+        needs_pre_development_planning
+        or text_has_any_keyword(lowered, project_knowledge_keywords)
+    ):
         add(
             "project-knowledge-pyramid",
             PROJECT_KNOWLEDGE_PYRAMID_REFERENCE,
