@@ -267,6 +267,13 @@ Runtime routing rules (primary routes, stage council overlays, score model, thre
 
 完整版本历史、字段迁移指南和 Memory Keeper 计划见 [docs/release-notes.md](docs/release-notes.md)。
 
+### v6.0.17 (2026-07-25)
+
+收窄 worktree 关键词初筛表（移除高频误触发的泛词，保留语义明确的并行隔离信号），
+补负向 eval 锁定项目管理语境不应触发 worktree。v6.0.11–v6.0.16 依次引入了定位与
+迭代约束强化、改动点定位与目标项目知识库协议、worktree 状态目录归属、`.vidt/`
+状态目录收拢、worktree 两层判断、eval 断言与激活条件修复。详见 docs/release-notes.md。
+
 ### v6.0.10 (2026-07-23)
 
 Pages artifact action 升级到 v4，并删除 custom Actions 静态部署链不使用的

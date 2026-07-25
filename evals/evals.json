@@ -3340,6 +3340,24 @@
         "process_skills contains using-git-worktrees",
         "process_plan first commands contain STATE_ROOT=\"$(git rev-parse --git-common-dir | xargs dirname)\""
       ]
+    },
+    {
+      "id": 232,
+      "runner": "route",
+      "categories": [
+        "worktree",
+        "negative"
+      ],
+      "prompt": "我有两个任务在 todo list 里，帮我理一下优先级",
+      "expected_output": "Project-management phrasing with common words like 'two tasks' must not trigger worktree mode; it is a single planning question, not parallel isolated development.",
+      "files": [
+        "scripts/route_request.py",
+        "references/routing-rules.json"
+      ],
+      "expectations": [
+        "needs_worktree is false"
+      ],
+      "negative": true
     }
   ]
 }

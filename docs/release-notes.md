@@ -3,6 +3,59 @@
 本文件维护 `virtual-intelligent-dev-team` 的版本历史、字段迁移指南和未实现的计划项。
 `SKILL.md` 只保留最新一版的 changelog 链接,完整记录在此。
 
+## v6.0.17 (2026-07-25)
+
+- 收窄 worktree 关键词初筛表，移除「两个任务」「独立分支」「边开发边」「分开改」
+  等在日常开发 prompt 里高频误触发的泛词，保留「同时推进」「互不干扰」「交替推进」
+  「不影响主线」等语义明确的并行隔离信号；补 eval #232 锁定项目管理语境不应触发
+  worktree 的负向契约。
+
+## v6.0.16 (2026-07-25)
+
+- 修复 eval #229/#230/#231 在 `--blind` 模式下断言不可达或字段路径错的问题：
+  `micro_practices.items.reference` 改为 `micro_practices.names`（read_nested 不支持
+  list 投影）；`process_plan first commands contain` 改为完整命令串匹配；
+  `track_debt.py` 默认证据路径由 `.vidt/handoff` 改为 `.vidt/evidence`。
+- 放宽 `project-knowledge-pyramid` 激活条件到 `capture-project-knowledge` bundle，
+  使 onboarding 类请求也能激活知识金字塔协议；eval #230 断言同步匹配实际路由。
+- `change-localization-protocol.md` 的激活条件描述与收紧后的代码对齐。
+
+## v6.0.15 (2026-07-25)
+
+- worktree 判断改为两层配合：`routing-rules.json` 扩充并行/隔离语义词做关键词初筛，
+  `SKILL.md` workflow 新增 step 10.5 由 LLM 运行时复核 `needs_worktree` 信号（误判
+  可降级、漏判可建议）；worktree plan entry 标注 `needs_worktree` 为初筛结果。
+
+## v6.0.14 (2026-07-25)
+
+- 15 个 `.skill-*` 状态目录统一收拢到 `.vidt/` 单一根并去掉 `skill-` 前缀
+  （harness/iterations/handoff/evidence/metrics/beta/product 等），减少项目初始
+  散落目录数量。同步脚本默认值、`parent.name` 结构性校验、各 beta/post-release
+  脚本的 `repo_root` 反推（改为遍历 `.vidt` 自适应定位）、eval 断言路径、`.gitignore`
+  与 `export_public_skills` 排除规则；磁盘运行时状态一次性迁移至 `.vidt/`。
+
+## v6.0.13 (2026-07-24)
+
+- 新增 `worktree-state-placement-protocol.md`，区分 state-root（主仓）与
+  execution-root（worktree），给出 16 个状态目录的归属表与 `git rev-parse` 自举
+  state-root 的路径约定。worktree plan entry 注入状态目录步骤与 `STATE_ROOT` 命令；
+  `change-localization` 与 `project-knowledge-pyramid` 补 Worktree Behavior 节。
+  补 eval #231 覆盖 state-root 注入断言。
+
+## v6.0.12 (2026-07-24)
+
+- 新增 `change-localization-protocol.md`（token 预算递进五步收敛到精确改动点，
+  关键词检索步骤强制走脚本不调用 LLM）与 `project-knowledge-pyramid-protocol.md`
+  （面向目标代码库的三级知识地图 + SHA 漂移检测）。两个协议接入 audit-fix-deliver /
+  root-cause-remediate / plan-first-build 工作流包，在 `route_request` 注册激活分支
+  并补 eval #229 #230 覆盖。
+
+## v6.0.11 (2026-07-24)
+
+- `anti-entropy-governance` 新增数据通道红线（外部数据源必须走专用脚本通道、禁止
+  通用 fetch）；`iteration-protocol` 增加错误分级与阶段化自修复预算矩阵；
+  `pre-development-planning` 要求触发类交互必须携带具体引用依据。
+
 ## v6.0.10 (2026-07-23)
 
 - Pages workflow 升级到 `actions/upload-pages-artifact@v4`，继续直接上传 `./docs`
