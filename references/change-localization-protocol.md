@@ -13,8 +13,8 @@ stays with the routing lead and the relevant workflow bundle.
 Activate when any of these appear:
 
 - audit findings that need to map to exact code sites before fixing
-- root-cause remediation where the failing behavior's location is unclear
-- a bug whose call chain is not yet traced
+- root-cause remediation **when the prompt also carries a localization signal** (locate / pinpoint / call chain / exact files / 定位 / 改动点 / 调用链); a plain root-cause loop without such a signal does not activate this protocol
+- a bug whose call chain is not yet traced and a localization signal is present
 - edits requested against an unfamiliar or multi-module area
 - a fix that keeps recurring because prior attempts patched the wrong site
 
