@@ -2861,7 +2861,7 @@ def build_micro_practices(
             ],
         )
 
-    if bundle_name == "plan-first-build" and (
+    if bundle_name in {"plan-first-build", "capture-project-knowledge"} and (
         needs_pre_development_planning
         or text_has_any_keyword(lowered, project_knowledge_keywords)
     ):

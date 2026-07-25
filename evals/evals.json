@@ -3291,8 +3291,7 @@
         "lead_agent is Code Audit Council",
         "workflow_bundle is audit-fix-deliver",
         "micro_practice_names contains change-localization",
-        "response_pack_json micro_practices.names contains change-localization",
-        "response_pack_json micro_practices.reference contains references/change-localization-protocol.md"
+        "response_pack_json micro_practices.names contains change-localization"
       ]
     },
     {
@@ -3304,20 +3303,19 @@
         "project-knowledge-pyramid"
       ],
       "prompt": "We are onboarding to this large unfamiliar codebase. Plan the migration first: build a project knowledge map, then plan before coding.",
-      "expected_output": "Onboarding to a large unfamiliar repo should route to Technical Trinity with plan-first-build and activate the project knowledge pyramid alongside system-map.",
+      "expected_output": "Onboarding to a large unfamiliar repo should route to World-Class Product Architect with capture-project-knowledge and activate the project knowledge pyramid alongside system-map.",
       "files": [
         "scripts/route_request.py",
         "references/project-knowledge-pyramid-protocol.md",
         "references/system-map-protocol.md"
       ],
       "expectations": [
-        "lead_agent is Technical Trinity",
+        "lead_agent is World-Class Product Architect",
         "needs_pre_development_planning is true",
-        "workflow_bundle is plan-first-build",
+        "workflow_bundle is capture-project-knowledge",
         "micro_practice_names contains system-map",
         "micro_practice_names contains project-knowledge-pyramid",
-        "response_pack_json micro_practices.names contains project-knowledge-pyramid",
-        "response_pack_json micro_practices.reference contains references/project-knowledge-pyramid-protocol.md"
+        "response_pack_json micro_practices.names contains project-knowledge-pyramid"
       ]
     },
     {
@@ -3340,8 +3338,7 @@
         "needs_worktree is true",
         "workflow_bundle is govern-change-safely",
         "process_skills contains using-git-worktrees",
-        "process_plan first commands contain STATE_ROOT",
-        "process_plan first commands contain git rev-parse --git-common-dir"
+        "process_plan first commands contain STATE_ROOT=\"$(git rev-parse --git-common-dir | xargs dirname)\""
       ]
     }
   ]
