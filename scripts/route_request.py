@@ -1890,6 +1890,7 @@ def build_process_plan(
                 "skill": "using-git-worktrees",
                 "reference": "references/using-git-worktrees-playbook.md",
                 "steps": [
+                    "needs_worktree 是关键词初筛结果；运行时按 SKILL.md worktree 语义复核步骤确认任务是否真需要并行隔离，若误判可降级不强制 worktree",
                     f"确定基线分支（当前建议为 {base_branch}）",
                     "为每个任务创建独立 worktree 与分支",
                     "在各自 worktree 内开发与提交",
