@@ -3338,7 +3338,7 @@
         "needs_worktree is true",
         "workflow_bundle is govern-change-safely",
         "process_skills contains using-git-worktrees",
-        "process_plan first commands contain STATE_ROOT=\"$(git rev-parse --git-common-dir | xargs dirname)\""
+        "process_plan first commands contain STATE_ROOT=\"$(git worktree list --porcelain | sed -n 's/^worktree //p' | head -n 1)\""
       ]
     },
     {
@@ -3358,6 +3358,101 @@
         "needs_worktree is false"
       ],
       "negative": true
+    },
+    {
+      "id": 233,
+      "runner": "route",
+      "categories": [
+        "worktree",
+        "negative"
+      ],
+      "prompt": "帮我评估同时推进两个需求的优先级，不改代码。",
+      "expected_output": "Planning-only wording and an explicit no-code boundary must not create a worktree workflow.",
+      "files": [
+        "scripts/route_request.py",
+        "references/routing-rules.json"
+      ],
+      "expectations": [
+        "needs_worktree is false",
+        "process_skills is empty"
+      ],
+      "negative": true
+    },
+    {
+      "id": 234,
+      "runner": "route",
+      "categories": [
+        "worktree",
+        "negative"
+      ],
+      "prompt": "We should not use a worktree; keep this one task in the main checkout.",
+      "expected_output": "Explicit worktree negation must override the literal worktree keyword.",
+      "files": [
+        "scripts/route_request.py",
+        "references/routing-rules.json"
+      ],
+      "expectations": [
+        "needs_worktree is false"
+      ],
+      "negative": true
+    },
+    {
+      "id": 235,
+      "runner": "route",
+      "categories": [
+        "change-localization",
+        "negative"
+      ],
+      "prompt": "帮我分析产品市场定位，不需要改代码。",
+      "expected_output": "Product positioning is not code change localization.",
+      "files": [
+        "scripts/route_request.py",
+        "references/change-localization-protocol.md"
+      ],
+      "expectations": [
+        "micro_practice_names length is 0"
+      ],
+      "negative": true
+    },
+    {
+      "id": 236,
+      "runner": "route",
+      "categories": [
+        "worktree",
+        "bounded-iteration",
+        "state-placement"
+      ],
+      "prompt": "并行开发多个候选，分别放进 worktree，多轮优化并对比基线直到稳定。",
+      "expected_output": "When worktree and bounded iteration are both active, every durable iteration command uses STATE_ROOT.",
+      "files": [
+        "scripts/route_request.py",
+        "references/worktree-state-placement-protocol.md",
+        "references/iteration-protocol.md"
+      ],
+      "expectations": [
+        "needs_worktree is true",
+        "needs_iteration is true",
+        "process_plan first commands contain STATE_ROOT=\"$(git worktree list --porcelain | sed -n 's/^worktree //p' | head -n 1)\""
+      ]
+    },
+    {
+      "id": 237,
+      "runner": "route",
+      "categories": [
+        "worktree",
+        "boundary-guard"
+      ],
+      "prompt": "使用 git worktree 隔离开发，不改代码到主仓，最后提 PR。",
+      "expected_output": "The main-checkout boundary narrows where code may change; it must not negate the explicit isolated-worktree request.",
+      "files": [
+        "scripts/route_request.py",
+        "references/routing-rules.json",
+        "references/worktree-state-placement-protocol.md"
+      ],
+      "expectations": [
+        "needs_worktree is true",
+        "process_skills contains using-git-worktrees"
+      ]
     }
   ]
 }

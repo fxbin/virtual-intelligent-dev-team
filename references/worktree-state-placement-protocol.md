@@ -66,21 +66,27 @@ execution-root.
 
 ## Worktree Path Convention
 
-A worktree shares the main repository's `.git` but has its own working tree.
-From inside any worktree, recover state-root without hardcoding:
+A worktree shares Git metadata but has its own working tree. Resolve state-root
+from the first `worktree` record in Git's porcelain output; this is the main
+worktree and remains correct when paths contain spaces or Git metadata is kept
+outside the checkout:
 
 ```bash
-# state-root is the parent of the shared .git directory
-git rev-parse --git-common-dir | xargs dirname
+STATE_ROOT="$(git worktree list --porcelain | sed -n 's/^worktree //p' | head -n 1)"
 ```
 
 When a script accepts `--root`, pass state-root explicitly from inside a
 worktree rather than relying on the `--root .` default:
 
 ```bash
-STATE_ROOT="$(git rev-parse --git-common-dir | xargs dirname)"
+STATE_ROOT="$(git worktree list --porcelain | sed -n 's/^worktree //p' | head -n 1)"
 python scripts/init_harness_constraints.py --root "$STATE_ROOT" --summary "<task>" --pretty
 ```
+
+Python runtimes should use an argv-based subprocess and parse porcelain records
+directly, as `scripts/route_request.py:resolve_repository_roots()` does. Do not
+pipe `git-common-dir` through `xargs`: whitespace splitting corrupts valid paths,
+and the parent of an external git-dir is not necessarily the main worktree.
 
 The `--root .` default is correct only when `cwd` is already the main
 repository. Inside a worktree it points at the worktree, which is the wrong

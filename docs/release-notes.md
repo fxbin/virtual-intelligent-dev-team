@@ -3,6 +3,12 @@
 本文件维护 `virtual-intelligent-dev-team` 的版本历史、字段迁移指南和未实现的计划项。
 `SKILL.md` 只保留最新一版的 changelog 链接,完整记录在此。
 
+## v6.0.18 (2026-07-26)
+
+- Durable `.vidt` 状态与 decision log 统一解析到主仓 state-root。
+- 收窄 worktree / change-localization 的否定和只读边界。
+- 验证 fixture 改用自动清理的系统临时目录，仓库级发现跳过隐藏状态目录。
+
 ## v6.0.17 (2026-07-25)
 
 - 收窄 worktree 关键词初筛表，移除「两个任务」「独立分支」「边开发边」「分开改」

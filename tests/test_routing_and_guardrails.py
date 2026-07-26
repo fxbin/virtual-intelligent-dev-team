@@ -7,15 +7,14 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import unittest
 from unittest import mock
 from pathlib import Path
-from uuid import uuid4
 
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
 REPO_ROOT = SKILL_DIR.parent
-TMP_ROOT = REPO_ROOT / ".tmp-validation"
 ROUTE_SCRIPT = SKILL_DIR / "scripts" / "route_request.py"
 GUARDRAIL_SCRIPT = SKILL_DIR / "scripts" / "git_workflow_guardrail.py"
 INIT_ITERATION_SCRIPT = SKILL_DIR / "scripts" / "init_iteration_round.py"
@@ -172,10 +171,8 @@ def assert_field_expectation(
 
 @contextmanager
 def make_tempdir():
-    TMP_ROOT.mkdir(parents=True, exist_ok=True)
-    path = TMP_ROOT / f"tmp-{uuid4().hex}"
-    path.mkdir(parents=True, exist_ok=False)
-    yield str(path)
+    with tempfile.TemporaryDirectory(prefix="vidt-test-") as path:
+        yield str(Path(path).resolve())
 
 
 def write_beta_gate_fixture(
@@ -1103,6 +1100,108 @@ class RoutingTests(unittest.TestCase):
             "git worktree add ../wt-<task> -b <branch> master",
             plan[0]["commands"][1],
         )
+
+    def test_worktree_explicit_negation_and_planning_only_are_suppressed(self) -> None:
+        prompts = [
+            "We should not use a worktree; keep this one task in the main checkout.",
+            "帮我评估同时推进两个需求的优先级，不改代码。",
+        ]
+        for prompt in prompts:
+            with self.subTest(prompt=prompt):
+                result = route_request.route_request(
+                    prompt,
+                    load_config(),
+                    repo_path=REPO_ROOT,
+                )
+                self.assertFalse(result["needs_worktree"])
+                self.assertNotIn("using-git-worktrees", result["process_skills"])
+
+    def test_explicit_worktree_intent_wins_over_main_checkout_boundary(self) -> None:
+        result = route_request.route_request(
+            "使用 git worktree 隔离开发，不改代码到主仓，最后提 PR。",
+            load_config(),
+            repo_path=REPO_ROOT,
+        )
+
+        self.assertTrue(result["needs_worktree"])
+        self.assertIn("using-git-worktrees", result["process_skills"])
+
+    def test_product_positioning_and_read_only_audit_do_not_localize_code(self) -> None:
+        prompts = [
+            "帮我分析产品市场定位，不需要改代码。",
+            "只读 security audit，不改代码，只给风险报告。",
+        ]
+        for prompt in prompts:
+            with self.subTest(prompt=prompt):
+                result = route_request.route_request(
+                    prompt,
+                    load_config(),
+                    repo_path=REPO_ROOT,
+                )
+                self.assertNotIn("change-localization", result["micro_practice_names"])
+
+    def test_repository_roots_and_decision_log_use_main_worktree_with_spaces(self) -> None:
+        with make_tempdir() as tempdir:
+            root = Path(tempdir)
+            main_repo = root / "main repo"
+            linked_worktree = root / "linked worktree"
+            main_repo.mkdir()
+            git("init", "-b", "main", cwd=main_repo)
+            configure_repo(main_repo)
+            (main_repo / "README.md").write_text("# fixture\n", encoding="utf-8")
+            git("add", "README.md", cwd=main_repo)
+            git("commit", "-m", "init", cwd=main_repo)
+            git("worktree", "add", "-b", "feat/linked", str(linked_worktree), cwd=main_repo)
+            config = load_config()
+            config["governance"]["fast_track_control"]["write_event_log"] = True
+
+            result = route_request.route_request(
+                "并行开发两个代码功能，使用 git worktree 隔离分支。",
+                config,
+                repo_path=linked_worktree,
+            )
+
+            self.assertEqual(str(main_repo.resolve()), result["repository_roots"]["state_root"])
+            self.assertEqual(
+                str(linked_worktree.resolve()),
+                result["repository_roots"]["execution_root"],
+            )
+            self.assertTrue(result["repository_roots"]["separated"])
+            self.assertTrue(result["decision_log_write"]["written"])
+            self.assertTrue((main_repo / ".vidt/metrics/decision-log.jsonl").exists())
+            self.assertFalse((linked_worktree / ".vidt/metrics/decision-log.jsonl").exists())
+
+    def test_decision_log_failure_is_reported(self) -> None:
+        with make_tempdir() as tempdir:
+            root = Path(tempdir)
+            (root / ".vidt").write_text("not a directory", encoding="utf-8")
+            config = load_config()
+            config["governance"]["fast_track_control"]["write_event_log"] = True
+
+            result = route_request.route_request(
+                "Review this Python function.",
+                config,
+                repo_path=root,
+            )
+
+            self.assertTrue(result["decision_log_write"]["attempted"])
+            self.assertFalse(result["decision_log_write"]["written"])
+            self.assertIsNotNone(result["decision_log_write"]["error"])
+
+    def test_iteration_worktree_plan_consumes_state_root(self) -> None:
+        state_root = Path("/tmp/main repo")
+        plan = route_request.build_process_plan(
+            needs_iteration=True,
+            needs_worktree=True,
+            repo_strategy={"strategy": "trunk-main", "base_branch": "main"},
+            state_root=state_root,
+        )
+        commands = plan[0]["commands"]
+
+        self.assertEqual("STATE_ROOT='/tmp/main repo'", commands[0])
+        for command in commands[1:]:
+            if ".vidt/iterations" in command:
+                self.assertIn("$STATE_ROOT/.vidt/iterations", command)
 
     def test_git_workflow_plan_checks_before_sync_and_push(self) -> None:
         plan = route_request.build_process_plan(

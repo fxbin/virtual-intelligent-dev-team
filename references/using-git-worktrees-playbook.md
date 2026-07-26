@@ -55,7 +55,7 @@ worktree 只放代码改动和一次性执行产物；所有 `.vidt/` 状态目�
 - 在 worktree 内调用 `init_harness_constraints.py` 等脚本时，`--root` 必须指向主仓，而不是 worktree 的 `.` 默认值：
 
   ```bash
-  STATE_ROOT="$(git rev-parse --git-common-dir | xargs dirname)"
+  STATE_ROOT="$(git worktree list --porcelain | sed -n 's/^worktree //p' | head -n 1)"
   python scripts/init_harness_constraints.py --root "$STATE_ROOT" --summary "<task>" --pretty
   ```
 

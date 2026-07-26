@@ -11,6 +11,7 @@ import importlib.util
 import json
 import os
 import re
+import shlex
 import subprocess
 from pathlib import Path
 from typing import Literal, TypedDict
@@ -626,6 +627,62 @@ def should_suppress_bounded_iteration(text: str, process_hits: dict[str, list[st
     )
 
 
+def should_suppress_worktree(text: str, process_hits: dict[str, list[str]]) -> bool:
+    """Suppress explicit negation and generic planning-only worktree hits."""
+    lowered = text.lower()
+    explicit_negation_patterns = [
+        r"\b(?:do not|don't|should not|must not|without)\s+(?:use|create|need)?\s*(?:a\s+)?worktree\b",
+        r"(?:不使用|不要使用|无需|不需要|别用|不要建|不创建).{0,6}worktree",
+        r"worktree.{0,6}(?:不使用|不要|无需|不需要)",
+    ]
+    if any(re.search(pattern, lowered, re.IGNORECASE) for pattern in explicit_negation_patterns):
+        return True
+
+    strong_worktree_intent = any(
+        keyword_matches(lowered, marker)
+        for marker in [
+            "git worktree",
+            "使用 worktree",
+            "用 worktree",
+            "创建 worktree",
+            "worktree 隔离",
+            "并行开发",
+            "多分支并行",
+            "同仓多任务",
+        ]
+    )
+    read_only_patterns = [
+        r"(?:不改代码|不要改代码|只评估|仅评估|只讨论|仅讨论)",
+    ]
+    if (
+        not strong_worktree_intent
+        and any(re.search(pattern, lowered, re.IGNORECASE) for pattern in read_only_patterns)
+    ):
+        return True
+
+    worktree_hits = {
+        normalize_process_hit(hit)
+        for hit in process_hits.get("using-git-worktrees", [])
+    }
+    weak_hits = {"同时推进", "交替推进"}
+    if worktree_hits and worktree_hits.issubset(weak_hits):
+        isolation_anchors = [
+            "worktree",
+            "git",
+            "仓库",
+            "代码",
+            "开发",
+            "实现",
+            "分支",
+            "隔离",
+            "并行开发",
+            "互不干扰",
+            "不影响主线",
+        ]
+        return not any(keyword_matches(lowered, anchor) for anchor in isolation_anchors)
+    return False
+
+
 def should_suppress_git_agent_scoring(
     git_reason_hits: list[str], needs_release_gate: bool, needs_git_workflow: bool
 ) -> bool:
@@ -773,6 +830,8 @@ def detect_process_skills(
         process_hits.pop("git-workflow", None)
     if should_suppress_bounded_iteration(text, process_hits):
         process_hits.pop("bounded-iteration", None)
+    if should_suppress_worktree(text, process_hits):
+        process_hits.pop("using-git-worktrees", None)
 
     needs_pre_development_planning = "pre-development-planning" in process_hits
     needs_iteration = "bounded-iteration" in process_hits
@@ -889,6 +948,35 @@ def detect_repo_strategy(repo_path: Path) -> dict[str, str]:
     if has_develop:
         return {"strategy": "develop-only", "base_branch": "develop"}
     return default
+
+
+def resolve_repository_roots(repo_path: Path) -> dict[str, object]:
+    """Resolve the main worktree (state-root) and current checkout (execution-root)."""
+    execution_root = repo_path.resolve()
+    state_root = execution_root
+    resolution = "fallback-execution-root"
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(execution_root), "worktree", "list", "--porcelain", "-z"],
+            capture_output=True,
+            check=False,
+        )
+        if proc.returncode == 0:
+            for record in (proc.stdout or b"").split(b"\0"):
+                if record.startswith(b"worktree "):
+                    candidate = Path(os.fsdecode(record.removeprefix(b"worktree "))).resolve()
+                    if candidate.exists():
+                        state_root = candidate
+                        resolution = "git-worktree-list"
+                    break
+    except (OSError, ValueError):
+        pass
+    return {
+        "state_root": str(state_root),
+        "execution_root": str(execution_root),
+        "separated": state_root != execution_root,
+        "resolution": resolution,
+    }
 
 
 def build_git_templates(repo_strategy: dict[str, str]) -> dict[str, object]:
@@ -1734,12 +1822,21 @@ def build_process_plan(
     lead_agent: str | None = None,
     workflow_bundle_name: str | None = None,
     auto_run_profile: dict[str, object] | None = None,
+    state_root: Path | None = None,
 ) -> list[dict[str, object]]:
     plan: list[dict[str, object]] = []
     if not isinstance(repo_strategy, dict):
         repo_strategy = {"strategy": "unknown", "base_branch": "main"}
     base_branch = str(repo_strategy.get("base_branch", "main"))
     iteration_owner = lead_agent or "<lead-owner>"
+    if state_root is not None:
+        state_root_command = f"STATE_ROOT={shlex.quote(str(state_root))}"
+    else:
+        state_root_command = (
+            'STATE_ROOT="$(git worktree list --porcelain | '
+            "sed -n 's/^worktree //p' | head -n 1)\""
+        )
+    iteration_workspace = '"$STATE_ROOT/.vidt/iterations"' if needs_worktree else ".vidt/iterations"
     if not isinstance(auto_run_profile, dict):
         auto_run_profile = {"enabled": False}
     if not isinstance(iteration_profile, dict):
@@ -1794,6 +1891,29 @@ def build_process_plan(
             }
         )
     if needs_iteration:
+        iteration_commands = []
+        if needs_worktree:
+            iteration_commands.append(state_root_command)
+        iteration_commands.extend(
+            [
+                (
+                    'python scripts/init_project_memory.py --root "$STATE_ROOT" '
+                    "--mode iteration --pretty"
+                    if needs_worktree
+                    else "python scripts/init_project_memory.py --root . --mode iteration --pretty"
+                ),
+                f"mkdir -p {iteration_workspace}",
+                f"cp assets/iteration-plan-template.json {iteration_workspace}/iteration-plan.json",
+                f"python scripts/register_benchmark_baseline.py --workspace {iteration_workspace} --label stable --report <baseline-report> --pretty",
+                f"python scripts/run_iteration_cycle.py --workspace {iteration_workspace} --round-id round-01 --objective \"<goal>\" --baseline-label stable --owner \"{iteration_owner}\" --candidate \"<candidate-change>\" --candidate-worktree ../wt-round-01 --candidate-output-dir .tmp-iteration-round-01 --pretty",
+                f"python scripts/compare_benchmark_results.py --baseline {iteration_workspace}/baselines/stable/benchmark-results.json --candidate .tmp-iteration-round-01/benchmark-results.json --pretty",
+                f"python scripts/promote_iteration_baseline.py --workspace {iteration_workspace} --round-id round-01 --label accepted-round-01 --pretty",
+                f"python scripts/sync_distilled_patterns.py --workspace {iteration_workspace} --pretty",
+                f"python scripts/materialize_candidate_patch.py --brief {iteration_workspace}/candidate-briefs/round-01.json --candidate-root ../wt-round-01 --patch-output {iteration_workspace}/patches/round-01.patch --pretty",
+                f"python scripts/run_iteration_loop.py --workspace {iteration_workspace} --plan {iteration_workspace}/iteration-plan.json --pretty",
+                f"python scripts/run_iteration_loop.py --workspace {iteration_workspace} --plan {iteration_workspace}/iteration-plan.json --resume --pretty",
+            ]
+        )
         plan.append(
             {
                 "skill": "bounded-iteration",
@@ -1810,19 +1930,7 @@ def build_process_plan(
                     "深度离线 loop 中断后，使用持久化 loop state 安全续跑",
                     "按 keep / retry / rollback / stop 做轮次决策",
                 ],
-                "commands": [
-                    "python scripts/init_project_memory.py --root . --mode iteration --pretty",
-                    "mkdir -p .vidt/iterations",
-                    "cp assets/iteration-plan-template.json .vidt/iterations/iteration-plan.json",
-                    "python scripts/register_benchmark_baseline.py --workspace .vidt/iterations --label stable --report <baseline-report> --pretty",
-                    f"python scripts/run_iteration_cycle.py --workspace .vidt/iterations --round-id round-01 --objective \"<goal>\" --baseline-label stable --owner \"{iteration_owner}\" --candidate \"<candidate-change>\" --candidate-worktree ../wt-round-01 --candidate-output-dir .tmp-iteration-round-01 --pretty",
-                    "python scripts/compare_benchmark_results.py --baseline .vidt/iterations/baselines/stable/benchmark-results.json --candidate .tmp-iteration-round-01/benchmark-results.json --pretty",
-                    "python scripts/promote_iteration_baseline.py --workspace .vidt/iterations --round-id round-01 --label accepted-round-01 --pretty",
-                    "python scripts/sync_distilled_patterns.py --workspace .vidt/iterations --pretty",
-                    "python scripts/materialize_candidate_patch.py --brief .vidt/iterations/candidate-briefs/round-01.json --candidate-root ../wt-round-01 --patch-output .vidt/iterations/patches/round-01.patch --pretty",
-                    "python scripts/run_iteration_loop.py --workspace .vidt/iterations --plan .vidt/iterations/iteration-plan.json --pretty",
-                    "python scripts/run_iteration_loop.py --workspace .vidt/iterations --plan .vidt/iterations/iteration-plan.json --resume --pretty",
-                ],
+                "commands": iteration_commands,
                 "round_caps": {
                     "online": int(iteration_profile.get("round_cap_online", 3)),
                     "offline": int(iteration_profile.get("round_cap_offline", 120)),
@@ -1900,7 +2008,7 @@ def build_process_plan(
                 "commands": [
                     "git worktree list",
                     f"git worktree add ../wt-<task> -b <branch> {base_branch}",
-                    'STATE_ROOT="$(git rev-parse --git-common-dir | xargs dirname)"',
+                    state_root_command,
                     "git worktree remove ../wt-<task>",
                     "git worktree prune",
                 ],
@@ -2733,7 +2841,6 @@ def build_micro_practices(
         "可测试",
     ]
     change_localization_keywords = [
-        "audit",
         "pinpoint",
         "locate the change",
         "where to change",
@@ -2742,8 +2849,6 @@ def build_micro_practices(
         "call-chain",
         "code site",
         "change site",
-        "审计",
-        "定位",
         "改动点",
         "改动位置",
         "调用链",
@@ -2847,9 +2952,21 @@ def build_micro_practices(
             ],
         )
 
-    if bundle_name == "audit-fix-deliver" or text_has_any_keyword(
-        lowered, change_localization_keywords
-    ):
+    localization_read_only_markers = [
+        "只读",
+        "不改代码",
+        "不要改代码",
+        "只审计",
+        "仅审计",
+        "read-only",
+        "read only",
+        "audit only",
+        "do not change code",
+        "no code changes",
+    ]
+    localization_requested = text_has_any_keyword(lowered, change_localization_keywords)
+    localization_read_only = text_has_any_keyword(lowered, localization_read_only_markers)
+    if (bundle_name == "audit-fix-deliver" or localization_requested) and not localization_read_only:
         add(
             "change-localization",
             CHANGE_LOCALIZATION_REFERENCE,
@@ -4627,6 +4744,8 @@ def build_hook_directives(lead_agent: str) -> dict[str, object]:
 
 
 def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict[str, object]:
+    repository_roots = resolve_repository_roots(repo_path)
+    state_root = Path(str(repository_roots["state_root"]))
     auto_mode = detect_auto_mode(text)
     routed_text = str(auto_mode.get("normalized_text", text)).strip() or text
     scores, reasons = compute_scores(routed_text, config)
@@ -4778,7 +4897,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
     governance_defaults = get_governance_defaults(config)
     governance_plan = build_governance_plan(
         text=routed_text,
-        repo_path=repo_path,
+        repo_path=state_root,
         lead_agent=lead_agent,
         assistants=assistants,
         scores=scores,
@@ -4790,10 +4909,17 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
     fast_track_control = governance_defaults.get("fast_track_control", {})
     if not isinstance(fast_track_control, dict):
         fast_track_control = {}
+    decision_log_write: dict[str, object] = {
+        "attempted": False,
+        "written": False,
+        "path": str(state_root / DECISION_LOG_PATH),
+        "error": None,
+    }
     if bool(fast_track_control.get("write_event_log", True)):
+        decision_log_write["attempted"] = True
         try:
             append_decision_log_entry(
-                repo_path=repo_path,
+                repo_path=state_root,
                 payload={
                     "timestamp": now_iso(),
                     "lead_agent": lead_agent,
@@ -4809,8 +4935,9 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
                     or ""
                 ),
             )
-        except Exception:
-            pass
+            decision_log_write["written"] = True
+        except (OSError, ValueError) as exc:
+            decision_log_write["error"] = f"{type(exc).__name__}: {exc}"
     mode = pick_mode(
         confidence=confidence,
         sentinel_overlay=sentinel_overlay,
@@ -4933,7 +5060,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         workflow_bundle_name=str(workflow_bundle.get("name", "direct-execution")),
         progress_anchor=workflow_bundle.get("progress_anchor_recommended"),
         iteration_profile=iteration_profile,
-        repo_root=repo_path,
+        repo_root=state_root,
     )
     real_subagent_runtime_plan = build_real_subagent_runtime_plan(
         text=routed_text,
@@ -5000,6 +5127,8 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "process_skills": process_skills,
         "builtin_process_enabled": True,
         "process_plan": process_plan,
+        "repository_roots": repository_roots,
+        "decision_log_write": decision_log_write,
         "iteration_profile": iteration_profile,
         "governance_plan": governance_plan,
         "git_workflow_profile": {
@@ -5056,7 +5185,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         "hook_directives": build_hook_directives(lead_agent),
         "scores": scores,
         "reason": reason,
-        "repo_root_hint": str(repo_path),
+        "repo_root_hint": str(state_root),
     }
 
 
