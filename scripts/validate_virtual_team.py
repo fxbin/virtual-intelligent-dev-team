@@ -8,13 +8,12 @@ from contextlib import contextmanager
 import importlib.util
 import json
 import subprocess
+import tempfile
 from pathlib import Path
-from uuid import uuid4
 
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 REPO_ROOT = SKILL_DIR.parent
-TMP_ROOT = REPO_ROOT / ".tmp-validation"
 CONFIG_PATH = SKILL_DIR / "references" / "routing-rules.json"
 CASES_PATH = SKILL_DIR / "references" / "regression-cases.json"
 ROUTE_SCRIPT = SKILL_DIR / "scripts" / "route_request.py"
@@ -79,10 +78,8 @@ def configure_repo(repo: Path) -> None:
 
 @contextmanager
 def make_tempdir():
-    TMP_ROOT.mkdir(parents=True, exist_ok=True)
-    path = TMP_ROOT / f"tmp-{uuid4().hex}"
-    path.mkdir(parents=True, exist_ok=False)
-    yield str(path)
+    with tempfile.TemporaryDirectory(prefix="vidt-validation-") as path:
+        yield str(Path(path).resolve())
 
 
 def check(condition: bool, message: str) -> None:

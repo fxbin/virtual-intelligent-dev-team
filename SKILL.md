@@ -267,6 +267,12 @@ Runtime routing rules (primary routes, stage council overlays, score model, thre
 
 完整版本历史、字段迁移指南和 Memory Keeper 计划见 [docs/release-notes.md](docs/release-notes.md)。
 
+### v6.0.18 (2026-07-26)
+
+- 将 decision log 和 durable iteration state 统一写入主仓 state-root，修复 linked worktree、含空格路径和持久状态分裂。
+- worktree 路由新增显式否定与纯规划抑制；change-localization 排除产品定位和只读审计。
+- validator/test fixture 改用自动清理的系统临时目录，避免 `.tmp-validation` 泄漏污染仓库门禁。
+
 ### v6.0.17 (2026-07-25)
 
 收窄 worktree 关键词初筛表（移除高频误触发的泛词，保留语义明确的并行隔离信号），
