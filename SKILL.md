@@ -267,6 +267,10 @@ Runtime routing rules (primary routes, stage council overlays, score model, thre
 
 完整版本历史、字段迁移指南和 Memory Keeper 计划见 [docs/release-notes.md](docs/release-notes.md)。
 
+### v6.0.19 (2026-07-26)
+
+- 路由生成 worktree 与迭代命令时直接复用已经解析的主仓 `state-root`，避免再次通过 shell 猜测路径。
+
 ### v6.0.18 (2026-07-26)
 
 - 将 decision log 和 durable iteration state 统一写入主仓 state-root，修复 linked worktree、含空格路径和持久状态分裂。

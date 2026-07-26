@@ -3,6 +3,13 @@
 本文件维护 `virtual-intelligent-dev-team` 的版本历史、字段迁移指南和未实现的计划项。
 `SKILL.md` 只保留最新一版的 changelog 链接,完整记录在此。
 
+## v6.0.19 (2026-07-26)
+
+- `route_request` 把已解析的主仓 `state-root` 传给 process plan 构建器，worktree 与
+  迭代命令不再通过 shell 二次推断路径。
+- 增加带空格主仓与 linked worktree 的路由级回归锁，确保 decision log 和后续命令
+  共享同一个状态根真源。
+
 ## v6.0.18 (2026-07-26)
 
 - Durable `.vidt` 状态与 decision log 统一解析到主仓 state-root。

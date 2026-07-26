@@ -1918,6 +1918,7 @@ def build_process_plan(
             {
                 "skill": "bounded-iteration",
                 "reference": "references/iteration-protocol.md",
+                "state_root": str(state_root) if state_root is not None else None,
                 "steps": [
                     "定义目标函数、基线和本轮唯一候选改动",
                     "保留语义主责 owner，并准备 iteration workspace 与计划文件",
@@ -1997,6 +1998,7 @@ def build_process_plan(
             {
                 "skill": "using-git-worktrees",
                 "reference": "references/using-git-worktrees-playbook.md",
+                "state_root": str(state_root) if state_root is not None else None,
                 "steps": [
                     "needs_worktree 是关键词初筛结果；运行时按 SKILL.md worktree 语义复核步骤确认任务是否真需要并行隔离，若误判可降级不强制 worktree",
                     f"确定基线分支（当前建议为 {base_branch}）",
@@ -5082,6 +5084,7 @@ def route_request(text: str, config: dict[str, object], repo_path: Path) -> dict
         lead_agent=lead_agent,
         workflow_bundle_name=str(workflow_bundle.get("name", "direct-execution")),
         auto_run_profile=auto_run_profile,
+        state_root=state_root,
     )
 
     reason = {
