@@ -1170,6 +1170,18 @@ class RoutingTests(unittest.TestCase):
             self.assertTrue(result["decision_log_write"]["written"])
             self.assertTrue((main_repo / ".vidt/metrics/decision-log.jsonl").exists())
             self.assertFalse((linked_worktree / ".vidt/metrics/decision-log.jsonl").exists())
+            worktree_plan = next(
+                item
+                for item in result["process_plan"]
+                if item["skill"] == "using-git-worktrees"
+            )
+            self.assertEqual(str(main_repo.resolve()), worktree_plan["state_root"])
+            state_root_command = worktree_plan["commands"][2]
+            self.assertEqual(
+                f"STATE_ROOT='{main_repo.resolve()}'",
+                state_root_command,
+            )
+            self.assertNotIn("git worktree list --porcelain", state_root_command)
 
     def test_decision_log_failure_is_reported(self) -> None:
         with make_tempdir() as tempdir:
@@ -1198,6 +1210,7 @@ class RoutingTests(unittest.TestCase):
         )
         commands = plan[0]["commands"]
 
+        self.assertEqual(str(state_root), plan[0]["state_root"])
         self.assertEqual("STATE_ROOT='/tmp/main repo'", commands[0])
         for command in commands[1:]:
             if ".vidt/iterations" in command:

@@ -3338,7 +3338,7 @@
         "needs_worktree is true",
         "workflow_bundle is govern-change-safely",
         "process_skills contains using-git-worktrees",
-        "process_plan first commands contain STATE_ROOT=\"$(git worktree list --porcelain | sed -n 's/^worktree //p' | head -n 1)\""
+        "process_plan first state_root is not null"
       ]
     },
     {
@@ -3432,7 +3432,7 @@
       "expectations": [
         "needs_worktree is true",
         "needs_iteration is true",
-        "process_plan first commands contain STATE_ROOT=\"$(git worktree list --porcelain | sed -n 's/^worktree //p' | head -n 1)\""
+        "process_plan first state_root is not null"
       ]
     },
     {
