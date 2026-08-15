@@ -53,6 +53,42 @@ python scripts/run_release_gate.py --output-dir evals/release-gate --iteration-w
 - if staged beta validation is in scope or `.vidt/beta/` exists, the latest beta round gate must be `advance`
 - structured completion evidence exists, passes `references/completion-evidence.schema.json`, has result `passed`, confidence `A | B`, leaves no uncovered scope or residual risk, and includes `evidence_refs` with at least one verifiable command or existing local artifact path
 
+## Production-Bound Extension
+
+When the release mutates or depends on a remote production system, also apply [production-bound-delivery-protocol.md](./production-bound-delivery-protocol.md).
+
+The release claim must distinguish the evidence planes that are actually required:
+
+```text
+code plane
+control plane
+production data plane
+```
+
+Examples:
+
+- green CI/build proves code-plane evidence only;
+- a database migration/version read-back or managed-function version proves control-plane evidence;
+- a real production request/write/read proving the deployed behavior proves data-plane evidence.
+
+The current completion-evidence schema does not need a breaking field addition for this rule. Instead:
+
+- put verifiable remote proof in `evidence_refs` / supporting artifacts;
+- treat every required-but-unverified remote mutation or smoke path as **uncovered scope**;
+- therefore release remains `hold` until those required planes are verified.
+
+### External-system preflight
+
+Before remote mutation, verify the canonical provider resource/account identity and actual capability. Do not diagnose permissions from a remembered/stale project ID. Distinguish host/app permission, provider OAuth/API scope, organization/project role, and resource policy.
+
+If the agent cannot perform the remote mutation, use the operator CLI handoff contract from `production-bound-delivery-protocol.md`: dry-run/read first, expected output, stop conditions, secret boundary, mutation command, and resume checkpoint.
+
+### Release train
+
+If the release integrates several bounded PRs through a non-default release branch, also apply [release-train-protocol.md](./release-train-protocol.md).
+
+The final release PR owns release-level closure. Child PR merge state must not be treated as proof that child Issues auto-closed or that production rollout completed.
+
 ## Why This Is Separate From Benchmark
 
 The benchmark gate should stay useful for fast iteration.
@@ -61,6 +97,7 @@ The release gate is stricter:
 
 - it always includes the real offline loop drill
 - it requires structured completion evidence before `ship`, so benchmark green alone cannot become a completion claim
+- for production-bound work, required control/data-plane evidence must also be covered; code green alone cannot become `ship`
 - it emits a ship-or-hold decision
 - it writes dedicated release gate artifacts
 - it can consume the latest beta round gate result automatically and block ship when beta is still `hold`, `escalate`, or missing
@@ -83,18 +120,24 @@ The release gate is stricter:
 - `iteration-plan.release-gate.json`, `open-loops.md`, and `iteration-context-chain.md` when `hold` bootstraps an iteration workspace
 - git-detached `repo-copy` plus blocker-specific remediation and target artifacts under `artifacts/release-gate-hold/` inside the copied repo when `hold` seeds the next self-mutation chain
 
+For production-bound releases, supporting evidence may additionally include provider read-back, deployment version, migration history, production smoke output, and an operator handoff transcript/result that contains no secrets.
+
 ## Decision Rule
 
 - `ship`
   - all benchmark checks and offline drill checks passed
   - if beta evidence is enabled or `.vidt/beta/` exists, the latest beta round gate is `advance`
   - completion evidence is complete and supports the release claim, including verifiable `evidence_refs`
+  - all required production-bound evidence planes are verified; no required remote mutation or production smoke remains uncovered
   - if an iteration workspace is provided, the gate can archive a reusable release-ready baseline and sync distilled patterns
   - the gate should also bootstrap `.vidt/post-release/` so telemetry and real-user feedback can reopen the next loop without inventing a new structure later
 - `hold`
   - any gate failed
   - beta `hold`, `escalate`, or missing beta gate evidence is a first-class release blocker, even when benchmark evidence is green
   - missing, invalid, partial, failed, or risky completion evidence is a first-class release blocker, even when benchmark and beta gates are green
+  - required production control-plane/data-plane evidence is unknown, stale, or still pending
+  - external resource identity/capability is unresolved for a required mutation
+  - migration history or remote state has unexpected drift that has not been reconciled
   - the gate should emit a next-iteration brief that states blockers, objective hints, evidence requirements, persona / scenario blocker slices when beta evidence exists, and the recommended rerun path back into bounded iteration
   - if the latest beta gate already emitted a remediation brief, the release `hold` brief should inherit its required evidence, recommended commands, and resume artifacts instead of recomputing a generic retry path
   - if an iteration workspace is provided, the gate can bootstrap a runnable iteration plan, a blocker-specific mutation catalog, and a copied candidate repo, then optionally execute it immediately
