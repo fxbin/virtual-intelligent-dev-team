@@ -615,7 +615,10 @@ print(json.dumps({"ok": True, "source": "release-gate-hold-bootstrap-drill"}, en
     )
     assert_true(
         release_gate_proc.returncode == 2,
-        "release gate hold drill should exit with status 2 to indicate hold",
+        "release gate hold drill should exit with status 2 to indicate hold; "
+        f"returncode={release_gate_proc.returncode}; "
+        f"stdout={release_gate_proc.stdout[-4000:]!r}; "
+        f"stderr={release_gate_proc.stderr[-4000:]!r}",
     )
     result = load_json(output_dir / "release-gate-results.json")
 

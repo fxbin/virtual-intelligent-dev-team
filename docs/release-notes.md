@@ -3,6 +3,19 @@
 本文件维护 `virtual-intelligent-dev-team` 的版本历史、字段迁移指南和未实现的计划项。
 `SKILL.md` 只保留最新一版的 changelog 链接,完整记录在此。
 
+## v6.1.0 (2026-08-15)
+
+- 基于 AhaFrame 真实端到端生产交付实测，而非假设流程，新增 `production-bound-delivery-protocol.md`：正式区分 code plane / control plane / production data plane，CI green 不再等价于 production green。
+- 远程 mutation 前强制先解析 provider/account/canonical resource ID 与实际 capability；区分宿主应用权限、OAuth/API scope、项目角色和资源策略，避免 stale resource ID 被误诊为权限问题。
+- 将 Human CLI execution 升级为一等 handoff/resume 模式：read/dry-run first、expected output、STOP conditions、secret boundary、mutation command、resume checkpoint 缺一不可。
+- migration-backed 系统新增 local/remote history drift fail-closed 规则；unexpected remote-only、历史版本对不齐或 dry-run 超出预期时禁止盲推。
+- 新增 `release-train-protocol.md`，明确 feature PR → release branch → final default-branch PR 的责任边界、Issue auto-close 语义、最终生产 gate 与 bounded hotfix。
+- 新增 presentation/semantic boundary：埋点、完成判定、权限/门禁和 workflow state 必须依赖稳定 semantic key / enum / data attribute，禁止依赖可本地化 visible text。
+- 新增 `project-truth-reconciliation-protocol.md`，在 release/hotfix/phase transition 后同步 runtime、default branch、Issues/PRs、roadmap/decision 与外部资源 ID，防止下一轮 AI/人类从陈旧计划启动。
+- Release Gate、Post-release Feedback、Pre-development Planning 与 Project Context 已接入上述规则；没有增加第七个 closure layer。
+- 新增 8 个 AhaFrame field-trial regression fixtures + deterministic checker + pytest locks，并增加 standalone / export-parent compatibility CI。
+- CI 实测同时守住独立仓与 canonical skill-hub 导出形态；保留 bounded-iteration 现有 zsh runtime prerequisite，本版不扩大为 shell runtime 重构。
+
 ## v6.0.19 (2026-07-26)
 
 - `route_request` 把已解析的主仓 `state-root` 传给 process plan 构建器，worktree 与

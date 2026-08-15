@@ -1,0 +1,78 @@
+name: Skill CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  standalone:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout standalone Skill
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pytest
+
+      - name: Field-trial regressions
+        run: python scripts/check_field_trial_regressions.py --pretty
+
+      - name: Field-trial pytest locks
+        run: pytest -q tests/test_field_trial_regressions.py
+
+      - name: Harness health
+        run: python scripts/check_harness_health.py --pretty
+
+      - name: Full Skill validation
+        run: python scripts/validate_virtual_team.py --pretty
+
+  export-parent-compatibility:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current Skill candidate
+        uses: actions/checkout@v4
+        with:
+          path: virtual-intelligent-dev-team
+
+      - name: Build minimal canonical export-parent fixture
+        run: |
+          cp virtual-intelligent-dev-team/tests/fixtures/export-parent/README.md README.md
+          cp virtual-intelligent-dev-team/tests/fixtures/export-parent/skills-index.json skills-index.json
+          mkdir -p scripts .github/workflows
+          cp virtual-intelligent-dev-team/tests/fixtures/export-parent/scripts/sync_virtual_intelligent_dev_team_version.py scripts/
+          cp virtual-intelligent-dev-team/tests/fixtures/export-parent/.github/workflows/publish-virtual-intelligent-dev-team.yml .github/workflows/
+
+      - name: Install existing iteration runtime prerequisite
+        run: sudo apt-get update && sudo apt-get install -y zsh
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r virtual-intelligent-dev-team/requirements.txt pytest
+
+      - name: Export-parent contract preflight
+        run: |
+          echo "Candidate VERSION: $(cat virtual-intelligent-dev-team/VERSION)"
+          pytest -q \
+            virtual-intelligent-dev-team/tests/test_routing_and_guardrails.py::ValidatorScriptTests::test_contract_lint_passes \
+            virtual-intelligent-dev-team/tests/test_routing_and_guardrails.py::ValidatorScriptTests::test_validator_script_passes
+
+      - name: Full export-compatible test suite
+        run: pytest -q virtual-intelligent-dev-team/tests

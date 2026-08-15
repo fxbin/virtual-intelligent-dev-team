@@ -1,0 +1,14 @@
+name: Publish Virtual Intelligent Dev Team Fixture
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: python -m pip install -r virtual-intelligent-dev-team/requirements.txt
+      - name: Validate
+        run: python virtual-intelligent-dev-team/scripts/validate_virtual_team.py --pretty

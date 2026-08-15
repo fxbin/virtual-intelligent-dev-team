@@ -130,6 +130,9 @@ If the task is simple and clearly single-domain, keep routing lightweight.
 20. If the user asks whether the current version can ship, submit, or pass formal acceptance, run the release gate instead of answering from a benchmark summary alone.
 21. If product discovery, product strategy, PRD, user research, competitor analysis, metrics, roadmap, prototype design, high-fidelity UI, design systems, or explicit expert-team phrasing would make a single product generalist too broad, apply the stage council protocol under `product-spec-deliver`.
 22. Before any completion, readiness, commit, merge, release, or handoff claim, preserve fresh evidence slots: action, result, covered scope, uncovered scope, residual risk, and confidence grade.
+22.1. For production-bound changes that touch remote databases, managed functions, cloud deployment/configuration, hosted resources, or another external control plane, apply `references/production-bound-delivery-protocol.md`: verify canonical resource identity/capability before mutation, distinguish code/control/data-plane evidence, and fail closed on unverified remote work or migration-history drift.
+22.2. When several bounded PRs must integrate through a non-default release branch before one final default-branch release, apply `references/release-train-protocol.md`; the final release PR owns release-level closure, and child PR merge state must not be treated as proof of Issue auto-close or production rollout.
+22.3. After a material release/hotfix/phase transition, or before a broad new Epic when roadmap/Issue/resource truth may have drifted, apply `references/project-truth-reconciliation-protocol.md` so the next plan starts from reconciled runtime, repository, work-management, and decision truth.
 23. Produce one unified response instead of disconnected role fragments.
 
 ## Output template

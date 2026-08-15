@@ -31,7 +31,7 @@ def _should_ignore(relative_path: Path) -> bool:
         return True
     if parts[:2] == ("evals", "benchmark-results"):
         return True
-    if parts[:2] == ("evals", "release-gate"):
+    if len(parts) >= 2 and parts[0] == "evals" and parts[1].startswith("release-gate"):
         return True
     if relative_path.name in IGNORED_FILE_NAMES:
         return True
@@ -62,4 +62,3 @@ def copy_skill_snapshot(target_dir: Path, source_root: Path | None = None) -> Pa
         shutil.rmtree(target_dir)
     shutil.copytree(source, target_dir, ignore=build_snapshot_ignore(source))
     return target_dir
-
