@@ -55,6 +55,9 @@ jobs:
           cp candidate/tests/fixtures/export-parent/.github/workflows/publish-virtual-intelligent-dev-team.yml .github/workflows/
           ln -s candidate virtual-intelligent-dev-team
 
+      - name: Install existing iteration runtime prerequisite
+        run: sudo apt-get update && sudo apt-get install -y zsh
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
