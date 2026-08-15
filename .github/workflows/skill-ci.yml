@@ -10,10 +10,10 @@ permissions:
   contents: read
 
 jobs:
-  validate:
+  standalone:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout standalone Skill
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -38,5 +38,36 @@ jobs:
       - name: Full Skill validation
         run: python scripts/validate_virtual_team.py --pretty
 
-      - name: Full test suite
-        run: pytest -q
+  monorepo-compatibility:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current Skill candidate
+        uses: actions/checkout@v4
+        with:
+          path: candidate
+
+      - name: Checkout canonical skill-hub monorepo
+        uses: actions/checkout@v4
+        with:
+          repository: fxbin/skill-hub
+          path: monorepo
+
+      - name: Overlay candidate into monorepo
+        run: |
+          rm -rf monorepo/virtual-intelligent-dev-team
+          mkdir -p monorepo/virtual-intelligent-dev-team
+          rsync -a --exclude='.git' candidate/ monorepo/virtual-intelligent-dev-team/
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r monorepo/virtual-intelligent-dev-team/requirements.txt pytest
+
+      - name: Full monorepo-compatible test suite
+        working-directory: monorepo
+        run: pytest -q virtual-intelligent-dev-team/tests
