@@ -1,0 +1,42 @@
+name: Skill CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pytest
+
+      - name: Field-trial regressions
+        run: python scripts/check_field_trial_regressions.py --pretty
+
+      - name: Field-trial pytest locks
+        run: pytest -q tests/test_field_trial_regressions.py
+
+      - name: Harness health
+        run: python scripts/check_harness_health.py --pretty
+
+      - name: Full Skill validation
+        run: python scripts/validate_virtual_team.py --pretty
+
+      - name: Full test suite
+        run: pytest -q
