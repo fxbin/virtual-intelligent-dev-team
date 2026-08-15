@@ -1,0 +1,84 @@
+[
+  {
+    "id": "field-001-code-green-remote-migration-pending",
+    "kind": "production_gate",
+    "input": {
+      "code_pass": true,
+      "remote_required": true,
+      "resource_identity_verified": true,
+      "control_required": true,
+      "control_pass": false,
+      "data_required": true,
+      "data_pass": false,
+      "migration_history_state": "aligned"
+    },
+    "expected": "hold"
+  },
+  {
+    "id": "field-002-stale-resource-id-before-permission-diagnosis",
+    "kind": "permission_diagnosis",
+    "input": {
+      "resource_identity_verified": false,
+      "capability_verified": false
+    },
+    "expected": "verify_resource_identity"
+  },
+  {
+    "id": "field-003-operator-cli-handoff",
+    "kind": "operator_handoff",
+    "input": {
+      "dry_run_first": true,
+      "expected_output": true,
+      "stop_conditions": true,
+      "secret_boundary": true,
+      "resume_anchor": true
+    },
+    "expected": "valid_handoff"
+  },
+  {
+    "id": "field-004-migration-history-drift",
+    "kind": "migration_drift",
+    "input": {
+      "local_remote_aligned": false,
+      "unexpected_remote_only": true
+    },
+    "expected": "reconcile_before_push"
+  },
+  {
+    "id": "field-005-release-branch-issue-closing",
+    "kind": "release_train_issue",
+    "input": {
+      "target_branch_is_default": false,
+      "expects_auto_close": true
+    },
+    "expected": "do_not_assume_auto_close"
+  },
+  {
+    "id": "field-006-localized-visible-text-drives-semantics",
+    "kind": "semantic_boundary",
+    "input": {
+      "semantic_source": "visible_text",
+      "localized": true
+    },
+    "expected": "spec_violation"
+  },
+  {
+    "id": "field-007-stale-plan-before-next-epic",
+    "kind": "truth_reconciliation",
+    "input": {
+      "contradictory_sources": true,
+      "starting_new_epic": true
+    },
+    "expected": "reconcile_before_new_epic"
+  },
+  {
+    "id": "field-008-bounded-post-release-ui-bug",
+    "kind": "hotfix",
+    "input": {
+      "release_complete": true,
+      "scope_bounded": true,
+      "release_contract_broadly_invalid": false
+    },
+    "expected": "bounded_hotfix"
+  }
+]
