@@ -38,7 +38,7 @@ jobs:
       - name: Full Skill validation
         run: python scripts/validate_virtual_team.py --pretty
 
-  monorepo-compatibility:
+  export-parent-compatibility:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current Skill candidate
@@ -46,17 +46,14 @@ jobs:
         with:
           path: candidate
 
-      - name: Checkout canonical skill-hub monorepo
-        uses: actions/checkout@v4
-        with:
-          repository: fxbin/skill-hub
-          path: monorepo
-
-      - name: Overlay candidate into monorepo
+      - name: Build minimal canonical export-parent fixture
         run: |
-          rm -rf monorepo/virtual-intelligent-dev-team
-          mkdir -p monorepo/virtual-intelligent-dev-team
-          rsync -a --exclude='.git' candidate/ monorepo/virtual-intelligent-dev-team/
+          cp candidate/tests/fixtures/export-parent/README.md README.md
+          cp candidate/tests/fixtures/export-parent/skills-index.json skills-index.json
+          mkdir -p scripts .github/workflows
+          cp candidate/tests/fixtures/export-parent/scripts/sync_virtual_intelligent_dev_team_version.py scripts/
+          cp candidate/tests/fixtures/export-parent/.github/workflows/publish-virtual-intelligent-dev-team.yml .github/workflows/
+          ln -s candidate virtual-intelligent-dev-team
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -66,8 +63,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r monorepo/virtual-intelligent-dev-team/requirements.txt pytest
+          python -m pip install -r candidate/requirements.txt pytest
 
-      - name: Full monorepo-compatible test suite
-        working-directory: monorepo
-        run: pytest -q virtual-intelligent-dev-team/tests
+      - name: Full export-compatible test suite
+        run: pytest -q candidate/tests
