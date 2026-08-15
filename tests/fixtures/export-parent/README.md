@@ -2,8 +2,8 @@
 
 | Skill | Version |
 |---|---|
-| `virtual-intelligent-dev-team` | `v6.0.19` |
+| `virtual-intelligent-dev-team` | `v6.1.0` |
 
 | Skill | Name | Version |
 |---|---|---|
-| `virtual-intelligent-dev-team` | Virtual Intelligent Dev Team | `v6.0.19` |
+| `virtual-intelligent-dev-team` | Virtual Intelligent Dev Team | `v6.1.0` |

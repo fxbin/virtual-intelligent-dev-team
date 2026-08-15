@@ -1,6 +1,6 @@
 # Virtual Intelligent Dev Team
 
-[![Version](https://img.shields.io/badge/version-v6.0.19-8b5cf6?style=flat-square)](./VERSION)
+[![Version](https://img.shields.io/badge/version-v6.1.0-8b5cf6?style=flat-square)](./VERSION)
 [![License](https://img.shields.io/badge/license-MIT-10b981?style=flat-square)](./LICENSE)
 [![Status](https://img.shields.io/badge/status-production--ready-f59e0b?style=flat-square)]()
 [![Archetype](https://img.shields.io/badge/archetype-router-06b6d4?style=flat-square)](./SKILL.md)
