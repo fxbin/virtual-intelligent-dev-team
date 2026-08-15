@@ -47,6 +47,9 @@ Quick reference for playbooks and protocols used by core scripts.
 | [change-localization-protocol.md](./change-localization-protocol.md) | route_request.py | Token-budget convergence to exact change sites |
 | [project-knowledge-pyramid-protocol.md](./project-knowledge-pyramid-protocol.md) | route_request.py | Tiered, drift-checked target-project knowledge map |
 | [worktree-state-placement-protocol.md](./worktree-state-placement-protocol.md) | route_request.py | State-directory placement under worktree execution |
+| [production-bound-delivery-protocol.md](./production-bound-delivery-protocol.md) | release/delivery routes | External-system preflight, remote mutation safety, code/control/data-plane evidence, operator CLI handoff |
+| [release-train-protocol.md](./release-train-protocol.md) | release/Git routes | Multi-PR integration branch, final release ownership, Issue-closing semantics, bounded hotfixes |
+| [project-truth-reconciliation-protocol.md](./project-truth-reconciliation-protocol.md) | planning/post-release routes | Reconcile runtime, repository, Issue, roadmap, resource-ID and phase truth |
 | [architecture-deepening-protocol.md](./architecture-deepening-protocol.md) | route_request.py | Architecture deepening |
 | [stage-council-protocol.md](./stage-council-protocol.md) | route_request.py | Stage council overlay |
 | [iteration-protocol.md](./iteration-protocol.md) | route_request.py, inspect_automation_state.py | Iteration lifecycle |
@@ -87,4 +90,4 @@ Conceptual references not bound to a single script — they document protocols, 
 
 ---
 
-*This index only includes files actively referenced by core scripts. See `tooling-command-index.md` for script-to-reference mappings.*
+*This index includes core active references plus the v6.1 field-tested production-delivery protocols. See `tooling-command-index.md` for script-to-reference mappings.*
