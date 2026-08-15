@@ -68,5 +68,14 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r candidate/requirements.txt pytest
 
+      - name: Export-parent contract preflight
+        run: |
+          echo "Candidate VERSION: $(cat candidate/VERSION)"
+          cat README.md
+          cat skills-index.json
+          pytest -q \
+            candidate/tests/test_routing_and_guardrails.py::ValidatorScriptTests::test_contract_lint_passes \
+            candidate/tests/test_routing_and_guardrails.py::ValidatorScriptTests::test_validator_script_passes
+
       - name: Full export-compatible test suite
         run: pytest -q candidate/tests
